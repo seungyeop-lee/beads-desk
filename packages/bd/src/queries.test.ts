@@ -1,8 +1,15 @@
-import { chmod, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { boardIssues, epicChildren, epicStatuses, listIssues, readyIssues } from "./queries";
+import {
+  boardIssues,
+  epicChildren,
+  epicStatuses,
+  listIssues,
+  openChangeFingerprint,
+  readyIssues,
+} from "./queries";
 
 type FakeResponse = { stdout?: string; stderr?: string; code?: number };
 
@@ -172,6 +179,68 @@ describe("epicChildren", () => {
     expect(result).toEqual({
       ok: false,
       error: { message: "epic id가 비어 있습니다.", exitCode: null },
+    });
+  });
+});
+
+describe("openChangeFingerprint", () => {
+  const doltShow = "dolt show --json";
+  const hashQuery = "sql SELECT DOLT_HASHOF_DB() AS h --json";
+
+  test("embedded mode에서는 Dolt manifest 내용을 읽는다", async () => {
+    const noms = join(workDir, "embeddeddolt", "demo", ".dolt", "noms");
+    await mkdir(noms, { recursive: true });
+    await writeFile(join(noms, "manifest"), "root-1");
+    await useFakeBd({
+      [doltShow]: {
+        stdout: JSON.stringify({
+          embedded: true,
+          data_dir: join(workDir, "embeddeddolt"),
+          database: "demo",
+        }),
+      },
+    });
+
+    const result = await openChangeFingerprint(workDir);
+    if (!result.ok) throw new Error(result.error.message);
+    const before = await result.value();
+    await writeFile(join(noms, "manifest"), "root-2");
+
+    expect([before, await result.value()]).toEqual(["root-1", "root-2"]);
+  });
+
+  test("server mode에서는 Dolt DB hash를 조회한다", async () => {
+    await useFakeBd({
+      [doltShow]: { stdout: JSON.stringify({ embedded: false, database: "demo" }) },
+      [hashQuery]: { stdout: JSON.stringify([{ h: "hash-1" }]) },
+    });
+
+    const result = await openChangeFingerprint(workDir);
+    if (!result.ok) throw new Error(result.error.message);
+
+    expect(await result.value()).toBe("hash-1");
+  });
+
+  test("값을 읽지 못하면 null을 돌려준다", async () => {
+    await useFakeBd({
+      [doltShow]: { stdout: JSON.stringify({ embedded: false, database: "demo" }) },
+      [hashQuery]: { stderr: "boom", code: 1 },
+    });
+
+    const result = await openChangeFingerprint(workDir);
+    if (!result.ok) throw new Error(result.error.message);
+
+    expect(await result.value()).toBeNull();
+  });
+
+  test("Dolt 설정을 읽지 못하면 오류를 돌려준다", async () => {
+    await useFakeBd({ [doltShow]: { stderr: "no beads workspace", code: 1 } });
+
+    const result = await openChangeFingerprint(workDir);
+
+    expect(result).toEqual({
+      ok: false,
+      error: { message: "no beads workspace\n", exitCode: 1 },
     });
   });
 });
