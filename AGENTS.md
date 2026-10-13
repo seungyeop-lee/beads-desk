@@ -17,11 +17,15 @@
 
 ## 실행 구조
 
-`beads-desk` 명령(`packages/app/bin/beads-desk.js`)은 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
+`beads-desk start`(`packages/app/bin/beads-desk.js`, 명령을 생략해도 같음)는 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 background process group으로 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
+
+- 서버가 이미 실행 중이면 새로 띄우지 않고, `POST /api/workspaces`로 지금 디렉터리를 등록해 현재 workspace로 바꿉니다.
+- `stop`과 `restart`는 `$XDG_RUNTIME_DIR/beads-desk`(없으면 OS 임시 디렉터리 아래 `beads-desk`)의 `server.json`에서 pid와 포트를 읽습니다. 서버 로그는 같은 디렉터리의 `server.log`에 쌓입니다.
 
 서버 전체에서 하나만 있어야 하는 상태는 `globalThis`에 둡니다. instrumentation과 route handler는 같은 module을 서로 다른 사본으로 불러오기 때문에 module 변수로는 상태를 공유할 수 없습니다.
 
-- app의 전역 상태는 `packages/app/src/server/infra/` 아래에 구현합니다. 서버가 시작될 때 준비해야 하는 상태(workspace 경로, bd 버전)는 `src/instrumentation.ts`에서 시작하고, DB 변경 감시는 첫 SSE 구독이 들어올 때 시작합니다.
+- app의 전역 상태는 `packages/app/src/server/infra/` 아래에 구현합니다. 서버가 시작될 때 준비해야 하는 상태(bd 버전)는 `src/instrumentation.ts`에서 시작하고, DB 변경 감시는 첫 SSE 구독이 들어올 때 시작합니다.
+- 등록한 workspace 목록과 현재 workspace는 서버 전체에서 하나입니다. 한 탭에서 바꾸면 다른 탭과 창도 함께 바뀌고, bd 실행과 DB 변경 감시는 모두 현재 workspace를 대상으로 합니다.
 - bd 실행 큐는 `@beads-desk/bd`가 첫 호출 때 직접 만듭니다. app에서 bd 실행을 따로 직렬화하지 않습니다.
 
 ## 소스 구조
@@ -65,5 +69,6 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 1. `packages/app`에서 `pnpm run pack:local`을 실행해 현재 디렉터리에 tarball을 만듭니다.
 2. `npm install -g --prefix <임시 디렉터리> <tarball 경로>`로 설치합니다.
-3. bd workspace 디렉터리에서 `BEADS_DESK_NO_OPEN=1 <임시 디렉터리>/bin/beads-desk`를 실행합니다.
+3. bd workspace 디렉터리에서 `XDG_RUNTIME_DIR=<다른 임시 디렉터리> <임시 디렉터리>/bin/beads-desk start --no-open`을 실행합니다. `XDG_RUNTIME_DIR`을 따로 주어야 평소에 쓰는 서버의 상태 파일을 건드리지 않습니다.
 4. 출력된 URL의 `/api/health` 응답에서 `runtime.workspaceRoot`가 3번의 디렉터리이고 `runtime.bdVersion`이 비어 있지 않으면 정상입니다.
+5. 같은 `XDG_RUNTIME_DIR`로 `<임시 디렉터리>/bin/beads-desk stop`을 실행해 서버를 종료합니다.
