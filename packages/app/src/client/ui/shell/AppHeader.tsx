@@ -11,6 +11,7 @@ const TABS = [
   { href: "/issues", label: "이슈" },
   { href: "/epics", label: "에픽" },
   { href: "/board", label: "보드" },
+  { href: "/decisions", label: "결정" },
 ];
 
 /** 화면 이동 탭과, 어느 화면에서나 새 이슈를 만들고 그 화면 위에 상세를 여는 버튼입니다. */
