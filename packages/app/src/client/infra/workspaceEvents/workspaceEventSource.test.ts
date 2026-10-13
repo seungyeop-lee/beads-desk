@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { subscribeWorkspaceInvalidation } from "./workspaceEventSource";
+
+type Subscribe = typeof import("./workspaceEventSource").subscribeWorkspaceInvalidation;
 
 class FakeEventSource extends EventTarget {
   static instances: FakeEventSource[] = [];
@@ -19,6 +20,58 @@ class FakeEventSource extends EventTarget {
   }
 }
 
+/** 같은 이름의 다른 channel에 메시지를 바로 전달합니다. 실제 BroadcastChannel처럼 보낸 channel 자신은 받지 않습니다. */
+class FakeBroadcastChannel extends EventTarget {
+  static open: FakeBroadcastChannel[] = [];
+
+  constructor(readonly name: string) {
+    super();
+    FakeBroadcastChannel.open.push(this);
+  }
+
+  postMessage(data: unknown) {
+    for (const other of FakeBroadcastChannel.open) {
+      if (other !== this && other.name === this.name) {
+        other.dispatchEvent(new MessageEvent("message", { data }));
+      }
+    }
+  }
+
+  close() {
+    FakeBroadcastChannel.open = FakeBroadcastChannel.open.filter((channel) => channel !== this);
+  }
+}
+
+/** 이름 하나만 다루는 Web Locks API입니다. */
+class FakeLocks {
+  private held = false;
+  private waiting: (() => void)[] = [];
+
+  async request(
+    _name: string,
+    options: { ifAvailable?: boolean; signal?: AbortSignal },
+    callback: (lock: object | null) => unknown,
+  ) {
+    if (options.ifAvailable && this.held) return callback(null);
+    if (this.held) {
+      await new Promise<void>((resolve, reject) => {
+        this.waiting.push(resolve);
+        options.signal?.addEventListener("abort", () => {
+          this.waiting = this.waiting.filter((waiter) => waiter !== resolve);
+          reject(new DOMException("aborted", "AbortError"));
+        });
+      });
+    }
+    this.held = true;
+    try {
+      return await callback({});
+    } finally {
+      this.held = false;
+      this.waiting.shift()?.();
+    }
+  }
+}
+
 class FakeDocument extends EventTarget {
   visibilityState: DocumentVisibilityState = "visible";
 
@@ -29,12 +82,22 @@ class FakeDocument extends EventTarget {
 }
 
 let fakeDocument: FakeDocument;
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const latestSource = () => FakeEventSource.instances.at(-1)!;
+
+/** 탭 하나의 module 상태를 따로 갖도록 매번 새로 불러옵니다. */
+async function openTab(): Promise<Subscribe> {
+  vi.resetModules();
+  return (await import("./workspaceEventSource")).subscribeWorkspaceInvalidation;
+}
 
 beforeEach(() => {
   FakeEventSource.instances = [];
+  FakeBroadcastChannel.open = [];
   fakeDocument = new FakeDocument();
   vi.stubGlobal("EventSource", FakeEventSource);
+  vi.stubGlobal("BroadcastChannel", FakeBroadcastChannel);
+  vi.stubGlobal("navigator", { locks: new FakeLocks() });
   vi.stubGlobal("document", fakeDocument);
 });
 
@@ -42,9 +105,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("invalidate 이벤트를 받으면 구독자에게 알린다", () => {
+test("invalidate 이벤트를 받으면 구독자에게 알린다", async () => {
+  const subscribe = await openTab();
   const listener = vi.fn<() => void>();
-  const unsubscribe = subscribeWorkspaceInvalidation(listener);
+  const unsubscribe = subscribe(listener);
+  await flush();
 
   latestSource().emit("open");
   latestSource().emit("invalidate");
@@ -52,22 +117,47 @@ test("invalidate 이벤트를 받으면 구독자에게 알린다", () => {
 
   expect(latestSource().url).toBe("/api/events");
   expect(listener).toHaveBeenCalledOnce();
-});
-
-test("여러 구독자가 연결 하나를 함께 쓴다", () => {
-  const first = subscribeWorkspaceInvalidation(() => {});
-  const second = subscribeWorkspaceInvalidation(() => {});
-
-  expect(FakeEventSource.instances).toHaveLength(1);
-  first();
-  expect(latestSource().closed).toBe(false);
-  second();
   expect(latestSource().closed).toBe(true);
 });
 
-test("끊겼다가 다시 연결되면 놓친 변경이 있을 수 있어 구독자에게 알린다", () => {
+test("여러 탭이 SSE 연결 하나를 함께 쓴다", async () => {
+  const first = vi.fn<() => void>();
+  const second = vi.fn<() => void>();
+  const stopFirst = (await openTab())(first);
+  const stopSecond = (await openTab())(second);
+  await flush();
+
+  latestSource().emit("open");
+  latestSource().emit("invalidate");
+  const openedWhileBothSubscribed = FakeEventSource.instances.length;
+  stopFirst();
+  stopSecond();
+
+  expect(openedWhileBothSubscribed).toBe(1);
+  expect([first.mock.calls.length, second.mock.calls.length]).toEqual([1, 1]);
+});
+
+test("연결을 연 탭이 떠나면 다른 탭이 이어받고, 그 사이 놓친 변경을 반영하도록 알린다", async () => {
+  const stopFirst = (await openTab())(() => {});
+  const second = vi.fn<() => void>();
+  const stopSecond = (await openTab())(second);
+  await flush();
+  const firstSource = latestSource();
+
+  stopFirst();
+  await flush();
+  latestSource().emit("open");
+  stopSecond();
+
+  expect(firstSource.closed).toBe(true);
+  expect(latestSource()).not.toBe(firstSource);
+  expect(second).toHaveBeenCalledOnce();
+});
+
+test("끊겼다가 다시 연결되면 놓친 변경이 있을 수 있어 구독자에게 알린다", async () => {
   const listener = vi.fn<() => void>();
-  const unsubscribe = subscribeWorkspaceInvalidation(listener);
+  const unsubscribe = (await openTab())(listener);
+  await flush();
 
   latestSource().emit("open");
   latestSource().emit("error");
@@ -77,26 +167,19 @@ test("끊겼다가 다시 연결되면 놓친 변경이 있을 수 있어 구독
   expect(listener).toHaveBeenCalledOnce();
 });
 
-test("탭이 가려지면 연결을 닫고, 다시 보이면 연결한 뒤 구독자에게 알린다", () => {
+test("가려진 탭은 알림을 미뤘다가 다시 보일 때 한 번만 반영한다", async () => {
   const listener = vi.fn<() => void>();
-  const unsubscribe = subscribeWorkspaceInvalidation(listener);
-  const hiddenSource = latestSource();
+  const unsubscribe = (await openTab())(listener);
+  await flush();
 
   fakeDocument.setVisibility("hidden");
-  expect(hiddenSource.closed).toBe(true);
+  latestSource().emit("invalidate");
+  latestSource().emit("invalidate");
   expect(listener).not.toHaveBeenCalled();
-
+  fakeDocument.setVisibility("visible");
+  fakeDocument.setVisibility("hidden");
   fakeDocument.setVisibility("visible");
   unsubscribe();
 
-  expect(FakeEventSource.instances).toHaveLength(2);
   expect(listener).toHaveBeenCalledOnce();
-});
-
-test("가려진 탭에서 구독을 시작하면 보일 때까지 연결하지 않는다", () => {
-  fakeDocument.visibilityState = "hidden";
-  const unsubscribe = subscribeWorkspaceInvalidation(() => {});
-
-  expect(FakeEventSource.instances).toHaveLength(0);
-  unsubscribe();
 });
