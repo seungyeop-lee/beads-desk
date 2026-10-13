@@ -44,6 +44,7 @@
 
 - 읽기는 client infra → `/api/...` Route Handler → `server/web/*RouteApi.ts` → `@beads-desk/bd` 순서로 연결합니다.
 - 쓰기는 `server/web`의 Server Action(`*Action.ts`, `*Actions.ts`)으로 처리합니다. client는 server에서 이 파일만 import합니다.
+- `@beads-desk/bd`는 server에서만 import합니다. client와 shared는 bd를 실행하지 않는 이슈 model(`@beads-desk/bd/issue`)만 import합니다.
 - 디렉터리는 함께 바뀌는 기능 이름으로 묶습니다. `utils`, `helpers`, `common` 같은 역할 이름 디렉터리는 만들지 않습니다.
 
 import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `packages/app/src/server/architecture.test.ts`가, 파일 단위 순환은 oxlint의 `import/no-cycle`이 검사합니다. 경계를 바꾸면 이 검사들도 함께 고칩니다.

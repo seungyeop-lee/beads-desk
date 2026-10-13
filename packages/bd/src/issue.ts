@@ -1,3 +1,8 @@
+/** `bd list --status`가 받는 저장 상태입니다. */
+export const ISSUE_STATUSES = ["open", "in_progress", "blocked", "deferred", "closed"] as const;
+
+export type IssueStatus = (typeof ISSUE_STATUSES)[number];
+
 /** bd JSON 출력에서 화면이 쓰는 필드만 골라 camelCase로 바꾼 이슈입니다. 시각은 epoch ms입니다. */
 export type Issue = {
   id: string;

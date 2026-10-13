@@ -1,4 +1,4 @@
-export { parseIssue, parseIssues, type Issue } from "./issue";
+export { ISSUE_STATUSES, parseIssue, parseIssues, type Issue, type IssueStatus } from "./issue";
 export {
   boardIssues,
   epicChildren,
@@ -10,6 +10,5 @@ export {
   type BoardColumn,
   type BoardIssue,
   type EpicStatus,
-  type IssueStatus,
 } from "./queries";
 export { runBd, type BdResult, type RunBdOptions } from "./runBd";

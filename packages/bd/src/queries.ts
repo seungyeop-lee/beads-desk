@@ -1,10 +1,12 @@
-import { isRecord, parseIssue, parseIssues, type Issue } from "./issue";
+import {
+  ISSUE_STATUSES,
+  isRecord,
+  parseIssue,
+  parseIssues,
+  type Issue,
+  type IssueStatus,
+} from "./issue";
 import { runBd } from "./runBd";
-
-/** `bd list --status`가 받는 저장 상태입니다. */
-export type IssueStatus = "open" | "in_progress" | "blocked" | "deferred" | "closed";
-
-const ALL_STATUSES: IssueStatus[] = ["open", "in_progress", "blocked", "deferred", "closed"];
 
 export type BdError = {
   message: string;
@@ -88,7 +90,7 @@ export async function boardIssues(cwd: string): Promise<BdQueryResult<BoardIssue
 
 // bd list는 빈 --status를 기본 필터(closed 제외)로 해석하므로, 상태를 지정하지 않으면 모든 상태를 넘깁니다.
 function listArgs(statuses: IssueStatus[]): string[] {
-  const status = (statuses.length > 0 ? statuses : ALL_STATUSES).join(",");
+  const status = (statuses.length > 0 ? statuses : ISSUE_STATUSES).join(",");
   return ["list", "--json", "--tree=false", "--status", status, "--limit", LIST_LIMIT];
 }
 
