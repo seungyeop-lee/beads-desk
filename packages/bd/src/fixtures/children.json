@@ -1,0 +1,38 @@
+[
+  {
+    "id": "demo-8g0.1",
+    "title": "Child task",
+    "description": "desc",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "assignee": "alice",
+    "owner": "owner@example.com",
+    "created_at": "2026-10-13T12:04:51Z",
+    "created_by": "tester",
+    "updated_at": "2026-10-13T12:07:18Z",
+    "labels": ["ui"],
+    "dependencies": [
+      {
+        "issue_id": "demo-8g0.1",
+        "depends_on_id": "demo-8g0",
+        "type": "parent-child",
+        "created_at": "2026-10-13T12:04:51Z",
+        "created_by": "tester",
+        "metadata": "{}"
+      },
+      {
+        "issue_id": "demo-8g0.1",
+        "depends_on_id": "demo-x2e",
+        "type": "blocks",
+        "created_at": "2026-10-13T12:04:59Z",
+        "created_by": "tester",
+        "metadata": "{}"
+      }
+    ],
+    "dependency_count": 1,
+    "dependent_count": 0,
+    "comment_count": 1,
+    "parent": "demo-8g0"
+  }
+]
