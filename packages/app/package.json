@@ -1,0 +1,53 @@
+{
+  "name": "@seungyeop-lee/beads-desk",
+  "version": "0.0.0",
+  "description": "Local web UI for Beads (bd)",
+  "license": "MIT",
+  "bin": {
+    "beads-desk": "bin/beads-desk.js"
+  },
+  "files": [
+    ".next/BUILD_ID",
+    ".next/app-path-routes-manifest.json",
+    ".next/build-manifest.json",
+    ".next/export-marker.json",
+    ".next/fallback-build-manifest.json",
+    ".next/images-manifest.json",
+    ".next/package.json",
+    ".next/prerender-manifest.json",
+    ".next/required-server-files.js",
+    ".next/required-server-files.json",
+    ".next/routes-manifest.json",
+    ".next/server",
+    ".next/static",
+    "bin",
+    "next.config.ts"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "next typegen && tsc --noEmit",
+    "pack:local": "pnpm run build && node scripts/run-npm-release.mjs pack"
+  },
+  "dependencies": {
+    "next": "^16.4.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@beads-desk/bd": "workspace:*",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "typescript": "npm:@typescript/typescript6@~6.0.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

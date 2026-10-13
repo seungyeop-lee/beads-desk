@@ -15,7 +15,8 @@ const SPAWN_FAILURE_CODE = 127;
 
 export function runBd(args: string[], options: RunBdOptions): Promise<BdResult> {
   return new Promise((resolve) => {
-    const child = spawn(bdBin(), args, {
+    // spawn을 정적 분석하면 Turbopack이 프로젝트 전체를 server 출력 추적 대상에 넣습니다.
+    const child = spawn(/*turbopackIgnore: true*/ bdBin(), args, {
       cwd: options.cwd,
       shell: false,
       windowsHide: true,
