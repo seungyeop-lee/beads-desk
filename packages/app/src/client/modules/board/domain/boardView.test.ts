@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { BoardItem } from "@/shared/contract/board";
-import { boardColumns, DROP_STATUS } from "./boardView";
+import { boardColumns, DROP_STATUS, dropOutcome } from "./boardView";
 
 const now = new Date(2026, 9, 13, 15, 0).getTime();
 const hoursAgo = (hours: number) => now - hours * 3_600_000;
@@ -48,4 +48,24 @@ test("닫힌 열은 고른 기간 안에 닫은 이슈만 최근 것부터 보�
 
 test("보류·기타 열에 놓으면 보류 상태로 바꾼다", () => {
   expect(DROP_STATUS.other).toBe("deferred");
+});
+
+describe("dropOutcome", () => {
+  test("다른 열에 놓으면 그 열의 상태로 바꾼다", () => {
+    expect(dropOutcome("ready", "in_progress", "open")).toEqual({
+      kind: "change",
+      status: "in_progress",
+    });
+  });
+
+  test("같은 열에 놓으면 아무것도 하지 않는다", () => {
+    expect(dropOutcome("ready", "ready", "open")).toEqual({ kind: "none" });
+  });
+
+  test("의존 관계로 막힌 이슈를 이미 그 상태인 열에 놓으면 바꾸지 않고 막힌 이유를 알린다", () => {
+    expect(dropOutcome("blocked", "ready", "open")).toEqual({ kind: "blockedByDependencies" });
+    expect(dropOutcome("blocked", "in_progress", "in_progress")).toEqual({
+      kind: "blockedByDependencies",
+    });
+  });
 });

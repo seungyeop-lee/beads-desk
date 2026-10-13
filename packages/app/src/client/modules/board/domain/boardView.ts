@@ -16,6 +16,21 @@ export const DROP_STATUS: Record<BoardColumn, IssueStatus> = {
   other: "deferred",
 };
 
+export type DropOutcome =
+  | { kind: "none" }
+  | { kind: "change"; status: IssueStatus }
+  | { kind: "blockedByDependencies" };
+
+/**
+ * 카드를 놓았을 때 할 일을 정합니다.
+ * 막힘 열의 카드는 대부분 의존 관계로 막힌 이슈라, 이미 그 상태인 열에 놓으면 bd가 바꿀 것이 없고 카드는 막힘 열로 돌아갑니다.
+ */
+export function dropOutcome(from: BoardColumn, to: BoardColumn, status: string): DropOutcome {
+  if (from === to) return { kind: "none" };
+  if (from === "blocked" && DROP_STATUS[to] === status) return { kind: "blockedByDependencies" };
+  return { kind: "change", status: DROP_STATUS[to] };
+}
+
 /** 열마다 우선순위 순으로 정렬합니다. 닫힌 열은 기간 안에 닫은 이슈만 최근 것부터 보입니다. */
 export function boardColumns(
   items: BoardItem[],

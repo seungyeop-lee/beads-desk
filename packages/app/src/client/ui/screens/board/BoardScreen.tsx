@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState, type DragEvent } from "react";
 import {
   boardColumns,
-  DROP_STATUS,
+  dropOutcome,
   type ClosedWindow,
 } from "@/client/modules/board/domain/boardView";
 import { useBoard } from "@/client/modules/board/application/useBoard";
@@ -31,7 +31,7 @@ const CLOSED_WINDOWS: { value: ClosedWindow; label: string }[] = [
   { value: "7d", label: "최근 7일" },
 ];
 
-/** 끌어 온 카드의 id와 원래 열을 담는 drag data 형식입니다. */
+/** 끌어 온 카드의 id, 원래 열, 상태를 담는 drag data 형식입니다. */
 const DRAG_TYPE = "application/x-beads-desk-card";
 
 /**
@@ -44,6 +44,7 @@ export function BoardScreen() {
   const issueHref = useIssueHref();
   const [closedWindow, setClosedWindow] = useState<ClosedWindow>("today");
   const [dropTarget, setDropTarget] = useState<BoardColumn | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const now = useMinuteClock();
   const columns = items ? boardColumns(items, closedWindow, now) : null;
 
@@ -52,9 +53,20 @@ export function BoardScreen() {
     setDropTarget(null);
     const data = event.dataTransfer.getData(DRAG_TYPE);
     if (!data) return;
-    const { issueId, from } = JSON.parse(data) as { issueId: string; from: BoardColumn };
-    if (from === column) return;
-    void issueEdits(writes, issueId).changeStatus(DROP_STATUS[column], confirmForceClose);
+    const { issueId, from, status } = JSON.parse(data) as {
+      issueId: string;
+      from: BoardColumn;
+      status: string;
+    };
+    const outcome = dropOutcome(from, column, status);
+    setNotice(
+      outcome.kind === "blockedByDependencies"
+        ? `${issueId}: 다른 이슈에 막혀 있어 막힘 열에 남습니다. 막고 있는 이슈를 먼저 닫아 주세요.`
+        : null,
+    );
+    if (outcome.kind === "change") {
+      void issueEdits(writes, issueId).changeStatus(outcome.status, confirmForceClose);
+    }
   };
 
   return (
@@ -78,6 +90,15 @@ export function BoardScreen() {
             닫기
           </button>
         </div>
+      )}
+
+      {notice && (
+        <output className="alert alert-info alert-soft">
+          <span>{notice}</span>
+          <button type="button" className="btn btn-ghost btn-xs" onClick={() => setNotice(null)}>
+            닫기
+          </button>
+        </output>
       )}
 
       {columns && (
@@ -147,7 +168,7 @@ function BoardCard({ issue, column, href }: { issue: Issue; column: BoardColumn;
         onDragStart={(event) => {
           event.dataTransfer.setData(
             DRAG_TYPE,
-            JSON.stringify({ issueId: issue.id, from: column }),
+            JSON.stringify({ issueId: issue.id, from: column, status: issue.status }),
           );
           event.dataTransfer.effectAllowed = "move";
         }}
