@@ -18,3 +18,6 @@ tmp/
 # Local env files
 .env*
 !.env.example
+
+# npm pack output
+*.tgz
