@@ -4,7 +4,7 @@ import {
   type IssueListRefinement,
 } from "@/client/modules/issues/domain/issueListView";
 import type { IssueListFilter } from "@/shared/contract/issueList";
-import { READY_LABEL, STATUS_LABELS, TYPE_LABELS } from "./issueLabels";
+import { READY_LABEL, STATUS_LABELS, TYPE_LABELS } from "@/client/ui/issues/issueLabels";
 
 type Props = {
   filter: IssueListFilter;
