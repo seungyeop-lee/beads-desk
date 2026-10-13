@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   isRecord,
+  parseIssue,
   parseIssueDetail,
   parseIssues,
   type Issue,
@@ -14,6 +15,12 @@ export type EpicStatus = {
   epic: Issue;
   totalChildren: number;
   closedChildren: number;
+};
+
+export type DecisionRecord = {
+  decision: Issue;
+  /** `bd supersede`로 이 decision을 대체한 이슈입니다. 대체되지 않았으면 null입니다. */
+  supersededBy: string | null;
 };
 
 export type BoardColumn = "ready" | "in_progress" | "blocked" | "closed";
@@ -94,6 +101,33 @@ export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>
         };
       }),
   };
+}
+
+/** 모든 상태의 decision을 읽습니다. bd supersede는 대체된 쪽에 대체한 이슈를 향하는 supersedes 의존 관계를 남깁니다. */
+export async function decisionRecords(cwd: string): Promise<BdOutcome<DecisionRecord[]>> {
+  const result = await runBdJson(cwd, [...listArgs([]), "--type=decision"]);
+  if (!result.ok) {
+    return result;
+  }
+  const records = Array.isArray(result.value) ? result.value : [];
+  return {
+    ok: true,
+    value: records.flatMap((record) => {
+      const decision = parseIssue(record);
+      return decision ? [{ decision, supersededBy: supersedingIssue(record) }] : [];
+    }),
+  };
+}
+
+function supersedingIssue(record: unknown): string | null {
+  const dependencies =
+    isRecord(record) && Array.isArray(record.dependencies) ? record.dependencies : [];
+  const supersedes = dependencies.find(
+    (dependency) => isRecord(dependency) && dependency.type === "supersedes",
+  );
+  return isRecord(supersedes) && typeof supersedes.depends_on_id === "string"
+    ? supersedes.depends_on_id
+    : null;
 }
 
 // 한 이슈가 여러 열의 조회 결과에 나오면 뒤에 있는 열이 우선합니다.

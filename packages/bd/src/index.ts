@@ -11,6 +11,7 @@ export {
 } from "./issue";
 export {
   boardIssues,
+  decisionRecords,
   epicChildren,
   epicStatuses,
   listIssues,
@@ -20,6 +21,7 @@ export {
   type ChangeFingerprint,
   type BoardColumn,
   type BoardIssue,
+  type DecisionRecord,
   type EpicStatus,
 } from "./queries";
 export {

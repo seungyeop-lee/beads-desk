@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   boardIssues,
+  decisionRecords,
   epicChildren,
   epicStatuses,
   listIssues,
@@ -166,6 +167,46 @@ describe("epicStatuses", () => {
     await useFakeBd({ [listAll]: { stderr: "boom", code: 1 } });
 
     const result = await epicStatuses(workDir);
+
+    expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
+  });
+});
+
+describe("decisionRecords", () => {
+  const listDecisions = "list --json --tree=false --all --limit 0 --type=decision";
+
+  test("모든 상태의 decision을 읽고, 대체된 decision에는 대체한 이슈를 붙인다", async () => {
+    await useFakeBd({
+      [listDecisions]: {
+        stdout: JSON.stringify([
+          { id: "d-2", issue_type: "decision", status: "open" },
+          {
+            id: "d-1",
+            issue_type: "decision",
+            status: "closed",
+            dependencies: [
+              { issue_id: "d-1", depends_on_id: "t-1", type: "blocks" },
+              { issue_id: "d-1", depends_on_id: "d-2", type: "supersedes" },
+            ],
+          },
+        ]),
+      },
+    });
+
+    const result = await decisionRecords(workDir);
+
+    expect(
+      result.ok && result.value.map((record) => [record.decision.id, record.supersededBy]),
+    ).toEqual([
+      ["d-2", null],
+      ["d-1", "d-2"],
+    ]);
+  });
+
+  test("bd가 실패하면 오류를 돌려준다", async () => {
+    await useFakeBd({ [listDecisions]: { stderr: "boom", code: 1 } });
+
+    const result = await decisionRecords(workDir);
 
     expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
   });
