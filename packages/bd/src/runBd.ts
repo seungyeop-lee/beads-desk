@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { constants } from "node:os";
+import { isRecord } from "./issue";
 
 export type BdResult = {
   code: number;
@@ -128,16 +129,26 @@ export async function runBdJson(cwd: string, args: string[]): Promise<BdOutcome<
   }
 }
 
-/** bd를 실행하고, 실패하면 stderr를 오류 메시지로 돌려줍니다. 성공하면 stdout을 돌려줍니다. */
+/** bd를 실행하고, 실패하면 bd가 남긴 실패 이유를 오류 메시지로 돌려줍니다. 성공하면 stdout을 돌려줍니다. */
 export async function runBdChecked(cwd: string, args: string[]): Promise<BdOutcome<string>> {
   const result = await runBd(args, { cwd });
   if (result.code !== 0) {
-    const message = result.stderr.trim()
-      ? result.stderr
-      : `bd가 종료 코드 ${result.code}로 실패했습니다.`;
+    const message =
+      (result.stderr.trim() ? result.stderr : jsonError(result.stdout)) ??
+      `bd가 종료 코드 ${result.code}로 실패했습니다.`;
     return { ok: false, error: { message, exitCode: result.code } };
   }
   return { ok: true, value: result.stdout };
+}
+
+// bd create --json 같은 명령은 실패 이유를 stderr가 아니라 stdout의 {"error": ...}로 출력합니다.
+function jsonError(stdout: string): string | null {
+  try {
+    const output: unknown = JSON.parse(stdout);
+    return isRecord(output) && typeof output.error === "string" ? output.error : null;
+  } catch {
+    return null;
+  }
 }
 
 /** 입력이 잘못되어 bd를 실행하지 않은 오류입니다. */

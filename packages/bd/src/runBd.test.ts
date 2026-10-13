@@ -2,7 +2,7 @@ import { chmod, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { runBd } from "./runBd";
+import { runBd, runBdChecked } from "./runBd";
 
 let workDir: string;
 const originalBdBin = process.env.BD_BIN;
@@ -108,5 +108,31 @@ describe("runBd", () => {
 
     expect([first.code, second.code]).toEqual([1, 1]);
     expect(await readFile(attempts, "utf8")).toBe("attempt\n");
+  });
+});
+
+describe("runBdChecked", () => {
+  test("--json 명령이 stderr 없이 stdout의 error 필드로 실패를 알리면 그 내용을 오류 메시지로 쓴다", async () => {
+    await useFakeBd(
+      `echo '{"error": "validation failed: invalid issue type: nope", "schema_version": 1}'\nexit 1`,
+    );
+
+    const result = await runBdChecked(workDir, ["create", "--json"]);
+
+    expect(result).toEqual({
+      ok: false,
+      error: { message: "validation failed: invalid issue type: nope", exitCode: 1 },
+    });
+  });
+
+  test("실패 이유를 어디서도 찾지 못하면 종료 코드를 알린다", async () => {
+    await useFakeBd("echo not-json\nexit 2");
+
+    const result = await runBdChecked(workDir, ["list"]);
+
+    expect(result).toEqual({
+      ok: false,
+      error: { message: "bd가 종료 코드 2로 실패했습니다.", exitCode: 2 },
+    });
   });
 });
