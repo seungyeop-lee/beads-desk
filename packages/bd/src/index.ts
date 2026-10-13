@@ -1,14 +1,4 @@
-export {
-  ISSUE_STATUSES,
-  parseIssue,
-  parseIssueDetail,
-  parseIssues,
-  type Issue,
-  type IssueComment,
-  type IssueDetail,
-  type IssueLink,
-  type IssueStatus,
-} from "./issue";
+export type { Issue, IssueDetail, IssueStatus } from "./issue";
 export {
   boardIssues,
   decisionRecords,
@@ -19,8 +9,6 @@ export {
   readyIssues,
   showIssue,
   type ChangeFingerprint,
-  type BoardColumn,
-  type BoardIssue,
   type DecisionRecord,
   type EpicStatus,
 } from "./queries";
@@ -34,8 +22,5 @@ export {
   removeLabel,
   setIssueStatus,
   updateIssueFields,
-  type IssueFieldChanges,
-  type NewIssue,
-  type StatusChangeOutcome,
 } from "./mutations";
-export { runBd, type BdError, type BdOutcome, type BdResult, type RunBdOptions } from "./runBd";
+export { runBd, type BdOutcome } from "./runBd";
