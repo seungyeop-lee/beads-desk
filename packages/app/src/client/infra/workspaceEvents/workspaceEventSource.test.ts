@@ -101,7 +101,10 @@ beforeEach(() => {
   vi.stubGlobal("document", fakeDocument);
 });
 
-afterEach(() => {
+afterEach(async () => {
+  // 구독 해제 뒤 연결은 다음 task에 닫히므로, 다음 테스트가 시작되기 전에 정리를 마칩니다.
+  await flush();
+  await flush();
   vi.unstubAllGlobals();
 });
 
@@ -114,6 +117,7 @@ test("invalidate 이벤트를 받으면 구독자에게 알린다", async () => 
   latestSource().emit("open");
   latestSource().emit("invalidate");
   unsubscribe();
+  await flush();
 
   expect(latestSource().url).toBe("/api/events");
   expect(listener).toHaveBeenCalledOnce();
@@ -152,6 +156,29 @@ test("연결을 연 탭이 떠나면 다른 탭이 이어받고, 그 사이 놓�
   expect(firstSource.closed).toBe(true);
   expect(latestSource()).not.toBe(firstSource);
   expect(second).toHaveBeenCalledOnce();
+});
+
+test("구독을 해제하자마자 다시 구독하면 연결을 유지하고 다른 탭에 알리지 않는다", async () => {
+  const subscribe = await openTab();
+  const stopFirst = subscribe(() => {});
+  await flush();
+  const other = vi.fn<() => void>();
+  const stopOther = (await openTab())(other);
+  await flush();
+  latestSource().emit("open");
+
+  // 화면 조건이 바뀌면 React가 같은 시점에 이전 구독을 해제하고 새로 구독합니다.
+  stopFirst();
+  const stopAgain = subscribe(() => {});
+  await flush();
+  await flush();
+  latestSource().emit("open");
+  const sources = FakeEventSource.instances.length;
+  stopAgain();
+  stopOther();
+
+  expect(sources).toBe(1);
+  expect(other).not.toHaveBeenCalled();
 });
 
 test("끊겼다가 다시 연결되면 놓친 변경이 있을 수 있어 구독자에게 알린다", async () => {

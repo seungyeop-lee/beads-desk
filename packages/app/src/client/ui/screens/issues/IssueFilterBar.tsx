@@ -34,7 +34,9 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
           type="button"
           className={`btn btn-sm join-item ${allStatuses ? "btn-active" : ""}`}
           aria-pressed={allStatuses}
-          onClick={() => onFilterChange({ kind: "status", statuses: [] })}
+          onClick={() => {
+            if (!allStatuses) onFilterChange({ kind: "status", statuses: [] });
+          }}
         >
           전체
         </button>

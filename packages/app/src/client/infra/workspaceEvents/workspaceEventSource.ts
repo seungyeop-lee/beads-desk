@@ -19,10 +19,14 @@ let stale = false;
  */
 export function subscribeWorkspaceInvalidation(listener: Listener): () => void {
   listeners.add(listener);
-  if (listeners.size === 1) start();
+  if (!channel) start();
   return () => {
     listeners.delete(listener);
-    if (listeners.size === 0) stop();
+    // 화면 조건이 바뀌면 React가 같은 시점에 구독을 해제했다가 다시 구독합니다. 그때 연결을 닫으면
+    // 다시 여는 연결을 다른 탭에서 이어받은 것으로 보고 모든 탭이 다시 조회하므로, 다음 task까지 기다렸다가 닫습니다.
+    setTimeout(() => {
+      if (listeners.size === 0) stop();
+    }, 0);
   };
 }
 
