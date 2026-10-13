@@ -12,8 +12,10 @@ type Props = {
 /** 댓글은 bd가 보여 주는 대로 일반 글자로 보여 줍니다. Ctrl/Cmd+Enter로 남깁니다. */
 export function CommentList({ comments, disabled, onAdd }: Props) {
   const [draft, setDraft] = useState("");
+  // Ctrl/Cmd+Enter는 비활성화된 버튼을 거치지 않으므로 여기서도 처리 중인지 확인합니다.
   const submit = async () => {
-    if (draft.trim() && (await onAdd(draft))) setDraft("");
+    if (disabled || !draft.trim()) return;
+    if (await onAdd(draft)) setDraft("");
   };
 
   return (
