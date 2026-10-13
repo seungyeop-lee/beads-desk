@@ -1,0 +1,11 @@
+/*
+ * 클래스 탐색은 실행 디렉터리 대신 src에 고정합니다.
+ * daisyUI 기본 테마를 쓰고, 운영체제가 다크 모드이면 dark 테마로 바꿉니다.
+ */
+@import "tailwindcss" source(none);
+@source "../../../..";
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark;
+}
