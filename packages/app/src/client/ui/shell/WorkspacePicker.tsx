@@ -1,4 +1,3 @@
-import { usePathname, useRouter } from "next/navigation";
 import {
   selectWorkspace,
   useWorkspaces,
@@ -8,8 +7,6 @@ import { useSavedValue } from "@/client/ui/issues/fields/useSavedValue";
 /** workspace가 하나면 이름만, 여럿이면 고를 수 있게 보여 줍니다. 이름은 디렉터리 이름이고 전체 경로는 title로 보입니다. */
 export function WorkspacePicker() {
   const { data } = useWorkspaces();
-  const router = useRouter();
-  const pathname = usePathname();
   const [current, show, reset] = useSavedValue(data?.current ?? "");
 
   if (!data) return null;
@@ -33,10 +30,7 @@ export function WorkspacePicker() {
         if (!result.ok) {
           reset();
           window.alert(result.error);
-          return;
         }
-        // 열려 있던 이슈 상세는 이전 workspace의 이슈입니다.
-        router.replace(pathname, { scroll: false });
       }}
     >
       {data.workspaces.map((root) => (
