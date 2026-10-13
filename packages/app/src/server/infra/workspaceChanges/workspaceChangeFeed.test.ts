@@ -56,24 +56,7 @@ async function hashQueryCount(): Promise<number> {
   return log.split("\n").filter((line) => line.includes("DOLT_HASHOF_DB")).length;
 }
 
-test("DB 상태가 바뀌면 구독자에게 한 번 알린다", async () => {
-  let notified = 0;
-  const unsubscribe = subscribeWorkspaceChanges(workDir, () => notified++, {
-    pollIntervalMs: POLL_INTERVAL_MS,
-  });
-
-  // 두 번째 조회가 시작됐다면 첫 조회로 기준값을 읽은 뒤입니다.
-  await waitUntil(async () => (await hashQueryCount()) >= 2);
-  await writeFile(hashFile, "hash-2");
-  await waitUntil(() => notified > 0);
-  const afterChange = await hashQueryCount();
-  await waitUntil(async () => (await hashQueryCount()) >= afterChange + 2);
-  unsubscribe();
-
-  expect(notified).toBe(1);
-});
-
-test("DB 상태가 그대로이면 알리지 않는다", async () => {
+test("처음 기준값을 읽으면 한 번 알리고, 상태가 그대로이면 더 알리지 않는다", async () => {
   let notified = 0;
   const unsubscribe = subscribeWorkspaceChanges(workDir, () => notified++, {
     pollIntervalMs: POLL_INTERVAL_MS,
@@ -82,7 +65,24 @@ test("DB 상태가 그대로이면 알리지 않는다", async () => {
   await waitUntil(async () => (await hashQueryCount()) >= 4);
   unsubscribe();
 
-  expect(notified).toBe(0);
+  expect(notified).toBe(1);
+});
+
+test("DB 상태가 바뀌면 구독자에게 한 번 더 알린다", async () => {
+  let notified = 0;
+  const unsubscribe = subscribeWorkspaceChanges(workDir, () => notified++, {
+    pollIntervalMs: POLL_INTERVAL_MS,
+  });
+
+  // 두 번째 조회가 시작됐다면 첫 조회로 기준값을 읽은 뒤입니다.
+  await waitUntil(async () => (await hashQueryCount()) >= 2);
+  await writeFile(hashFile, "hash-2");
+  await waitUntil(() => notified > 1);
+  const afterChange = await hashQueryCount();
+  await waitUntil(async () => (await hashQueryCount()) >= afterChange + 2);
+  unsubscribe();
+
+  expect(notified).toBe(2);
 });
 
 test("마지막 구독자가 떠나면 조회를 멈춘다", async () => {

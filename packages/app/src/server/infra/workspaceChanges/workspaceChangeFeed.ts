@@ -24,6 +24,9 @@ function feeds(): Map<string, Feed> {
 /**
  * workspace DB에 쓰기가 일어나면 listener를 호출합니다. bd 바깥(CLI 등)에서 일어난 쓰기도 포함합니다.
  * 구독자가 있는 동안에만 DB 상태를 주기적으로 읽고, 마지막 구독자가 떠나면 멈춥니다.
+ *
+ * 처음 구독하면 비교할 기준값을 읽은 뒤에도 한 번 호출합니다. 구독자가 그 전에 조회한 데이터와 기준값 사이에 쓰기가 있었다면
+ * 그 쓰기는 기준값에 포함되어 변경으로 잡히지 않기 때문입니다.
  */
 export function subscribeWorkspaceChanges(
   workspaceRoot: string,
@@ -71,7 +74,7 @@ async function poll(workspaceRoot: string, feed: Feed): Promise<void> {
     }
     const current = await feed.fingerprint();
     if (current === null) return;
-    if (feed.last !== null && current !== feed.last) {
+    if (current !== feed.last) {
       for (const listener of feed.listeners) listener();
     }
     feed.last = current;
