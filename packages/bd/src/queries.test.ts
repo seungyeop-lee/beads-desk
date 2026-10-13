@@ -294,6 +294,7 @@ describe("boardIssues", () => {
     blocked: "blocked --json",
     inProgress: "list --json --tree=false --status in_progress --limit 1000",
     closed: "list --json --tree=false --status closed --limit 1000",
+    blockedStatus: "list --json --tree=false --status blocked --limit 1000",
   };
 
   test("한 이슈가 여러 열에 걸리면 blocked, in_progress, ready, closed 순으로 우선한다", async () => {
@@ -313,6 +314,25 @@ describe("boardIssues", () => {
         ["b", "in_progress"],
         ["c", "ready"],
         ["d", "closed"],
+      ],
+    );
+  });
+
+  test("의존 관계 때문에 막힌 이슈와 함께, 상태를 blocked로 둔 이슈도 blocked 열에 넣는다", async () => {
+    await useFakeBd({
+      [boardArgs.ready]: { stdout: "[]" },
+      [boardArgs.blocked]: { stdout: JSON.stringify([{ id: "a", status: "open" }]) },
+      [boardArgs.inProgress]: { stdout: "[]" },
+      [boardArgs.closed]: { stdout: "[]" },
+      [boardArgs.blockedStatus]: { stdout: JSON.stringify([{ id: "b", status: "blocked" }]) },
+    });
+
+    const result = await boardIssues(workDir);
+
+    expect(result.ok && result.value.map(({ column, issue }) => [issue.id, column]).sort()).toEqual(
+      [
+        ["a", "blocked"],
+        ["b", "blocked"],
       ],
     );
   });

@@ -86,6 +86,8 @@ const BOARD_COLUMNS: { column: BoardColumn; args: string[] }[] = [
   { column: "closed", args: listArgs(["closed"]) },
   { column: "ready", args: ["ready", "--limit", LIST_LIMIT, "--json"] },
   { column: "in_progress", args: listArgs(["in_progress"]) },
+  // bd blocked는 의존 관계 때문에 막힌 이슈만 돌려주고, 상태를 blocked로 둔 이슈는 ready에도 blocked에도 나오지 않습니다.
+  { column: "blocked", args: listArgs(["blocked"]) },
   { column: "blocked", args: ["blocked", "--json"] },
 ];
 
