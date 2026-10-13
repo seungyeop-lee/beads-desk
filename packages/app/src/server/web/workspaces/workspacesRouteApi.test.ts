@@ -15,10 +15,11 @@ async function beadsWorkspace(): Promise<string> {
   return root;
 }
 
-function register(body: unknown): Promise<Response> {
+function register(body: unknown, headers: Record<string, string> = {}): Promise<Response> {
   return handleRegisterWorkspaceRequest(
     new Request("http://localhost/api/workspaces", {
       method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(body),
     }),
   );
@@ -62,6 +63,18 @@ test("beads workspace가 아니거나 본문이 잘못되면 400으로 거부한
   expect(notWorkspace.status).toBe(400);
   expect((await notWorkspace.json()).error).toBe(`beads workspace를 찾지 못했습니다: ${plain}`);
   expect(malformed.status).toBe(400);
+});
+
+test("JSON이 아닌 본문이나 다른 사이트에서 보낸 요청은 등록하지 않는다", async () => {
+  // 다른 사이트의 페이지는 text/plain POST를 사전 확인 없이 보낼 수 있습니다.
+  const plainText = await register({ path: otherRoot }, { "Content-Type": "text/plain" });
+  const crossSite = await register({ path: otherRoot }, { "Sec-Fetch-Site": "cross-site" });
+  const fromCli = await register({ path: otherRoot }, { "Sec-Fetch-Site": "none" });
+
+  expect(plainText.status).toBe(415);
+  expect(crossSite.status).toBe(403);
+  expect(fromCli.status).toBe(200);
+  expect((await fromCli.json()).data.workspaces).toEqual([launchRoot, otherRoot]);
 });
 
 test("화면에서는 등록한 workspace로만 바꿀 수 있다", async () => {
