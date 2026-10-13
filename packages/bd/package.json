@@ -1,0 +1,14 @@
+{
+  "name": "@beads-desk/bd",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@typescript/native": "npm:typescript@^7.0.2"
+  }
+}
