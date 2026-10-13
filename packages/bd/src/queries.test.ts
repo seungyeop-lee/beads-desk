@@ -61,6 +61,18 @@ describe("listIssues", () => {
     ]);
   });
 
+  test("상태를 지정하지 않으면 모든 저장 상태의 이슈를 조회한다", async () => {
+    await useFakeBd({
+      "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 1000": {
+        stdout: "[]",
+      },
+    });
+
+    const result = await listIssues(workDir, []);
+
+    expect(result).toEqual({ ok: true, value: [] });
+  });
+
   test("bd가 실패하면 stderr와 종료 코드를 담은 오류를 돌려준다", async () => {
     await useFakeBd({
       "list --json --tree=false --status open --limit 1000": { stderr: "boom", code: 2 },
@@ -137,6 +149,17 @@ describe("epicChildren", () => {
     const result = await epicChildren(workDir, "demo-8g0");
 
     expect(result.ok && result.value.map((issue) => issue.id)).toEqual(["demo-8g0.1"]);
+  });
+
+  test("epic id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
+    await useFakeBd({});
+
+    const result = await epicChildren(workDir, "  ");
+
+    expect(result).toEqual({
+      ok: false,
+      error: { message: "epic id가 비어 있습니다.", exitCode: null },
+    });
   });
 });
 

@@ -4,9 +4,12 @@ import { runBd } from "./runBd";
 /** `bd list --status`가 받는 저장 상태입니다. */
 export type IssueStatus = "open" | "in_progress" | "blocked" | "deferred" | "closed";
 
+const ALL_STATUSES: IssueStatus[] = ["open", "in_progress", "blocked", "deferred", "closed"];
+
 export type BdError = {
   message: string;
-  exitCode: number;
+  /** 입력이 잘못되어 bd를 실행하지 않았으면 null입니다. */
+  exitCode: number | null;
 };
 
 export type BdQueryResult<T> = { ok: true; value: T } | { ok: false; error: BdError };
@@ -36,8 +39,13 @@ export function readyIssues(cwd: string): Promise<BdQueryResult<Issue[]>> {
   return queryIssues(cwd, ["ready", "--limit", LIST_LIMIT, "--json"]);
 }
 
-export function epicChildren(cwd: string, epicId: string): Promise<BdQueryResult<Issue[]>> {
-  return queryIssues(cwd, ["children", epicId, "--json"]);
+export async function epicChildren(cwd: string, epicId: string): Promise<BdQueryResult<Issue[]>> {
+  const id = epicId.trim();
+  // bd children은 빈 id를 parent 조건 없음으로 해석해 workspace의 모든 이슈를 돌려줍니다.
+  if (id.length === 0) {
+    return { ok: false, error: { message: "epic id가 비어 있습니다.", exitCode: null } };
+  }
+  return queryIssues(cwd, ["children", id, "--json"]);
 }
 
 export async function epicStatuses(cwd: string): Promise<BdQueryResult<EpicStatus[]>> {
@@ -78,8 +86,10 @@ export async function boardIssues(cwd: string): Promise<BdQueryResult<BoardIssue
   return { ok: true, value: [...byId.values()] };
 }
 
+// bd list는 빈 --status를 기본 필터(closed 제외)로 해석하므로, 상태를 지정하지 않으면 모든 상태를 넘깁니다.
 function listArgs(statuses: IssueStatus[]): string[] {
-  return ["list", "--json", "--tree=false", "--status", statuses.join(","), "--limit", LIST_LIMIT];
+  const status = (statuses.length > 0 ? statuses : ALL_STATUSES).join(",");
+  return ["list", "--json", "--tree=false", "--status", status, "--limit", LIST_LIMIT];
 }
 
 async function queryIssues(cwd: string, args: string[]): Promise<BdQueryResult<Issue[]>> {
