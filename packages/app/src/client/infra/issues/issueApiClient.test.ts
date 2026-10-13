@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { readIssueList } from "./issueListClient";
+import { readIssueDetail, readIssueList } from "./issueApiClient";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -48,4 +48,13 @@ test("응답 형식이 맞지 않으면 실패 결과를 돌려준다", async ()
     ok: false,
     error: "서버 응답을 해석하지 못했습니다.",
   });
+});
+
+test("이슈 상세는 id를 경로에 넣어 요청한다", async () => {
+  const fetchMock = vi.fn<typeof fetch>(async () => Response.json({ ok: true, data: {} }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  await readIssueDetail("demo-1/x");
+
+  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues/demo-1%2Fx");
 });

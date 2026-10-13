@@ -1,24 +1,31 @@
-import type { Issue } from "@beads-desk/bd/issue";
+import type { Issue, IssueDetail } from "@beads-desk/bd/issue";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
+import { issueDetailPath } from "@/shared/contract/issueDetail";
 import {
   ISSUE_LIST_PATH,
   issueListSearchParams,
   type IssueListFilter,
 } from "@/shared/contract/issueList";
 
-export async function readIssueList(filter: IssueListFilter): Promise<ApiResponse<Issue[]>> {
+export function readIssueList(filter: IssueListFilter): Promise<ApiResponse<Issue[]>> {
   const query = issueListSearchParams(filter).toString();
+  return readApi(query ? `${ISSUE_LIST_PATH}?${query}` : ISSUE_LIST_PATH);
+}
+
+export function readIssueDetail(issueId: string): Promise<ApiResponse<IssueDetail>> {
+  return readApi(issueDetailPath(issueId));
+}
+
+async function readApi<T>(path: string): Promise<ApiResponse<T>> {
   let response: Response;
   try {
-    response = await fetch(query ? `${ISSUE_LIST_PATH}?${query}` : ISSUE_LIST_PATH, {
-      cache: "no-store",
-    });
+    response = await fetch(path, { cache: "no-store" });
   } catch {
     return { ok: false, error: "beads-desk 서버에 연결하지 못했습니다." };
   }
   try {
     const body: unknown = await response.json();
-    if (isApiResponse(body)) return body as ApiResponse<Issue[]>;
+    if (isApiResponse(body)) return body as ApiResponse<T>;
   } catch {
     // 아래의 형식 오류로 처리합니다.
   }

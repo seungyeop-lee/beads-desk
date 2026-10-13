@@ -1,5 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { readIssueList } from "@/client/infra/issues/issueListClient";
+import { readIssueList } from "@/client/infra/issues/issueApiClient";
 import {
   useWorkspaceRead,
   type WorkspaceReadState,

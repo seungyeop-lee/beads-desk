@@ -1,7 +1,13 @@
 import type { Issue, IssueStatus } from "@beads-desk/bd/issue";
+import Link from "next/link";
 import { priorityLabel, STATUS_BADGES, STATUS_LABELS, TYPE_LABELS } from "./issueLabels";
 
-export function IssueTable({ issues }: { issues: Issue[] }) {
+type Props = {
+  issues: Issue[];
+  issueHref: (issueId: string) => string;
+};
+
+export function IssueTable({ issues, issueHref }: Props) {
   if (issues.length === 0) {
     return <p className="py-10 text-center text-base-content/60">조건에 맞는 이슈가 없습니다.</p>;
   }
@@ -21,7 +27,7 @@ export function IssueTable({ issues }: { issues: Issue[] }) {
         </thead>
         <tbody>
           {issues.map((issue) => (
-            <IssueRow key={issue.id} issue={issue} />
+            <IssueRow key={issue.id} issue={issue} href={issueHref(issue.id)} />
           ))}
         </tbody>
       </table>
@@ -29,13 +35,17 @@ export function IssueTable({ issues }: { issues: Issue[] }) {
   );
 }
 
-function IssueRow({ issue }: { issue: Issue }) {
+function IssueRow({ issue, href }: { issue: Issue; href: string }) {
   const status = issue.status as IssueStatus;
   return (
     <tr className="hover:bg-base-200">
       <td className="font-mono text-xs">{issue.id}</td>
       <td>{TYPE_LABELS[issue.issueType] ?? issue.issueType}</td>
-      <td>{issue.title}</td>
+      <td>
+        <Link className="link link-hover" href={href} scroll={false}>
+          {issue.title || "(제목 없음)"}
+        </Link>
+      </td>
       <td>
         <span className={`badge badge-sm ${STATUS_BADGES[status] ?? "badge-ghost"}`}>
           {STATUS_LABELS[status] ?? issue.status}
