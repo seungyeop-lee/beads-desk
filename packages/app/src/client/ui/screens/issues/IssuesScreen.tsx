@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import {
@@ -17,7 +17,12 @@ export function IssuesScreen() {
   const [filter, setFilter] = useState<IssueListFilter>({ kind: "status", statuses: [] });
   const [refinement, setRefinement] = useState<IssueListRefinement>({ types: [], search: "" });
   const { data: issues, error, loading } = useIssueList(filter);
-  const shown = issues ? visibleIssues(issues, filter, refinement) : [];
+  // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
+  const deferredRefinement = useDeferredValue(refinement);
+  const shown = useMemo(
+    () => (issues ? visibleIssues(issues, filter, deferredRefinement) : []),
+    [issues, filter, deferredRefinement],
+  );
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
 

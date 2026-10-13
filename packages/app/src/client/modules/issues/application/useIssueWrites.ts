@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 
 export type IssueWrites = {
@@ -38,5 +38,10 @@ export function useIssueWrites(): IssueWrites {
     return result;
   }, []);
 
-  return { pending: pending > 0, error, dismissError: useCallback(() => setError(null), []), run };
+  const dismissError = useCallback(() => setError(null), []);
+  // 값이 바뀔 때만 새 객체를 돌려줘, 이 객체를 받는 memo component가 다시 그려지지 않게 합니다.
+  return useMemo(
+    () => ({ pending: pending > 0, error, dismissError, run }),
+    [pending, error, dismissError, run],
+  );
 }

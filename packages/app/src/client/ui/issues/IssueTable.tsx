@@ -1,5 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
+import { memo } from "react";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { confirmForceClose } from "./fields/confirmForceClose";
@@ -16,7 +17,7 @@ type Props = {
 };
 
 /** 제목을 누르면 상세를 열고, 연필 버튼으로 제목을 고칩니다. 상태, 담당자, 우선순위는 표에서 바로 고칩니다. */
-export function IssueTable({
+export const IssueTable = memo(function IssueTable({
   issues,
   issueHref,
   writes,
@@ -47,7 +48,7 @@ export function IssueTable({
       </table>
     </div>
   );
-}
+});
 
 function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes: IssueWrites }) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
