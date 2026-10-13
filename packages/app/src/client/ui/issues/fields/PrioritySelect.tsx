@@ -1,21 +1,21 @@
-import { PRIORITIES, priorityLabel } from "../issueLabels";
+import { PRIORITIES, priorityLabel, priorityTone } from "../issueLabels";
 import { useSavedValue } from "./useSavedValue";
 
 type Props = {
   value: number | null;
-  className: string;
   id?: string;
   "aria-label"?: string;
   /** 바꾸는 데 성공하면 true를 돌려줍니다. 실패하면 원래 값으로 되돌립니다. */
   onChange: (priority: number) => Promise<boolean>;
 };
 
-export function PrioritySelect({ value, className, onChange, ...attributes }: Props) {
+/** 우선순위 색의 chip 모양으로 그린 select입니다. */
+export function PrioritySelect({ value, onChange, ...attributes }: Props) {
   const [shown, show, reset] = useSavedValue(value);
   return (
     <select
       {...attributes}
-      className={`select ${className}`}
+      className={`chip ${priorityTone(shown)}`}
       value={shown ?? ""}
       onChange={async (event) => {
         const next = Number(event.target.value);

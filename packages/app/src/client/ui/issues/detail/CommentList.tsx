@@ -1,6 +1,6 @@
 import type { IssueComment } from "@beads-desk/bd/issue";
 import { useState } from "react";
-import { formatTime } from "../issueLabels";
+import { formatTime, nameTone } from "../issueLabels";
 
 type Props = {
   comments: IssueComment[];
@@ -20,16 +20,29 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h3 className="font-semibold">댓글 {comments.length > 0 && comments.length}</h3>
+      <h3 className="caption">
+        댓글 {comments.length > 0 && <span className="font-mono">{comments.length}</span>}
+      </h3>
       {comments.map((comment) => (
-        <article key={comment.id} className="rounded-box bg-base-200 p-3 text-sm">
-          <header className="mb-1 flex gap-2 text-xs text-base-content/60">
-            <span className="font-semibold">{comment.author}</span>
-            <time dateTime={new Date(comment.createdAt).toISOString()}>
-              {formatTime(comment.createdAt)}
-            </time>
-          </header>
-          <p className="whitespace-pre-wrap break-words">{comment.text}</p>
+        <article key={comment.id} className="flex gap-3 text-sm">
+          <span
+            className={`tone-fill grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold ${nameTone(comment.author)}`}
+            aria-hidden="true"
+          >
+            {comment.author.slice(0, 1).toUpperCase()}
+          </span>
+          <div className="flex min-w-0 grow flex-col gap-1">
+            <header className="flex items-baseline gap-2 text-xs">
+              <span className="font-semibold">{comment.author}</span>
+              <time
+                className="text-base-content/50"
+                dateTime={new Date(comment.createdAt).toISOString()}
+              >
+                {formatTime(comment.createdAt)}
+              </time>
+            </header>
+            <p className="break-words whitespace-pre-wrap">{comment.text}</p>
+          </div>
         </article>
       ))}
       <form
@@ -52,9 +65,16 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
             }
           }}
         />
-        <button type="submit" className="btn btn-sm self-end" disabled={disabled || !draft.trim()}>
-          댓글 남기기
-        </button>
+        <div className="flex items-center justify-end gap-3">
+          <span className="text-xs text-base-content/40">Ctrl/⌘ + Enter</span>
+          <button
+            type="submit"
+            className="btn btn-sm btn-primary"
+            disabled={disabled || !draft.trim()}
+          >
+            댓글 남기기
+          </button>
+        </div>
       </form>
     </section>
   );

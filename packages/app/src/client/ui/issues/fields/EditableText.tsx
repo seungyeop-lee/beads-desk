@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CheckIcon, CloseIcon } from "@/client/ui/designSystem/icons";
 import { focusOnMount, useInlineEdit } from "./useInlineEdit";
 
 type Props = {
@@ -27,7 +28,6 @@ export function EditableText({
   renderValue,
   onSave,
 }: Props) {
-  const size = compact ? "xs" : "sm";
   const { shown, draft, saving, edit, change, cancel, save } = useInlineEdit(
     value,
     onSave,
@@ -40,7 +40,7 @@ export function EditableText({
       <button
         type="button"
         title={`${label} 고치기`}
-        className={`-mx-1 cursor-text rounded px-1 text-left hover:bg-base-200 ${className}`}
+        className={`-mx-1.5 cursor-text rounded-md px-1.5 text-left hover:bg-base-content/6 ${className}`}
         onClick={edit}
       >
         {shown || <span className="text-base-content/50">{placeholder}</span>}
@@ -57,7 +57,7 @@ export function EditableText({
     >
       <input
         ref={focusOnMount}
-        className={`input input-${size} grow`}
+        className={`input ${compact ? "input-xs" : "input-sm"} grow`}
         aria-label={label}
         value={draft}
         disabled={saving}
@@ -69,17 +69,36 @@ export function EditableText({
           }
         }}
       />
-      <button type="submit" className={`btn btn-${size} btn-primary`} disabled={saving}>
-        저장
-      </button>
-      <button
-        type="button"
-        className={`btn btn-${size} btn-ghost`}
-        disabled={saving}
-        onClick={cancel}
-      >
-        취소
-      </button>
+      {compact ? (
+        <>
+          <button
+            type="submit"
+            className="btn btn-xs btn-square btn-primary"
+            aria-label="저장"
+            disabled={saving}
+          >
+            <CheckIcon width={14} height={14} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-xs btn-square btn-ghost"
+            aria-label="취소"
+            disabled={saving}
+            onClick={cancel}
+          >
+            <CloseIcon width={14} height={14} />
+          </button>
+        </>
+      ) : (
+        <>
+          <button type="submit" className="btn btn-sm btn-primary" disabled={saving}>
+            저장
+          </button>
+          <button type="button" className="btn btn-sm btn-ghost" disabled={saving} onClick={cancel}>
+            취소
+          </button>
+        </>
+      )}
     </form>
   );
 }

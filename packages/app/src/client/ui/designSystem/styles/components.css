@@ -1,0 +1,234 @@
+/*
+ * 여러 화면이 같은 의미로 쓰는 시각 요소입니다.
+ * components layer에 두어, 화면에서 Tailwind utility로 크기나 여백을 덮을 수 있게 합니다.
+ */
+
+@layer components {
+  /*
+   * tone-*은 파스텔 하나를 고르고, chip·tone-dot·tone-fill이 그 색을 씁니다.
+   * 라이트 모드는 파스텔 바탕에 잉크 글자, 다크 모드는 옅게 비친 바탕에 파스텔 글자로 그립니다.
+   */
+  /* 색이 없는 값입니다. 물들인 면 안에서도 그 면의 tone을 물려받지 않고 회색으로 보입니다. */
+  .tone-none {
+    --tone: initial;
+  }
+  .tone-coral {
+    --tone: var(--color-coral);
+  }
+  .tone-peach {
+    --tone: var(--color-peach);
+  }
+  .tone-sand {
+    --tone: var(--color-sand);
+  }
+  .tone-pear {
+    --tone: var(--color-pear);
+  }
+  .tone-sage {
+    --tone: var(--color-sage);
+  }
+  .tone-mint {
+    --tone: var(--color-mint);
+  }
+  .tone-aqua {
+    --tone: var(--color-aqua);
+  }
+  .tone-sky {
+    --tone: var(--color-sky);
+  }
+  .tone-azure {
+    --tone: var(--color-azure);
+  }
+  .tone-lavender {
+    --tone: var(--color-lavender);
+  }
+  .tone-lilac {
+    --tone: var(--color-lilac);
+  }
+  .tone-blossom {
+    --tone: var(--color-blossom);
+  }
+
+  .chip,
+  .tone-fill {
+    background-color: light-dark(
+      var(--tone, #e7e5e4),
+      color-mix(in oklab, var(--tone, #d6d3d1) 16%, #0000)
+    );
+    color: light-dark(var(--color-ink), var(--tone, #d6d3d1));
+  }
+
+  /* 보드 열처럼 넓은 면을 옅게 물들입니다. */
+  .tone-wash {
+    background-color: light-dark(
+      color-mix(in oklab, var(--tone) 22%, var(--color-base-100)),
+      color-mix(in oklab, var(--tone) 6%, #0000)
+    );
+  }
+
+  .chip {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.5rem;
+    padding-inline: 0.625rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .tone-dot {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background-color: var(--tone, #d6d3d1);
+    box-shadow: inset 0 0 0 1px light-dark(rgb(28 25 23 / 0.12), #0000);
+  }
+
+  /* 화살표를 글자색으로 그리는 select입니다. chip이나 ghost-select와 함께 씁니다. */
+  select.chip,
+  .ghost-select {
+    appearance: none;
+    cursor: pointer;
+    padding-right: 1.5rem;
+    background-image:
+      linear-gradient(45deg, #0000 50%, color-mix(in oklab, currentColor 55%, #0000) 50%),
+      linear-gradient(135deg, color-mix(in oklab, currentColor 55%, #0000) 50%, #0000 50%);
+    background-position:
+      calc(100% - 0.75rem) 55%,
+      calc(100% - 0.75rem + 3px) 55%;
+    background-size: 3px 3px;
+    background-repeat: no-repeat;
+  }
+
+  select.chip:hover,
+  select.chip:focus {
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, currentColor 30%, #0000);
+  }
+
+  select.chip:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  .ghost-select {
+    height: 2rem;
+    padding-left: 0.625rem;
+    border-radius: var(--radius-field);
+    background-color: #0000;
+    font-size: 0.875rem;
+  }
+
+  .ghost-select:hover,
+  .ghost-select:focus {
+    background-color: color-mix(in oklab, var(--color-base-content) 6%, #0000);
+  }
+
+  /* 목록과 표를 담는 판입니다. */
+  .surface {
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background-color: var(--color-base-100);
+  }
+
+  /* 상단 화면 이동 탭입니다. 지금 화면의 탭은 그 화면의 tone으로 칠합니다. */
+  .nav-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding-inline: 0.875rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: color-mix(in oklab, var(--color-base-content) 60%, #0000);
+    transition: background-color 120ms ease;
+  }
+
+  .nav-tab:hover {
+    background-color: color-mix(in oklab, var(--color-base-content) 6%, #0000);
+    color: var(--color-base-content);
+  }
+
+  .nav-tab[aria-current="page"] {
+    background-color: light-dark(var(--tone), color-mix(in oklab, var(--tone) 16%, #0000));
+    color: light-dark(var(--color-ink), var(--tone));
+    font-weight: 700;
+  }
+
+  /* 상태처럼 여러 값을 켜고 끄는 단추 묶음입니다. 켜진 단추는 aria-pressed로 표시합니다. */
+  .segmented {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.125rem;
+    padding: 0.1875rem;
+    border-radius: 999px;
+    background-color: color-mix(in oklab, var(--color-base-content) 6%, #0000);
+  }
+
+  .segmented > button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    height: 1.875rem;
+    padding-inline: 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: color-mix(in oklab, var(--color-base-content) 65%, #0000);
+    cursor: pointer;
+  }
+
+  .segmented > button:hover {
+    color: var(--color-base-content);
+  }
+
+  .segmented > button[aria-pressed="true"] {
+    background-color: var(--color-base-100);
+    color: var(--color-base-content);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgb(28 25 23 / 0.08);
+  }
+
+  /* 표 머리글과 속성 이름처럼 값 위나 옆에 붙는 작은 이름입니다. */
+  .caption {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: color-mix(in oklab, var(--color-base-content) 50%, #0000);
+  }
+}
+
+/* daisyUI 규칙은 layer 안에 있으므로, 아래 override는 layer 밖에 둡니다. */
+.table :where(thead tr) {
+  border-bottom-color: var(--color-base-300);
+}
+
+.table :where(th) {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: color-mix(in oklab, var(--color-base-content) 50%, #0000);
+}
+
+.table :where(tbody tr:not(:last-child)) {
+  border-bottom-color: color-mix(in oklab, var(--color-base-300) 70%, #0000);
+}
+
+.modal-backdrop {
+  background-color: rgb(28 25 23 / 0.4);
+}
+
+.modal-box {
+  border: 1px solid var(--color-base-300);
+  box-shadow: 0 24px 48px -12px rgb(28 25 23 / 0.25);
+}
+
+.btn {
+  font-weight: 600;
+}

@@ -1,3 +1,4 @@
+import { PencilIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { Markdown } from "@/client/ui/designSystem/Markdown";
 import { focusOnMount, useInlineEdit } from "../fields/useInlineEdit";
 
@@ -8,26 +9,44 @@ type Props = {
   onSave: (value: string) => Promise<boolean>;
 };
 
-/** markdown으로 보여 주다가 편집을 누르면 textarea로 바뀌는 본문입니다. Ctrl/Cmd+Enter로 저장하고 Escape로 취소합니다. */
+/**
+ * markdown으로 보여 주다가 편집을 누르면 textarea로 바뀌는 본문입니다. Ctrl/Cmd+Enter로 저장하고 Escape로 취소합니다.
+ * 비어 있으면 작은 추가 단추만 보이므로, 부모가 flex-wrap으로 늘어놓으면 빈 본문들의 단추가 한 줄에 모입니다.
+ */
 export function EditableMarkdown({ label, value, onSave }: Props) {
   const { shown, draft, saving, edit, change, cancel, save } = useInlineEdit(value, onSave);
 
+  if (draft === null && !shown) {
+    return (
+      <button
+        type="button"
+        className="btn btn-sm gap-1.5 rounded-full border-dashed border-base-300 bg-transparent font-medium text-base-content/55 shadow-none hover:border-base-content/30 hover:text-base-content"
+        aria-label={`${label} 추가`}
+        onClick={edit}
+      >
+        <PlusIcon width={14} height={14} />
+        {label}
+      </button>
+    );
+  }
+
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <h3 className="font-semibold">{label}</h3>
+    <section className="group flex w-full flex-col gap-2">
+      <div className="flex h-6 items-center gap-2">
+        <h3 className="caption">{label}</h3>
         {draft === null && (
-          <button type="button" className="btn btn-ghost btn-xs" onClick={edit}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs gap-1 text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
+            onClick={edit}
+          >
+            <PencilIcon width={12} height={12} />
             편집
           </button>
         )}
       </div>
       {draft === null ? (
-        shown ? (
-          <Markdown text={shown} />
-        ) : (
-          <p className="text-sm text-base-content/50">비어 있음</p>
-        )
+        <Markdown text={shown} />
       ) : (
         <form
           className="flex flex-col gap-2"

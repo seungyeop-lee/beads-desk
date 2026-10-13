@@ -4,7 +4,15 @@ import {
   type IssueListRefinement,
 } from "@/client/modules/issues/domain/issueListView";
 import type { IssueListFilter } from "@/shared/contract/issueList";
-import { READY_LABEL, STATUS_LABELS, TYPE_LABELS } from "@/client/ui/issues/issueLabels";
+import { ChevronDownIcon, SearchIcon } from "@/client/ui/designSystem/icons";
+import {
+  READY_LABEL,
+  READY_TONE,
+  STATUS_LABELS,
+  statusTone,
+  TYPE_LABELS,
+  typeTone,
+} from "@/client/ui/issues/issueLabels";
 
 type Props = {
   filter: IssueListFilter;
@@ -27,12 +35,11 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
     });
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <fieldset className="join">
+    <div className="flex flex-wrap items-center gap-3">
+      <fieldset className="segmented">
         <legend className="sr-only">상태</legend>
         <button
           type="button"
-          className={`btn btn-sm join-item ${allStatuses ? "btn-active" : ""}`}
           aria-pressed={allStatuses}
           onClick={() => {
             if (!allStatuses) onFilterChange({ kind: "status", statuses: [] });
@@ -42,39 +49,44 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
         </button>
         <button
           type="button"
-          className={`btn btn-sm join-item ${filter.kind === "ready" ? "btn-active" : ""}`}
           aria-pressed={filter.kind === "ready"}
           onClick={() => onFilterChange(toggleStatusFilter(filter, "ready"))}
         >
+          <span className={`tone-dot ${READY_TONE}`} />
           {READY_LABEL}
         </button>
         {ISSUE_STATUSES.map((status) => (
           <button
             key={status}
             type="button"
-            className={`btn btn-sm join-item ${isSelected(status) ? "btn-active" : ""}`}
             aria-pressed={isSelected(status)}
             onClick={() => onFilterChange(toggleStatusFilter(filter, status))}
           >
+            <span className={`tone-dot ${statusTone(status)}`} />
             {STATUS_LABELS[status]}
           </button>
         ))}
       </fieldset>
 
       <details className="dropdown">
-        <summary className="btn btn-sm">
-          {refinement.types.length === 0 ? "유형: 전체" : `유형 ${refinement.types.length}개`}
+        <summary className="btn btn-sm btn-ghost gap-1.5 rounded-full font-medium">
+          유형
+          <span className="text-base-content/50">
+            {refinement.types.length === 0 ? "전체" : `${refinement.types.length}개`}
+          </span>
+          <ChevronDownIcon width={14} height={14} className="text-base-content/50" />
         </summary>
-        <ul className="menu dropdown-content z-10 w-40 rounded-box bg-base-100 p-2 shadow">
+        <ul className="dropdown-content menu z-10 mt-1 w-44 rounded-box border border-base-300 bg-base-100 p-1.5 shadow-lg">
           {Object.entries(TYPE_LABELS).map(([type, label]) => (
             <li key={type}>
-              <label className="label cursor-pointer justify-start gap-2">
+              <label className="flex cursor-pointer items-center gap-2.5">
                 <input
                   type="checkbox"
-                  className="checkbox checkbox-sm"
+                  className="checkbox checkbox-xs rounded"
                   checked={refinement.types.includes(type)}
                   onChange={() => toggleType(type)}
                 />
+                <span className={`tone-dot ${typeTone(type)}`} />
                 {label}
               </label>
             </li>
@@ -82,14 +94,17 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
         </ul>
       </details>
 
-      <input
-        type="search"
-        className="input input-sm w-56"
-        placeholder="id 또는 제목 검색"
-        aria-label="검색"
-        value={refinement.search}
-        onChange={(event) => onRefinementChange({ ...refinement, search: event.target.value })}
-      />
+      <label className="input input-sm ml-auto w-64 rounded-full">
+        <SearchIcon width={15} height={15} className="text-base-content/40" />
+        <input
+          type="search"
+          className="grow"
+          placeholder="id 또는 제목 검색"
+          aria-label="검색"
+          value={refinement.search}
+          onChange={(event) => onRefinementChange({ ...refinement, search: event.target.value })}
+        />
+      </label>
     </div>
   );
 }

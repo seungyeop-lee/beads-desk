@@ -1,6 +1,5 @@
 "use client";
 
-import type { IssueStatus } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useState } from "react";
 import { useEpicChildren, useEpics } from "@/client/modules/epics/application/useEpics";
@@ -11,10 +10,14 @@ import {
 } from "@/client/modules/issues/application/useIssueWrites";
 import { byStatusGroup } from "@/client/modules/issues/domain/issueListView";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import { STATUS_BADGES, STATUS_LABELS } from "@/client/ui/issues/issueLabels";
+import { statusLabel, statusTone } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
+import { EmptyState } from "@/client/ui/designSystem/EmptyState";
+import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
+import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
+import { screenTone } from "@/client/ui/shell/screenTabs";
 
 /**
  * epic마다 하위 이슈 진행률을 보여 주고, 펼친 epic은 하위 이슈를 목록처럼 바로 고칠 수 있게 보여 줍니다.
@@ -37,14 +40,13 @@ export function EpicsScreen() {
   };
 
   return (
-    <main className="mx-auto flex max-w-7xl flex-col gap-4 p-6">
-      <header className="flex items-baseline gap-3">
-        <h1 className="text-xl font-bold">에픽</h1>
-        {epics && <span className="text-sm text-base-content/60">{epics.length}개</span>}
-        {(loading || writes.pending) && (
-          <span className="loading loading-spinner loading-xs" aria-label="불러오는 중" />
-        )}
-      </header>
+    <main className="mx-auto flex max-w-[96rem] flex-col gap-3 px-8 pb-16">
+      <ScreenHeader
+        title="에픽"
+        tone={screenTone("/epics")}
+        count={epics?.length}
+        loading={loading || writes.pending}
+      />
 
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
@@ -52,9 +54,7 @@ export function EpicsScreen() {
         </div>
       )}
       <WriteErrorAlert writes={writes} />
-      {epics?.length === 0 && (
-        <p className="py-10 text-center text-base-content/60">에픽이 없습니다.</p>
-      )}
+      {epics?.length === 0 && <EmptyState message="에픽이 없습니다." />}
 
       {epics?.map((summary) => (
         <EpicSection
@@ -82,38 +82,36 @@ type SectionProps = {
 
 function EpicSection({ summary, expanded, onToggle, issueHref, writes }: SectionProps) {
   const { epic, totalChildren, closedChildren } = summary;
-  const status = epic.status as IssueStatus;
+  const percent = totalChildren === 0 ? 0 : Math.round((closedChildren / totalChildren) * 100);
   return (
-    <section className="rounded-box border border-base-300 bg-base-100">
-      <header className="flex items-center gap-3 p-3">
+    <section className="surface">
+      <header className="flex items-center gap-4 py-3.5 pr-5 pl-3">
         <button
           type="button"
-          className="btn btn-ghost btn-xs"
+          className="btn btn-ghost btn-sm btn-square text-base-content/50"
           aria-expanded={expanded}
           aria-label={`${epic.id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`}
           onClick={onToggle}
         >
-          {expanded ? "▼" : "▶"}
+          <ChevronRightIcon className={`transition-transform ${expanded ? "rotate-90" : ""}`} />
         </button>
-        <span className="font-mono text-xs text-base-content/60">{epic.id}</span>
+        <span className="w-20 shrink-0 font-mono text-xs text-base-content/55">{epic.id}</span>
         <Link
-          className="link link-hover min-w-0 grow truncate font-semibold"
+          className="min-w-0 grow truncate text-[15px] font-semibold decoration-base-content/30 underline-offset-4 hover:underline"
           href={issueHref(epic.id)}
           scroll={false}
         >
           {epic.title || "(제목 없음)"}
         </Link>
-        <span className={`badge badge-sm ${STATUS_BADGES[status] ?? "badge-ghost"}`}>
-          {STATUS_LABELS[status] ?? epic.status}
-        </span>
+        <span className={`chip ${statusTone(epic.status)}`}>{statusLabel(epic.status)}</span>
         <progress
-          className="progress progress-success w-32"
+          className="progress h-1.5 w-40 shrink-0 text-[color-mix(in_oklab,var(--color-sage),#3f6212_25%)]"
           value={closedChildren}
           max={Math.max(totalChildren, 1)}
           aria-label={`${epic.id} 진행률`}
         />
-        <span className="w-14 text-right text-sm tabular-nums text-base-content/60">
-          {closedChildren}/{totalChildren}
+        <span className="w-20 shrink-0 text-right font-mono text-xs text-base-content/55 tabular-nums">
+          {closedChildren}/{totalChildren} · {percent}%
         </span>
       </header>
       {expanded && <EpicChildren epicId={epic.id} issueHref={issueHref} writes={writes} />}
@@ -132,7 +130,7 @@ function EpicChildren({
 }) {
   const { data: children, error } = useEpicChildren(epicId);
   return (
-    <div className="border-t border-base-300 p-3">
+    <div className="border-t border-base-300 bg-base-200/40 p-4">
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
           <span>하위 이슈를 불러오지 못했습니다: {error}</span>

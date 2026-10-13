@@ -12,6 +12,8 @@ import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRo
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { IssueFilterBar } from "./IssueFilterBar";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
+import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
+import { screenTone } from "@/client/ui/shell/screenTabs";
 
 /** 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다. */
 export function IssuesScreen() {
@@ -28,14 +30,13 @@ export function IssuesScreen() {
   const issueHref = useIssueHref();
 
   return (
-    <main className="mx-auto flex max-w-7xl flex-col gap-4 p-6">
-      <header className="flex items-baseline gap-3">
-        <h1 className="text-xl font-bold">이슈</h1>
-        {issues && <span className="text-sm text-base-content/60">{shown.length}개</span>}
-        {loading && (
-          <span className="loading loading-spinner loading-xs" aria-label="불러오는 중" />
-        )}
-      </header>
+    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
+      <ScreenHeader
+        title="이슈"
+        tone={screenTone("/issues")}
+        count={issues ? shown.length : undefined}
+        loading={loading}
+      />
 
       <IssueFilterBar
         filter={filter}

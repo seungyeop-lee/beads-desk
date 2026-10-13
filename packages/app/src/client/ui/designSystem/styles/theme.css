@@ -1,0 +1,107 @@
+/*
+ * daisyUI 테마와 Tailwind 디자인 토큰입니다. 컴포넌트 규칙은 components.css에 둡니다.
+ * 미색 종이 바탕과 흑갈색 잉크를 기본으로 하고, 운영체제가 다크 모드이면 desk-dark로 바꿉니다.
+ * 주요 행동 단추는 잉크 색으로 칠하고, 색은 상태·우선순위·유형·화면을 구분하는 파스텔에만 씁니다.
+ */
+@plugin "daisyui" {
+  themes: false;
+}
+
+@plugin "daisyui/theme" {
+  name: "desk";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #fffdf9;
+  --color-base-200: #f6f4ef;
+  --color-base-300: #e6e1d8;
+  --color-base-content: #1c1917;
+  --color-primary: #1c1917;
+  --color-primary-content: #fffdf9;
+  --color-secondary: #d3d3fd;
+  --color-secondary-content: #1c1917;
+  --color-accent: #a7f3d1;
+  --color-accent-content: #1c1917;
+  --color-neutral: #292524;
+  --color-neutral-content: #fffdf9;
+  --color-info: #bedafe;
+  --color-info-content: #1c1917;
+  --color-success: #c6f7ac;
+  --color-success-content: #1c1917;
+  --color-warning: #fee1b9;
+  --color-warning-content: #1c1917;
+  --color-error: #be123c;
+  --color-error-content: #fffdf9;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "desk-dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+
+  --color-base-100: #1f1d1b;
+  --color-base-200: #171615;
+  --color-base-300: #34312d;
+  --color-base-content: #ede9e3;
+  --color-primary: #ede9e3;
+  --color-primary-content: #171615;
+  --color-secondary: #d3d3fd;
+  --color-secondary-content: #1c1917;
+  --color-accent: #a7f3d1;
+  --color-accent-content: #1c1917;
+  --color-neutral: #ede9e3;
+  --color-neutral-content: #171615;
+  --color-info: #bedafe;
+  --color-info-content: #1c1917;
+  --color-success: #c6f7ac;
+  --color-success-content: #1c1917;
+  --color-warning: #fee1b9;
+  --color-warning-content: #1c1917;
+  --color-error: #fda4af;
+  --color-error-content: #1c1917;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@theme {
+  --font-sans:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-mono:
+    "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+  --color-ink: #1c1917;
+  /*
+   * myday의 파스텔 휠입니다. OKLCH 색상을 30°씩 돌린 12색이고, 배경 전용이라 위에 쓰는 글자는 잉크 색입니다.
+   * 30° 차이는 거의 구별되지 않으므로, 한 화면에 나란히 놓을 색은 60° 이상 띄웁니다.
+   */
+  --color-coral: #fbc9cb;
+  --color-peach: #fed6c4;
+  --color-sand: #fee1b9;
+  --color-pear: #f6eb9e;
+  --color-sage: #c6f7ac;
+  --color-mint: #a7f3d1;
+  --color-aqua: #abe4e3;
+  --color-sky: #afe0f5;
+  --color-azure: #bedafe;
+  --color-lavender: #d3d3fd;
+  --color-lilac: #e6cdf2;
+  --color-blossom: #f5c9e0;
+}

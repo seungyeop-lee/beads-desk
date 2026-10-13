@@ -1,14 +1,11 @@
 /*
  * 클래스 탐색은 실행 디렉터리 대신 src에 고정합니다.
- * daisyUI 기본 테마를 쓰고, 운영체제가 다크 모드이면 dark 테마로 바꿉니다.
+ * 테마와 토큰은 theme.css, 앱 전체의 기본 동작은 base.css, 여러 화면이 쓰는 시각 요소는 components.css에 있습니다.
  * 이슈 본문 markdown은 typography의 prose class로 꾸밉니다.
  */
 @import "tailwindcss" source(none);
+@import "./theme.css";
 @import "./base.css";
+@import "./components.css";
 @source "../../../..";
-@plugin "daisyui" {
-  themes:
-    light --default,
-    dark --prefersdark;
-}
 @plugin "@tailwindcss/typography";

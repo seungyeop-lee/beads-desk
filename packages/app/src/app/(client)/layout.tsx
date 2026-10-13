@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
-      <body className="min-h-screen bg-base-200 text-base-content">
+      <body className="min-h-screen bg-base-200 font-sans text-base-content antialiased">
         <KeyboardFocusMode />
         <AppHeader />
         {children}
