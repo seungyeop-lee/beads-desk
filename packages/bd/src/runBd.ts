@@ -13,12 +13,67 @@ export type RunBdOptions = {
 
 /** 실행 파일을 찾지 못했을 때 셸과 같은 종료 코드를 돌려줍니다. */
 const SPAWN_FAILURE_CODE = 127;
+const DOLT_UNREACHABLE = /Dolt server unreachable/i;
+/** 계속 실패하는 Dolt 서버를 요청마다 다시 시작하지 않도록 workspace별로 기다리는 시간입니다. */
+const DOLT_START_COOLDOWN_MS = 30_000;
 
+/**
+ * bd를 실행합니다. 같은 process 안의 모든 호출은 한 번에 하나씩 실행됩니다.
+ * server mode workspace의 Dolt 서버가 꺼져 있으면 `bd dolt start`로 켜고 한 번 다시 실행합니다.
+ */
 export function runBd(args: string[], options: RunBdOptions): Promise<BdResult> {
+  return serialized(async () => {
+    const result = await spawnBd(args, options.cwd);
+    if (
+      result.code !== 0 &&
+      DOLT_UNREACHABLE.test(result.stderr) &&
+      (await startDoltServer(options.cwd))
+    ) {
+      return spawnBd(args, options.cwd);
+    }
+    return result;
+  });
+}
+
+type BdProcessState = {
+  queue: Promise<unknown>;
+  lastDoltStartAt: Map<string, number>;
+};
+
+// bd를 동시에 실행하면 같은 workspace의 Dolt가 손상될 수 있어 실행을 process 전체에서 직렬화합니다.
+// 이 module은 instrumentation과 route handler에 서로 다른 사본으로 들어가므로 상태를 globalThis에 둡니다.
+const PROCESS_STATE_KEY = Symbol.for("beads-desk.bd.processState");
+
+function processState(): BdProcessState {
+  const holder = globalThis as { [PROCESS_STATE_KEY]?: BdProcessState };
+  holder[PROCESS_STATE_KEY] ??= { queue: Promise.resolve(), lastDoltStartAt: new Map() };
+  return holder[PROCESS_STATE_KEY];
+}
+
+function serialized<T>(operation: () => Promise<T>): Promise<T> {
+  const state = processState();
+  const run = state.queue.then(operation, operation);
+  state.queue = run.catch(() => undefined);
+  return run;
+}
+
+async function startDoltServer(cwd: string): Promise<boolean> {
+  const { lastDoltStartAt } = processState();
+  const now = Date.now();
+  if (now - (lastDoltStartAt.get(cwd) ?? 0) < DOLT_START_COOLDOWN_MS) {
+    return false;
+  }
+  lastDoltStartAt.set(cwd, now);
+  const result = await spawnBd(["dolt", "start"], cwd);
+  return result.code === 0;
+}
+
+// 대화형 UI 요청마다 Dolt auto-push가 일어나지 않도록 항상 sandbox mode로 실행합니다.
+function spawnBd(args: string[], cwd: string): Promise<BdResult> {
   return new Promise((resolve) => {
     // spawn을 정적 분석하면 Turbopack이 프로젝트 전체를 server 출력 추적 대상에 넣습니다.
-    const child = spawn(/*turbopackIgnore: true*/ bdBin(), args, {
-      cwd: options.cwd,
+    const child = spawn(/*turbopackIgnore: true*/ bdBin(), ["--sandbox", ...args], {
+      cwd,
       shell: false,
       windowsHide: true,
     });
