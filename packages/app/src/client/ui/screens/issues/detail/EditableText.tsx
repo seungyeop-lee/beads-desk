@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useSavedValue } from "./useSavedValue";
 
+// 렌더링마다 새로 만든 ref 함수는 커밋할 때마다 다시 호출되어, 사용자가 다른 칸으로 옮긴 포커스를 되찾아 옵니다.
+// module 수준 함수를 넘겨 입력란이 나타날 때 한 번만 포커스를 줍니다.
+const focusOnMount = (element: HTMLElement | null) => element?.focus();
+
 type Props = {
   label: string;
   value: string;
@@ -59,7 +63,7 @@ export function EditableText({
       }}
     >
       <input
-        ref={(input) => input?.focus()}
+        ref={focusOnMount}
         className="input input-sm grow"
         aria-label={label}
         value={draft}

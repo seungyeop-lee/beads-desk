@@ -54,7 +54,7 @@ export function NewIssueDialog({ onCreated, onClose }: Props) {
         <label className="floating-label">
           <span>제목</span>
           <input
-            ref={(input) => input?.focus()}
+            autoFocus
             className="input w-full"
             placeholder="제목"
             required
