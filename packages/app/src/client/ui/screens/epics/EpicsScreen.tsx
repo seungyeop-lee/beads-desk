@@ -4,7 +4,7 @@ import type { IssueStatus } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useState } from "react";
 import { useEpicChildren, useEpics } from "@/client/modules/epics/application/useEpics";
-import { sortEpics } from "@/client/modules/epics/domain/epicsView";
+import { settleExpandedEpics, sortEpics } from "@/client/modules/epics/domain/epicsView";
 import {
   useIssueWrites,
   type IssueWrites,
@@ -17,16 +17,17 @@ import type { EpicSummary } from "@/shared/contract/epics";
 
 /**
  * epic마다 하위 이슈 진행률을 보여 주고, 펼친 epic은 하위 이슈를 목록처럼 바로 고칠 수 있게 보여 줍니다.
- * 처음에는 맨 위 epic만 펼칩니다. 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
+ * 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function EpicsScreen() {
   const { data, error, loading } = useEpics();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
-  /** 사용자가 아직 펼치거나 접지 않았으면 null입니다. */
   const [expanded, setExpanded] = useState<ReadonlySet<string> | null>(null);
   const epics = data ? sortEpics(data) : null;
-  const open = expanded ?? new Set(epics?.[0] ? [epics[0].epic.id] : []);
+  const settled = epics ? settleExpandedEpics(epics, expanded) : expanded;
+  if (settled !== expanded) setExpanded(settled);
+  const open = settled ?? new Set<string>();
 
   const toggle = (epicId: string) => {
     const next = new Set(open);
