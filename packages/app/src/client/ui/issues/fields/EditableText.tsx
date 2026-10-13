@@ -1,9 +1,5 @@
-import { useState, type ReactNode } from "react";
-import { useSavedValue } from "./useSavedValue";
-
-// 렌더링마다 새로 만든 ref 함수는 커밋할 때마다 다시 호출되어, 사용자가 다른 칸으로 옮긴 포커스를 되찾아 옵니다.
-// module 수준 함수를 넘겨 입력란이 나타날 때 한 번만 포커스를 줍니다.
-const focusOnMount = (element: HTMLElement | null) => element?.focus();
+import type { ReactNode } from "react";
+import { focusOnMount, useInlineEdit } from "./useInlineEdit";
 
 type Props = {
   label: string;
@@ -32,31 +28,20 @@ export function EditableText({
   onSave,
 }: Props) {
   const size = compact ? "xs" : "sm";
-  const [shown, showSaved] = useSavedValue(value);
-  const [draft, setDraft] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    if (draft === null || saving) return;
-    if (draft === shown) return setDraft(null);
-    if (required && draft.trim().length === 0) return;
-    setSaving(true);
-    const saved = await onSave(draft);
-    setSaving(false);
-    if (saved) {
-      showSaved(draft);
-      setDraft(null);
-    }
-  };
+  const { shown, draft, saving, edit, change, cancel, save } = useInlineEdit(
+    value,
+    onSave,
+    required,
+  );
 
   if (draft === null) {
-    if (renderValue) return renderValue(shown, () => setDraft(shown));
+    if (renderValue) return renderValue(shown, edit);
     return (
       <button
         type="button"
         title={`${label} 고치기`}
         className={`-mx-1 cursor-text rounded px-1 text-left hover:bg-base-200 ${className}`}
-        onClick={() => setDraft(shown)}
+        onClick={edit}
       >
         {shown || <span className="text-base-content/50">{placeholder}</span>}
       </button>
@@ -76,11 +61,11 @@ export function EditableText({
         aria-label={label}
         value={draft}
         disabled={saving}
-        onChange={(event) => setDraft(event.target.value)}
+        onChange={(event) => change(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             event.preventDefault();
-            setDraft(null);
+            cancel();
           }
         }}
       />
@@ -91,7 +76,7 @@ export function EditableText({
         type="button"
         className={`btn btn-${size} btn-ghost`}
         disabled={saving}
-        onClick={() => setDraft(null)}
+        onClick={cancel}
       >
         취소
       </button>

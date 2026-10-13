@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { IssueDetailView } from "./IssueDetailView";
+import { WriteErrorAlert } from "../WriteErrorAlert";
 
 type Props = {
   issueId: string;
@@ -46,14 +47,7 @@ export function IssueDetailDialog({ issueId, issueHref, onClose }: Props) {
           </form>
         </header>
 
-        {writes.error && (
-          <div role="alert" className="alert alert-error alert-soft">
-            <span className="whitespace-pre-wrap">{writes.error}</span>
-            <button type="button" className="btn btn-ghost btn-xs" onClick={writes.dismissError}>
-              닫기
-            </button>
-          </div>
-        )}
+        <WriteErrorAlert writes={writes} />
         {error && (
           <div role="alert" className="alert alert-error alert-soft">
             <span className="whitespace-pre-wrap">이슈를 불러오지 못했습니다: {error}</span>

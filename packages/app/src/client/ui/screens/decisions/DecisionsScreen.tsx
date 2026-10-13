@@ -11,6 +11,7 @@ import {
 import { confirmForceClose } from "@/client/ui/issues/fields/confirmForceClose";
 import { StatusSelect } from "@/client/ui/issues/fields/StatusSelect";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
+import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" });
 
@@ -39,14 +40,7 @@ export function DecisionsScreen() {
           <span>결정을 불러오지 못했습니다: {error}</span>
         </div>
       )}
-      {writes.error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span className="whitespace-pre-wrap">{writes.error}</span>
-          <button type="button" className="btn btn-ghost btn-xs" onClick={writes.dismissError}>
-            닫기
-          </button>
-        </div>
-      )}
+      <WriteErrorAlert writes={writes} />
 
       {groups && (
         <>

@@ -14,6 +14,7 @@ import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRo
 import { STATUS_BADGES, STATUS_LABELS } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import type { EpicSummary } from "@/shared/contract/epics";
+import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 
 /**
  * epic마다 하위 이슈 진행률을 보여 주고, 펼친 epic은 하위 이슈를 목록처럼 바로 고칠 수 있게 보여 줍니다.
@@ -50,14 +51,7 @@ export function EpicsScreen() {
           <span>에픽을 불러오지 못했습니다: {error}</span>
         </div>
       )}
-      {writes.error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span className="whitespace-pre-wrap">{writes.error}</span>
-          <button type="button" className="btn btn-ghost btn-xs" onClick={writes.dismissError}>
-            닫기
-          </button>
-        </div>
-      )}
+      <WriteErrorAlert writes={writes} />
       {epics?.length === 0 && (
         <p className="py-10 text-center text-base-content/60">에픽이 없습니다.</p>
       )}

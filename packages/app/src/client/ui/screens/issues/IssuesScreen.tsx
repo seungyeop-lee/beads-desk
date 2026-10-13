@@ -11,6 +11,7 @@ import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { IssueFilterBar } from "./IssueFilterBar";
+import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 
 /** 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다. */
 export function IssuesScreen() {
@@ -49,14 +50,7 @@ export function IssuesScreen() {
         </div>
       )}
 
-      {writes.error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span className="whitespace-pre-wrap">{writes.error}</span>
-          <button type="button" className="btn btn-ghost btn-xs" onClick={writes.dismissError}>
-            닫기
-          </button>
-        </div>
-      )}
+      <WriteErrorAlert writes={writes} />
 
       {issues && <IssueTable issues={shown} issueHref={issueHref} writes={writes} />}
 

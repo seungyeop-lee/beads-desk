@@ -16,6 +16,7 @@ import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRo
 import { priorityLabel, TYPE_LABELS } from "@/client/ui/issues/issueLabels";
 import { BOARD_COLUMNS, type BoardColumn } from "@/shared/contract/board";
 import { useMinuteClock } from "./useMinuteClock";
+import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 
 const COLUMN_LABELS: Record<BoardColumn, string> = {
   blocked: "막힘",
@@ -83,14 +84,7 @@ export function BoardScreen() {
           <span>보드를 불러오지 못했습니다: {error}</span>
         </div>
       )}
-      {writes.error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span className="whitespace-pre-wrap">{writes.error}</span>
-          <button type="button" className="btn btn-ghost btn-xs" onClick={writes.dismissError}>
-            닫기
-          </button>
-        </div>
-      )}
+      <WriteErrorAlert writes={writes} />
 
       {notice && (
         <output className="alert alert-info alert-soft">

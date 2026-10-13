@@ -1,10 +1,5 @@
-import { useState } from "react";
 import { Markdown } from "@/client/ui/designSystem/Markdown";
-import { useSavedValue } from "../fields/useSavedValue";
-
-// 렌더링마다 새로 만든 ref 함수는 커밋할 때마다 다시 호출되어, 사용자가 다른 칸으로 옮긴 포커스를 되찾아 옵니다.
-// module 수준 함수를 넘겨 입력란이 나타날 때 한 번만 포커스를 줍니다.
-const focusOnMount = (element: HTMLElement | null) => element?.focus();
+import { focusOnMount, useInlineEdit } from "../fields/useInlineEdit";
 
 type Props = {
   label: string;
@@ -15,28 +10,14 @@ type Props = {
 
 /** markdown으로 보여 주다가 편집을 누르면 textarea로 바뀌는 본문입니다. Ctrl/Cmd+Enter로 저장하고 Escape로 취소합니다. */
 export function EditableMarkdown({ label, value, onSave }: Props) {
-  const [shown, showSaved] = useSavedValue(value);
-  const [draft, setDraft] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    if (draft === null || saving) return;
-    if (draft === shown) return setDraft(null);
-    setSaving(true);
-    const saved = await onSave(draft);
-    setSaving(false);
-    if (saved) {
-      showSaved(draft);
-      setDraft(null);
-    }
-  };
+  const { shown, draft, saving, edit, change, cancel, save } = useInlineEdit(value, onSave);
 
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <h3 className="font-semibold">{label}</h3>
         {draft === null && (
-          <button type="button" className="btn btn-ghost btn-xs" onClick={() => setDraft(shown)}>
+          <button type="button" className="btn btn-ghost btn-xs" onClick={edit}>
             편집
           </button>
         )}
@@ -61,14 +42,14 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
             aria-label={label}
             value={draft}
             disabled={saving}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => change(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                 event.preventDefault();
                 void save();
               } else if (event.key === "Escape") {
                 event.preventDefault();
-                setDraft(null);
+                cancel();
               }
             }}
           />
@@ -80,7 +61,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
               type="button"
               className="btn btn-sm btn-ghost"
               disabled={saving}
-              onClick={() => setDraft(null)}
+              onClick={cancel}
             >
               취소
             </button>
