@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
@@ -11,18 +10,15 @@ import {
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
-import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { IssueFilterBar } from "./IssueFilterBar";
 
 /** 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다. */
 export function IssuesScreen() {
   const [filter, setFilter] = useState<IssueListFilter>({ kind: "status", statuses: [] });
   const [refinement, setRefinement] = useState<IssueListRefinement>({ types: [], search: "" });
-  const [creating, setCreating] = useState(false);
   const { data: issues, error, loading } = useIssueList(filter);
   const shown = issues ? visibleIssues(issues, filter, refinement) : [];
   const writes = useIssueWrites();
-  const router = useRouter();
   const issueHref = useIssueHref();
 
   return (
@@ -33,13 +29,6 @@ export function IssuesScreen() {
         {loading && (
           <span className="loading loading-spinner loading-xs" aria-label="불러오는 중" />
         )}
-        <button
-          type="button"
-          className="btn btn-primary btn-sm ml-auto self-center"
-          onClick={() => setCreating(true)}
-        >
-          새 이슈
-        </button>
       </header>
 
       <IssueFilterBar
@@ -67,15 +56,6 @@ export function IssuesScreen() {
       {issues && <IssueTable issues={shown} issueHref={issueHref} writes={writes} />}
 
       <IssueDetailRoute />
-      {creating && (
-        <NewIssueDialog
-          onCreated={(issueId) => {
-            setCreating(false);
-            router.push(issueHref(issueId), { scroll: false });
-          }}
-          onClose={() => setCreating(false)}
-        />
-      )}
     </main>
   );
 }
