@@ -8,7 +8,6 @@ function summary(id: string, status: string, priority = 2, createdAt = 0): EpicS
     epic: { id, status, priority, createdAt } as Issue,
     totalChildren: 0,
     closedChildren: 0,
-    eligibleForClose: false,
   };
 }
 

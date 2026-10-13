@@ -153,17 +153,12 @@ describe("epicStatuses", () => {
 
     expect(
       result.ok &&
-        result.value.map((status) => [
-          status.epic.id,
-          status.totalChildren,
-          status.closedChildren,
-          status.eligibleForClose,
-        ]),
+        result.value.map((status) => [status.epic.id, status.totalChildren, status.closedChildren]),
     ).toEqual([
-      ["e-1", 2, 1, false],
-      ["e-2", 1, 1, true],
-      ["e-3", 0, 0, false],
-      ["e-4", 0, 0, false],
+      ["e-1", 2, 1],
+      ["e-2", 1, 1],
+      ["e-3", 0, 0],
+      ["e-4", 0, 0],
     ]);
   });
 

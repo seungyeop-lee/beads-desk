@@ -20,7 +20,7 @@ afterEach(() => {
 
 test("workspace의 epic 진행 현황을 돌려준다", async () => {
   const epics = [
-    { epic: { id: "e-1" } as Issue, totalChildren: 2, closedChildren: 1, eligibleForClose: false },
+    { epic: { id: "e-1" } as Issue, totalChildren: 2, closedChildren: 1 },
   ] satisfies EpicStatus[];
   vi.mocked(epicStatuses).mockResolvedValue({ ok: true, value: epics });
 

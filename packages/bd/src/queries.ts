@@ -14,7 +14,6 @@ export type EpicStatus = {
   epic: Issue;
   totalChildren: number;
   closedChildren: number;
-  eligibleForClose: boolean;
 };
 
 export type BoardColumn = "ready" | "in_progress" | "blocked" | "closed";
@@ -88,13 +87,10 @@ export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>
       .filter((issue) => issue.issueType === "epic")
       .map((epic) => {
         const children = childrenByParent.get(epic.id) ?? [];
-        const closedChildren = children.filter((child) => child.status === "closed").length;
         return {
           epic,
           totalChildren: children.length,
-          closedChildren,
-          eligibleForClose:
-            epic.status !== "closed" && children.length > 0 && closedChildren === children.length,
+          closedChildren: children.filter((child) => child.status === "closed").length,
         };
       }),
   };
