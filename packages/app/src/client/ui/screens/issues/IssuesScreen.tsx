@@ -11,6 +11,7 @@ import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailDialog } from "./detail/IssueDetailDialog";
 import { IssueFilterBar } from "./IssueFilterBar";
 import { IssueTable } from "./IssueTable";
+import { NewIssueDialog } from "./NewIssueDialog";
 
 /** 상세 dialog로 연 이슈 id를 담는 query 이름입니다. 주소를 공유하거나 새로고침해도 같은 이슈가 열립니다. */
 const ISSUE_PARAM = "issue";
@@ -19,6 +20,7 @@ const ISSUE_PARAM = "issue";
 export function IssuesScreen() {
   const [filter, setFilter] = useState<IssueListFilter>({ kind: "status", statuses: [] });
   const [refinement, setRefinement] = useState<IssueListRefinement>({ types: [], search: "" });
+  const [creating, setCreating] = useState(false);
   const { data: issues, error, loading } = useIssueList(filter);
   const shown = issues ? visibleIssues(issues, filter, refinement) : [];
   const pathname = usePathname();
@@ -35,6 +37,13 @@ export function IssuesScreen() {
         {loading && (
           <span className="loading loading-spinner loading-xs" aria-label="불러오는 중" />
         )}
+        <button
+          type="button"
+          className="btn btn-primary btn-sm ml-auto self-center"
+          onClick={() => setCreating(true)}
+        >
+          새 이슈
+        </button>
       </header>
 
       <IssueFilterBar
@@ -57,6 +66,15 @@ export function IssuesScreen() {
           issueId={selectedIssueId}
           issueHref={issueHref}
           onClose={() => router.replace(pathname, { scroll: false })}
+        />
+      )}
+      {creating && (
+        <NewIssueDialog
+          onCreated={(issueId) => {
+            setCreating(false);
+            router.push(issueHref(issueId), { scroll: false });
+          }}
+          onClose={() => setCreating(false)}
         />
       )}
     </main>
