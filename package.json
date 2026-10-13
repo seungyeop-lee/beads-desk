@@ -6,6 +6,8 @@
     "dev": "pnpm --filter @seungyeop-lee/beads-desk run dev",
     "build": "pnpm --filter @seungyeop-lee/beads-desk run build",
     "start": "pnpm --filter @seungyeop-lee/beads-desk run start",
+    "install:global": "pnpm --filter @seungyeop-lee/beads-desk run install:global",
+    "uninstall:global": "pnpm --filter @seungyeop-lee/beads-desk run uninstall:global",
     "typecheck": "pnpm -r run typecheck",
     "lint": "pnpm run lint:ox && pnpm run lint:eslint",
     "lint:ox": "oxlint .",

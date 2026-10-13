@@ -5,14 +5,24 @@
 ## 요구 사항
 
 - Node.js 22 이상
+- pnpm(설치할 때만 필요)
 - `bd` CLI. `PATH`에 없으면 `BD_BIN` 환경 변수로 실행 파일 경로를 지정합니다. `bd` 1.3.1에서 동작을 확인했습니다.
 - `bd init`으로 만든 beads workspace(`.beads` 디렉터리가 있는 디렉터리)
 
 ## 설치
 
+아직 npm에 배포하지 않았으므로 저장소에서 직접 빌드해 전역으로 설치합니다. 전역 명령을 설치할 수 있도록 `pnpm setup`을 한 번 실행해 두어야 합니다.
+
+저장소 루트에서 실행합니다.
+
 ```sh
-npm install -g @seungyeop-lee/beads-desk
+pnpm install
+pnpm run install:global
 ```
+
+저장소를 최신으로 받은 뒤 같은 명령을 다시 실행하면 업데이트됩니다. 실행 중인 서버는 `beads-desk restart`를 실행해야 새 버전으로 바뀝니다.
+
+전역에서 지우려면 `pnpm run uninstall:global`을 실행합니다.
 
 ## 사용법
 

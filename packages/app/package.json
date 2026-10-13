@@ -33,7 +33,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
-    "pack:local": "pnpm run build && node scripts/run-npm-release.mjs pack"
+    "pack:local": "pnpm run build && node scripts/run-npm-release.mjs pack",
+    "install:global": "pnpm run pack:local && pnpm add -g \"$PWD\"/seungyeop-lee-beads-desk-*.tgz; EXIT=$?; rm -f seungyeop-lee-beads-desk-*.tgz; exit $EXIT",
+    "uninstall:global": "pnpm remove -g @seungyeop-lee/beads-desk"
   },
   "dependencies": {
     "next": "^16.4.0",
