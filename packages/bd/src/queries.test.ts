@@ -52,9 +52,9 @@ async function useFakeBd(responses: Record<string, FakeResponse>): Promise<void>
 }
 
 describe("listIssues", () => {
-  test("지정한 상태의 이슈를 최대 1000개까지 조회한다", async () => {
+  test("지정한 상태의 이슈를 개수 제한 없이 조회한다", async () => {
     await useFakeBd({
-      "list --json --tree=false --status open,in_progress --limit 1000": {
+      "list --json --tree=false --status open,in_progress --limit 0": {
         stdout: await fixture("list.json"),
       },
     });
@@ -71,7 +71,7 @@ describe("listIssues", () => {
 
   test("상태를 지정하지 않으면 모든 저장 상태의 이슈를 조회한다", async () => {
     await useFakeBd({
-      "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 1000": {
+      "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 0": {
         stdout: "[]",
       },
     });
@@ -83,7 +83,7 @@ describe("listIssues", () => {
 
   test("bd가 실패하면 stderr와 종료 코드를 담은 오류를 돌려준다", async () => {
     await useFakeBd({
-      "list --json --tree=false --status open --limit 1000": { stderr: "boom", code: 2 },
+      "list --json --tree=false --status open --limit 0": { stderr: "boom", code: 2 },
     });
 
     const result = await listIssues(workDir, ["open"]);
@@ -93,7 +93,7 @@ describe("listIssues", () => {
 
   test("bd가 stderr 없이 실패하면 종료 코드를 담은 메시지를 돌려준다", async () => {
     await useFakeBd({
-      "list --json --tree=false --status open --limit 1000": { code: 2 },
+      "list --json --tree=false --status open --limit 0": { code: 2 },
     });
 
     const result = await listIssues(workDir, ["open"]);
@@ -106,7 +106,7 @@ describe("listIssues", () => {
 
   test("bd 출력이 JSON이 아니면 오류를 돌려준다", async () => {
     await useFakeBd({
-      "list --json --tree=false --status open --limit 1000": { stdout: "not json" },
+      "list --json --tree=false --status open --limit 0": { stdout: "not json" },
     });
 
     const result = await listIssues(workDir, ["open"]);
@@ -119,9 +119,9 @@ describe("listIssues", () => {
 });
 
 describe("readyIssues", () => {
-  test("바로 작업할 수 있는 이슈를 최대 1000개까지 조회한다", async () => {
+  test("바로 작업할 수 있는 이슈를 개수 제한 없이 조회한다", async () => {
     await useFakeBd({
-      "ready --limit 1000 --json": { stdout: await fixture("ready.json") },
+      "ready --limit 0 --json": { stdout: await fixture("ready.json") },
     });
 
     const result = await readyIssues(workDir);
@@ -304,11 +304,11 @@ describe("openChangeFingerprint", () => {
 
 describe("boardIssues", () => {
   const boardArgs = {
-    ready: "ready --limit 1000 --json",
+    ready: "ready --limit 0 --json",
     blocked: "blocked --json",
-    inProgress: "list --json --tree=false --status in_progress --limit 1000",
-    closed: "list --json --tree=false --status closed --limit 1000",
-    blockedStatus: "list --json --tree=false --status blocked --limit 1000",
+    inProgress: "list --json --tree=false --status in_progress --limit 0",
+    closed: "list --json --tree=false --status closed --limit 0",
+    blockedStatus: "list --json --tree=false --status blocked --limit 0",
   };
 
   test("한 이슈가 여러 열에 걸리면 blocked, in_progress, ready, closed 순으로 우선한다", async () => {

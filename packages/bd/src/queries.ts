@@ -25,8 +25,8 @@ export type BoardIssue = {
   issue: Issue;
 };
 
-/** bd 목록 명령의 기본 개수 제한(list 50, ready 100)에 걸려 목록이 조용히 잘리지 않도록 넉넉히 지정합니다. */
-const LIST_LIMIT = "1000";
+/** bd 목록 명령의 기본 개수 제한(list 50, ready 100)에 걸려 목록이 조용히 잘리지 않도록 제한을 없앱니다. 0이 제한 없음입니다. */
+const LIST_LIMIT = "0";
 
 export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutcome<Issue[]>> {
   return queryIssues(cwd, listArgs(statuses));
@@ -80,7 +80,7 @@ export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>
     "--status",
     ISSUE_STATUSES.join(","),
     "--limit",
-    "0",
+    LIST_LIMIT,
   ]);
   if (!result.ok) {
     return result;

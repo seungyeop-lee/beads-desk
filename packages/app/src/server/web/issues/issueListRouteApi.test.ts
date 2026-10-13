@@ -51,7 +51,7 @@ const issues = JSON.stringify([
 ]);
 
 test("지정한 상태의 이슈를 workspace에서 조회해 돌려준다", async () => {
-  await useFakeBd("list --json --tree=false --status open,in_progress --limit 1000", {
+  await useFakeBd("list --json --tree=false --status open,in_progress --limit 0", {
     stdout: issues,
   });
 
@@ -68,7 +68,7 @@ test("지정한 상태의 이슈를 workspace에서 조회해 돌려준다", asy
 
 test("상태를 지정하지 않으면 모든 상태의 이슈를 조회한다", async () => {
   await useFakeBd(
-    "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 1000",
+    "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 0",
     { stdout: issues },
   );
 
@@ -78,7 +78,7 @@ test("상태를 지정하지 않으면 모든 상태의 이슈를 조회한다",
 });
 
 test("ready를 지정하면 바로 작업할 수 있는 이슈를 조회한다", async () => {
-  await useFakeBd("ready --limit 1000 --json", { stdout: issues });
+  await useFakeBd("ready --limit 0 --json", { stdout: issues });
 
   const response = await handleIssueListRequest(request("?status=ready"));
 
@@ -96,7 +96,7 @@ test("상태 query가 올바르지 않으면 bd를 실행하지 않고 400을 �
 });
 
 test("bd가 실패하면 bd의 오류 메시지와 500을 돌려준다", async () => {
-  await useFakeBd("list --json --tree=false --status open --limit 1000", {
+  await useFakeBd("list --json --tree=false --status open --limit 0", {
     stderr: "database is locked",
     code: 1,
   });
