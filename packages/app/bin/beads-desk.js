@@ -99,5 +99,8 @@ function openBrowser(url) {
       : process.platform === "win32"
         ? ["cmd", ["/c", "start", "", url]]
         : ["xdg-open", [url]];
-  spawn(command, commandArgs, { detached: true, stdio: "ignore" }).unref();
+  spawn(command, commandArgs, { detached: true, stdio: "ignore" })
+    // 브라우저를 여는 명령이 없는 환경(예: xdg-open이 없는 Linux)에서도 서버는 이미 떠 있으므로 실패로 끝내지 않습니다.
+    .on("error", () => console.log(`브라우저를 열지 못했습니다. 위 URL을 직접 여세요.`))
+    .unref();
 }

@@ -261,3 +261,16 @@ test("서버가 bd를 실행하지 못하면 시작은 하되 경고를 출력�
   expect(printed).toContainEqual(expect.stringContaining("bd를 실행하지 못했습니다"));
   await commands.stop();
 });
+
+test("실행 중인 서버와 다른 포트를 지정하면 포트를 바꾸지 않고 restart를 안내한다", async () => {
+  const commands = daemon();
+  const first = await workspace("first");
+  await commands.start({ cwd: first, open: false });
+  const { port } = await serverState();
+
+  expect(await commands.start({ cwd: first, port: port + 5, open: false })).toBe(0);
+
+  expect((await serverState()).port).toBe(port);
+  expect(printed).toContainEqual(expect.stringContaining(`restart --port ${port + 5}`));
+  await commands.stop();
+});

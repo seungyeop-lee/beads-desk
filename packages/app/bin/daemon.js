@@ -51,6 +51,11 @@ export function createDaemon({
           const list = await registerWorkspace(running.url, cwd, true);
           print(`이미 실행 중인 서버에서 workspace를 바꿨습니다: ${list.current}`);
           print(`URL: ${running.url}`);
+          if (port && port !== running.port) {
+            print(
+              `서버가 ${running.port}번 포트에서 실행 중이라 지정한 포트(${port})를 적용하지 않았습니다. 포트를 바꾸려면 다음 명령을 실행하세요: beads-desk restart --port ${port}`,
+            );
+          }
           if (open) openBrowser(running.url);
           return 0;
         }
