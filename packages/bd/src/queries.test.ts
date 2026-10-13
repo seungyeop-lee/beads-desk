@@ -69,9 +69,9 @@ describe("listIssues", () => {
     ]);
   });
 
-  test("상태를 지정하지 않으면 모든 저장 상태의 이슈를 조회한다", async () => {
+  test("상태를 지정하지 않으면 pinned, hooked, 사용자 정의 상태까지 모든 이슈를 조회한다", async () => {
     await useFakeBd({
-      "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 0": {
+      "list --json --tree=false --all --limit 0": {
         stdout: "[]",
       },
     });
@@ -131,8 +131,7 @@ describe("readyIssues", () => {
 });
 
 describe("epicStatuses", () => {
-  const listAll =
-    "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 0";
+  const listAll = "list --json --tree=false --all --limit 0";
 
   test("모든 이슈를 한 번에 읽어 epic마다 직접 하위 이슈와 닫힌 하위 이슈를 센다", async () => {
     await useFakeBd({
@@ -140,7 +139,7 @@ describe("epicStatuses", () => {
         stdout: JSON.stringify([
           { id: "e-1", issue_type: "epic", status: "open" },
           { id: "e-1.1", status: "closed", parent: "e-1" },
-          { id: "e-1.2", status: "open", parent: "e-1" },
+          { id: "e-1.2", status: "hooked", parent: "e-1" },
           { id: "e-1.2.1", status: "open", parent: "e-1.2" },
           { id: "e-2", issue_type: "epic", status: "open" },
           { id: "e-2.1", status: "closed", parent: "e-2" },

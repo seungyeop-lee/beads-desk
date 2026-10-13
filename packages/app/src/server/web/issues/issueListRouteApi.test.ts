@@ -67,10 +67,7 @@ test("지정한 상태의 이슈를 workspace에서 조회해 돌려준다", asy
 });
 
 test("상태를 지정하지 않으면 모든 상태의 이슈를 조회한다", async () => {
-  await useFakeBd(
-    "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 0",
-    { stdout: issues },
-  );
+  await useFakeBd("list --json --tree=false --all --limit 0", { stdout: issues });
 
   const response = await handleIssueListRequest(request(""));
 

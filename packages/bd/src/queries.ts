@@ -1,7 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
-  ISSUE_STATUSES,
   isRecord,
   parseIssueDetail,
   parseIssues,
@@ -73,15 +72,7 @@ export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome
  * bd epic status는 하위 이슈가 없거나 닫힌 epic을 돌려주지 않아, 모든 이슈를 한 번에 읽고 parent로 묶어 셉니다.
  */
 export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>> {
-  const result = await queryIssues(cwd, [
-    "list",
-    "--json",
-    "--tree=false",
-    "--status",
-    ISSUE_STATUSES.join(","),
-    "--limit",
-    LIST_LIMIT,
-  ]);
+  const result = await queryIssues(cwd, listArgs([]));
   if (!result.ok) {
     return result;
   }
@@ -170,10 +161,11 @@ async function databaseHash(cwd: string): Promise<string | null> {
   return isRecord(row) && typeof row.h === "string" ? row.h : null;
 }
 
-// bd list는 빈 --status를 기본 필터(closed 제외)로 해석하므로, 상태를 지정하지 않으면 모든 상태를 넘깁니다.
+// 상태를 지정하지 않으면 --all로 조회합니다. --status를 비우면 bd가 기본 필터(closed 제외)를 쓰고,
+// 알려진 상태를 모두 나열하면 pinned, hooked와 사용자 정의 상태가 빠집니다.
 function listArgs(statuses: IssueStatus[]): string[] {
-  const status = (statuses.length > 0 ? statuses : ISSUE_STATUSES).join(",");
-  return ["list", "--json", "--tree=false", "--status", status, "--limit", LIST_LIMIT];
+  const filter = statuses.length > 0 ? ["--status", statuses.join(",")] : ["--all"];
+  return ["list", "--json", "--tree=false", ...filter, "--limit", LIST_LIMIT];
 }
 
 async function queryIssues(cwd: string, args: string[]): Promise<BdOutcome<Issue[]>> {
