@@ -52,12 +52,13 @@ describe("runBd", () => {
     expect(result.code).toBe(137);
   });
 
-  test("bd 실행 파일이 없으면 종료 코드 127을 돌려준다", async () => {
+  test("bd 실행 파일이 없으면 종료 코드 127과 실행 오류 메시지를 돌려준다", async () => {
     process.env.BD_BIN = join(workDir, "missing-bd");
 
     const result = await runBd(["list"], { cwd: workDir });
 
     expect(result.code).toBe(127);
+    expect(result.stderr).toContain("ENOENT");
   });
 
   test("동시에 요청해도 bd를 한 번에 하나씩 실행한다", async () => {

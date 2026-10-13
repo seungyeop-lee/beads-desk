@@ -83,6 +83,19 @@ describe("listIssues", () => {
     expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 2 } });
   });
 
+  test("bd가 stderr 없이 실패하면 종료 코드를 담은 메시지를 돌려준다", async () => {
+    await useFakeBd({
+      "list --json --tree=false --status open --limit 1000": { code: 2 },
+    });
+
+    const result = await listIssues(workDir, ["open"]);
+
+    expect(result).toEqual({
+      ok: false,
+      error: { message: "bd가 종료 코드 2로 실패했습니다.", exitCode: 2 },
+    });
+  });
+
   test("bd 출력이 JSON이 아니면 오류를 돌려준다", async () => {
     await useFakeBd({
       "list --json --tree=false --status open --limit 1000": { stdout: "not json" },

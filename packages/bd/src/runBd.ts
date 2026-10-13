@@ -82,7 +82,9 @@ function spawnBd(args: string[], cwd: string): Promise<BdResult> {
     child.stdout.setEncoding("utf8").on("data", (chunk: string) => stdout.push(chunk));
     child.stderr.setEncoding("utf8").on("data", (chunk: string) => stderr.push(chunk));
 
-    child.on("error", () => resolve({ code: SPAWN_FAILURE_CODE, stdout: "", stderr: "" }));
+    child.on("error", (error) =>
+      resolve({ code: SPAWN_FAILURE_CODE, stdout: "", stderr: error.message }),
+    );
     child.on("close", (code, signal) =>
       resolve({
         code: code ?? signalExitCode(signal),

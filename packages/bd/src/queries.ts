@@ -100,7 +100,10 @@ async function queryIssues(cwd: string, args: string[]): Promise<BdQueryResult<I
 async function runBdJson(cwd: string, args: string[]): Promise<BdQueryResult<unknown>> {
   const result = await runBd(args, { cwd });
   if (result.code !== 0) {
-    return { ok: false, error: { message: result.stderr, exitCode: result.code } };
+    const message = result.stderr.trim()
+      ? result.stderr
+      : `bd가 종료 코드 ${result.code}로 실패했습니다.`;
+    return { ok: false, error: { message, exitCode: result.code } };
   }
   try {
     return { ok: true, value: JSON.parse(result.stdout) };
