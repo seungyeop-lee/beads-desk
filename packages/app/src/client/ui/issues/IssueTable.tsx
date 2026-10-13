@@ -12,12 +12,18 @@ type Props = {
   issues: Issue[];
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
+  emptyMessage?: string;
 };
 
 /** 제목을 누르면 상세를 열고, 연필 버튼으로 제목을 고칩니다. 상태, 담당자, 우선순위는 표에서 바로 고칩니다. */
-export function IssueTable({ issues, issueHref, writes }: Props) {
+export function IssueTable({
+  issues,
+  issueHref,
+  writes,
+  emptyMessage = "조건에 맞는 이슈가 없습니다.",
+}: Props) {
   if (issues.length === 0) {
-    return <p className="py-10 text-center text-base-content/60">조건에 맞는 이슈가 없습니다.</p>;
+    return <p className="py-10 text-center text-base-content/60">{emptyMessage}</p>;
   }
   return (
     <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">

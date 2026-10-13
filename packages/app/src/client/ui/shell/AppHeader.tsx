@@ -8,6 +8,7 @@ import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 
 const TABS = [
   { href: "/issues", label: "이슈" },
+  { href: "/epics", label: "에픽" },
   { href: "/board", label: "보드" },
 ];
 

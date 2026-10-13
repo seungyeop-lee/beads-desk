@@ -46,7 +46,7 @@ export function visibleIssues(
   return matched.sort(filter.kind === "ready" ? byPriorityThenCreated : byStatusGroup);
 }
 
-function byStatusGroup(a: Issue, b: Issue): number {
+export function byStatusGroup(a: Issue, b: Issue): number {
   const rank = statusRank(a.status) - statusRank(b.status);
   if (rank !== 0) return rank;
   return a.status === "closed" ? byClosedDesc(a, b) : byPriorityThenCreated(a, b);
