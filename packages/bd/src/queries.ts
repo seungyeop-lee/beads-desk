@@ -10,15 +10,7 @@ import {
   type IssueDetail,
   type IssueStatus,
 } from "./issue";
-import { runBd } from "./runBd";
-
-export type BdError = {
-  message: string;
-  /** 입력이 잘못되어 bd를 실행하지 않았으면 null입니다. */
-  exitCode: number | null;
-};
-
-export type BdQueryResult<T> = { ok: true; value: T } | { ok: false; error: BdError };
+import { inputError, runBdJson, type BdOutcome } from "./runBd";
 
 export type EpicStatus = {
   epic: Issue;
@@ -37,28 +29,28 @@ export type BoardIssue = {
 /** bd 목록 명령의 기본 개수 제한(list 50, ready 100)에 걸려 목록이 조용히 잘리지 않도록 넉넉히 지정합니다. */
 const LIST_LIMIT = "1000";
 
-export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdQueryResult<Issue[]>> {
+export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutcome<Issue[]>> {
   return queryIssues(cwd, listArgs(statuses));
 }
 
-export function readyIssues(cwd: string): Promise<BdQueryResult<Issue[]>> {
+export function readyIssues(cwd: string): Promise<BdOutcome<Issue[]>> {
   return queryIssues(cwd, ["ready", "--limit", LIST_LIMIT, "--json"]);
 }
 
-export async function epicChildren(cwd: string, epicId: string): Promise<BdQueryResult<Issue[]>> {
+export async function epicChildren(cwd: string, epicId: string): Promise<BdOutcome<Issue[]>> {
   const id = epicId.trim();
   // bd children은 빈 id를 parent 조건 없음으로 해석해 workspace의 모든 이슈를 돌려줍니다.
   if (id.length === 0) {
-    return emptyIdError("epic");
+    return inputError("epic id가 비어 있습니다.");
   }
   return queryIssues(cwd, ["children", id, "--json"]);
 }
 
-export async function showIssue(cwd: string, issueId: string): Promise<BdQueryResult<IssueDetail>> {
+export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome<IssueDetail>> {
   const id = issueId.trim();
   // bd show는 id가 없으면 마지막으로 다룬 이슈를 보여 줍니다.
   if (id.length === 0) {
-    return emptyIdError("이슈");
+    return inputError("이슈 id가 비어 있습니다.");
   }
   const result = await runBdJson(cwd, [
     "show",
@@ -77,7 +69,7 @@ export async function showIssue(cwd: string, issueId: string): Promise<BdQueryRe
     : { ok: false, error: { message: "bd show 출력에 이슈가 없습니다.", exitCode: 0 } };
 }
 
-export async function epicStatuses(cwd: string): Promise<BdQueryResult<EpicStatus[]>> {
+export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>> {
   const result = await runBdJson(cwd, ["epic", "status", "--json"]);
   if (!result.ok) {
     return result;
@@ -97,7 +89,7 @@ const BOARD_COLUMNS: { column: BoardColumn; args: string[] }[] = [
   { column: "blocked", args: ["blocked", "--json"] },
 ];
 
-export async function boardIssues(cwd: string): Promise<BdQueryResult<BoardIssue[]>> {
+export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>> {
   const results = await Promise.all(BOARD_COLUMNS.map(({ args }) => queryIssues(cwd, args)));
   const failure = results.find((result) => !result.ok);
   if (failure && results.every((result) => !result.ok)) {
@@ -125,9 +117,7 @@ export type ChangeFingerprint = () => Promise<string | null>;
  * - embedded mode의 bd는 조회할 때도 manifest 파일을 같은 내용으로 다시 써서, 파일 변경 이벤트로는 읽기와 쓰기를 구분할 수 없습니다. 쓰기가 있을 때만 내용이 바뀝니다.
  * - server mode에서는 쓰기가 있어도 manifest 파일이 바뀌지 않고, `bd sql`은 embedded mode에서 지원되지 않습니다.
  */
-export async function openChangeFingerprint(
-  cwd: string,
-): Promise<BdQueryResult<ChangeFingerprint>> {
+export async function openChangeFingerprint(cwd: string): Promise<BdOutcome<ChangeFingerprint>> {
   const result = await runBdJson(cwd, ["dolt", "show", "--json"]);
   if (!result.ok) {
     return result;
@@ -156,31 +146,9 @@ function listArgs(statuses: IssueStatus[]): string[] {
   return ["list", "--json", "--tree=false", "--status", status, "--limit", LIST_LIMIT];
 }
 
-async function queryIssues(cwd: string, args: string[]): Promise<BdQueryResult<Issue[]>> {
+async function queryIssues(cwd: string, args: string[]): Promise<BdOutcome<Issue[]>> {
   const result = await runBdJson(cwd, args);
   return result.ok ? { ok: true, value: parseIssues(result.value) } : result;
-}
-
-async function runBdJson(cwd: string, args: string[]): Promise<BdQueryResult<unknown>> {
-  const result = await runBd(args, { cwd });
-  if (result.code !== 0) {
-    const message = result.stderr.trim()
-      ? result.stderr
-      : `bd가 종료 코드 ${result.code}로 실패했습니다.`;
-    return { ok: false, error: { message, exitCode: result.code } };
-  }
-  try {
-    return { ok: true, value: JSON.parse(result.stdout) };
-  } catch {
-    return {
-      ok: false,
-      error: { message: "bd 출력을 JSON으로 해석하지 못했습니다.", exitCode: 0 },
-    };
-  }
-}
-
-function emptyIdError(subject: string): { ok: false; error: BdError } {
-  return { ok: false, error: { message: `${subject} id가 비어 있습니다.`, exitCode: null } };
 }
 
 function parseEpicStatus(value: unknown): EpicStatus | null {

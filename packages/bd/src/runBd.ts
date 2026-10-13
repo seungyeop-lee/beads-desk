@@ -11,6 +11,14 @@ export type RunBdOptions = {
   cwd: string;
 };
 
+export type BdError = {
+  message: string;
+  /** 입력이 잘못되어 bd를 실행하지 않았으면 null입니다. */
+  exitCode: number | null;
+};
+
+export type BdOutcome<T> = { ok: true; value: T } | { ok: false; error: BdError };
+
 /** 실행 파일을 찾지 못했을 때 셸과 같은 종료 코드를 돌려줍니다. */
 const SPAWN_FAILURE_CODE = 127;
 const DOLT_UNREACHABLE = /Dolt server unreachable/i;
@@ -102,4 +110,37 @@ function signalExitCode(signal: NodeJS.Signals | null): number {
 
 function bdBin(): string {
   return process.env.BD_BIN || "bd";
+}
+
+/** bd를 실행하고 JSON 출력을 해석합니다. */
+export async function runBdJson(cwd: string, args: string[]): Promise<BdOutcome<unknown>> {
+  const result = await runBdChecked(cwd, args);
+  if (!result.ok) {
+    return result;
+  }
+  try {
+    return { ok: true, value: JSON.parse(result.value) };
+  } catch {
+    return {
+      ok: false,
+      error: { message: "bd 출력을 JSON으로 해석하지 못했습니다.", exitCode: 0 },
+    };
+  }
+}
+
+/** bd를 실행하고, 실패하면 stderr를 오류 메시지로 돌려줍니다. 성공하면 stdout을 돌려줍니다. */
+export async function runBdChecked(cwd: string, args: string[]): Promise<BdOutcome<string>> {
+  const result = await runBd(args, { cwd });
+  if (result.code !== 0) {
+    const message = result.stderr.trim()
+      ? result.stderr
+      : `bd가 종료 코드 ${result.code}로 실패했습니다.`;
+    return { ok: false, error: { message, exitCode: result.code } };
+  }
+  return { ok: true, value: result.stdout };
+}
+
+/** 입력이 잘못되어 bd를 실행하지 않은 오류입니다. */
+export function inputError(message: string): { ok: false; error: BdError } {
+  return { ok: false, error: { message, exitCode: null } };
 }
