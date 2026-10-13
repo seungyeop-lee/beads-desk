@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { constants } from "node:os";
 import { isRecord } from "./issue";
 
@@ -92,7 +93,7 @@ function spawnBd(args: string[], cwd: string): Promise<BdResult> {
     child.stderr.setEncoding("utf8").on("data", (chunk: string) => stderr.push(chunk));
 
     child.on("error", (error) =>
-      resolve({ code: SPAWN_FAILURE_CODE, stdout: "", stderr: error.message }),
+      resolve({ code: SPAWN_FAILURE_CODE, stdout: "", stderr: spawnErrorMessage(error, cwd) }),
     );
     child.on("close", (code, signal) =>
       resolve({
@@ -102,6 +103,13 @@ function spawnBd(args: string[], cwd: string): Promise<BdResult> {
       }),
     );
   });
+}
+
+// cwd가 없을 때도 Node는 bd 실행 파일을 찾지 못했을 때와 같은 ENOENT를 냅니다.
+function spawnErrorMessage(error: NodeJS.ErrnoException, cwd: string): string {
+  return error.code === "ENOENT" && !existsSync(cwd)
+    ? `workspace 디렉터리가 없습니다: ${cwd}`
+    : error.message;
 }
 
 // signal로 종료되면 Node는 종료 코드를 null로 넘깁니다. 셸처럼 128 + signal 번호로 바꿔 실패로 다룹니다.

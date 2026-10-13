@@ -61,6 +61,19 @@ describe("runBd", () => {
     expect(result.stderr).toContain("ENOENT");
   });
 
+  test("실행할 디렉터리가 없으면 bd가 없다는 오류 대신 디렉터리가 없다고 알린다", async () => {
+    await useFakeBd("echo ok");
+    const missing = join(workDir, "deleted-workspace");
+
+    const result = await runBd(["list"], { cwd: missing });
+
+    expect(result).toEqual({
+      code: 127,
+      stdout: "",
+      stderr: `workspace 디렉터리가 없습니다: ${missing}`,
+    });
+  });
+
   test("동시에 요청해도 bd를 한 번에 하나씩 실행한다", async () => {
     const log = join(workDir, "runs.log");
     await useFakeBd(`echo start >> "${log}"\nsleep 0.1\necho end >> "${log}"`);
