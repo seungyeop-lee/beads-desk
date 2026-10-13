@@ -71,6 +71,6 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 1. `packages/app`에서 `pnpm run pack:local`을 실행해 현재 디렉터리에 tarball을 만듭니다.
 2. `npm install -g --prefix <임시 디렉터리> <tarball 경로>`로 설치합니다.
-3. bd workspace 디렉터리에서 `XDG_RUNTIME_DIR=<다른 임시 디렉터리> <임시 디렉터리>/bin/beads-desk start --no-open`을 실행합니다. `XDG_RUNTIME_DIR`을 따로 주어야 평소에 쓰는 서버의 상태 파일을 건드리지 않습니다.
+3. bd workspace 디렉터리에서 `XDG_RUNTIME_DIR=<다른 임시 디렉터리> <임시 디렉터리>/bin/beads-desk start`를 실행합니다. `XDG_RUNTIME_DIR`을 따로 주어야 평소에 쓰는 서버의 상태 파일을 건드리지 않습니다.
 4. 출력된 URL의 `/api/health` 응답에서 `runtime.workspaceRoot`가 3번의 디렉터리이고 `runtime.bdVersion`이 비어 있지 않으면 정상입니다.
 5. 같은 `XDG_RUNTIME_DIR`로 `<임시 디렉터리>/bin/beads-desk stop`을 실행해 서버를 종료합니다.

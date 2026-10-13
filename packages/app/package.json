@@ -20,7 +20,8 @@
     ".next/routes-manifest.json",
     ".next/server",
     ".next/static",
-    "bin",
+    "bin/beads-desk.js",
+    "bin/daemon.js",
     "next.config.ts"
   ],
   "type": "module",
