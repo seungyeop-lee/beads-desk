@@ -12,7 +12,7 @@ beforeEach(async () => {
   const fakeBd = join(workDir, "fake-bd");
   await writeFile(
     fakeBd,
-    '#!/bin/sh\necho "cwd=$(pwd) args=$*"\necho "stderr line" >&2\nexit "${FAKE_BD_EXIT:-0}"\n',
+    '#!/bin/sh\n[ -n "$FAKE_BD_SIGNAL" ] && kill -"$FAKE_BD_SIGNAL" $$\necho "cwd=$(pwd) args=$*"\necho "stderr line" >&2\nexit "${FAKE_BD_EXIT:-0}"\n',
   );
   await chmod(fakeBd, 0o755);
   process.env.BD_BIN = fakeBd;
@@ -21,6 +21,7 @@ beforeEach(async () => {
 afterEach(() => {
   process.env.BD_BIN = originalBdBin;
   delete process.env.FAKE_BD_EXIT;
+  delete process.env.FAKE_BD_SIGNAL;
 });
 
 describe("runBd", () => {
@@ -40,6 +41,14 @@ describe("runBd", () => {
     const result = await runBd(["show", "x"], { cwd: workDir });
 
     expect(result.code).toBe(3);
+  });
+
+  test("bd가 signal로 종료되면 셸 관례대로 128에 signal 번호를 더한 종료 코드를 돌려준다", async () => {
+    process.env.FAKE_BD_SIGNAL = "KILL";
+
+    const result = await runBd(["list"], { cwd: workDir });
+
+    expect(result.code).toBe(137);
   });
 
   test("bd 실행 파일이 없으면 종료 코드 127을 돌려준다", async () => {

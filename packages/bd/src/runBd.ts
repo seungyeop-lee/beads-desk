@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { constants } from "node:os";
 
 export type BdResult = {
   code: number;
@@ -27,10 +28,19 @@ export function runBd(args: string[], options: RunBdOptions): Promise<BdResult> 
     child.stderr.setEncoding("utf8").on("data", (chunk: string) => stderr.push(chunk));
 
     child.on("error", () => resolve({ code: SPAWN_FAILURE_CODE, stdout: "", stderr: "" }));
-    child.on("close", (code) =>
-      resolve({ code: code ?? 0, stdout: stdout.join(""), stderr: stderr.join("") }),
+    child.on("close", (code, signal) =>
+      resolve({
+        code: code ?? signalExitCode(signal),
+        stdout: stdout.join(""),
+        stderr: stderr.join(""),
+      }),
     );
   });
+}
+
+// signal로 종료되면 Node는 종료 코드를 null로 넘깁니다. 셸처럼 128 + signal 번호로 바꿔 실패로 다룹니다.
+function signalExitCode(signal: NodeJS.Signals | null): number {
+  return 128 + (signal ? constants.signals[signal] : 0);
 }
 
 function bdBin(): string {
