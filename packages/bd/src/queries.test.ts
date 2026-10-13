@@ -131,35 +131,49 @@ describe("readyIssues", () => {
 });
 
 describe("epicStatuses", () => {
-  test("epic과 하위 이슈 집계를 돌려준다", async () => {
-    await useFakeBd({ "epic status --json": { stdout: await fixture("epic-status.json") } });
+  const listAll =
+    "list --json --tree=false --status open,in_progress,blocked,deferred,closed --limit 0";
 
-    const result = await epicStatuses(workDir);
-
-    expect(result.ok && result.value).toEqual([
-      {
-        epic: expect.objectContaining({ id: "demo-8g0", issueType: "epic" }),
-        totalChildren: 1,
-        closedChildren: 0,
-        eligibleForClose: false,
-      },
-    ]);
-  });
-
-  test("tombstone 상태이거나 삭제된 epic은 제외한다", async () => {
+  test("모든 이슈를 한 번에 읽어 epic마다 직접 하위 이슈와 닫힌 하위 이슈를 센다", async () => {
     await useFakeBd({
-      "epic status --json": {
+      [listAll]: {
         stdout: JSON.stringify([
-          { epic: { id: "e-1", status: "tombstone" }, total_children: 0 },
-          { epic: { id: "e-2", status: "open", deleted_at: "2026-10-13T00:00:00Z" } },
-          { epic: { id: "e-3", status: "open" }, total_children: 2, closed_children: 1 },
+          { id: "e-1", issue_type: "epic", status: "open" },
+          { id: "e-1.1", status: "closed", parent: "e-1" },
+          { id: "e-1.2", status: "open", parent: "e-1" },
+          { id: "e-1.2.1", status: "open", parent: "e-1.2" },
+          { id: "e-2", issue_type: "epic", status: "open" },
+          { id: "e-2.1", status: "closed", parent: "e-2" },
+          { id: "e-3", issue_type: "epic", status: "closed" },
+          { id: "e-4", issue_type: "epic", status: "open" },
         ]),
       },
     });
 
     const result = await epicStatuses(workDir);
 
-    expect(result.ok && result.value.map((status) => status.epic.id)).toEqual(["e-3"]);
+    expect(
+      result.ok &&
+        result.value.map((status) => [
+          status.epic.id,
+          status.totalChildren,
+          status.closedChildren,
+          status.eligibleForClose,
+        ]),
+    ).toEqual([
+      ["e-1", 2, 1, false],
+      ["e-2", 1, 1, true],
+      ["e-3", 0, 0, false],
+      ["e-4", 0, 0, false],
+    ]);
+  });
+
+  test("bd가 실패하면 오류를 돌려준다", async () => {
+    await useFakeBd({ [listAll]: { stderr: "boom", code: 1 } });
+
+    const result = await epicStatuses(workDir);
+
+    expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
   });
 });
 

@@ -3,7 +3,6 @@ import { join } from "node:path";
 import {
   ISSUE_STATUSES,
   isRecord,
-  parseIssue,
   parseIssueDetail,
   parseIssues,
   type Issue,
@@ -69,15 +68,44 @@ export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome
     : { ok: false, error: { message: "bd show 출력에 이슈가 없습니다.", exitCode: 0 } };
 }
 
+/**
+ * epic마다 직접 하위 이슈 수와 닫힌 하위 이슈 수를 셉니다.
+ * bd epic status는 하위 이슈가 없거나 닫힌 epic을 돌려주지 않아, 모든 이슈를 한 번에 읽고 parent로 묶어 셉니다.
+ */
 export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>> {
-  const result = await runBdJson(cwd, ["epic", "status", "--json"]);
+  const result = await queryIssues(cwd, [
+    "list",
+    "--json",
+    "--tree=false",
+    "--status",
+    ISSUE_STATUSES.join(","),
+    "--limit",
+    "0",
+  ]);
   if (!result.ok) {
     return result;
   }
-  const entries = Array.isArray(result.value) ? result.value : [];
+  const childrenByParent = new Map<string, Issue[]>();
+  for (const issue of result.value) {
+    if (issue.parent) {
+      childrenByParent.set(issue.parent, [...(childrenByParent.get(issue.parent) ?? []), issue]);
+    }
+  }
   return {
     ok: true,
-    value: entries.map(parseEpicStatus).filter((status): status is EpicStatus => status !== null),
+    value: result.value
+      .filter((issue) => issue.issueType === "epic")
+      .map((epic) => {
+        const children = childrenByParent.get(epic.id) ?? [];
+        const closedChildren = children.filter((child) => child.status === "closed").length;
+        return {
+          epic,
+          totalChildren: children.length,
+          closedChildren,
+          eligibleForClose:
+            epic.status !== "closed" && children.length > 0 && closedChildren === children.length,
+        };
+      }),
   };
 }
 
@@ -151,24 +179,4 @@ function listArgs(statuses: IssueStatus[]): string[] {
 async function queryIssues(cwd: string, args: string[]): Promise<BdOutcome<Issue[]>> {
   const result = await runBdJson(cwd, args);
   return result.ok ? { ok: true, value: parseIssues(result.value) } : result;
-}
-
-function parseEpicStatus(value: unknown): EpicStatus | null {
-  if (!isRecord(value) || !isRecord(value.epic)) {
-    return null;
-  }
-  // 이전 bd 버전의 epic status 출력에 삭제된 epic이 섞여 나와 beads-ui(#44)에서 걸러 냈습니다.
-  if (value.epic.status === "tombstone" || value.epic.deleted_at != null) {
-    return null;
-  }
-  const epic = parseIssue(value.epic);
-  if (!epic) {
-    return null;
-  }
-  return {
-    epic,
-    totalChildren: typeof value.total_children === "number" ? value.total_children : 0,
-    closedChildren: typeof value.closed_children === "number" ? value.closed_children : 0,
-    eligibleForClose: value.eligible_for_close === true,
-  };
 }
