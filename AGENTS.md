@@ -19,7 +19,7 @@
 
 `beads-desk` 명령(`packages/app/bin/beads-desk.js`)은 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
 
-서버 전체에서 하나만 있어야 하는 상태(bd 실행 큐, DB 감시 등)는 `src/instrumentation.ts`에서 시작하고 `globalThis`에 둡니다. instrumentation과 route handler는 같은 module을 서로 다른 사본으로 불러오기 때문에 module 변수로는 상태를 공유할 수 없습니다.
+서버 전체에서 하나만 있어야 하는 상태(bd 실행 큐, DB 감시 등)는 `src/server/infra/` 아래에 구현하고, `src/instrumentation.ts`에서 시작해 `globalThis`에 둡니다. instrumentation과 route handler는 같은 module을 서로 다른 사본으로 불러오기 때문에 module 변수로는 상태를 공유할 수 없습니다.
 
 ## 작성 언어
 
