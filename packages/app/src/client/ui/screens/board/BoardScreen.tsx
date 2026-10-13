@@ -22,6 +22,7 @@ const COLUMN_LABELS: Record<BoardColumn, string> = {
   ready: "바로 작업 가능",
   in_progress: "진행 중",
   closed: "닫힘",
+  other: "보류·기타",
 };
 
 const CLOSED_WINDOWS: { value: ClosedWindow; label: string }[] = [
@@ -80,7 +81,7 @@ export function BoardScreen() {
       )}
 
       {columns && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           {BOARD_COLUMNS.map((column) => (
             // 카드를 놓을 자리라 열 영역이 drag event를 받습니다. 키보드로는 상세 dialog의 상태 선택으로 같은 일을 합니다.
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions

@@ -339,71 +339,66 @@ describe("openChangeFingerprint", () => {
 
 describe("boardIssues", () => {
   const boardArgs = {
+    all: "list --json --tree=false --all --limit 0",
     ready: "ready --limit 0 --json",
     blocked: "blocked --json",
-    inProgress: "list --json --tree=false --status in_progress --limit 0",
-    closed: "list --json --tree=false --status closed --limit 0",
-    blockedStatus: "list --json --tree=false --status blocked --limit 0",
   };
 
-  test("한 이슈가 여러 열에 걸리면 blocked, in_progress, ready, closed 순으로 우선한다", async () => {
-    const issue = (id: string) => ({ id, status: "open" });
+  test("상태로 열을 정하고, 열림 이슈는 bd ready와 bd blocked 결과로 나눈다", async () => {
+    const issue = (id: string, status: string) => ({ id, status });
     await useFakeBd({
-      [boardArgs.ready]: { stdout: JSON.stringify([issue("a"), issue("b"), issue("c")]) },
-      [boardArgs.blocked]: { stdout: JSON.stringify([issue("a")]) },
-      [boardArgs.inProgress]: { stdout: JSON.stringify([issue("b")]) },
-      [boardArgs.closed]: { stdout: JSON.stringify([issue("c"), issue("d")]) },
+      [boardArgs.all]: {
+        stdout: JSON.stringify([
+          issue("ready", "open"),
+          issue("dep-blocked", "open"),
+          issue("doing", "in_progress"),
+          issue("doing-blocked", "in_progress"),
+          issue("marked-blocked", "blocked"),
+          issue("done", "closed"),
+          issue("deferred", "deferred"),
+          issue("pinned", "pinned"),
+          issue("hooked", "hooked"),
+          issue("custom", "review"),
+          issue("open-unknown", "open"),
+        ]),
+      },
+      [boardArgs.ready]: { stdout: JSON.stringify([issue("ready", "open")]) },
+      [boardArgs.blocked]: {
+        stdout: JSON.stringify([
+          issue("dep-blocked", "open"),
+          issue("doing-blocked", "in_progress"),
+        ]),
+      },
     });
 
     const result = await boardIssues(workDir);
 
-    expect(result.ok && result.value.map(({ column, issue }) => [issue.id, column]).sort()).toEqual(
-      [
-        ["a", "blocked"],
-        ["b", "in_progress"],
-        ["c", "ready"],
-        ["d", "closed"],
-      ],
-    );
+    expect(
+      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
+    ).toEqual({
+      ready: "ready",
+      "dep-blocked": "blocked",
+      doing: "in_progress",
+      "doing-blocked": "blocked",
+      "marked-blocked": "blocked",
+      done: "closed",
+      deferred: "other",
+      pinned: "other",
+      hooked: "other",
+      custom: "other",
+      "open-unknown": "other",
+    });
   });
 
-  test("의존 관계 때문에 막힌 이슈와 함께, 상태를 blocked로 둔 이슈도 blocked 열에 넣는다", async () => {
+  test("조회가 하나라도 실패하면 열을 잘못 나누지 않도록 오류를 돌려준다", async () => {
     await useFakeBd({
+      [boardArgs.all]: { stdout: "[]" },
       [boardArgs.ready]: { stdout: "[]" },
-      [boardArgs.blocked]: { stdout: JSON.stringify([{ id: "a", status: "open" }]) },
-      [boardArgs.inProgress]: { stdout: "[]" },
-      [boardArgs.closed]: { stdout: "[]" },
-      [boardArgs.blockedStatus]: { stdout: JSON.stringify([{ id: "b", status: "blocked" }]) },
-    });
-
-    const result = await boardIssues(workDir);
-
-    expect(result.ok && result.value.map(({ column, issue }) => [issue.id, column]).sort()).toEqual(
-      [
-        ["a", "blocked"],
-        ["b", "blocked"],
-      ],
-    );
-  });
-
-  test("일부 열 조회가 실패해도 나머지 열은 돌려준다", async () => {
-    await useFakeBd({
-      [boardArgs.ready]: { stdout: JSON.stringify([{ id: "a" }]) },
       [boardArgs.blocked]: { stderr: "boom", code: 1 },
-      [boardArgs.inProgress]: { stdout: "[]" },
-      [boardArgs.closed]: { stdout: "[]" },
     });
 
     const result = await boardIssues(workDir);
 
-    expect(result.ok && result.value.map(({ issue }) => issue.id)).toEqual(["a"]);
-  });
-
-  test("모든 열 조회가 실패하면 오류를 돌려준다", async () => {
-    await useFakeBd({});
-
-    const result = await boardIssues(workDir);
-
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
   });
 });

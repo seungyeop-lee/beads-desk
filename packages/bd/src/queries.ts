@@ -23,7 +23,8 @@ export type DecisionRecord = {
   supersededBy: string | null;
 };
 
-export type BoardColumn = "ready" | "in_progress" | "blocked" | "closed";
+/** other에는 보류(deferred), pinned, hooked, 사용자 정의 상태처럼 다른 열에 맞지 않는 이슈가 들어갑니다. */
+export type BoardColumn = "ready" | "in_progress" | "blocked" | "closed" | "other";
 
 export type BoardIssue = {
   column: BoardColumn;
@@ -33,12 +34,14 @@ export type BoardIssue = {
 /** bd 목록 명령의 기본 개수 제한(list 50, ready 100)에 걸려 목록이 조용히 잘리지 않도록 제한을 없앱니다. 0이 제한 없음입니다. */
 const LIST_LIMIT = "0";
 
+const READY_ARGS = ["ready", "--limit", LIST_LIMIT, "--json"];
+
 export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutcome<Issue[]>> {
   return queryIssues(cwd, listArgs(statuses));
 }
 
 export function readyIssues(cwd: string): Promise<BdOutcome<Issue[]>> {
-  return queryIssues(cwd, ["ready", "--limit", LIST_LIMIT, "--json"]);
+  return queryIssues(cwd, READY_ARGS);
 }
 
 export async function epicChildren(cwd: string, epicId: string): Promise<BdOutcome<Issue[]>> {
@@ -130,32 +133,43 @@ function supersedingIssue(record: unknown): string | null {
     : null;
 }
 
-// 한 이슈가 여러 열의 조회 결과에 나오면 뒤에 있는 열이 우선합니다.
-const BOARD_COLUMNS: { column: BoardColumn; args: string[] }[] = [
-  { column: "closed", args: listArgs(["closed"]) },
-  { column: "ready", args: ["ready", "--limit", LIST_LIMIT, "--json"] },
-  { column: "in_progress", args: listArgs(["in_progress"]) },
-  // bd blocked는 의존 관계 때문에 막힌 이슈만 돌려주고, 상태를 blocked로 둔 이슈는 ready에도 blocked에도 나오지 않습니다.
-  { column: "blocked", args: listArgs(["blocked"]) },
-  { column: "blocked", args: ["blocked", "--json"] },
-];
-
+/**
+ * 모든 이슈를 한 번에 읽어 상태로 열을 정합니다. 열림 이슈는 bd ready에 있으면 ready에 넣습니다.
+ * bd blocked에 나온 이슈는 의존 관계 때문에 막힌 것이라 상태와 관계없이 blocked에 넣습니다.
+ * 조회가 하나라도 실패하면 열을 잘못 나누게 되므로 오류를 돌려줍니다.
+ */
 export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>> {
-  const results = await Promise.all(BOARD_COLUMNS.map(({ args }) => queryIssues(cwd, args)));
-  const failure = results.find((result) => !result.ok);
-  if (failure && results.every((result) => !result.ok)) {
-    return failure;
-  }
+  const [all, ready, blocked] = await Promise.all([
+    queryIssues(cwd, listArgs([])),
+    queryIssues(cwd, READY_ARGS),
+    queryIssues(cwd, ["blocked", "--json"]),
+  ]);
+  if (!all.ok) return all;
+  if (!ready.ok) return ready;
+  if (!blocked.ok) return blocked;
 
-  const byId = new Map<string, BoardIssue>();
-  results.forEach((result, index) => {
-    if (result.ok) {
-      for (const issue of result.value) {
-        byId.set(issue.id, { column: BOARD_COLUMNS[index].column, issue });
-      }
-    }
-  });
-  return { ok: true, value: [...byId.values()] };
+  const readyIds = new Set(ready.value.map((issue) => issue.id));
+  const blockedIds = new Set(blocked.value.map((issue) => issue.id));
+  return {
+    ok: true,
+    value: all.value.map((issue) => ({
+      column: blockedIds.has(issue.id) ? "blocked" : statusColumn(issue, readyIds),
+      issue,
+    })),
+  };
+}
+
+function statusColumn(issue: Issue, readyIds: Set<string>): BoardColumn {
+  switch (issue.status) {
+    case "open":
+      return readyIds.has(issue.id) ? "ready" : "other";
+    case "in_progress":
+    case "blocked":
+    case "closed":
+      return issue.status;
+    default:
+      return "other";
+  }
 }
 
 /** 읽을 때마다 workspace DB 상태를 나타내는 값을 돌려줍니다. 두 값이 같으면 그 사이에 쓰기가 없었습니다. */

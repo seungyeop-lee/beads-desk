@@ -13,6 +13,7 @@ export const DROP_STATUS: Record<BoardColumn, IssueStatus> = {
   ready: "open",
   in_progress: "in_progress",
   closed: "closed",
+  other: "deferred",
 };
 
 /** 열마다 우선순위 순으로 정렬합니다. 닫힌 열은 기간 안에 닫은 이슈만 최근 것부터 보입니다. */
@@ -27,13 +28,14 @@ export function boardColumns(
     ready: [],
     in_progress: [],
     closed: [],
+    other: [],
   };
   for (const { column, issue } of items) columns[column].push(issue);
 
   const since = closedSince(closedWindow, now);
   columns.closed = columns.closed.filter((issue) => (issue.closedAt ?? -Infinity) >= since);
   columns.closed.sort(byClosedDesc);
-  for (const column of ["blocked", "ready", "in_progress"] as const) {
+  for (const column of ["blocked", "ready", "in_progress", "other"] as const) {
     columns[column].sort(byPriorityThenCreated);
   }
   return columns;
