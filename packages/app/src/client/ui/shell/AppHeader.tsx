@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
+import { WorkspacePicker } from "./WorkspacePicker";
 
 const TABS = [
   { href: "/issues", label: "이슈" },
@@ -35,11 +36,10 @@ export function AppHeader() {
             </Link>
           ))}
         </nav>
-        <button
-          type="button"
-          className="btn btn-primary btn-sm ml-auto"
-          onClick={() => setCreating(true)}
-        >
+        <div className="ml-auto">
+          <WorkspacePicker />
+        </div>
+        <button type="button" className="btn btn-primary btn-sm" onClick={() => setCreating(true)}>
           새 이슈
         </button>
       </div>

@@ -1,12 +1,9 @@
 import { beforeEach, expect, test, vi } from "vitest";
-import { subscribeWorkspaceChanges } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
+import { subscribeCurrentWorkspaceChanges } from "@/server/infra/workspaceChanges/currentWorkspaceChanges";
 import { handleWorkspaceEventsRequest } from "./workspaceEventsRouteApi";
 
-vi.mock("@/server/infra/workspaceChanges/workspaceChangeFeed", () => ({
-  subscribeWorkspaceChanges: vi.fn<typeof subscribeWorkspaceChanges>(),
-}));
-vi.mock("@/server/infra/runtime/serverRuntime", () => ({
-  currentWorkspaceRoot: () => "/workspace",
+vi.mock("@/server/infra/workspaceChanges/currentWorkspaceChanges", () => ({
+  subscribeCurrentWorkspaceChanges: vi.fn<typeof subscribeCurrentWorkspaceChanges>(),
 }));
 
 const unsubscribe = vi.fn<() => void>();
@@ -14,7 +11,7 @@ let notifyChange: () => void;
 
 beforeEach(() => {
   unsubscribe.mockReset();
-  vi.mocked(subscribeWorkspaceChanges).mockImplementation((_root, listener) => {
+  vi.mocked(subscribeCurrentWorkspaceChanges).mockImplementation((listener) => {
     notifyChange = listener;
     return unsubscribe;
   });
@@ -24,7 +21,7 @@ test("현재 workspace의 변경을 구독하고 SSE 응답을 연다", () => {
   const response = handleWorkspaceEventsRequest(new Request("http://localhost/api/events"));
 
   expect(response.headers.get("Content-Type")).toBe("text/event-stream");
-  expect(vi.mocked(subscribeWorkspaceChanges).mock.calls[0]?.[0]).toBe("/workspace");
+  expect(subscribeCurrentWorkspaceChanges).toHaveBeenCalledOnce();
 });
 
 test("workspace가 바뀌면 invalidate 이벤트를 보낸다", async () => {

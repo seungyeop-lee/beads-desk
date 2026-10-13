@@ -1,5 +1,4 @@
-import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
-import { subscribeWorkspaceChanges } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
+import { subscribeCurrentWorkspaceChanges } from "@/server/infra/workspaceChanges/currentWorkspaceChanges";
 import { INVALIDATE_EVENT } from "@/shared/contract/workspaceEvents";
 
 export function handleWorkspaceEventsRequest(request: Request): Response {
@@ -13,7 +12,7 @@ export function handleWorkspaceEventsRequest(request: Request): Response {
       const send = (chunk: string) => {
         if (!stopped) controller.enqueue(encoder.encode(chunk));
       };
-      const unsubscribe = subscribeWorkspaceChanges(currentWorkspaceRoot(), () =>
+      const unsubscribe = subscribeCurrentWorkspaceChanges(() =>
         send(`event: ${INVALIDATE_EVENT}\ndata: {}\n\n`),
       );
       stop = () => {
