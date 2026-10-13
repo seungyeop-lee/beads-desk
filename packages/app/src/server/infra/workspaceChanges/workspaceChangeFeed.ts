@@ -7,7 +7,8 @@ type Feed = {
   timer: ReturnType<typeof setInterval>;
   fingerprint: ChangeFingerprint | null;
   last: string | null;
-  polling: boolean;
+  /** 진행 중인 조회입니다. */
+  polling: Promise<void> | null;
 };
 
 const DEFAULT_POLL_INTERVAL_MS = 2_000;
@@ -43,7 +44,7 @@ export function subscribeWorkspaceChanges(
       ),
       fingerprint: null,
       last: null,
-      polling: false,
+      polling: null,
     };
     created.timer.unref();
     feeds().set(workspaceRoot, created);
@@ -62,23 +63,36 @@ export function subscribeWorkspaceChanges(
   };
 }
 
-async function poll(workspaceRoot: string, feed: Feed): Promise<void> {
-  // server mode에서는 조회 한 번이 bd 실행이라 주기보다 오래 걸릴 수 있습니다. 겹쳐 실행하지 않습니다.
-  if (feed.polling) return;
-  feed.polling = true;
-  try {
-    if (!feed.fingerprint) {
-      const opened = await openChangeFingerprint(workspaceRoot);
-      if (!opened.ok) return;
-      feed.fingerprint = opened.value;
-    }
-    const current = await feed.fingerprint();
-    if (current === null) return;
-    if (current !== feed.last) {
-      for (const listener of feed.listeners) listener();
-    }
-    feed.last = current;
-  } finally {
-    feed.polling = false;
+/**
+ * 다음 주기를 기다리지 않고 DB 상태를 확인해, 바뀌었으면 구독자에게 알립니다. 쓰기가 끝난 직후에 호출합니다.
+ * 이 호출 뒤에 시작한 조회가 끝나야 돌려줍니다. 구독자가 없으면 아무것도 하지 않습니다.
+ */
+export async function checkWorkspaceChangesNow(workspaceRoot: string): Promise<void> {
+  const feed = feeds().get(workspaceRoot);
+  if (!feed) return;
+  // 진행 중인 조회는 쓰기 전에 값을 읽었을 수 있으므로 끝나기를 기다렸다가 새로 읽습니다.
+  await feed.polling;
+  await poll(workspaceRoot, feed);
+}
+
+// server mode에서는 조회 한 번이 bd 실행이라 주기보다 오래 걸릴 수 있습니다. 진행 중이면 새로 시작하지 않고 그 조회를 돌려줍니다.
+function poll(workspaceRoot: string, feed: Feed): Promise<void> {
+  feed.polling ??= readFingerprint(workspaceRoot, feed).finally(() => {
+    feed.polling = null;
+  });
+  return feed.polling;
+}
+
+async function readFingerprint(workspaceRoot: string, feed: Feed): Promise<void> {
+  if (!feed.fingerprint) {
+    const opened = await openChangeFingerprint(workspaceRoot);
+    if (!opened.ok) return;
+    feed.fingerprint = opened.value;
   }
+  const current = await feed.fingerprint();
+  if (current === null) return;
+  if (current !== feed.last) {
+    for (const listener of feed.listeners) listener();
+  }
+  feed.last = current;
 }

@@ -2,7 +2,7 @@ import { chmod, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { subscribeWorkspaceChanges } from "./workspaceChangeFeed";
+import { checkWorkspaceChangesNow, subscribeWorkspaceChanges } from "./workspaceChangeFeed";
 
 const POLL_INTERVAL_MS = 50;
 
@@ -101,4 +101,34 @@ test("마지막 구독자가 떠나면 조회를 멈춘다", async () => {
   await sleep(POLL_INTERVAL_MS * 6);
 
   expect(await hashQueryCount()).toBe(afterLeave);
+});
+
+test("쓰기 직후 확인을 요청하면 다음 주기를 기다리지 않고 알린다", async () => {
+  let notified = 0;
+  const unsubscribe = subscribeWorkspaceChanges(workDir, () => notified++, {
+    pollIntervalMs: 60_000,
+  });
+  await waitUntil(() => notified === 1);
+
+  await writeFile(hashFile, "hash-2");
+  await checkWorkspaceChangesNow(workDir);
+  unsubscribe();
+
+  expect(notified).toBe(2);
+});
+
+test("조회 중에 확인을 요청하면 그 조회가 끝난 뒤 새로 읽고 나서 끝난다", async () => {
+  const unsubscribe = subscribeWorkspaceChanges(workDir, () => {}, { pollIntervalMs: 60_000 });
+
+  // 구독하자마자 시작한 첫 조회는 쓰기보다 먼저 값을 읽었을 수 있습니다.
+  await checkWorkspaceChangesNow(workDir);
+  unsubscribe();
+
+  expect(await hashQueryCount()).toBe(2);
+});
+
+test("구독자가 없으면 확인 요청에 bd를 실행하지 않는다", async () => {
+  await checkWorkspaceChangesNow(workDir);
+
+  expect(await hashQueryCount()).toBe(0);
 });
