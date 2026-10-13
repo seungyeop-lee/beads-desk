@@ -15,6 +15,7 @@ type Props = {
 
 /**
  * 내용을 받은 뒤에 dialog를 열어, 빈 dialog가 내용을 받으면서 커지는 모습이 보이지 않게 합니다.
+ * 열기 전까지는 화면 맨 위의 막대와 마우스 커서로 불러오는 중임을 알립니다.
  * 열린 dialog에서 다른 이슈로 옮기면 새 이슈를 받을 때까지 이전 이슈를 그대로 보여 줍니다.
  */
 export function IssueDetailDialog({ issueId, issueHref, onClose }: Props) {
@@ -23,6 +24,16 @@ export function IssueDetailDialog({ issueId, issueHref, onClose }: Props) {
   const [lastIssue, setLastIssue] = useState<IssueDetail | null>(null);
   if (data && data !== lastIssue) setLastIssue(data);
   const issue = data ?? (loading ? lastIssue : null);
+  const opening = loading && lastIssue === null;
+
+  useEffect(() => {
+    if (!opening) return;
+    const root = document.documentElement;
+    root.dataset.busy = "";
+    return () => {
+      delete root.dataset.busy;
+    };
+  }, [opening]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -30,33 +41,36 @@ export function IssueDetailDialog({ issueId, issueHref, onClose }: Props) {
   }, [loading]);
 
   return (
-    <dialog
-      ref={dialogRef}
-      className="modal"
-      aria-label={`${issueId} 이슈`}
-      onClose={onClose}
-      onCancel={(event) => {
-        // 입력 중에 누른 Escape는 편집 취소로만 쓰고 dialog를 닫지 않습니다.
-        const active = document.activeElement;
-        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
-          event.preventDefault();
-        }
-      }}
-    >
-      {/* 보이는 이슈가 바뀌면 새로 그려, 이전 이슈의 쓰기 오류와 진행 표시와 스크롤 위치가 남지 않게 합니다. */}
-      <IssueDetailPanel
-        key={issue?.id ?? issueId}
-        issueId={issue?.id ?? issueId}
-        issue={issue}
-        error={issue ? null : error}
-        loading={loading}
-        issueHref={issueHref}
-        onDeleted={() => dialogRef.current?.close()}
-      />
-      <form method="dialog" className="modal-backdrop">
-        <button type="submit">닫기</button>
-      </form>
-    </dialog>
+    <>
+      {opening && <output className="loading-bar" aria-label="이슈를 불러오는 중" />}
+      <dialog
+        ref={dialogRef}
+        className="modal"
+        aria-label={`${issueId} 이슈`}
+        onClose={onClose}
+        onCancel={(event) => {
+          // 입력 중에 누른 Escape는 편집 취소로만 쓰고 dialog를 닫지 않습니다.
+          const active = document.activeElement;
+          if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+            event.preventDefault();
+          }
+        }}
+      >
+        {/* 보이는 이슈가 바뀌면 새로 그려, 이전 이슈의 쓰기 오류와 진행 표시와 스크롤 위치가 남지 않게 합니다. */}
+        <IssueDetailPanel
+          key={issue?.id ?? issueId}
+          issueId={issue?.id ?? issueId}
+          issue={issue}
+          error={issue ? null : error}
+          loading={loading}
+          issueHref={issueHref}
+          onDeleted={() => dialogRef.current?.close()}
+        />
+        <form method="dialog" className="modal-backdrop">
+          <button type="submit">닫기</button>
+        </form>
+      </dialog>
+    </>
   );
 }
 

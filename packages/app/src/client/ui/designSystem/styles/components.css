@@ -202,6 +202,45 @@
     letter-spacing: 0.02em;
     color: color-mix(in oklab, var(--color-base-content) 50%, #0000);
   }
+
+  /*
+   * 화면 맨 위를 좌우로 오가는 가는 막대입니다. 화면을 바꾸지 않고 무언가를 불러오는 중임을 알립니다.
+   * 금방 끝나는 경우 깜빡이지 않도록 0.15초 뒤에 나타납니다.
+   */
+  .loading-bar {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 50;
+    height: 2px;
+    overflow: hidden;
+    animation: loading-bar-appear 0s 150ms both;
+  }
+
+  .loading-bar::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    width: 30%;
+    border-radius: 999px;
+    background-color: color-mix(in oklab, var(--color-base-content) 55%, #0000);
+    animation: loading-bar-slide 1s ease-in-out infinite;
+  }
+
+  @keyframes loading-bar-appear {
+    from {
+      visibility: hidden;
+    }
+  }
+
+  @keyframes loading-bar-slide {
+    from {
+      left: -30%;
+    }
+    to {
+      left: 100%;
+    }
+  }
 }
 
 /* daisyUI 규칙은 layer 안에 있으므로, 아래 override는 layer 밖에 둡니다. */

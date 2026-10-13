@@ -23,3 +23,12 @@
   --input-color: color-mix(in oklab, var(--color-base-content) 45%, #0000);
   outline: none;
 }
+
+/*
+ * 화면을 바꾸기 전에 무언가를 불러오는 동안 html에 data-busy를 켭니다.
+ * 링크나 단추 위에서도 커서가 바뀌도록 모든 요소에 적용합니다.
+ */
+[data-busy],
+[data-busy] * {
+  cursor: progress !important;
+}
