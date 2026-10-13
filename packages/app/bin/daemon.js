@@ -45,10 +45,10 @@ export function createDaemon({
     /** 이미 실행 중이면 새로 띄우지 않고 cwd를 workspace로 등록해 현재 workspace로 바꿉니다. */
     start: ({ cwd, port, open }) =>
       withLock(async () => {
-        requireWorkspace(cwd);
+        const root = workspaceRootOf(cwd);
         const running = await runningServer();
         if (running) {
-          const list = await registerWorkspace(running.url, cwd, true);
+          const list = await registerWorkspace(running.url, root, true);
           print(`이미 실행 중인 서버에서 workspace를 바꿨습니다: ${list.current}`);
           print(`URL: ${running.url}`);
           if (port && port !== running.port) {
@@ -59,8 +59,8 @@ export function createDaemon({
           if (open) openBrowser(running.url);
           return 0;
         }
-        const server = await launch(cwd, port);
-        print(`workspace: ${cwd}`);
+        const server = await launch(root, port);
+        print(`workspace: ${root}`);
         print(`URL: ${server.url}`);
         print("종료하려면 beads-desk stop을 실행하세요.");
         if (open) openBrowser(server.url);
@@ -86,9 +86,9 @@ export function createDaemon({
       withLock(async () => {
         const running = await runningServer();
         if (!running) {
-          requireWorkspace(process.cwd());
+          const root = workspaceRootOf(process.cwd());
           print("실행 중인 서버가 없어 새로 시작합니다.");
-          const server = await launch(process.cwd(), port);
+          const server = await launch(root, port);
           print(`URL: ${server.url}`);
           if (open) openBrowser(server.url);
           return 0;
@@ -270,11 +270,14 @@ function isServerAlive(pid) {
   }
 }
 
-/** 서버와 같은 방식으로 cwd와 그 상위에서 `.beads`를 찾고, 없으면 실패합니다. */
-function requireWorkspace(cwd) {
-  for (let dir = resolve(cwd); !isBeadsWorkspace(dir); dir = dirname(dir)) {
+/** 서버와 같은 방식으로 cwd와 그 상위에서 `.beads`가 있는 디렉터리를 찾고, 없으면 실패합니다. */
+function workspaceRootOf(cwd) {
+  let dir = resolve(cwd);
+  while (!isBeadsWorkspace(dir)) {
     if (dirname(dir) === dir) throw new Error(`beads workspace를 찾지 못했습니다: ${cwd}`);
+    dir = dirname(dir);
   }
+  return dir;
 }
 
 function isBeadsWorkspace(root) {

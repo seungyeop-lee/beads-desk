@@ -249,6 +249,8 @@ test("하위 디렉터리에서 시작하면 상위의 beads workspace로 띄운
   expect(await commands.start({ cwd: nested, open: false })).toBe(0);
 
   expect(await startedPids()).toHaveLength(1);
+  expect(printed).toContain(`workspace: ${first}`);
+  expect(await workspaces()).toEqual({ current: first, workspaces: [first] });
   await commands.stop();
 });
 
