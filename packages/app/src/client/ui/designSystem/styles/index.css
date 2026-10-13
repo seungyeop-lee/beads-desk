@@ -4,6 +4,7 @@
  * 이슈 본문 markdown은 typography의 prose class로 꾸밉니다.
  */
 @import "tailwindcss" source(none);
+@import "./base.css";
 @source "../../../..";
 @plugin "daisyui" {
   themes:
@@ -11,13 +12,3 @@
     dark --prefersdark;
 }
 @plugin "@tailwindcss/typography";
-
-/*
- * daisyUI는 입력 칸이 포커스되면 2px 외곽선을 띄워 그립니다.
- * 외곽선 대신 테두리(기본: 글자색 20%)만 조금 진하게 바꿔 포커스를 표시합니다.
- * daisyUI 규칙은 layer 안에 있으므로, layer 밖에 둔 이 규칙이 우선합니다.
- */
-:is(.input, .textarea, .select):is(:focus, :focus-within, :open) {
-  --input-color: color-mix(in oklab, var(--color-base-content) 45%, #0000);
-  outline: none;
-}
