@@ -34,8 +34,5 @@ export function IssueDetailRoute() {
   }, [currentWorkspace, issueId, close]);
 
   if (!issueId) return null;
-  // 다른 이슈로 옮기면 새로 그려, 이전 이슈의 쓰기 오류와 진행 표시가 남지 않게 합니다.
-  return (
-    <IssueDetailDialog key={issueId} issueId={issueId} issueHref={issueHref} onClose={close} />
-  );
+  return <IssueDetailDialog issueId={issueId} issueHref={issueHref} onClose={close} />;
 }
