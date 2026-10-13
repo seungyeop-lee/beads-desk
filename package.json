@@ -1,0 +1,35 @@
+{
+  "name": "beads-desk-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @seungyeop-lee/beads-desk run dev",
+    "build": "pnpm --filter @seungyeop-lee/beads-desk run build",
+    "start": "pnpm --filter @seungyeop-lee/beads-desk run start",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm run lint:ox && pnpm run lint:eslint",
+    "lint:ox": "oxlint .",
+    "lint:eslint": "eslint .",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "test": "vitest run",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.5",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "lefthook": "^2.2.1",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0",
+    "typescript": "npm:@typescript/typescript6@~6.0.2",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.4"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

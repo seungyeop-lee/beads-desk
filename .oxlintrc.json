@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "nextjs", "jsx-a11y", "vitest", "import"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "nextjs/no-html-link-for-pages": "off",
+    "import/no-cycle": "error"
+  },
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "node": true
+  }
+}

@@ -1,0 +1,20 @@
+.idea/
+.beads/
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Build and coverage output
+coverage/
+dist/
+tmp/
+*.tsbuildinfo
+
+# Local env files
+.env*
+!.env.example

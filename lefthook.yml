@@ -1,0 +1,15 @@
+pre-commit:
+  piped: true
+  jobs:
+    - name: format
+      glob: "*.{js,jsx,mjs,ts,tsx,json,jsonc,css,md}"
+      run: pnpm exec oxfmt --write {staged_files}
+      stage_fixed: true
+    - name: lint
+      glob: "*.{js,mjs,ts,tsx}"
+      run: pnpm exec oxlint --no-error-on-unmatched-pattern {staged_files} && pnpm exec eslint --no-warn-ignored {staged_files}
+
+pre-push:
+  jobs:
+    - name: check
+      run: pnpm run check
