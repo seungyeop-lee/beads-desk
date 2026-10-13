@@ -36,6 +36,9 @@ async function stagePackage() {
     });
   }
 
+  // npm 패키지 페이지에 보이도록 저장소 루트의 README를 함께 넣습니다.
+  await cp(resolve(packageRoot, "..", "..", "README.md"), resolve(stageRoot, "README.md"));
+
   // 내부 workspace 패키지는 빌드 때 server bundle에 포함됩니다.
   // `workspace:*` 명세는 npm이 해석하지 못하므로 devDependencies와 scripts를 빼고 게시합니다.
   delete packageJson.devDependencies;
