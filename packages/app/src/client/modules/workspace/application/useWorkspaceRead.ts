@@ -27,20 +27,26 @@ export function useWorkspaceRead<K, T>(
     () =>
       watchWorkspaceRead(
         () => read(key),
-        (result) =>
-          setLoaded((previous) =>
-            result.ok
-              ? { key, data: result.data, error: null }
-              : {
-                  key,
-                  data: Object.is(previous.key, key) ? previous.data : null,
-                  error: result.error,
-                },
-          ),
+        (result) => setLoaded((previous) => loadedAfterRead(previous, key, result)),
       ),
     [key, read],
   );
 
+  return workspaceReadState(loaded, key);
+}
+
+/** 다시 읽다 실패하면 같은 key의 마지막 데이터를 유지해, 잠깐의 bd 오류로 화면이 비지 않게 합니다. */
+export function loadedAfterRead<K, T>(
+  previous: Loaded<K, T>,
+  key: K,
+  result: ApiResponse<T>,
+): Loaded<K, T> {
+  if (result.ok) return { key, data: result.data, error: null };
+  return { key, data: Object.is(previous.key, key) ? previous.data : null, error: result.error };
+}
+
+/** 지금 key가 아닌 결과는 보이지 않습니다. */
+export function workspaceReadState<K, T>(loaded: Loaded<K, T>, key: K): WorkspaceReadState<T> {
   const current = Object.is(loaded.key, key);
   return {
     data: current ? loaded.data : null,
