@@ -50,7 +50,7 @@ export async function epicChildren(cwd: string, epicId: string): Promise<BdOutco
   if (id.length === 0) {
     return inputError("epic id가 비어 있습니다.");
   }
-  return queryIssues(cwd, ["children", id, "--json"]);
+  return queryIssues(cwd, ["children", "--json", "--", id]);
 }
 
 export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome<IssueDetail>> {

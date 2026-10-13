@@ -214,11 +214,19 @@ describe("decisionRecords", () => {
 
 describe("epicChildren", () => {
   test("epic의 하위 이슈를 조회한다", async () => {
-    await useFakeBd({ "children demo-8g0 --json": { stdout: await fixture("children.json") } });
+    await useFakeBd({ "children --json -- demo-8g0": { stdout: await fixture("children.json") } });
 
     const result = await epicChildren(workDir, "demo-8g0");
 
     expect(result.ok && result.value.map((issue) => issue.id)).toEqual(["demo-8g0.1"]);
+  });
+
+  test("-로 시작하는 epic id도 옵션이 아니라 id로 넘긴다", async () => {
+    await useFakeBd({ "children --json -- -h": { stdout: "[]" } });
+
+    const result = await epicChildren(workDir, "-h");
+
+    expect(result).toEqual({ ok: true, value: [] });
   });
 
   test("epic id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
