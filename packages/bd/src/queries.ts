@@ -4,8 +4,10 @@ import {
   ISSUE_STATUSES,
   isRecord,
   parseIssue,
+  parseIssueDetail,
   parseIssues,
   type Issue,
+  type IssueDetail,
   type IssueStatus,
 } from "./issue";
 import { runBd } from "./runBd";
@@ -47,9 +49,32 @@ export async function epicChildren(cwd: string, epicId: string): Promise<BdQuery
   const id = epicId.trim();
   // bd children은 빈 id를 parent 조건 없음으로 해석해 workspace의 모든 이슈를 돌려줍니다.
   if (id.length === 0) {
-    return { ok: false, error: { message: "epic id가 비어 있습니다.", exitCode: null } };
+    return emptyIdError("epic");
   }
   return queryIssues(cwd, ["children", id, "--json"]);
+}
+
+export async function showIssue(cwd: string, issueId: string): Promise<BdQueryResult<IssueDetail>> {
+  const id = issueId.trim();
+  // bd show는 id가 없으면 마지막으로 다룬 이슈를 보여 줍니다.
+  if (id.length === 0) {
+    return emptyIdError("이슈");
+  }
+  const result = await runBdJson(cwd, [
+    "show",
+    "--json",
+    "--include-comments",
+    "--include-dependents",
+    "--",
+    id,
+  ]);
+  if (!result.ok) {
+    return result;
+  }
+  const detail = parseIssueDetail(Array.isArray(result.value) ? result.value[0] : result.value);
+  return detail
+    ? { ok: true, value: detail }
+    : { ok: false, error: { message: "bd show 출력에 이슈가 없습니다.", exitCode: 0 } };
 }
 
 export async function epicStatuses(cwd: string): Promise<BdQueryResult<EpicStatus[]>> {
@@ -152,6 +177,10 @@ async function runBdJson(cwd: string, args: string[]): Promise<BdQueryResult<unk
       error: { message: "bd 출력을 JSON으로 해석하지 못했습니다.", exitCode: 0 },
     };
   }
+}
+
+function emptyIdError(subject: string): { ok: false; error: BdError } {
+  return { ok: false, error: { message: `${subject} id가 비어 있습니다.`, exitCode: null } };
 }
 
 function parseEpicStatus(value: unknown): EpicStatus | null {

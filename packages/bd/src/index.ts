@@ -1,4 +1,14 @@
-export { ISSUE_STATUSES, parseIssue, parseIssues, type Issue, type IssueStatus } from "./issue";
+export {
+  ISSUE_STATUSES,
+  parseIssue,
+  parseIssueDetail,
+  parseIssues,
+  type Issue,
+  type IssueComment,
+  type IssueDetail,
+  type IssueLink,
+  type IssueStatus,
+} from "./issue";
 export {
   boardIssues,
   epicChildren,
@@ -6,6 +16,7 @@ export {
   listIssues,
   openChangeFingerprint,
   readyIssues,
+  showIssue,
   type BdError,
   type ChangeFingerprint,
   type BdQueryResult,

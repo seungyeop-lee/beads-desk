@@ -20,6 +20,37 @@ export type Issue = {
   closedAt: number | null;
 };
 
+/** 상세 화면에서 다른 이슈와의 의존 관계 한 건입니다. */
+export type IssueLink = {
+  id: string;
+  title: string;
+  status: string;
+  priority: number | null;
+  issueType: string;
+  /** blocks, parent-child, related처럼 bd가 기록한 의존 유형입니다. */
+  dependencyType: string;
+};
+
+export type IssueComment = {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: number;
+};
+
+export type IssueDetail = Issue & {
+  description: string;
+  design: string;
+  acceptanceCriteria: string;
+  notes: string;
+  closeReason: string | null;
+  /** 이 이슈가 의존하는 이슈입니다. */
+  dependencies: IssueLink[];
+  /** 이 이슈에 의존하는 이슈입니다. */
+  dependents: IssueLink[];
+  comments: IssueComment[];
+};
+
 export function parseIssues(value: unknown): Issue[] {
   if (!Array.isArray(value)) {
     return [];
@@ -48,6 +79,44 @@ export function parseIssue(value: unknown): Issue | null {
     updatedAt: timestampOr(value.updated_at, 0),
     closedAt: timestampOr(value.closed_at, null),
   };
+}
+
+export function parseIssueDetail(value: unknown): IssueDetail | null {
+  const issue = parseIssue(value);
+  if (!issue || !isRecord(value)) {
+    return null;
+  }
+  return {
+    ...issue,
+    description: stringOr(value.description, ""),
+    design: stringOr(value.design, ""),
+    acceptanceCriteria: stringOr(value.acceptance_criteria, ""),
+    notes: stringOr(value.notes, ""),
+    closeReason: stringOr(value.close_reason, null),
+    dependencies: recordsOf(value.dependencies).map(parseIssueLink),
+    dependents: recordsOf(value.dependents).map(parseIssueLink),
+    comments: recordsOf(value.comments).map((comment) => ({
+      id: stringOr(comment.id, ""),
+      author: stringOr(comment.author, ""),
+      text: stringOr(comment.text, ""),
+      createdAt: timestampOr(comment.created_at, 0),
+    })),
+  };
+}
+
+function parseIssueLink(value: Record<string, unknown>): IssueLink {
+  return {
+    id: stringOr(value.id, ""),
+    title: stringOr(value.title, ""),
+    status: stringOr(value.status, ""),
+    priority: typeof value.priority === "number" ? value.priority : null,
+    issueType: stringOr(value.issue_type, ""),
+    dependencyType: stringOr(value.dependency_type, ""),
+  };
+}
+
+function recordsOf(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value) ? value.filter(isRecord) : [];
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

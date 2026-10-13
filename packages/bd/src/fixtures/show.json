@@ -1,0 +1,72 @@
+[
+  {
+    "id": "demo-865.1",
+    "title": "Task",
+    "description": "Body **bold**",
+    "design": "Design",
+    "acceptance_criteria": "Accept",
+    "notes": "Notes",
+    "status": "open",
+    "priority": 2,
+    "issue_type": "task",
+    "owner": "owner@example.com",
+    "created_at": "2026-10-13T13:14:20Z",
+    "created_by": "tester",
+    "updated_at": "2026-10-13T13:14:20Z",
+    "labels": ["backend", "ui"],
+    "dependencies": [
+      {
+        "id": "demo-af8",
+        "title": "Prereq",
+        "status": "closed",
+        "priority": 2,
+        "issue_type": "task",
+        "owner": "owner@example.com",
+        "created_at": "2026-10-13T13:14:20Z",
+        "created_by": "tester",
+        "updated_at": "2026-10-13T13:14:22Z",
+        "closed_at": "2026-10-13T13:14:22Z",
+        "close_reason": "Done",
+        "dependency_type": "blocks"
+      },
+      {
+        "id": "demo-865",
+        "title": "Epic",
+        "status": "open",
+        "priority": 2,
+        "issue_type": "epic",
+        "owner": "owner@example.com",
+        "created_at": "2026-10-13T13:14:19Z",
+        "created_by": "tester",
+        "updated_at": "2026-10-13T13:14:19Z",
+        "dependency_type": "parent-child"
+      }
+    ],
+    "dependents": [
+      {
+        "id": "demo-nk4",
+        "title": "Follow",
+        "status": "open",
+        "priority": 2,
+        "issue_type": "task",
+        "created_at": "0001-01-01T00:00:00Z",
+        "updated_at": "0001-01-01T00:00:00Z",
+        "dependency_type": "blocks"
+      }
+    ],
+    "comments": [
+      {
+        "id": "139682b3-9a73-5e2a-9dc3-9bc2eccf6e6b",
+        "issue_id": "demo-865.1",
+        "author": "tester",
+        "text": "First comment",
+        "created_at": "2026-10-13T13:14:21Z"
+      }
+    ],
+    "parent": "demo-865",
+    "dependent_count": 1,
+    "dependency_count": 2,
+    "comment_count": 1,
+    "revision": "-4392306311335642990"
+  }
+]

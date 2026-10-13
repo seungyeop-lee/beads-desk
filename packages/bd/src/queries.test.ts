@@ -9,6 +9,7 @@ import {
   listIssues,
   openChangeFingerprint,
   readyIssues,
+  showIssue,
 } from "./queries";
 
 type FakeResponse = { stdout?: string; stderr?: string; code?: number };
@@ -179,6 +180,48 @@ describe("epicChildren", () => {
     expect(result).toEqual({
       ok: false,
       error: { message: "epic id가 비어 있습니다.", exitCode: null },
+    });
+  });
+});
+
+describe("showIssue", () => {
+  test("댓글과 이 이슈에 의존하는 이슈까지 담아 조회한다", async () => {
+    await useFakeBd({
+      "show --json --include-comments --include-dependents -- demo-865.1": {
+        stdout: await fixture("show.json"),
+      },
+    });
+
+    const result = await showIssue(workDir, "demo-865.1");
+
+    expect(result.ok && result.value.comments.length).toBe(1);
+    expect(result.ok && result.value.dependents.length).toBe(1);
+  });
+
+  test("id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
+    await useFakeBd({});
+
+    const result = await showIssue(workDir, " ");
+
+    expect(result).toEqual({
+      ok: false,
+      error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
+    });
+  });
+
+  test("bd가 실패하면 오류를 돌려준다", async () => {
+    await useFakeBd({
+      "show --json --include-comments --include-dependents -- demo-zzz": {
+        stderr: "Issue demo-zzz not found",
+        code: 1,
+      },
+    });
+
+    const result = await showIssue(workDir, "demo-zzz");
+
+    expect(result).toEqual({
+      ok: false,
+      error: { message: "Issue demo-zzz not found\n", exitCode: 1 },
     });
   });
 });

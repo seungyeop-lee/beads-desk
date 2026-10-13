@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
-import { parseIssues } from "./issue";
+import { parseIssueDetail, parseIssues } from "./issue";
 
 async function fixture(name: string): Promise<unknown> {
   return JSON.parse(await readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));
@@ -64,5 +64,70 @@ describe("parseIssues", () => {
 
   test("배열이 아니면 빈 목록을 돌려준다", () => {
     expect(parseIssues({ error: "no issues" })).toEqual([]);
+  });
+});
+
+describe("parseIssueDetail", () => {
+  test("bd show 출력을 본문, 의존 관계, 댓글이 담긴 상세로 바꾼다", async () => {
+    const [shown] = (await fixture("show.json")) as unknown[];
+
+    const detail = parseIssueDetail(shown);
+
+    expect(detail).toMatchObject({
+      id: "demo-865.1",
+      description: "Body **bold**",
+      design: "Design",
+      acceptanceCriteria: "Accept",
+      notes: "Notes",
+      closeReason: null,
+      labels: ["backend", "ui"],
+      parent: "demo-865",
+    });
+    expect(detail?.dependencies).toEqual([
+      {
+        id: "demo-af8",
+        title: "Prereq",
+        status: "closed",
+        priority: 2,
+        issueType: "task",
+        dependencyType: "blocks",
+      },
+      {
+        id: "demo-865",
+        title: "Epic",
+        status: "open",
+        priority: 2,
+        issueType: "epic",
+        dependencyType: "parent-child",
+      },
+    ]);
+    expect(detail?.dependents.map((link) => [link.id, link.dependencyType])).toEqual([
+      ["demo-nk4", "blocks"],
+    ]);
+    expect(detail?.comments).toEqual([
+      {
+        id: "139682b3-9a73-5e2a-9dc3-9bc2eccf6e6b",
+        author: "tester",
+        text: "First comment",
+        createdAt: Date.parse("2026-10-13T13:14:21Z"),
+      },
+    ]);
+  });
+
+  test("본문과 목록 필드가 없으면 빈 값으로 채운다", () => {
+    expect(parseIssueDetail({ id: "x-1", close_reason: "Done" })).toMatchObject({
+      description: "",
+      design: "",
+      acceptanceCriteria: "",
+      notes: "",
+      closeReason: "Done",
+      dependencies: [],
+      dependents: [],
+      comments: [],
+    });
+  });
+
+  test("id가 없으면 null을 돌려준다", () => {
+    expect(parseIssueDetail({ title: "no id" })).toBeNull();
   });
 });
