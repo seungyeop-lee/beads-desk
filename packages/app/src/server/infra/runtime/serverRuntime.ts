@@ -12,7 +12,7 @@ const RUNTIME_KEY = Symbol.for("beads-desk.serverRuntime");
 type RuntimeHolder = { [RUNTIME_KEY]?: ServerRuntime };
 
 export async function startServerRuntime(): Promise<void> {
-  const workspaceRoot = process.env.BEADS_DESK_WORKSPACE || process.cwd();
+  const workspaceRoot = launchWorkspaceRoot();
   const runtime: ServerRuntime = { workspaceRoot, bdVersion: null };
   (globalThis as RuntimeHolder)[RUNTIME_KEY] = runtime;
 
@@ -24,4 +24,14 @@ export async function startServerRuntime(): Promise<void> {
 
 export function getServerRuntime(): ServerRuntime | null {
   return (globalThis as RuntimeHolder)[RUNTIME_KEY] ?? null;
+}
+
+/** bd를 실행할 workspace 디렉터리입니다. */
+export function currentWorkspaceRoot(): string {
+  return getServerRuntime()?.workspaceRoot ?? launchWorkspaceRoot();
+}
+
+// launcher가 사용자가 명령을 실행한 디렉터리를 넘깁니다. `next dev`로 직접 띄우면 서버의 cwd를 씁니다.
+function launchWorkspaceRoot(): string {
+  return process.env.BEADS_DESK_WORKSPACE || process.cwd();
 }
