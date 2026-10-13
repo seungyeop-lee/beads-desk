@@ -24,6 +24,30 @@
 - app의 상태(DB 감시 등)는 `packages/app/src/server/infra/` 아래에 구현하고 `src/instrumentation.ts`에서 시작합니다.
 - bd 실행 큐는 `@beads-desk/bd`가 첫 호출 때 직접 만듭니다. app에서 bd 실행을 따로 직렬화하지 않습니다.
 
+## 소스 구조
+
+`packages/app/src`는 실행 위치에 따라 `app`, `client`, `server`, `shared`로 나누고, 각각을 다시 layer로 나눕니다.
+
+| 경로                                         | 두는 것                                                                                      |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `app/(client)`                               | 화면 route의 `page.tsx`와 `layout.tsx`. 화면 자체는 `client/ui/screens`에 두고 조립만 합니다 |
+| `app/(server)`                               | Route Handler. `server/web`의 `*RouteApi.ts`만 호출합니다                                    |
+| `client/ui`                                  | 화면, component, 스타일                                                                      |
+| `client/modules/<기능>/application`          | 기능 상태와 조회·갱신 순서. React hook을 포함합니다                                          |
+| `client/modules/<기능>/domain`               | 정렬·필터처럼 외부 통로 없이 성립하는 규칙                                                   |
+| `client/infra`                               | HTTP, SSE 같은 browser 통로                                                                  |
+| `server/web`                                 | Route API와 Server Action. 입력 검사와 응답 변환을 여기서 끝냅니다                           |
+| `server/modules/<기능>/{application,domain}` | bd 호출을 넘어서는 업무 규칙이 생길 때 만듭니다                                              |
+| `server/infra`                               | 서버 전역 상태와 외부 기술 연결                                                              |
+| `shared/contract`                            | client와 server가 주고받는 API 경로와 요청·응답 형태                                         |
+| `shared/domain`                              | client와 server가 함께 쓰는 업무 규칙                                                        |
+
+- 읽기는 client infra → `/api/...` Route Handler → `server/web/*RouteApi.ts` → `@beads-desk/bd` 순서로 연결합니다.
+- 쓰기는 `server/web`의 Server Action(`*Action.ts`, `*Actions.ts`)으로 처리합니다. client는 server에서 이 파일만 import합니다.
+- 디렉터리는 함께 바뀌는 기능 이름으로 묶습니다. `utils`, `helpers`, `common` 같은 역할 이름 디렉터리는 만들지 않습니다.
+
+import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `packages/app/src/server/architecture.test.ts`가, 파일 단위 순환은 oxlint의 `import/no-cycle`이 검사합니다. 경계를 바꾸면 이 검사들도 함께 고칩니다.
+
 ## 작성 언어
 
 문서, 코드 주석, 커밋 메시지는 한국어로 씁니다. 식별자, 라이브러리 이름, 명령어는 원문을 유지합니다. 커밋 메시지는 Conventional Commits 형식(`type(scope): 제목`)을 따릅니다.

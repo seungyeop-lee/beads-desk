@@ -4,6 +4,134 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+// 문서로만 적어 두면 낡는 경계를 여기서 강제합니다.
+// 각 패턴은 `@/` alias와 상대 경로 양쪽을 모두 막습니다.
+const boundaries = {
+  bdPackage: {
+    regex:
+      "^@/|^@seungyeop-lee/beads-desk(?:/|$)|^(?:\\.\\./)+app(?:/|$)|^next(?:/|$)|^react(?:/|$)",
+    message: "bd package는 app, Next.js, React에 의존하지 않습니다.",
+  },
+  bdServerPackage: {
+    regex: "^@beads-desk/bd(?:$|/(?!issue$))",
+    message:
+      "Client와 shared는 bd 실행 구현 대신 client-safe model(`@beads-desk/bd/issue`)만 사용합니다.",
+  },
+  serverRouteSurface: {
+    regex:
+      "^@/server/(?!web/[^/]+/[^/]*RouteApi$)|^(?:\\.\\./)+server/(?!web/[^/]+/[^/]*RouteApi$)",
+    message: "Route handler는 `server/web`의 `*RouteApi.ts`만 import합니다.",
+  },
+  parentFileImport: {
+    regex: "^(?:\\.\\./)+[^/]*$",
+    message:
+      "하위 디렉터리는 상위 디렉터리의 파일을 직접 지목하지 않습니다. 함께 쓰는 선언은 안쪽 layer나 shared 소유 경계로 옮깁니다.",
+  },
+  clientFromServer: {
+    regex: "^@/client(?:/|$)|^(?:\\.\\./)+client(?:/|$)",
+    message: "server는 client를 import하지 않습니다.",
+  },
+  serverOuterFromApplication: {
+    regex: "^@/server/(?:web|infra)(?:/|$)|^(?:\\.\\./)+(?:web|infra)(?:/|$)",
+    message: "server application은 web과 infra 구현에 의존하지 않습니다.",
+  },
+  serverTechnologyFromApplication: {
+    regex: "^node:|^next(?:/|$)|^@beads-desk/bd(?:/|$)",
+    message:
+      "server application은 runtime 구현과 기술 package 대신 자신이 선언한 port에 의존합니다.",
+  },
+  serverOuterFromDomain: {
+    regex:
+      "^@/server/(?:web|infra|modules/[^/]+/application)(?:/|$)|^(?:\\.\\./)+(?:web|infra|application|[^/]+/application)(?:/|$)",
+    message: "server domain은 application과 바깥 adapter layer에 의존하지 않습니다.",
+  },
+  serverTechnologyFromDomain: {
+    regex: "^node:|^next(?:/|$)|^@beads-desk/bd(?:/|$)",
+    message: "server domain은 runtime 구현과 외부 기술 package에 의존하지 않습니다.",
+  },
+  serverFromClient: {
+    regex: "^@/server/(?!web/.+Actions?$)|^(?:\\.\\./)+server/(?!web/.+Actions?$)",
+    message:
+      "Client는 `server/web`의 Server Action(`*Action.ts`, `*Actions.ts`)만 import합니다. 경계 타입은 `shared/contract`에서 가져옵니다.",
+  },
+  sharedIsolation: {
+    regex: "^@/(?:app|client|server)(?:/|$)|^(?:\\.\\./)+(?:app|client|server)(?:/|$)",
+    message: "shared는 app, client, server runtime에 의존하지 않습니다.",
+  },
+  sharedContractFromDomain: {
+    regex: "^@/shared/contract(?:/|$)|^(?:\\.\\./)+contract(?:/|$)",
+    message: "shared domain은 runtime 경계 contract에 의존하지 않습니다.",
+  },
+  sharedRuntimeTechnology: {
+    regex: "^node:|^next(?:/|$)|^react(?:/|$)",
+    message: "shared는 runtime 구현 대신 공개 값과 순수 계약 변환을 사용합니다.",
+  },
+  sharedDomainTechnology: {
+    regex: "^(?![./]|@/shared/domain(?:/|$)).+",
+    message: "shared domain은 공통 업무 규칙만 사용하며 외부 기술과 저장 계약에 의존하지 않습니다.",
+  },
+  clientUiFromApplication: {
+    regex: "^@/client/ui(?:/|$)|^(?:\\.\\./)+ui(?:/|$)",
+    message: "client application은 UI에 의존하지 않습니다.",
+  },
+  clientTechnologyFromApplication: {
+    regex: "^next(?:/|$)|\\.css$",
+    message: "client application은 화면·browser adapter 기술 대신 UI나 infra 경계를 사용합니다.",
+  },
+  clientHigherFromInfra: {
+    regex:
+      "^@/client/(?:ui|modules/[^/]+/application)(?:/|$)|^(?:\\.\\./)+(?:ui|modules/[^/]+/application)(?:/|$)",
+    message: "client infra는 UI와 application에 의존하지 않습니다.",
+  },
+  clientOuterFromDomain: {
+    regex:
+      "^@/client/(?:ui|infra|modules/[^/]+/application)(?:/|$)|^(?:\\.\\./)+(?:ui|infra|application|[^/]+/application|modules/[^/]+/application)(?:/|$)",
+    message: "client domain은 application과 바깥 adapter layer에 의존하지 않습니다.",
+  },
+  clientTechnologyFromDomain: {
+    regex: "^react(?:/|$)|^next(?:/|$)|\\.css$",
+    message: "client domain은 UI framework와 browser adapter 기술에 의존하지 않습니다.",
+  },
+};
+
+const clientBoundaries = [boundaries.serverFromClient, boundaries.bdServerPackage];
+
+const clientAdapterGlobals = [
+  "window",
+  "document",
+  "navigator",
+  "localStorage",
+  "sessionStorage",
+  "fetch",
+  "EventSource",
+  "process",
+  "URL",
+];
+const clientUiGlobals = [
+  {
+    name: "fetch",
+    message: "Client UI는 HTTP를 직접 호출하지 않고 infra adapter를 사용합니다.",
+  },
+  {
+    name: "EventSource",
+    message: "Client UI는 서버 이벤트를 직접 구독하지 않고 infra adapter를 사용합니다.",
+  },
+  {
+    name: "localStorage",
+    message: "Client UI는 browser storage를 직접 읽지 않고 infra adapter를 사용합니다.",
+  },
+  {
+    name: "sessionStorage",
+    message: "Client UI는 browser storage를 직접 읽지 않고 infra adapter를 사용합니다.",
+  },
+];
+// 파일 단위 순환은 oxlint의 `import/no-cycle`이, layer 방향과 root 구조는
+// `packages/app/src/server/architecture.test.ts`가 검사합니다.
+
+const restrict = (...patterns) => ({
+  "@typescript-eslint/no-restricted-imports": ["error", { patterns }],
+});
+
 export default defineConfig([
   globalIgnores(["**/node_modules/**", "**/.next/**", "**/next-env.d.ts", "**/dist/**"]),
   js.configs.recommended,
@@ -12,6 +140,124 @@ export default defineConfig([
   {
     languageOptions: {
       globals: { ...globals.node, ...globals.browser },
+    },
+  },
+  {
+    files: ["packages/bd/src/**/*.ts"],
+    rules: restrict(boundaries.bdPackage),
+  },
+  {
+    files: ["packages/app/src/server/**/*.{ts,tsx}"],
+    rules: restrict(boundaries.parentFileImport, boundaries.clientFromServer),
+  },
+  {
+    files: ["packages/app/src/server/modules/*/application/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: restrict(
+      boundaries.parentFileImport,
+      boundaries.clientFromServer,
+      boundaries.serverOuterFromApplication,
+      boundaries.serverTechnologyFromApplication,
+    ),
+  },
+  {
+    files: ["packages/app/src/server/modules/*/domain/**/*.{ts,tsx}"],
+    rules: restrict(
+      boundaries.parentFileImport,
+      boundaries.clientFromServer,
+      boundaries.serverOuterFromDomain,
+      boundaries.serverTechnologyFromDomain,
+    ),
+  },
+  {
+    files: ["packages/app/src/app/(server)/**/route.ts"],
+    rules: restrict(boundaries.serverRouteSurface),
+  },
+  {
+    files: ["packages/app/src/shared/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      ...restrict(
+        boundaries.sharedIsolation,
+        boundaries.sharedRuntimeTechnology,
+        boundaries.bdServerPackage,
+      ),
+      "no-restricted-globals": [
+        "error",
+        {
+          globals: [
+            "window",
+            "document",
+            "navigator",
+            "localStorage",
+            "sessionStorage",
+            "fetch",
+            "EventSource",
+            "process",
+            "setTimeout",
+            "clearTimeout",
+            "setInterval",
+            "clearInterval",
+            "requestAnimationFrame",
+          ],
+          checkGlobalObject: true,
+        },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "NewExpression[callee.name='Date'][arguments.length=0], CallExpression[callee.name='Date'], MemberExpression[object.name='Date'][property.name='now'], MemberExpression[object.name='Math'][property.name='random']",
+          message:
+            "shared는 현재 시각과 난수를 직접 만들지 않고 호출자가 전달한 값으로 계산합니다.",
+        },
+      ],
+    },
+  },
+  {
+    files: ["packages/app/src/shared/domain/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: restrict(
+      boundaries.sharedIsolation,
+      boundaries.sharedContractFromDomain,
+      boundaries.sharedDomainTechnology,
+    ),
+  },
+  {
+    files: ["packages/app/src/client/**/*.{ts,tsx}"],
+    rules: restrict(...clientBoundaries),
+  },
+  {
+    files: ["packages/app/src/client/ui/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-globals": ["error", ...clientUiGlobals],
+    },
+  },
+  {
+    files: ["packages/app/src/client/modules/*/application/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      ...restrict(
+        ...clientBoundaries,
+        boundaries.clientUiFromApplication,
+        boundaries.clientTechnologyFromApplication,
+      ),
+      "no-restricted-globals": ["error", ...clientAdapterGlobals],
+    },
+  },
+  {
+    files: ["packages/app/src/client/infra/**/*.{ts,tsx}"],
+    rules: restrict(...clientBoundaries, boundaries.clientHigherFromInfra),
+  },
+  {
+    files: ["packages/app/src/client/modules/*/domain/**/*.{ts,tsx}"],
+    rules: {
+      ...restrict(
+        ...clientBoundaries,
+        boundaries.clientOuterFromDomain,
+        boundaries.clientTechnologyFromDomain,
+      ),
+      "no-restricted-globals": ["error", ...clientAdapterGlobals],
     },
   },
 ]);

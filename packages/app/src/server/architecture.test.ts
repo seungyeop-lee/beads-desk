@@ -1,0 +1,250 @@
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
+
+const SRC_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+type Layer =
+  | "app"
+  | "client/ui"
+  | "client/application"
+  | "client/infra"
+  | "client/domain"
+  | "server/web"
+  | "server/infra"
+  | "server/application"
+  | "server/domain"
+  | "shared/contract"
+  | "shared/domain";
+
+type AllowedDependencies = Readonly<Partial<Record<Layer, true>>>;
+
+const ALLOWED_DEPENDENCIES: Record<Layer, AllowedDependencies> = {
+  app: {
+    app: true,
+    "client/ui": true,
+    "server/web": true,
+    "server/infra": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "client/ui": {
+    "client/ui": true,
+    "client/application": true,
+    "client/infra": true,
+    "client/domain": true,
+    "server/web": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "client/application": {
+    "client/application": true,
+    "client/infra": true,
+    "client/domain": true,
+    "server/web": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "client/infra": {
+    "client/infra": true,
+    "client/domain": true,
+    "server/web": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "client/domain": {
+    "client/domain": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "server/web": {
+    "server/web": true,
+    "server/application": true,
+    "server/infra": true,
+    "server/domain": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "server/infra": {
+    "server/infra": true,
+    "server/application": true,
+    "server/domain": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "server/application": {
+    "server/application": true,
+    "server/domain": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "server/domain": {
+    "server/domain": true,
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "shared/contract": {
+    "shared/contract": true,
+    "shared/domain": true,
+  },
+  "shared/domain": {
+    "shared/domain": true,
+  },
+};
+
+/** Next.js가 정해진 위치에서 찾는 server entrypoint 파일입니다. app layer로 취급합니다. */
+const FRAMEWORK_ENTRYPOINTS = ["instrumentation.ts"];
+
+test("production import는 안쪽 layer만 가리킨다", () => {
+  expect(describeBoundaryViolation()).toBeNull();
+});
+
+test("runtime root에는 adapter layer와 modules만 둔다", () => {
+  expect(unexpectedRootEntries()).toEqual([]);
+});
+
+test("module root에는 application과 domain만 둔다", () => {
+  expect(unexpectedModuleEntries()).toEqual([]);
+});
+
+test("module core에는 adapter와 UI artifact를 두지 않는다", () => {
+  expect(misplacedModuleCoreEntries()).toEqual([]);
+});
+
+test("adapter layer 아래에 다른 layer 이름을 다시 두지 않는다", () => {
+  expect(nestedAdapterLayerEntries()).toEqual([]);
+});
+
+function describeBoundaryViolation(): string | null {
+  for (const file of sourceFilesIn(SRC_DIR)) {
+    const fromPath = sourcePath(file);
+    const from = layerOf(fromPath);
+    if (!from) return `layer 밖에 production module이 있습니다: ${fromPath}`;
+
+    for (const { specifier, line } of importsOf(file)) {
+      const targetPath = internalTargetPath(specifier, file);
+      if (!targetPath) continue;
+      const to = layerOf(targetPath);
+      if (!to) return `${fromPath}:${line}이 layer 밖 module을 import합니다: ${specifier}`;
+      if (fromPath.startsWith("app/(client)/") && to === "server/infra") {
+        return `${fromPath}:${line}의 client entrypoint는 server infra를 직접 import할 수 없습니다: ${specifier}`;
+      }
+      if (!ALLOWED_DEPENDENCIES[from][to]) {
+        return `${fromPath}:${line}의 ${from} → ${to} 의존은 허용되지 않습니다: ${specifier}`;
+      }
+    }
+  }
+  return null;
+}
+
+function unexpectedRootEntries(): string[] {
+  return [
+    ...entriesOutside("client", { ui: true, modules: true, infra: true }),
+    ...entriesOutside("server", { web: true, modules: true, infra: true }),
+    ...entriesOutside("shared", { contract: true, domain: true }),
+  ];
+}
+
+function unexpectedModuleEntries(): string[] {
+  return ["client", "server"].flatMap((runtime) => {
+    const modulesRoot = `${runtime}/modules`;
+    return directoryEntries(modulesRoot).flatMap((module) => {
+      const moduleRoot = `${modulesRoot}/${module.name}`;
+      if (!module.isDirectory()) return [moduleRoot];
+      return entriesOutside(moduleRoot, { application: true, domain: true });
+    });
+  });
+}
+
+function misplacedModuleCoreEntries(): string[] {
+  const misplacedDirectory =
+    /\/modules\/[^/]+\/(?:application|domain)\/(?:[^/]+\/)*(?:ui|web|infra|shared)(?:\/|$)/;
+  const uiArtifact =
+    /\/modules\/[^/]+\/(?:application|domain)\/.*(?:Screen|Modal|Pane)[^/]*\.[cm]?[jt]sx?$/;
+  return ["client", "server"]
+    .flatMap((runtime) => entryPathsIn(`${runtime}/modules`))
+    .filter(
+      (path) => path.endsWith(".css") || misplacedDirectory.test(path) || uiArtifact.test(path),
+    );
+}
+
+function nestedAdapterLayerEntries(): string[] {
+  const nestedLayer =
+    /^(?:client\/(?:ui|infra)|server\/(?:web|infra))\/(?:application|domain|ui|web|infra|shared)(?:\/|$)/;
+  return ["client/ui", "client/infra", "server/web", "server/infra"]
+    .flatMap(entryPathsIn)
+    .filter((path) => nestedLayer.test(path));
+}
+
+function entryPathsIn(root: string): string[] {
+  return directoryEntries(root).flatMap((entry) => {
+    const path = `${root}/${entry.name}`;
+    return entry.isDirectory() ? [path, ...entryPathsIn(path)] : [path];
+  });
+}
+
+function entriesOutside(root: string, allowed: Readonly<Partial<Record<string, true>>>): string[] {
+  return directoryEntries(root).flatMap((entry) => {
+    if (allowed[entry.name]) return [];
+    if (root === "server" && entry.name === "architecture.test.ts") return [];
+    return [`${root}/${entry.name}`];
+  });
+}
+
+// 아직 코드가 없는 layer 디렉터리는 만들지 않으므로 없는 디렉터리는 빈 디렉터리로 봅니다.
+function directoryEntries(root: string) {
+  const dir = join(SRC_DIR, root);
+  return existsSync(dir) ? readdirSync(dir, { withFileTypes: true }) : [];
+}
+
+function sourceFilesIn(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFilesIn(full);
+    if (!/\.(?:ts|tsx)$/.test(entry.name) || /\.test\.(?:ts|tsx)$/.test(entry.name)) return [];
+    return [full];
+  });
+}
+
+const IMPORT_PATTERN = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
+
+function importsOf(file: string): { specifier: string; line: number }[] {
+  const content = readFileSync(file, "utf8");
+  return [...content.matchAll(IMPORT_PATTERN)].map((match) => ({
+    specifier: match[1]!,
+    line: content.slice(0, match.index).split("\n").length,
+  }));
+}
+
+function internalTargetPath(specifier: string, fromFile: string): string | null {
+  if (specifier.startsWith("@/")) return specifier.slice(2);
+  if (!specifier.startsWith(".")) return null;
+  const target = relative(SRC_DIR, resolve(dirname(fromFile), specifier));
+  if (target.startsWith("..")) return null;
+  return target.split(sep).join("/");
+}
+
+function sourcePath(file: string): string {
+  return relative(SRC_DIR, file).split(sep).join("/");
+}
+
+function layerOf(path: string): Layer | null {
+  if (path === "app" || path.startsWith("app/")) return "app";
+  if (FRAMEWORK_ENTRYPOINTS.includes(path)) return "app";
+
+  const moduleLayer = path.match(/^(client|server)\/modules\/[^/]+\/(application|domain)(?:\/|$)/);
+  if (moduleLayer) return `${moduleLayer[1]}/${moduleLayer[2]}` as Layer;
+
+  for (const layer of [
+    "client/ui",
+    "client/infra",
+    "server/web",
+    "server/infra",
+    "shared/contract",
+    "shared/domain",
+  ] satisfies Layer[]) {
+    if (path === layer || path.startsWith(`${layer}/`)) return layer;
+  }
+  return null;
+}
