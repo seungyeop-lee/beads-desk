@@ -13,7 +13,7 @@ import { IssueTable } from "./IssueTable";
 export function IssuesScreen() {
   const [filter, setFilter] = useState<IssueListFilter>({ kind: "status", statuses: [] });
   const [refinement, setRefinement] = useState<IssueListRefinement>({ types: [], search: "" });
-  const { issues, error, loading } = useIssueList(filter);
+  const { data: issues, error, loading } = useIssueList(filter);
   const shown = issues ? visibleIssues(issues, filter, refinement) : [];
 
   return (
