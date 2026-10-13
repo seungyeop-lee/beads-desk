@@ -1,5 +1,5 @@
-import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { spawn, spawnSync } from "node:child_process";
+import { appendFile, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -21,7 +21,9 @@ const server = createServer(async (request, response) => {
     response.writeHead(status, { "Content-Type": "application/json" });
     response.end(JSON.stringify(body));
   };
-  if (request.url === "/api/health") return send(200, {});
+  if (request.url === "/api/health") {
+    return send(200, { runtime: { bdVersion: process.env.BD_MISSING ? null : "bd version 1.3.1" } });
+  }
   if (request.method === "GET") return send(200, { ok: true, data: { current, workspaces } });
   let raw = "";
   for await (const chunk of request) raw += chunk;
@@ -38,6 +40,7 @@ let root: string;
 let pidLog: string;
 let serverScript: string;
 const openBrowser = vi.fn<(url: string) => void>();
+let printed: string[];
 let nextPort = 39_600 + Math.floor(Math.random() * 300);
 
 beforeEach(async () => {
@@ -46,6 +49,7 @@ beforeEach(async () => {
   serverScript = join(root, "fake-server.mjs");
   await writeFile(serverScript, FAKE_SERVER);
   openBrowser.mockReset();
+  printed = [];
 });
 
 afterEach(async () => {
@@ -58,14 +62,14 @@ afterEach(async () => {
   }
 });
 
-function daemon() {
+function daemon(env: NodeJS.ProcessEnv = {}) {
   const defaultPort = nextPort;
   nextPort += 10;
   return createDaemon({
     runtimeDir: join(root, "runtime"),
     defaultPort,
     openBrowser,
-    print: () => {},
+    print: (message: string) => printed.push(message),
     serverCommand: (port: number, workspaceRoot: string) => ({
       command: process.execPath,
       args: [serverScript],
@@ -74,6 +78,7 @@ function daemon() {
         PORT: String(port),
         BEADS_DESK_WORKSPACE: workspaceRoot,
         PID_LOG: pidLog,
+        ...env,
       },
     }),
   });
@@ -97,6 +102,23 @@ function isAlive(pid: number): boolean {
   } catch {
     return false;
   }
+}
+
+/** HTTP 요청을 받지 않고 계속 실행되는 process를 띄웁니다. 테스트가 끝나면 종료되도록 pid를 기록합니다. */
+async function idleProcess(options: { detached: boolean }): Promise<number> {
+  const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
+    ...options,
+    stdio: "ignore",
+  });
+  await appendFile(pidLog, `${child.pid}\n`);
+  return child.pid!;
+}
+
+async function writeServerState(pid: number): Promise<void> {
+  await writeFile(
+    join(root, "runtime", "server.json"),
+    JSON.stringify({ pid, port: 1, url: "http://127.0.0.1:1" }),
+  );
 }
 
 async function serverState(): Promise<{ url: string; port: number }> {
@@ -182,5 +204,60 @@ test("비정상 종료한 명령이 남긴 lock은 기다리지 않고 무시한
   expect(await commands.start({ cwd: first, open: false })).toBe(0);
 
   expect(Date.now() - started).toBeLessThan(5_000);
+  await commands.stop();
+});
+
+test("응답하지 않는 서버도 stop으로 끈다", async () => {
+  const commands = daemon();
+  const hung = await idleProcess({ detached: true });
+  await writeServerState(hung);
+
+  expect(await commands.stop()).toBe(0);
+
+  expect(isAlive(hung)).toBe(false);
+});
+
+test("상태 파일의 pid를 다른 process가 쓰고 있으면 그 process를 끄지 않고 상태 파일만 지운다", async () => {
+  const commands = daemon();
+  const unrelated = await idleProcess({ detached: false });
+  await writeServerState(unrelated);
+
+  expect(await commands.stop()).toBe(2);
+
+  expect(isAlive(unrelated)).toBe(true);
+  expect(await commands.stop()).toBe(2);
+});
+
+test("beads workspace가 아닌 디렉터리에서는 서버를 띄우지 않는다", async () => {
+  const commands = daemon();
+  const plain = join(root, "plain");
+  await mkdir(plain);
+
+  await expect(commands.start({ cwd: plain, open: false })).rejects.toThrow(
+    `beads workspace를 찾지 못했습니다: ${plain}`,
+  );
+
+  expect(await startedPids()).toEqual([]);
+});
+
+test("하위 디렉터리에서 시작하면 상위의 beads workspace로 띄운다", async () => {
+  const commands = daemon();
+  const first = await workspace("first");
+  const nested = join(first, "src", "deep");
+  await mkdir(nested, { recursive: true });
+
+  expect(await commands.start({ cwd: nested, open: false })).toBe(0);
+
+  expect(await startedPids()).toHaveLength(1);
+  await commands.stop();
+});
+
+test("서버가 bd를 실행하지 못하면 시작은 하되 경고를 출력한다", async () => {
+  const commands = daemon({ BD_MISSING: "1" });
+  const first = await workspace("first");
+
+  expect(await commands.start({ cwd: first, open: false })).toBe(0);
+
+  expect(printed).toContainEqual(expect.stringContaining("bd를 실행하지 못했습니다"));
   await commands.stop();
 });

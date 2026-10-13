@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createServer } from "node:net";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const HOST = "127.0.0.1";
 const MAX_PORT_ATTEMPTS = 100;
@@ -45,6 +45,7 @@ export function createDaemon({
     /** 이미 실행 중이면 새로 띄우지 않고 cwd를 workspace로 등록해 현재 workspace로 바꿉니다. */
     start: ({ cwd, port, open }) =>
       withLock(async () => {
+        requireWorkspace(cwd);
         const running = await runningServer();
         if (running) {
           const list = await registerWorkspace(running.url, cwd, true);
@@ -61,14 +62,16 @@ export function createDaemon({
         return 0;
       }),
 
+    /** 서버가 응답하지 않아도 끌 수 있도록 응답을 기다리지 않고 종료합니다. */
     stop: () =>
       withLock(async () => {
-        const running = await runningServer();
-        if (!running) {
+        const state = readState();
+        if (!state || !isServerAlive(state.pid)) {
+          rmSync(statePath, { force: true });
           print("실행 중인 beads-desk 서버가 없습니다.");
           return 2;
         }
-        await terminate(running.pid);
+        await terminate(state.pid);
         print("서버를 종료했습니다.");
         return 0;
       }),
@@ -78,6 +81,7 @@ export function createDaemon({
       withLock(async () => {
         const running = await runningServer();
         if (!running) {
+          requireWorkspace(process.cwd());
           print("실행 중인 서버가 없어 새로 시작합니다.");
           const server = await launch(process.cwd(), port);
           print(`URL: ${server.url}`);
@@ -137,18 +141,19 @@ export function createDaemon({
       await terminate(server.pid);
       throw new Error(`${error.message} 로그: ${logPath}`, { cause: error });
     }
+    if ((await readHealth(url))?.runtime?.bdVersion === null) {
+      print(
+        "경고: 서버가 bd를 실행하지 못했습니다. bd가 PATH에 있는지 확인하거나 BD_BIN으로 경로를 지정하세요.",
+      );
+    }
     return { url, port };
   }
 
   /** 상태 파일의 서버가 살아 있으면 요청을 받을 때까지 기다린 뒤 돌려줍니다. 종료된 서버의 상태 파일은 지웁니다. */
   async function runningServer() {
-    let state;
-    try {
-      state = JSON.parse(readFileSync(statePath, "utf8"));
-    } catch {
-      return null;
-    }
-    if (!isAlive(state.pid)) {
+    const state = readState();
+    if (!state) return null;
+    if (!isServerAlive(state.pid)) {
       rmSync(statePath, { force: true });
       return null;
     }
@@ -161,6 +166,14 @@ export function createDaemon({
       );
     }
     return state;
+  }
+
+  function readState() {
+    try {
+      return JSON.parse(readFileSync(statePath, "utf8"));
+    } catch {
+      return null;
+    }
   }
 
   /** pid를 쓴 임시 파일을 lock 이름으로 hard link해, lock 파일이 항상 주인 pid를 담은 채로 생기게 합니다. */
@@ -238,6 +251,27 @@ function isAlive(pid) {
   }
 }
 
+/**
+ * 서버는 detached로 띄워 자기 process group의 리더가 됩니다.
+ * 상태 파일의 pid를 다른 process가 재사용하고 있으면 그 pid의 group이 없으므로 서버가 아닌 것으로 봅니다.
+ */
+function isServerAlive(pid) {
+  if (process.platform === "win32") return isAlive(pid);
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === "EPERM";
+  }
+}
+
+/** 서버와 같은 방식으로 cwd와 그 상위에서 `.beads`를 찾고, 없으면 실패합니다. */
+function requireWorkspace(cwd) {
+  for (let dir = resolve(cwd); !isBeadsWorkspace(dir); dir = dirname(dir)) {
+    if (dirname(dir) === dir) throw new Error(`beads workspace를 찾지 못했습니다: ${cwd}`);
+  }
+}
+
 function isBeadsWorkspace(root) {
   return existsSync(join(root, ".beads"));
 }
@@ -247,6 +281,14 @@ async function isHealthy(url) {
     return (await fetch(`${url}/api/health`)).ok;
   } catch {
     return false;
+  }
+}
+
+async function readHealth(url) {
+  try {
+    return await (await fetch(`${url}/api/health`)).json();
+  } catch {
+    return null;
   }
 }
 
