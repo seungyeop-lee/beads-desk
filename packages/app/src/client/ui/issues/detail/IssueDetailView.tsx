@@ -1,9 +1,5 @@
-import {
-  ISSUE_STATUSES,
-  type IssueDetail,
-  type IssueLink,
-  type IssueStatus,
-} from "@beads-desk/bd/issue";
+import type { IssueDetail, IssueLink } from "@beads-desk/bd/issue";
+import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import {
   addCommentAction,
@@ -12,17 +8,16 @@ import {
   deleteIssueAction,
   removeDependencyAction,
   removeLabelAction,
-  setIssueStatusAction,
-  updateIssueAction,
 } from "@/server/web/issues/issueActions";
-import type { IssueChanges } from "@/shared/contract/issueActions";
-import { formatTime, PRIORITIES, priorityLabel, STATUS_LABELS, TYPE_LABELS } from "../issueLabels";
+import { confirmForceClose } from "../fields/confirmForceClose";
+import { EditableText } from "../fields/EditableText";
+import { PrioritySelect } from "../fields/PrioritySelect";
+import { StatusSelect } from "../fields/StatusSelect";
+import { formatTime, TYPE_LABELS } from "../issueLabels";
 import { CommentList } from "./CommentList";
 import { DependencyList } from "./DependencyList";
 import { EditableMarkdown } from "./EditableMarkdown";
-import { EditableText } from "./EditableText";
 import { LabelEditor } from "./LabelEditor";
-import { useSavedValue } from "./useSavedValue";
 
 type Props = {
   issue: IssueDetail;
@@ -41,30 +36,7 @@ const BODY_FIELDS = [
 export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) {
   const { id } = issue;
   const { run, pending } = writes;
-  const [status, showStatus, resetStatus] = useSavedValue(issue.status);
-  const [priority, showPriority, resetPriority] = useSavedValue(issue.priority);
-
-  const update = async (changes: IssueChanges) =>
-    (await run(() => updateIssueAction(id, changes))).ok;
-
-  const changeStatus = async (next: IssueStatus) => {
-    showStatus(next);
-    let result = await run(() => setIssueStatusAction(id, next, false));
-    if (!result.ok && "closeBlocked" in result) {
-      writes.dismissError();
-      const reason = result.error.split("\n")[0];
-      const question = `열린 하위 이슈나 닫히지 않은 선행 이슈가 있어 bd가 닫기를 거부했습니다.\n\n${reason}\n\n그래도 닫을까요?`;
-      if (window.confirm(question)) {
-        result = await run(() => setIssueStatusAction(id, next, true));
-      }
-    }
-    if (!result.ok) resetStatus();
-  };
-
-  const changePriority = async (next: number) => {
-    showPriority(next);
-    if (!(await update({ priority: next }))) resetPriority();
-  };
+  const { update, changeStatus } = issueEdits(writes, id);
 
   const removeDependency = (link: IssueLink, side: "dependencies" | "dependents") => {
     if (!window.confirm(`${link.id} 이슈와의 의존 관계를 지울까요?`)) return;
@@ -115,21 +87,12 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
             <label htmlFor="issue-status">상태</label>
           </dt>
           <dd>
-            <select
+            <StatusSelect
               id="issue-status"
-              className="select select-sm"
-              value={status}
-              onChange={(event) => void changeStatus(event.target.value as IssueStatus)}
-            >
-              {!(ISSUE_STATUSES as readonly string[]).includes(status) && (
-                <option value={status}>{status}</option>
-              )}
-              {ISSUE_STATUSES.map((option) => (
-                <option key={option} value={option}>
-                  {STATUS_LABELS[option]}
-                </option>
-              ))}
-            </select>
+              className="select-sm"
+              value={issue.status}
+              onChange={(status) => changeStatus(status, confirmForceClose)}
+            />
           </dd>
 
           {issue.closeReason && (
@@ -143,19 +106,12 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
             <label htmlFor="issue-priority">우선순위</label>
           </dt>
           <dd>
-            <select
+            <PrioritySelect
               id="issue-priority"
-              className="select select-sm"
-              value={priority ?? ""}
-              onChange={(event) => void changePriority(Number(event.target.value))}
-            >
-              {priority === null && <option value="">없음</option>}
-              {PRIORITIES.map((option) => (
-                <option key={option} value={option}>
-                  P{option} {priorityLabel(option)}
-                </option>
-              ))}
-            </select>
+              className="select-sm"
+              value={issue.priority}
+              onChange={(priority) => update({ priority })}
+            />
           </dd>
 
           <dt className="text-base-content/60">담당자</dt>

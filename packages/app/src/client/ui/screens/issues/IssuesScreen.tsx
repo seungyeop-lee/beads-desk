@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
+import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import {
   visibleIssues,
   type IssueListRefinement,
@@ -20,6 +21,7 @@ export function IssuesScreen() {
   const [creating, setCreating] = useState(false);
   const { data: issues, error, loading } = useIssueList(filter);
   const shown = issues ? visibleIssues(issues, filter, refinement) : [];
+  const writes = useIssueWrites();
   const router = useRouter();
   const issueHref = useIssueHref();
 
@@ -53,7 +55,16 @@ export function IssuesScreen() {
         </div>
       )}
 
-      {issues && <IssueTable issues={shown} issueHref={issueHref} />}
+      {writes.error && (
+        <div role="alert" className="alert alert-error alert-soft">
+          <span className="whitespace-pre-wrap">{writes.error}</span>
+          <button type="button" className="btn btn-ghost btn-xs" onClick={writes.dismissError}>
+            닫기
+          </button>
+        </div>
+      )}
+
+      {issues && <IssueTable issues={shown} issueHref={issueHref} writes={writes} />}
 
       <IssueDetailRoute />
       {creating && (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useSavedValue } from "./useSavedValue";
 
 // 렌더링마다 새로 만든 ref 함수는 커밋할 때마다 다시 호출되어, 사용자가 다른 칸으로 옮긴 포커스를 되찾아 옵니다.
@@ -12,6 +12,10 @@ type Props = {
   /** true이면 빈 값으로 저장하지 않습니다. */
   required?: boolean;
   className?: string;
+  /** 표 안처럼 좁은 곳에 둘 때 입력란과 버튼을 작게 그립니다. */
+  compact?: boolean;
+  /** 값을 기본 버튼 대신 직접 그립니다. edit를 호출하면 입력란으로 바뀝니다. */
+  renderValue?: (shown: string, edit: () => void) => ReactNode;
   /** 저장에 성공하면 true를 돌려줍니다. */
   onSave: (value: string) => Promise<boolean>;
 };
@@ -23,8 +27,11 @@ export function EditableText({
   placeholder,
   required,
   className = "",
+  compact = false,
+  renderValue,
   onSave,
 }: Props) {
+  const size = compact ? "xs" : "sm";
   const [shown, showSaved] = useSavedValue(value);
   const [draft, setDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -43,6 +50,7 @@ export function EditableText({
   };
 
   if (draft === null) {
+    if (renderValue) return renderValue(shown, () => setDraft(shown));
     return (
       <button
         type="button"
@@ -56,7 +64,7 @@ export function EditableText({
   }
   return (
     <form
-      className="flex items-center gap-2"
+      className="flex items-center gap-1"
       onSubmit={(event) => {
         event.preventDefault();
         void save();
@@ -64,7 +72,7 @@ export function EditableText({
     >
       <input
         ref={focusOnMount}
-        className="input input-sm grow"
+        className={`input input-${size} grow`}
         aria-label={label}
         value={draft}
         disabled={saving}
@@ -76,12 +84,12 @@ export function EditableText({
           }
         }}
       />
-      <button type="submit" className="btn btn-sm btn-primary" disabled={saving}>
+      <button type="submit" className={`btn btn-${size} btn-primary`} disabled={saving}>
         저장
       </button>
       <button
         type="button"
-        className="btn btn-sm btn-ghost"
+        className={`btn btn-${size} btn-ghost`}
         disabled={saving}
         onClick={() => setDraft(null)}
       >
