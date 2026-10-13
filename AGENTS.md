@@ -26,6 +26,8 @@
 
 ## 소스 구조
 
+Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 코드를 쓰기 전에 `packages/app/node_modules/next/dist/docs/`에서 해당 문서를 확인합니다.
+
 `packages/app/src`는 실행 위치에 따라 `app`, `client`, `server`, `shared`로 나누고, 각각을 다시 layer로 나눕니다.
 
 | 경로                                         | 두는 것                                                                                      |
