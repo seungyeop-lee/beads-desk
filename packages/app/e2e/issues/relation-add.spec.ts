@@ -53,19 +53,21 @@ test("키보드만으로 후보를 골라 연결하고, 자기 자신과 이미 
   const candidates = dialog.getByRole("listbox", { name: "연결할 이슈 찾기" });
 
   await search.fill("키보드");
-  // 검색어가 있으면 최근에 고친 순서라 나중에 만든 third가 먼저 옵니다.
-  await expect(candidates.getByRole("option")).toHaveText([new RegExp(third), new RegExp(second)]);
+  const options = candidates.getByRole("option");
+  await expect(options).toHaveCount(2);
+  await expect(candidates.getByRole("option", { name: new RegExp(second) })).toBeVisible();
+  await expect(candidates.getByRole("option", { name: new RegExp(third) })).toBeVisible();
 
+  // bd의 수정 시각은 초 단위라, 연달아 만든 second와 third의 후보 순서는 정해지지 않습니다.
+  // 순서에 기대지 않고, 화살표로 옮겨 간 두 번째 후보가 연결되는지 확인합니다.
   await search.press("ArrowDown");
-  await expect(candidates.getByRole("option", { name: new RegExp(second) })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
+  await expect(options.nth(1)).toHaveAttribute("aria-selected", "true");
+  const picked = (await options.nth(1).textContent())?.includes(second) ? second : third;
   await search.press("Enter");
 
   await expect
     .poll(async () => dependenciesOf(workspace, main), { timeout: SAVE_TIMEOUT })
-    .toEqual([`${first} blocks`, `${second} blocks`].sort());
+    .toEqual([`${first} blocks`, `${picked} blocks`].sort());
 });
 
 test("bd가 관계 맺기를 거부하면 상세에 오류가 보인다", async ({ page, workspace }) => {
