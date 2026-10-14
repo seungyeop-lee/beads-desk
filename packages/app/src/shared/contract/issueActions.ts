@@ -26,3 +26,8 @@ export type StatusChangeResult =
   | ApiResponse<null>
   /** 열린 하위 이슈나 닫히지 않은 선행 이슈가 있어 닫지 못했습니다. force로 다시 요청하면 닫습니다. */
   | (ApiFailure & { closeBlocked: true });
+
+/** 화면에서 맺을 수 있는 bd 의존 유형입니다. */
+export const LINKABLE_DEPENDENCY_TYPES = ["blocks", "parent-child", "related"] as const;
+
+export type LinkableDependencyType = (typeof LINKABLE_DEPENDENCY_TYPES)[number];

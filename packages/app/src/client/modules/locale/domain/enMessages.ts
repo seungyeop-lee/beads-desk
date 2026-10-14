@@ -127,9 +127,23 @@ export const enMessages: Messages = {
   },
   dependencyList: {
     remove: (id) => `Remove dependency ${id}`,
-    idToAdd: (title) => `Issue id to add to ${title}`,
-    idPlaceholder: "Issue id",
-    add: (title) => `Add to ${title}`,
+  },
+  relations: {
+    title: "Add relation",
+    kind: "Relation to add",
+    kinds: {
+      blockedBy: "Blocked by",
+      blocks: "Blocks",
+      parent: "Parent",
+      child: "Child",
+      related: "Related",
+    },
+    search: "Find an issue to link",
+    linked: (id, kind) => `Linked ${id}: ${kind}`,
+  },
+  issuePicker: {
+    placeholder: "Search id or title",
+    empty: "No matching issues.",
   },
   labelEditor: {
     remove: (label) => `Remove label ${label}`,

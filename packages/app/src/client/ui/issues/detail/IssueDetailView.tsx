@@ -3,7 +3,6 @@ import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import {
   addCommentAction,
-  addDependencyAction,
   addLabelAction,
   deleteIssueAction,
   removeDependencyAction,
@@ -21,6 +20,7 @@ import { CommentList } from "./CommentList";
 import { DependencyList } from "./DependencyList";
 import { EditableMarkdown } from "./EditableMarkdown";
 import { LabelEditor } from "./LabelEditor";
+import { RelationAddForm } from "./RelationAddForm";
 
 type Props = {
   issue: IssueDetail;
@@ -158,7 +158,6 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               issueHref={issueHref}
               edit={{
                 disabled: pending,
-                onAdd: async (target) => (await run(() => addDependencyAction(id, target))).ok,
                 onRemove: (link) => removeDependency(link, "dependencies"),
               }}
             />
@@ -169,10 +168,10 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               issueHref={issueHref}
               edit={{
                 disabled: pending,
-                onAdd: async (source) => (await run(() => addDependencyAction(source, id))).ok,
                 onRemove: (link) => removeDependency(link, "dependents"),
               }}
             />
+            <RelationAddForm issue={issue} writes={writes} />
 
             <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-base-300 pt-5 text-xs text-base-content/60 tabular-nums">
               <dt className="caption">{messages.issueDetail.createdAt}</dt>

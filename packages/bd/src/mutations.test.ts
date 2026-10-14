@@ -173,7 +173,7 @@ describe("댓글, 라벨, 의존 관계, 삭제", () => {
       "comments add -- demo-1 - bullet": {},
       "label add -- demo-1 -ui": {},
       "label remove -- demo-1 ui": {},
-      "dep add -- demo-1 demo-2": {},
+      "dep add --type=parent-child -- demo-1 demo-2": {},
       "dep remove -- demo-1 demo-2": {},
       "delete --force -- demo-1": {},
     });
@@ -181,7 +181,7 @@ describe("댓글, 라벨, 의존 관계, 삭제", () => {
     expect(await addComment(workDir, "demo-1", "- bullet")).toEqual(succeeded);
     expect(await addLabel(workDir, "demo-1", " -ui ")).toEqual(succeeded);
     expect(await removeLabel(workDir, "demo-1", "ui")).toEqual(succeeded);
-    expect(await addDependency(workDir, "demo-1", "demo-2")).toEqual(succeeded);
+    expect(await addDependency(workDir, "demo-1", "demo-2", "parent-child")).toEqual(succeeded);
     expect(await removeDependency(workDir, "demo-1", "demo-2")).toEqual(succeeded);
     expect(await deleteIssue(workDir, "demo-1")).toEqual(succeeded);
   });
@@ -197,7 +197,7 @@ describe("댓글, 라벨, 의존 관계, 삭제", () => {
       ok: false,
       error: { message: "라벨이 비어 있습니다.", exitCode: null },
     });
-    expect(await addDependency(workDir, "demo-1", "")).toEqual({
+    expect(await addDependency(workDir, "demo-1", "", "blocks")).toEqual({
       ok: false,
       error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
     });

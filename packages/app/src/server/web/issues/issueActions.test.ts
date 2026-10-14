@@ -1,7 +1,7 @@
 import * as bd from "@beads-desk/bd";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
-import type { IssueChanges } from "@/shared/contract/issueActions";
+import type { IssueChanges, LinkableDependencyType } from "@/shared/contract/issueActions";
 import {
   addCommentAction,
   addDependencyAction,
@@ -160,7 +160,7 @@ test("댓글, 라벨, 의존 관계, 삭제를 workspace에서 실행한다", as
     await addCommentAction("demo-1", "댓글"),
     await addLabelAction("demo-1", "ui"),
     await removeLabelAction("demo-1", "ui"),
-    await addDependencyAction("demo-1", "demo-2"),
+    await addDependencyAction("demo-1", "demo-2", "related"),
     await removeDependencyAction("demo-1", "demo-2"),
     await deleteIssueAction("demo-1"),
   ];
@@ -169,7 +169,7 @@ test("댓글, 라벨, 의존 관계, 삭제를 workspace에서 실행한다", as
   expect(bd.addComment).toHaveBeenCalledWith("/workspace", "demo-1", "댓글");
   expect(bd.addLabel).toHaveBeenCalledWith("/workspace", "demo-1", "ui");
   expect(bd.removeLabel).toHaveBeenCalledWith("/workspace", "demo-1", "ui");
-  expect(bd.addDependency).toHaveBeenCalledWith("/workspace", "demo-1", "demo-2");
+  expect(bd.addDependency).toHaveBeenCalledWith("/workspace", "demo-1", "demo-2", "related");
   expect(bd.removeDependency).toHaveBeenCalledWith("/workspace", "demo-1", "demo-2");
   expect(bd.deleteIssue).toHaveBeenCalledWith("/workspace", "demo-1");
   expect(checkWorkspaceChangesNow).toHaveBeenCalledTimes(6);
@@ -179,5 +179,16 @@ test("문자열이 아닌 id는 거부한다", async () => {
   const result = await deleteIssueAction(1 as unknown as string);
 
   expect(bd.deleteIssue).not.toHaveBeenCalled();
+  expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
+});
+
+test("화면에서 맺을 수 없는 의존 유형은 거부한다", async () => {
+  const result = await addDependencyAction(
+    "demo-1",
+    "demo-2",
+    "discovered-from" as unknown as LinkableDependencyType,
+  );
+
+  expect(bd.addDependency).not.toHaveBeenCalled();
   expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
 });

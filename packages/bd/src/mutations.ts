@@ -110,9 +110,9 @@ export function removeLabel(cwd: string, issueId: string, label: string) {
   return changeLabel(cwd, "remove", issueId, label);
 }
 
-/** issueId가 dependsOnId에 의존하게 합니다. 유형은 bd 기본값(blocks)입니다. */
-export function addDependency(cwd: string, issueId: string, dependsOnId: string) {
-  return write(cwd, ["dep", "add"], [issueId, dependsOnId]);
+/** issueId가 dependsOnId에 의존하게 합니다. parent-child는 issueId가 하위 이슈, dependsOnId가 상위 이슈입니다. */
+export function addDependency(cwd: string, issueId: string, dependsOnId: string, type: string) {
+  return write(cwd, ["dep", "add", `--type=${type}`], [issueId, dependsOnId]);
 }
 
 export function removeDependency(cwd: string, issueId: string, dependsOnId: string) {

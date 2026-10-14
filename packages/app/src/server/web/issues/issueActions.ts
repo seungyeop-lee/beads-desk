@@ -17,10 +17,12 @@ import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
 import { serverMessages } from "@/server/web/locale/serverMessages";
 import type { ApiFailure, ApiResponse } from "@/shared/contract/apiResponse";
-import type {
-  IssueChanges,
-  NewIssueInput,
-  StatusChangeResult,
+import {
+  LINKABLE_DEPENDENCY_TYPES,
+  type IssueChanges,
+  type LinkableDependencyType,
+  type NewIssueInput,
+  type StatusChangeResult,
 } from "@/shared/contract/issueActions";
 
 // Server Action은 화면을 거치지 않은 POST 요청으로도 호출되므로, TypeScript 타입과 상관없이 모든 입력을 다시 검사합니다.
@@ -88,10 +90,16 @@ export async function removeLabelAction(issueId: string, label: string) {
   return write((cwd) => removeLabel(cwd, issueId, label));
 }
 
-/** issueId가 dependsOnId에 의존하게 합니다. */
-export async function addDependencyAction(issueId: string, dependsOnId: string) {
-  if (!isString(issueId) || !isString(dependsOnId)) return invalidRequest();
-  return write((cwd) => addDependency(cwd, issueId, dependsOnId));
+/** issueId가 dependsOnId에 의존하게 합니다. parent-child는 issueId가 하위 이슈입니다. */
+export async function addDependencyAction(
+  issueId: string,
+  dependsOnId: string,
+  type: LinkableDependencyType,
+) {
+  if (!isString(issueId) || !isString(dependsOnId) || !isLinkableDependencyType(type)) {
+    return invalidRequest();
+  }
+  return write((cwd) => addDependency(cwd, issueId, dependsOnId, type));
 }
 
 export async function removeDependencyAction(issueId: string, dependsOnId: string) {
@@ -142,6 +150,10 @@ function isNewIssueInput(value: unknown): value is NewIssueInput {
 
 function isIssueStatus(value: unknown): value is IssueStatus {
   return (ISSUE_STATUSES as readonly unknown[]).includes(value);
+}
+
+function isLinkableDependencyType(value: unknown): value is LinkableDependencyType {
+  return (LINKABLE_DEPENDENCY_TYPES as readonly unknown[]).includes(value);
 }
 
 function isPriority(value: unknown): value is number {

@@ -35,7 +35,7 @@ export type BdIssue = {
   priority: number;
   assignee?: string;
   labels?: string[];
-  dependencies?: { id: string }[];
+  dependencies?: { id: string; dependency_type: string }[];
 };
 
 /**

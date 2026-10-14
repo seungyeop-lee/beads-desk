@@ -1,5 +1,6 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
+import type { RelationKind } from "@/client/modules/issues/domain/issueRelations";
 
 /** 화면 문구의 기준 사전입니다. 다른 언어의 사전은 이 모양을 그대로 따릅니다. */
 export const koMessages = {
@@ -130,9 +131,23 @@ export const koMessages = {
   },
   dependencyList: {
     remove: (id: string) => `${id} 의존 관계 지우기`,
-    idToAdd: (title: string) => `${title}에 추가할 이슈 id`,
-    idPlaceholder: "이슈 id",
-    add: (title: string) => `${title}에 추가`,
+  },
+  relations: {
+    title: "관계 맺기",
+    kind: "맺을 관계",
+    kinds: {
+      blockedBy: "이 이슈를 막는 이슈",
+      blocks: "이 이슈가 막는 이슈",
+      parent: "상위 이슈",
+      child: "하위 이슈",
+      related: "관련 이슈",
+    } satisfies Record<RelationKind, string>,
+    search: "연결할 이슈 찾기",
+    linked: (id: string, kind: string) => `${id}을(를) ${kind}로 연결했습니다.`,
+  },
+  issuePicker: {
+    placeholder: "제목이나 id로 찾기",
+    empty: "맞는 이슈가 없습니다.",
   },
   labelEditor: {
     remove: (label: string) => `${label} 라벨 지우기`,

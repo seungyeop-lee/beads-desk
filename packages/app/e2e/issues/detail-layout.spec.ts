@@ -59,10 +59,11 @@ test("옆 패널 때문에 주 상세가 좁아지면 핵심 속성은 본문 �
     .poll(async () => (await workspace.showIssue(main)).labels, { timeout: SAVE_TIMEOUT })
     .toEqual(["e2e-라벨"]);
 
+  await dialog.getByRole("combobox", { name: "연결할 이슈 찾기" }).fill("추가할 선행");
   await dialog
-    .getByRole("textbox", { name: "이 이슈가 의존하는 이슈에 추가할 이슈 id" })
-    .fill(extra);
-  await dialog.getByRole("button", { name: "이 이슈가 의존하는 이슈에 추가" }).click();
+    .getByRole("listbox", { name: "연결할 이슈 찾기" })
+    .getByRole("option", { name: new RegExp(extra) })
+    .click();
   await expect
     .poll(async () => (await workspace.showIssue(main)).dependencies?.map(({ id }) => id).sort(), {
       timeout: SAVE_TIMEOUT,

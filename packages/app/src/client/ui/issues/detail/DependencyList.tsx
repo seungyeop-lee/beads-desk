@@ -1,7 +1,7 @@
 import type { IssueLink } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { useId, useState } from "react";
-import { CloseIcon, PlusIcon } from "@/client/ui/designSystem/icons";
+import { useId } from "react";
+import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { dependencyLabel, statusLabel, statusTone } from "../issueLabels";
 
@@ -11,14 +11,12 @@ type Props = {
   side: "dependencies" | "dependents";
   links: IssueLink[];
   issueHref: (issueId: string) => string;
-  /** 없으면 의존 관계를 더하거나 지우는 control 없이 읽기 전용으로 보입니다. */
+  /** 없으면 의존 관계를 지우는 단추 없이 읽기 전용으로 보입니다. */
   edit?: DependencyEdit;
 };
 
 type DependencyEdit = {
   disabled: boolean;
-  /** 성공하면 true를 돌려줍니다. */
-  onAdd: (issueId: string) => Promise<boolean>;
   onRemove: (link: IssueLink) => void;
 };
 
@@ -67,37 +65,6 @@ export function DependencyList({ title, side, links, issueHref, edit }: Props) {
           ))}
         </ul>
       )}
-      {edit && <DependencyAddForm title={title} edit={edit} />}
     </section>
-  );
-}
-
-function DependencyAddForm({ title, edit }: { title: string; edit: DependencyEdit }) {
-  const [draft, setDraft] = useState("");
-  const messages = useMessages();
-  return (
-    <form
-      className="flex items-center gap-1.5"
-      onSubmit={async (event) => {
-        event.preventDefault();
-        if (draft.trim() && (await edit.onAdd(draft.trim()))) setDraft("");
-      }}
-    >
-      <input
-        className="input input-sm grow font-mono"
-        aria-label={messages.dependencyList.idToAdd(title)}
-        placeholder={messages.dependencyList.idPlaceholder}
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-      />
-      <button
-        type="submit"
-        className="btn btn-sm btn-square btn-ghost"
-        aria-label={messages.dependencyList.add(title)}
-        disabled={edit.disabled}
-      >
-        <PlusIcon width={15} height={15} />
-      </button>
-    </form>
   );
 }
