@@ -79,6 +79,13 @@ export const enMessages: Messages = {
     dependencyCounts: (dependencies, dependents) =>
       `${dependencies} dependencies · ${dependents} dependents`,
   },
+  blocking: {
+    chip: "Blocked",
+    waitingOn: (id) => `Waiting on ${id}`,
+    more: (count) => `+${count} more`,
+    bannerTitle: "Blocked by open issues",
+    bannerBody: "This issue becomes ready when all of these issues are closed.",
+  },
   copyId: {
     copied: (id) => `Copied ID: ${id}`,
     failed: (id) => `Could not copy ID: ${id}`,

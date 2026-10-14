@@ -16,6 +16,7 @@ import { StatusSelect } from "../fields/StatusSelect";
 import { TrashIcon } from "@/client/ui/designSystem/icons";
 import { formatTime } from "../issueLabels";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
+import { BlockerBanner } from "./BlockerBanner";
 import { CommentList } from "./CommentList";
 import { DependencyList } from "./DependencyList";
 import { EditableMarkdown } from "./EditableMarkdown";
@@ -60,7 +61,8 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
     <div className="@container flex grow flex-col">
       <div className="flex grow flex-col gap-7 px-8 pt-6 pb-10 @4xl:grid @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:gap-0 @4xl:p-0">
         <div className="contents @4xl:flex @4xl:min-w-0 @4xl:flex-col @4xl:gap-7 @4xl:px-8 @4xl:pt-6 @4xl:pb-10">
-          <div className="order-1">
+          <div className="order-1 flex flex-col gap-4">
+            <BlockerBanner issue={issue} issueHref={issueHref} />
             <EditableText
               label={messages.issue.title}
               value={issue.title}

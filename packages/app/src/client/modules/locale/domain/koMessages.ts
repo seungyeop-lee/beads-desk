@@ -81,6 +81,13 @@ export const koMessages = {
     dependencyCounts: (dependencies: number, dependents: number) =>
       `이 이슈가 의존하는 이슈 ${dependencies}개 · 이 이슈에 의존하는 이슈 ${dependents}개`,
   },
+  blocking: {
+    chip: "막힘",
+    waitingOn: (id: string) => `${id}을(를) 기다리는 중`,
+    more: (count: number) => `외 ${count}개`,
+    bannerTitle: "먼저 끝나야 하는 이슈가 있습니다",
+    bannerBody: "아래 이슈가 모두 닫히면 이 이슈는 바로 작업 가능 목록에 올라옵니다.",
+  },
   copyId: {
     copied: (id: string) => `ID를 복사했습니다: ${id}`,
     failed: (id: string) => `ID를 복사하지 못했습니다: ${id}`,

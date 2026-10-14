@@ -22,13 +22,19 @@ afterEach(() => {
   process.env.BEADS_DESK_WORKSPACE = originalEnv.workspace;
 });
 
-/** 인자가 정확히 일치할 때만 stdout을 돌려주고, 실행된 인자와 cwd를 기록하는 가짜 bd를 지정합니다. */
+/**
+ * 인자가 정확히 일치할 때만 stdout을 돌려주고, 실행된 인자와 cwd를 기록하는 가짜 bd를 지정합니다.
+ * 목록 조회와 함께 실행하는 bd blocked와 bd ready에는 signals의 출력(없으면 빈 목록)을 돌려줍니다.
+ */
 async function useFakeBd(
   args: string,
   response: { stdout?: string; stderr?: string; code?: number },
+  signals: { blocked?: string; ready?: string } = {},
 ) {
   const fakeBd = join(workDir, "fake-bd");
   await writeFile(join(workDir, "stdout"), response.stdout ?? "");
+  await writeFile(join(workDir, "blocked"), signals.blocked ?? "[]");
+  await writeFile(join(workDir, "ready"), signals.ready ?? "[]");
   await writeFile(
     fakeBd,
     [
@@ -39,6 +45,8 @@ async function useFakeBd(
       response.stderr ? `  echo "${response.stderr}" >&2` : "",
       `  exit ${response.code ?? 0}`,
       "fi",
+      `[ "$*" = "--sandbox blocked --json" ] && cat "${join(workDir, "blocked")}" && exit 0`,
+      `[ "$*" = "--sandbox ready --limit 0 --json" ] && cat "${join(workDir, "ready")}" && exit 0`,
       "exit 99",
     ].join("\n"),
   );
@@ -77,6 +85,24 @@ test("상태를 지정하지 않으면 모든 상태의 이슈를 조회한다",
   const response = await handleIssueListRequest(request(""));
 
   expect(response.status).toBe(200);
+});
+
+test("목록에는 막고 있는 이슈 id와 bd ready 여부를 채워 돌려준다", async () => {
+  await useFakeBd(
+    "list --json --tree=false --all --limit 0",
+    { stdout: issues },
+    {
+      blocked: JSON.stringify([{ id: "demo-1", status: "open", blocked_by: ["demo-9"] }]),
+      ready: JSON.stringify([{ id: "demo-2", status: "in_progress" }]),
+    },
+  );
+
+  const body = await (await handleIssueListRequest(request(""))).json();
+
+  expect(body.data).toMatchObject([
+    { id: "demo-1", blockedBy: ["demo-9"] },
+    { id: "demo-2", ready: true },
+  ]);
 });
 
 test("ready를 지정하면 바로 작업할 수 있는 이슈를 조회한다", async () => {

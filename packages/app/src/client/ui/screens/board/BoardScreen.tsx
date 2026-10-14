@@ -167,6 +167,12 @@ function BoardCard({ issue, column, href }: { issue: Issue; column: BoardColumn;
         <span className="leading-snug font-medium break-words">
           {issue.title || messages.common.untitled}
         </span>
+        {issue.blockedBy?.[0] && (
+          <span className="text-xs text-base-content/60">
+            ← {messages.blocking.waitingOn(issue.blockedBy[0])}
+            {issue.blockedBy.length > 1 && ` ${messages.blocking.more(issue.blockedBy.length - 1)}`}
+          </span>
+        )}
         <span className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
           <IssueTypeTag issueType={issue.issueType} />
           {issue.priority !== null && (

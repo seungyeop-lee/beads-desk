@@ -18,6 +18,10 @@ export type Issue = {
   createdAt: number;
   updatedAt: number;
   closedAt: number | null;
+  /** 의존 관계 때문에 이 이슈를 막고 있는 이슈 id입니다. bd blocked 출력에만 있어, 목록 조회가 따로 채웁니다. */
+  blockedBy?: string[];
+  /** bd ready에 들어 있으면 true입니다. 목록 조회가 따로 채웁니다. */
+  ready?: boolean;
 };
 
 /** 상세 화면에서 다른 이슈와의 의존 관계 한 건입니다. */
@@ -78,6 +82,9 @@ export function parseIssue(value: unknown): Issue | null {
     createdAt: timestampOr(value.created_at, 0),
     updatedAt: timestampOr(value.updated_at, 0),
     closedAt: timestampOr(value.closed_at, null),
+    ...(Array.isArray(value.blocked_by)
+      ? { blockedBy: value.blocked_by.filter((id) => typeof id === "string") }
+      : {}),
   };
 }
 

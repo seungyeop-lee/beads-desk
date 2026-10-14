@@ -36,6 +36,8 @@ const LIST_LIMIT = "0";
 
 const READY_ARGS = ["ready", "--limit", LIST_LIMIT, "--json"];
 
+const BLOCKED_ARGS = ["blocked", "--json"];
+
 /**
  * 작업 단위가 아니라 바로 작업 가능 목록과 보드에서 빼는 유형입니다. bd ready는 이 유형도 돌려줍니다.
  * decision은 열려 있으면 유효한 결정이라는 기록이고, epic은 하위 이슈를 묶을 뿐 직접 작업하지 않습니다.
@@ -50,6 +52,39 @@ export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutc
 export async function readyIssues(cwd: string): Promise<BdOutcome<Issue[]>> {
   const result = await queryIssues(cwd, READY_ARGS);
   return result.ok ? { ok: true, value: result.value.filter(isWork) } : result;
+}
+
+/**
+ * 목록 조회와 bd blocked, bd ready를 함께 실행해 화면이 작업 상태를 정하는 데 쓰는 값을 채웁니다.
+ * 의존 관계 때문에 막힌 이슈에는 막고 있는 이슈 id(blockedBy)를, bd ready에 든 이슈에는 ready를 채웁니다.
+ * 조회가 하나라도 실패하면 막힌 이슈를 열린 이슈로 잘못 보이지 않도록 오류를 돌려줍니다.
+ */
+export async function withWorkSignals(
+  cwd: string,
+  listing: Promise<BdOutcome<Issue[]>>,
+): Promise<BdOutcome<Issue[]>> {
+  const [listed, blocked, ready] = await Promise.all([
+    listing,
+    queryIssues(cwd, BLOCKED_ARGS),
+    queryIssues(cwd, READY_ARGS),
+  ]);
+  if (!listed.ok) return listed;
+  if (!blocked.ok) return blocked;
+  if (!ready.ok) return ready;
+
+  const blockers = blockersById(blocked.value);
+  const readyIds = new Set(ready.value.map((issue) => issue.id));
+  return {
+    ok: true,
+    value: listed.value.map((issue) => {
+      const blockedBy = blockers.get(issue.id);
+      return {
+        ...issue,
+        ...(blockedBy ? { blockedBy } : {}),
+        ...(readyIds.has(issue.id) ? { ready: true } : {}),
+      };
+    }),
+  };
 }
 
 export async function epicChildren(cwd: string, epicId: string): Promise<BdOutcome<Issue[]>> {
@@ -151,21 +186,27 @@ export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>>
   const [all, ready, blocked] = await Promise.all([
     queryIssues(cwd, listArgs([])),
     queryIssues(cwd, READY_ARGS),
-    queryIssues(cwd, ["blocked", "--json"]),
+    queryIssues(cwd, BLOCKED_ARGS),
   ]);
   if (!all.ok) return all;
   if (!ready.ok) return ready;
   if (!blocked.ok) return blocked;
 
   const readyIds = new Set(ready.value.map((issue) => issue.id));
-  const blockedIds = new Set(blocked.value.map((issue) => issue.id));
+  const blockers = blockersById(blocked.value);
   return {
     ok: true,
-    value: all.value.filter(isWork).map((issue) => ({
-      column: blockedIds.has(issue.id) ? "blocked" : statusColumn(issue, readyIds),
-      issue,
-    })),
+    value: all.value.filter(isWork).map((issue) => {
+      const blockedBy = blockers.get(issue.id);
+      return blockedBy
+        ? { column: "blocked", issue: { ...issue, blockedBy } }
+        : { column: statusColumn(issue, readyIds), issue };
+    }),
   };
+}
+
+function blockersById(blocked: Issue[]): Map<string, string[]> {
+  return new Map(blocked.map((issue) => [issue.id, issue.blockedBy ?? []]));
 }
 
 function isWork(issue: Issue): boolean {

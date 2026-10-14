@@ -1,16 +1,24 @@
-import { epicChildren, epicStatuses, type EpicStatus, type Issue } from "@beads-desk/bd";
+import {
+  epicChildren,
+  epicStatuses,
+  withWorkSignals,
+  type EpicStatus,
+  type Issue,
+} from "@beads-desk/bd";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { handleEpicChildrenRequest, handleEpicsRequest } from "./epicsRouteApi";
 
 vi.mock("@beads-desk/bd", () => ({
   epicChildren: vi.fn<typeof epicChildren>(),
   epicStatuses: vi.fn<typeof epicStatuses>(),
+  withWorkSignals: vi.fn<typeof withWorkSignals>(),
 }));
 
 const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 
 beforeEach(() => {
   process.env.BEADS_DESK_WORKSPACE = "/workspace";
+  vi.mocked(withWorkSignals).mockImplementation((_cwd, listing) => listing);
 });
 
 afterEach(() => {
@@ -40,6 +48,7 @@ test("epic의 하위 이슈를 돌려주고, 실패하면 bd의 메시지를 오
   const failed = await handleEpicChildrenRequest("e-2");
 
   expect(epicChildren).toHaveBeenCalledWith("/workspace", "e-1");
+  expect(withWorkSignals).toHaveBeenCalledWith("/workspace", expect.any(Promise));
   expect(await found.json()).toEqual({ ok: true, data: [{ id: "e-1.1" }] });
   expect(failed.status).toBe(500);
   expect(await failed.json()).toEqual({ ok: false, error: "boom" });

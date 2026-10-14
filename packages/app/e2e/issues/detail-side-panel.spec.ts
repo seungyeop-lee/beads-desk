@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, test, type BdWorkspace } from "../support/bdWorkspace";
 
 test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열리고, 주소로 새로고침과 뒤로·앞으로 가기를 따른다", async ({
@@ -13,7 +13,7 @@ test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열리고, �
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("link", { name: /^이전 이슈/ })).toHaveCount(0);
 
-  await dialog.getByRole("link", { name: `${dependency} 선행 이슈` }).click();
+  await dependencyLink(dialog, dependency).click();
   const side = sidePanel(page, dependency);
   await expect(side).toBeVisible();
   await expect(page).toHaveURL(detailUrl(main, dependency));
@@ -44,10 +44,7 @@ test("옆 패널의 이슈로 이동한 뒤 이전 이슈 버튼을 누르면 �
 
   await page.goto("/issues");
   await page.getByRole("link", { name: "주 이슈" }).click();
-  await page
-    .getByRole("dialog", { name: `${main} 이슈` })
-    .getByRole("link", { name: `${dependency} 선행 이슈` })
-    .click();
+  await dependencyLink(page.getByRole("dialog", { name: `${main} 이슈` }), dependency).click();
   await sidePanel(page, dependency).getByRole("link", { name: "이 이슈로 이동" }).click();
 
   await expect(page.getByRole("dialog", { name: `${dependency} 이슈` })).toBeVisible();
@@ -60,6 +57,13 @@ test("옆 패널의 이슈로 이동한 뒤 이전 이슈 버튼을 누르면 �
   await expect(page).toHaveURL(detailUrl(main, dependency));
   await expect(page.getByRole("link", { name: /^이전 이슈/ })).toHaveCount(0);
 });
+
+/** 막힘 안내에도 같은 이슈 링크가 있으므로, 의존 관계 목록의 링크를 고릅니다. */
+function dependencyLink(dialog: Locator, dependency: string) {
+  return dialog
+    .getByRole("region", { name: "이 이슈가 의존하는 이슈" })
+    .getByRole("link", { name: `${dependency} 선행 이슈` });
+}
 
 async function seedDependency(workspace: BdWorkspace) {
   const main = await workspace.createIssue("주 이슈", "--type", "task");

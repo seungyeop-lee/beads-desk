@@ -1,8 +1,9 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { BlockerLine } from "./BlockerLine";
 import { copyIssueId } from "./copyIssueId";
 import { confirmForceClose } from "./fields/confirmForceClose";
 import { EditableText } from "./fields/EditableText";
@@ -29,6 +30,7 @@ export const IssueTable = memo(function IssueTable({
   emptyMessage,
 }: Props) {
   const messages = useMessages();
+  const titles = useMemo(() => new Map(issues.map((issue) => [issue.id, issue.title])), [issues]);
   if (issues.length === 0) {
     return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
@@ -48,7 +50,13 @@ export const IssueTable = memo(function IssueTable({
         </thead>
         <tbody>
           {issues.map((issue) => (
-            <IssueRow key={issue.id} issue={issue} href={issueHref(issue.id)} writes={writes} />
+            <IssueRow
+              key={issue.id}
+              issue={issue}
+              issueHref={issueHref}
+              titleOf={(id) => titles.get(id)}
+              writes={writes}
+            />
           ))}
         </tbody>
       </table>
@@ -56,8 +64,17 @@ export const IssueTable = memo(function IssueTable({
   );
 });
 
-function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes: IssueWrites }) {
+type RowProps = {
+  issue: Issue;
+  issueHref: (issueId: string) => string;
+  /** 막고 있는 이슈의 제목을 표에서 찾습니다. */
+  titleOf: (issueId: string) => string | undefined;
+  writes: IssueWrites;
+};
+
+function IssueRow({ issue, issueHref, titleOf, writes }: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
+  const href = issueHref(issue.id);
   const messages = useMessages();
   return (
     <tr className="group hover:bg-base-200/60">
@@ -103,6 +120,9 @@ function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes:
             </span>
           )}
         />
+        {issue.blockedBy && (
+          <BlockerLine blockedBy={issue.blockedBy} titleOf={titleOf} issueHref={issueHref} />
+        )}
       </td>
       <td>
         <StatusSelect

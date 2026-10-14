@@ -2,6 +2,7 @@ import { chmod, mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/pr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import type { Issue } from "./issue";
 import {
   boardIssues,
   decisionRecords,
@@ -11,6 +12,7 @@ import {
   openChangeFingerprint,
   readyIssues,
   showIssue,
+  withWorkSignals,
 } from "./queries";
 
 type FakeResponse = { stdout?: string; stderr?: string; code?: number };
@@ -136,6 +138,51 @@ describe("readyIssues", () => {
     const result = await readyIssues(workDir);
 
     expect(result.ok && result.value.map((issue) => issue.id)).toEqual(["task", "feature"]);
+  });
+});
+
+describe("withWorkSignals", () => {
+  const blockedArgs = "blocked --json";
+  const readyArgs = "ready --limit 0 --json";
+
+  test("막힌 이슈에는 막고 있는 이슈 id를, bd ready에 든 이슈에는 ready를 채운다", async () => {
+    await useFakeBd({
+      [blockedArgs]: {
+        stdout: JSON.stringify([
+          { id: "waiting", status: "open", blocked_by: ["first", "second"] },
+        ]),
+      },
+      [readyArgs]: { stdout: JSON.stringify([{ id: "free", status: "open" }]) },
+    });
+    const listed = [
+      { id: "waiting", status: "open" },
+      { id: "free", status: "open" },
+      { id: "doing", status: "in_progress" },
+    ].map((fields) => ({ ...fields, title: fields.id }) as Issue);
+
+    const result = await withWorkSignals(workDir, Promise.resolve({ ok: true, value: listed }));
+
+    expect(
+      result.ok && result.value.map(({ id, blockedBy, ready }) => ({ id, blockedBy, ready })),
+    ).toEqual([
+      { id: "waiting", blockedBy: ["first", "second"], ready: undefined },
+      { id: "free", blockedBy: undefined, ready: true },
+      { id: "doing", blockedBy: undefined, ready: undefined },
+    ]);
+  });
+
+  test("목록 조회가 실패하면 그 오류를, bd blocked나 bd ready가 실패하면 그 오류를 돌려준다", async () => {
+    await useFakeBd({
+      [blockedArgs]: { stderr: "boom", code: 1 },
+      [readyArgs]: { stdout: "[]" },
+    });
+    const listError = { ok: false as const, error: { message: "list failed", exitCode: 1 } };
+
+    expect(await withWorkSignals(workDir, Promise.resolve(listError))).toEqual(listError);
+    expect(await withWorkSignals(workDir, Promise.resolve({ ok: true, value: [] }))).toEqual({
+      ok: false,
+      error: { message: "boom\n", exitCode: 1 },
+    });
   });
 });
 
@@ -404,6 +451,20 @@ describe("boardIssues", () => {
       custom: "other",
       "open-unknown": "other",
     });
+  });
+
+  test("막힘 열의 이슈에는 bd blocked가 알려 준 막고 있는 이슈 id를 붙인다", async () => {
+    await useFakeBd({
+      [boardArgs.all]: { stdout: JSON.stringify([{ id: "waiting", status: "open" }]) },
+      [boardArgs.ready]: { stdout: "[]" },
+      [boardArgs.blocked]: {
+        stdout: JSON.stringify([{ id: "waiting", status: "open", blocked_by: ["first"] }]),
+      },
+    });
+
+    const result = await boardIssues(workDir);
+
+    expect(result.ok && result.value.map(({ issue }) => issue.blockedBy)).toEqual([["first"]]);
   });
 
   test("decision과 epic은 상태와 관계없이 어느 열에도 넣지 않는다", async () => {

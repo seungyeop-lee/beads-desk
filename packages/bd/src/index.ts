@@ -11,6 +11,7 @@ export {
   type ChangeFingerprint,
   type DecisionRecord,
   type EpicStatus,
+  withWorkSignals,
 } from "./queries";
 export {
   addComment,

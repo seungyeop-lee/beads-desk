@@ -1,6 +1,6 @@
 import type { IssueLink } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { CloseIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { dependencyLabel, statusLabel, statusTone } from "../issueLabels";
@@ -24,9 +24,12 @@ type DependencyEdit = {
 
 export function DependencyList({ title, side, links, issueHref, edit }: Props) {
   const messages = useMessages();
+  const headingId = useId();
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="caption">{title}</h3>
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <h3 id={headingId} className="caption">
+        {title}
+      </h3>
       {links.length > 0 && (
         <ul className="flex flex-col">
           {links.map((link) => (
