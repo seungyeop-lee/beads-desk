@@ -120,14 +120,22 @@ describe("listIssues", () => {
 });
 
 describe("readyIssues", () => {
-  test("바로 작업할 수 있는 이슈를 개수 제한 없이 조회한다", async () => {
+  test("바로 작업할 수 있는 이슈를 개수 제한 없이 조회하고, 작업 단위가 아닌 decision과 epic은 뺀다", async () => {
+    const issue = (id: string, issue_type: string) => ({ id, status: "open", issue_type });
     await useFakeBd({
-      "ready --limit 0 --json": { stdout: await fixture("ready.json") },
+      "ready --limit 0 --json": {
+        stdout: JSON.stringify([
+          issue("task", "task"),
+          issue("decision", "decision"),
+          issue("epic", "epic"),
+          issue("feature", "feature"),
+        ]),
+      },
     });
 
     const result = await readyIssues(workDir);
 
-    expect(result.ok && result.value.map((issue) => issue.id)).toEqual(["demo-8g0"]);
+    expect(result.ok && result.value.map((issue) => issue.id)).toEqual(["task", "feature"]);
   });
 });
 
@@ -396,6 +404,37 @@ describe("boardIssues", () => {
       custom: "other",
       "open-unknown": "other",
     });
+  });
+
+  test("decision과 epic은 상태와 관계없이 어느 열에도 넣지 않는다", async () => {
+    const issue = (id: string, status: string, issue_type: string) => ({ id, status, issue_type });
+    await useFakeBd({
+      [boardArgs.all]: {
+        stdout: JSON.stringify([
+          issue("task", "open", "task"),
+          issue("open-decision", "open", "decision"),
+          issue("closed-decision", "closed", "decision"),
+          issue("open-epic", "open", "epic"),
+          issue("doing-epic", "in_progress", "epic"),
+          issue("feature", "open", "feature"),
+        ]),
+      },
+      [boardArgs.ready]: {
+        stdout: JSON.stringify([
+          issue("task", "open", "task"),
+          issue("open-decision", "open", "decision"),
+          issue("open-epic", "open", "epic"),
+          issue("feature", "open", "feature"),
+        ]),
+      },
+      [boardArgs.blocked]: { stdout: "[]" },
+    });
+
+    const result = await boardIssues(workDir);
+
+    expect(
+      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
+    ).toEqual({ task: "ready", feature: "ready" });
   });
 
   test("조회가 하나라도 실패하면 열을 잘못 나누지 않도록 오류를 돌려준다", async () => {

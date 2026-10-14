@@ -36,12 +36,20 @@ const LIST_LIMIT = "0";
 
 const READY_ARGS = ["ready", "--limit", LIST_LIMIT, "--json"];
 
+/**
+ * 작업 단위가 아니라 바로 작업 가능 목록과 보드에서 빼는 유형입니다. bd ready는 이 유형도 돌려줍니다.
+ * decision은 열려 있으면 유효한 결정이라는 기록이고, epic은 하위 이슈를 묶을 뿐 직접 작업하지 않습니다.
+ */
+const NON_WORK_TYPES = new Set(["decision", "epic"]);
+
 export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutcome<Issue[]>> {
   return queryIssues(cwd, listArgs(statuses));
 }
 
-export function readyIssues(cwd: string): Promise<BdOutcome<Issue[]>> {
-  return queryIssues(cwd, READY_ARGS);
+/** 바로 작업할 수 있는 이슈를 읽습니다. decision과 epic은 빼고 돌려줍니다. */
+export async function readyIssues(cwd: string): Promise<BdOutcome<Issue[]>> {
+  const result = await queryIssues(cwd, READY_ARGS);
+  return result.ok ? { ok: true, value: result.value.filter(isWork) } : result;
 }
 
 export async function epicChildren(cwd: string, epicId: string): Promise<BdOutcome<Issue[]>> {
@@ -134,7 +142,8 @@ function supersedingIssue(record: unknown): string | null {
 }
 
 /**
- * 모든 이슈를 한 번에 읽어 상태로 열을 정합니다. 열림 이슈는 bd ready에 있으면 ready에 넣습니다.
+ * 모든 이슈를 한 번에 읽어 상태로 열을 정합니다. decision과 epic은 보드에 넣지 않습니다.
+ * 열림 이슈는 bd ready에 있으면 ready에 넣습니다.
  * bd blocked에 나온 이슈는 의존 관계 때문에 막힌 것이라 상태와 관계없이 blocked에 넣습니다.
  * 조회가 하나라도 실패하면 열을 잘못 나누게 되므로 오류를 돌려줍니다.
  */
@@ -152,11 +161,15 @@ export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>>
   const blockedIds = new Set(blocked.value.map((issue) => issue.id));
   return {
     ok: true,
-    value: all.value.map((issue) => ({
+    value: all.value.filter(isWork).map((issue) => ({
       column: blockedIds.has(issue.id) ? "blocked" : statusColumn(issue, readyIds),
       issue,
     })),
   };
+}
+
+function isWork(issue: Issue): boolean {
+  return !NON_WORK_TYPES.has(issue.issueType);
 }
 
 function statusColumn(issue: Issue, readyIds: Set<string>): BoardColumn {
