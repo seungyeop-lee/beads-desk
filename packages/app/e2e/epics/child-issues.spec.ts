@@ -1,6 +1,6 @@
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 
-test("에픽의 새 하위 이슈로 만든 이슈는 하위 목록과 진행률에 들어가고 상세가 열린다", async ({
+test("에픽의 새 하위 이슈는 상위 에픽을 바꿀 수 없고, 만든 이슈는 하위 목록과 진행률에 들어가고 상세가 열린다", async ({
   page,
   workspace,
 }) => {
@@ -10,6 +10,8 @@ test("에픽의 새 하위 이슈로 만든 이슈는 하위 목록과 진행률
   await page.getByRole("button", { name: "새 하위 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: "새 이슈" });
   await expect(dialog.getByText("하위를 만들 에픽")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "상위 이슈 지우기" })).toHaveCount(0);
+  await expect(dialog.getByRole("combobox", { name: "상위 이슈 찾기" })).toHaveCount(0);
   await dialog.getByRole("textbox", { name: "제목" }).fill("에픽에서 만든 하위 이슈");
   await dialog.getByRole("button", { name: "만들기" }).click();
 

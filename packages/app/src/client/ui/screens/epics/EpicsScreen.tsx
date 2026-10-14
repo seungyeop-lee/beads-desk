@@ -177,7 +177,7 @@ function EpicChildren({
       </div>
       {creating && (
         <NewIssueDialog
-          initialParent={epic}
+          fixedParent={epic}
           onCreated={(issueId) => {
             setCreating(false);
             router.push(issueHref(issueId), { scroll: false });

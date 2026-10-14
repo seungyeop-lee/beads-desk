@@ -11,12 +11,12 @@ import { ISSUE_TYPES, PRIORITIES, priorityLabel, typeLabel, typeTone } from "./i
 type Props = {
   onCreated: (issueId: string) => void;
   onClose: () => void;
-  /** 에픽 화면처럼 상위 이슈를 정해 두고 열 때 넘깁니다. */
-  initialParent?: Issue;
+  /** 에픽 화면처럼 상위 이슈를 정해 두고 열 때 넘깁니다. 이렇게 연 대화상자에서는 상위 이슈를 바꾸거나 지울 수 없습니다. */
+  fixedParent?: Issue;
 };
 
 /** Ctrl/Cmd+Enter로도 만듭니다. */
-export function NewIssueDialog({ onCreated, onClose, initialParent }: Props) {
+export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { run, pending, error } = useIssueWrites();
   const [title, setTitle] = useState("");
@@ -24,7 +24,8 @@ export function NewIssueDialog({ onCreated, onClose, initialParent }: Props) {
   const [priority, setPriority] = useState(2);
   const [labels, setLabels] = useState("");
   const [description, setDescription] = useState("");
-  const [parent, setParent] = useState<Issue | null>(initialParent ?? null);
+  const [pickedParent, setPickedParent] = useState<Issue | null>(null);
+  const parent = fixedParent ?? pickedParent;
   const messages = useMessages();
 
   useEffect(() => {
@@ -117,21 +118,23 @@ export function NewIssueDialog({ onCreated, onClose, initialParent }: Props) {
                 <span className={`tone-dot ${typeTone(parent.issueType)}`} />
                 <span className="font-mono text-xs text-base-content/55">{parent.id}</span>
                 <span className="min-w-0 grow truncate">{parent.title}</span>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs btn-square"
-                  aria-label={messages.newIssue.clearParent}
-                  onClick={() => setParent(null)}
-                >
-                  <CloseIcon width={13} height={13} />
-                </button>
+                {!fixedParent && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs btn-square"
+                    aria-label={messages.newIssue.clearParent}
+                    onClick={() => setPickedParent(null)}
+                  >
+                    <CloseIcon width={13} height={13} />
+                  </button>
+                )}
               </span>
             ) : (
               <IssuePicker
                 label={messages.newIssue.parentSearch}
                 rank={epicsFirst}
                 onPick={async (issue) => {
-                  setParent(issue);
+                  setPickedParent(issue);
                   return true;
                 }}
               />
