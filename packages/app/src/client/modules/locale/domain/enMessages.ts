@@ -80,8 +80,6 @@ export const enMessages: Messages = {
     empty: "No issues match the filters.",
     copyId: "Copy ID",
     copyIdOf: (id) => `Copy ID ${id}`,
-    titleOf: (id) => `Title of ${id}`,
-    editTitleOf: (id) => `Edit title of ${id}`,
     statusOf: (id) => `Status of ${id}`,
     priorityOf: (id) => `Priority of ${id}`,
     assigneeOf: (id) => `Assignee of ${id}`,

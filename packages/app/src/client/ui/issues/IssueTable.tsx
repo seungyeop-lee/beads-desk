@@ -10,7 +10,6 @@ import { EditableText } from "./fields/EditableText";
 import { PrioritySelect } from "./fields/PrioritySelect";
 import { StatusSelect } from "./fields/StatusSelect";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
-import { PencilIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssueTypeTag } from "./IssueTypeTag";
 
@@ -102,33 +101,13 @@ function IssueRow({ issue, issueHref, titleOf, writes }: RowProps) {
         <IssueTypeTag issueType={issue.issueType} />
       </td>
       <td>
-        <EditableText
-          label={messages.issueTable.titleOf(issue.id)}
-          value={issue.title}
-          placeholder={messages.common.titlePlaceholder}
-          required
-          compact
-          onSave={(title) => update({ title })}
-          renderValue={(title, edit) => (
-            <span className="flex items-center gap-1">
-              <Link
-                className="font-medium decoration-base-content/30 underline-offset-4 hover:underline"
-                href={href}
-                scroll={false}
-              >
-                {title || messages.common.untitled}
-              </Link>
-              <button
-                type="button"
-                className="btn btn-ghost btn-xs btn-square text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                aria-label={messages.issueTable.editTitleOf(issue.id)}
-                onClick={edit}
-              >
-                <PencilIcon width={13} height={13} />
-              </button>
-            </span>
-          )}
-        />
+        <Link
+          className="font-medium decoration-base-content/30 underline-offset-4 hover:underline"
+          href={href}
+          scroll={false}
+        >
+          {issue.title || messages.common.untitled}
+        </Link>
         {issue.blockedBy && (
           <BlockerLine blockedBy={issue.blockedBy} titleOf={titleOf} issueHref={issueHref} />
         )}

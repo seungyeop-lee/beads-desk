@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { CheckIcon, CloseIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { focusOnMount, useInlineEdit } from "./useInlineEdit";
@@ -12,8 +11,6 @@ type Props = {
   className?: string;
   /** 표 안처럼 좁은 곳에 둘 때 입력란과 버튼을 작게 그립니다. */
   compact?: boolean;
-  /** 값을 기본 버튼 대신 직접 그립니다. edit를 호출하면 입력란으로 바뀝니다. */
-  renderValue?: (shown: string, edit: () => void) => ReactNode;
   /** 저장에 성공하면 true를 돌려줍니다. */
   onSave: (value: string) => Promise<boolean>;
 };
@@ -26,7 +23,6 @@ export function EditableText({
   required,
   className = "",
   compact = false,
-  renderValue,
   onSave,
 }: Props) {
   const { shown, draft, saving, edit, change, cancel, save } = useInlineEdit(
@@ -37,7 +33,6 @@ export function EditableText({
   const messages = useMessages();
 
   if (draft === null) {
-    if (renderValue) return renderValue(shown, edit);
     return (
       <button
         type="button"

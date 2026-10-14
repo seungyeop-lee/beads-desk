@@ -85,8 +85,6 @@ export const koMessages = {
     empty: "조건에 맞는 이슈가 없습니다.",
     copyId: "ID 복사",
     copyIdOf: (id: string) => `${id} ID 복사`,
-    titleOf: (id: string) => `${id} 제목`,
-    editTitleOf: (id: string) => `${id} 제목 고치기`,
     statusOf: (id: string) => `${id} 상태`,
     priorityOf: (id: string) => `${id} 우선순위`,
     assigneeOf: (id: string) => `${id} 담당자`,
