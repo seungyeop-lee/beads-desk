@@ -1,4 +1,5 @@
 import { ISSUE_STATUSES, type IssueStatus } from "@beads-desk/bd/issue";
+import { useEffect, useRef } from "react";
 import {
   toggleStatusFilter,
   type IssueListRefinement,
@@ -25,6 +26,17 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
   const isSelected = (status: IssueStatus) =>
     filter.kind === "status" && filter.statuses.includes(status);
   const allStatuses = filter.kind === "status" && filter.statuses.length === 0;
+  const typeMenuRef = useRef<HTMLDetailsElement>(null);
+
+  // details는 summary를 누를 때만 닫히므로, 목록 바깥을 누르면 직접 닫습니다.
+  useEffect(() => {
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const menu = typeMenuRef.current;
+      if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, []);
 
   const toggleType = (type: string) =>
     onRefinementChange({
@@ -68,7 +80,7 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
         ))}
       </fieldset>
 
-      <details className="dropdown">
+      <details ref={typeMenuRef} className="dropdown">
         <summary className="btn btn-sm btn-ghost gap-1.5 rounded-full font-medium">
           유형
           <span className="text-base-content/50">
