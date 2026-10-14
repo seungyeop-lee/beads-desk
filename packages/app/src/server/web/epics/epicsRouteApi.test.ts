@@ -6,7 +6,7 @@ import {
   type Issue,
 } from "@beads-desk/bd";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { handleEpicChildrenRequest, handleEpicsRequest } from "./epicsRouteApi";
+import { handleEpicDescendantsRequest, handleEpicsRequest } from "./epicsRouteApi";
 
 vi.mock("@beads-desk/bd", () => ({
   epicDescendants: vi.fn<typeof epicDescendants>(),
@@ -44,8 +44,8 @@ test("epic의 후손 이슈를 돌려주고, 실패하면 bd의 메시지를 오
     .mockResolvedValueOnce({ ok: true, value: [{ id: "e-1.1" } as Issue] })
     .mockResolvedValueOnce({ ok: false, error: { message: "boom\n", exitCode: 1 } });
 
-  const found = await handleEpicChildrenRequest("e-1");
-  const failed = await handleEpicChildrenRequest("e-2");
+  const found = await handleEpicDescendantsRequest("e-1");
+  const failed = await handleEpicDescendantsRequest("e-2");
 
   expect(epicDescendants).toHaveBeenCalledWith("/workspace", "e-1");
   expect(withWorkSignals).toHaveBeenCalledWith("/workspace", expect.any(Promise));

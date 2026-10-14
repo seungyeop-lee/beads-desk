@@ -6,7 +6,7 @@ export async function handleEpicsRequest(): Promise<Response> {
   return respond(await epicStatuses(currentWorkspaceRoot()));
 }
 
-export async function handleEpicChildrenRequest(epicId: string): Promise<Response> {
+export async function handleEpicDescendantsRequest(epicId: string): Promise<Response> {
   const cwd = currentWorkspaceRoot();
   return respond(await withWorkSignals(cwd, epicDescendants(cwd, epicId)));
 }

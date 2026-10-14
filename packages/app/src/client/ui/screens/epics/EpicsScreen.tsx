@@ -4,7 +4,7 @@ import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useEpicChildren, useEpics } from "@/client/modules/epics/application/useEpics";
+import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
 import {
   epicDescendantRows,
   notChildCandidate,
@@ -129,12 +129,12 @@ function EpicSection({ summary, expanded, onToggle, issueHref, writes }: Section
           {closedChildren}/{totalChildren} · {percent}%
         </span>
       </header>
-      {expanded && <EpicChildren epic={epic} issueHref={issueHref} writes={writes} />}
+      {expanded && <EpicDescendants epic={epic} issueHref={issueHref} writes={writes} />}
     </section>
   );
 }
 
-function EpicChildren({
+function EpicDescendants({
   epic,
   issueHref,
   writes,
@@ -143,8 +143,7 @@ function EpicChildren({
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 }) {
-  // 직접 하위 이슈뿐 아니라 기능 아래 작업처럼 그 아래 이슈까지 받습니다.
-  const { data: descendants, error } = useEpicChildren(epic.id);
+  const { data: descendants, error } = useEpicDescendants(epic.id);
   const [creating, setCreating] = useState(false);
   const router = useRouter();
   const messages = useMessages();
