@@ -30,34 +30,39 @@ export function DependencyList({ links, issueHref, edit }: Props) {
           {links.map(({ side, link }) => (
             <li
               key={`${side}:${link.dependencyType}:${link.id}`}
-              className="group -mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-base-content/5"
+              className="group relative -mx-2 flex flex-col gap-0.5 rounded-lg px-2 py-1.5 hover:bg-base-content/5"
             >
-              <span className="w-20 shrink-0 text-xs text-base-content/50">
-                {dependencyLabel(messages, side, link.dependencyType)}
-              </span>
+              {/* 링크가 항목 전체를 덮어 두 줄 어디를 눌러도 이동합니다. 지우기 단추는 relative로 링크 위에 둡니다. */}
               <Link
-                className="min-w-0 grow truncate text-sm hover:underline"
+                className="absolute inset-0 rounded-lg"
                 href={issueHref(link.id)}
                 scroll={false}
                 title={`${link.id} ${link.title}`}
-              >
-                <span className="font-mono text-xs text-base-content/55">{link.id}</span>{" "}
-                {link.title}
-              </Link>
-              <span className={`chip h-5 px-2 text-[11px] ${statusTone(link.status)}`}>
-                {statusLabel(messages, link.status)}
-              </span>
-              {edit && (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs btn-square text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  aria-label={messages.dependencyList.remove(link.id)}
-                  disabled={edit.disabled}
-                  onClick={() => edit.onRemove({ side, link })}
-                >
-                  <CloseIcon width={13} height={13} />
-                </button>
-              )}
+                aria-label={`${link.id} ${link.title}`}
+              />
+              <div className="flex h-6 items-center gap-2">
+                <span className="shrink-0 text-xs text-base-content/50">
+                  {dependencyLabel(messages, side, link.dependencyType)}
+                </span>
+                <span className="min-w-0 grow truncate font-mono text-xs text-base-content/55">
+                  {link.id}
+                </span>
+                <span className={`chip h-5 px-2 text-[11px] ${statusTone(link.status)}`}>
+                  {statusLabel(messages, link.status)}
+                </span>
+                {edit && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs btn-square relative text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    aria-label={messages.dependencyList.remove(link.id)}
+                    disabled={edit.disabled}
+                    onClick={() => edit.onRemove({ side, link })}
+                  >
+                    <CloseIcon width={13} height={13} />
+                  </button>
+                )}
+              </div>
+              <span className="truncate text-sm group-hover:underline">{link.title}</span>
             </li>
           ))}
         </ul>
