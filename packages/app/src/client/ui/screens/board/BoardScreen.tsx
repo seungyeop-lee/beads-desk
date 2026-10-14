@@ -109,9 +109,11 @@ export function BoardScreen() {
             >
               <h2 className="flex h-8 items-center gap-2 px-1.5 text-sm font-bold">
                 <span className={`tone-dot ${COLUMN_TONES[column]}`} />
-                {messages.board.columns[column]}
-                <span className="font-mono text-xs font-normal text-base-content/50">
-                  {columns[column].length}
+                <span className="flex items-baseline gap-2">
+                  {messages.board.columns[column]}
+                  <span className="font-mono text-xs font-normal text-base-content/50">
+                    {columns[column].length}
+                  </span>
                 </span>
                 {column === "closed" && (
                   <select
