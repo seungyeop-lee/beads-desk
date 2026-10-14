@@ -1,5 +1,6 @@
 import type { IssueComment } from "@beads-desk/bd/issue";
 import { useState } from "react";
+import { Markdown } from "@/client/ui/designSystem/Markdown";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { formatTime, nameTone } from "../issueLabels";
 
@@ -10,7 +11,7 @@ type Props = {
   onAdd: (text: string) => Promise<boolean>;
 };
 
-/** 댓글은 bd가 보여 주는 대로 일반 글자로 보여 줍니다. Ctrl/Cmd+Enter로 남깁니다. */
+/** 댓글 본문은 이슈 본문 필드처럼 markdown으로 보여 줍니다. Ctrl/Cmd+Enter로 남깁니다. */
 export function CommentList({ comments, disabled, onAdd }: Props) {
   const [draft, setDraft] = useState("");
   const locale = useLocale();
@@ -45,7 +46,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
                 {formatTime(locale, comment.createdAt)}
               </time>
             </header>
-            <p className="break-words whitespace-pre-wrap">{comment.text}</p>
+            <Markdown text={comment.text} />
           </div>
         </article>
       ))}
