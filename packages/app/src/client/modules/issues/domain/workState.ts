@@ -1,5 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { byClosedDesc, byPriorityThenCreated } from "./issueListView";
+import { byClosedDesc, byPriorityThenCreated, nestUnderParents } from "./issueListView";
 
 /**
  * 저장 상태와 의존 관계, bd ready를 합쳐 지금 이 이슈로 무엇을 할 수 있는지 나타냅니다. 보드의 열과 같은 기준입니다.
@@ -49,4 +49,12 @@ export function groupByWorkState(issues: Issue[]): WorkStateGroup[] {
       .filter((issue) => workState(issue) === state)
       .sort(state === "closed" ? byClosedDesc : byPriorityThenCreated),
   })).filter((group) => group.issues.length > 0);
+}
+
+/** 이슈 목록의 묶음입니다. groupByWorkState의 묶음마다 하위 이슈를 같은 묶음에 있는 상위 이슈 바로 아래로 옮깁니다. */
+export function issueListGroups(issues: Issue[]): WorkStateGroup[] {
+  return groupByWorkState(issues).map((group) => ({
+    ...group,
+    issues: nestUnderParents(group.issues),
+  }));
 }

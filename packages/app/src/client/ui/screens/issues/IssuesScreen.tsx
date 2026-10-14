@@ -5,11 +5,10 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import {
-  nestUnderParents,
   refineIssues,
   type IssueListRefinement,
 } from "@/client/modules/issues/domain/issueListView";
-import { groupByWorkState, parseViewState } from "@/client/modules/issues/domain/workState";
+import { issueListGroups, parseViewState } from "@/client/modules/issues/domain/workState";
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { ISSUE_TYPES } from "@/client/ui/issues/issueLabels";
@@ -40,13 +39,8 @@ export function IssuesScreen() {
   const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
   // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
   const deferredRefinement = useDeferredValue(refinement);
-  // 묶음 안에서는 하위 이슈를 상위 이슈 바로 아래에 보입니다.
   const groups = useMemo(
-    () =>
-      groupByWorkState(issues ? refineIssues(issues, deferredRefinement) : []).map((group) => ({
-        ...group,
-        issues: nestUnderParents(group.issues),
-      })),
+    () => issueListGroups(issues ? refineIssues(issues, deferredRefinement) : []),
     [issues, deferredRefinement],
   );
   const view = parseViewState(useSearchParams().get(VIEW_PARAM));

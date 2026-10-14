@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { groupByWorkState, parseViewState, workState } from "./workState";
+import { groupByWorkState, issueListGroups, parseViewState, workState } from "./workState";
 
 function issue(fields: Partial<Issue> = {}): Issue {
   return {
@@ -78,6 +78,30 @@ test("묶음 안에서 닫힘은 최근에 닫은 순, 나머지는 우선순위
   expect(groups.map(({ issues }) => issues.map(({ id }) => id))).toEqual([
     ["p0", "p2-early", "p2-late"],
     ["closed-new", "closed-old"],
+  ]);
+});
+
+test("이슈 목록의 묶음 안에서는 우선순위보다 상위 관계가 앞서, 하위 이슈가 상위 이슈 바로 아래에 온다", () => {
+  const groups = issueListGroups([
+    issue({ id: "feature", issueType: "feature", ready: true, priority: 2 }),
+    issue({ id: "other", ready: true, priority: 1 }),
+    issue({ id: "task", ready: true, priority: 0, parent: "feature" }),
+  ]);
+
+  expect(groups.map(({ state, issues }) => [state, issues.map(({ id }) => id)])).toEqual([
+    ["ready", ["other", "feature", "task"]],
+  ]);
+});
+
+test("이슈 목록에서 상위와 작업 상태가 다른 하위 이슈는 자기 묶음에 남는다", () => {
+  const groups = issueListGroups([
+    issue({ id: "feature", issueType: "feature", ready: true }),
+    issue({ id: "doing", status: "in_progress", parent: "feature" }),
+  ]);
+
+  expect(groups.map(({ state, issues }) => [state, issues.map(({ id }) => id)])).toEqual([
+    ["in_progress", ["doing"]],
+    ["ready", ["feature"]],
   ]);
 });
 
