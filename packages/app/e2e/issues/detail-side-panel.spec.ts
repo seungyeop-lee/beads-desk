@@ -58,6 +58,31 @@ test("옆 패널의 이슈로 이동한 뒤 이전 이슈 버튼을 누르면 �
   await expect(page.getByRole("link", { name: /^이전 이슈/ })).toHaveCount(0);
 });
 
+test("옆 패널의 이슈로 이동하고 돌아오기를 되풀이해도 dialog에는 그 이슈의 상세가 한 번만 보인다", async ({
+  page,
+  workspace,
+}) => {
+  const { main, dependency } = await seedDependency(workspace);
+  const dialog = page.getByRole("dialog");
+  const dependencyDescription = dialog.getByText("선행 이슈 설명");
+
+  await page.goto("/issues");
+  await page.getByRole("link", { name: "주 이슈" }).click();
+  await dependencyLink(dialog, dependency).click();
+
+  for (let round = 0; round < 2; round++) {
+    await sidePanel(page, dependency).getByRole("link", { name: "이 이슈로 이동" }).click();
+    await expect(page.getByRole("dialog", { name: `${dependency} 이슈` })).toBeVisible();
+    await expect(dependencyDescription).toHaveCount(1);
+
+    await page.getByRole("link", { name: `이전 이슈 ${main}로 돌아가기` }).click();
+    // 주 상세가 주 이슈를 받은 뒤에 세어, 주 이슈를 받기 전까지 이전 이슈를 보이는 순간을 세지 않습니다.
+    await expect(dependencyLink(dialog, dependency)).toBeVisible();
+    await expect(sidePanel(page, dependency)).toBeVisible();
+    await expect(dependencyDescription).toHaveCount(1);
+  }
+});
+
 /** 막힘 안내에도 같은 이슈 링크가 있으므로, 의존 관계 목록의 링크를 고릅니다. */
 function dependencyLink(dialog: Locator, dependency: string) {
   return dialog

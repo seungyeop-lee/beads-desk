@@ -69,9 +69,12 @@ export function IssueDetailDialog({ location, previous, detailHref, onClose }: P
         <div
           className={`modal-box flex max-h-[90vh] w-11/12 overflow-hidden p-0 ${side ? "max-w-[110rem]" : "max-w-6xl"}`}
         >
-          {/* 보이는 이슈가 바뀌면 새로 그려, 이전 이슈의 쓰기 오류와 진행 표시와 스크롤 위치가 남지 않게 합니다. */}
+          {/*
+           * 보이는 이슈가 바뀌면 새로 그려, 이전 이슈의 쓰기 오류와 진행 표시와 스크롤 위치가 남지 않게 합니다.
+           * 주 상세가 새 이슈를 받기 전에는 옆 패널과 같은 이슈를 보일 수 있어, 두 패널의 key에 접두어를 달리 붙입니다.
+           */}
           <IssueDetailPanel
-            key={issue?.id ?? issueId}
+            key={`main:${issue?.id ?? issueId}`}
             issueId={issue?.id ?? issueId}
             issue={issue}
             error={issue ? null : error}
@@ -83,7 +86,7 @@ export function IssueDetailDialog({ location, previous, detailHref, onClose }: P
           />
           {side && (
             <IssueSidePanel
-              key={side}
+              key={`side:${side}`}
               issueId={side}
               closeHref={detailHref({ issue: issueId, side: null })}
               openHref={detailHref({ issue: side, side: null })}
