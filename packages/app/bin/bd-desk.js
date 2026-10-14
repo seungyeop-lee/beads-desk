@@ -11,7 +11,7 @@ import { createDaemon } from "./daemon.js";
 const HOST = "127.0.0.1";
 const DEFAULT_PORT = 3000;
 
-const USAGE = `사용법: beads-desk [start|stop|restart] [--port <번호>] [--open]
+const USAGE = `사용법: bd-desk [start|stop|restart] [--port <번호>] [--open]
 
   start    서버를 background로 시작합니다. 명령을 생략하면 start입니다.
            이미 실행 중이면 지금 디렉터리를 workspace로 등록해 현재 workspace로 바꿉니다.

@@ -16,7 +16,7 @@ const HOST = "127.0.0.1";
 const MAX_PORT_ATTEMPTS = 100;
 const SERVER_READY_TIMEOUT_MS = 30_000;
 const STOP_TIMEOUT_MS = 5_000;
-/** 다른 beads-desk 명령이 서버를 띄우는 동안 기다리는 시간입니다. 서버 준비 시간보다 길어야 합니다. */
+/** 다른 bd-desk 명령이 서버를 띄우는 동안 기다리는 시간입니다. 서버 준비 시간보다 길어야 합니다. */
 const LOCK_TIMEOUT_MS = SERVER_READY_TIMEOUT_MS + STOP_TIMEOUT_MS + 5_000;
 
 /**
@@ -53,7 +53,7 @@ export function createDaemon({
           print(`URL: ${running.url}`);
           if (port && port !== running.port) {
             print(
-              `서버가 ${running.port}번 포트에서 실행 중이라 지정한 포트(${port})를 적용하지 않았습니다. 포트를 바꾸려면 다음 명령을 실행하세요: beads-desk restart --port ${port}`,
+              `서버가 ${running.port}번 포트에서 실행 중이라 지정한 포트(${port})를 적용하지 않았습니다. 포트를 바꾸려면 다음 명령을 실행하세요: bd-desk restart --port ${port}`,
             );
           }
           if (open) openBrowser(running.url);
@@ -62,7 +62,7 @@ export function createDaemon({
         const server = await launch(root, port);
         print(`workspace: ${root}`);
         print(`URL: ${server.url}`);
-        print("종료하려면 beads-desk stop을 실행하세요.");
+        print("종료하려면 bd-desk stop을 실행하세요.");
         if (open) openBrowser(server.url);
         return 0;
       }),
@@ -166,7 +166,7 @@ export function createDaemon({
       await waitForServer(state.url, state.pid);
     } catch (error) {
       throw new Error(
-        `실행 중인 서버(pid ${state.pid})가 응답하지 않습니다. beads-desk stop으로 종료한 뒤 다시 시작하세요.`,
+        `실행 중인 서버(pid ${state.pid})가 응답하지 않습니다. bd-desk stop으로 종료한 뒤 다시 시작하세요.`,
         { cause: error },
       );
     }
@@ -226,7 +226,7 @@ export function createDaemon({
         continue;
       }
       if (Date.now() > deadline) {
-        throw new Error("다른 beads-desk 명령이 끝나기를 기다리다 시간이 초과됐습니다.");
+        throw new Error("다른 bd-desk 명령이 끝나기를 기다리다 시간이 초과됐습니다.");
       }
       await sleep(100);
     }

@@ -7,7 +7,7 @@ export type WorkspaceList = {
   workspaces: string[];
 };
 
-/** `beads-desk` 명령이 실행 중인 서버에 workspace를 등록할 때 보내는 본문입니다. */
+/** `bd-desk` 명령이 실행 중인 서버에 workspace를 등록할 때 보내는 본문입니다. */
 export type RegisterWorkspaceRequest = {
   /** 이 디렉터리나 상위에서 `.beads`가 있는 디렉터리를 등록합니다. */
   path: string;

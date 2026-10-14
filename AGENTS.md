@@ -10,14 +10,14 @@
 
 | 경로           | 패키지                      | 역할                                                           |
 | -------------- | --------------------------- | -------------------------------------------------------------- |
-| `packages/app` | `@seungyeop-lee/beads-desk` | npm으로 배포하는 Next.js 앱과 `beads-desk` 실행 명령           |
+| `packages/app` | `@seungyeop-lee/beads-desk` | npm으로 배포하는 Next.js 앱과 `bd-desk` 실행 명령              |
 | `packages/bd`  | `@beads-desk/bd`            | `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다 |
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 
 ## 실행 구조
 
-`beads-desk start`(`packages/app/bin/beads-desk.js`, 명령을 생략해도 같음)는 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 background process group으로 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
+`bd-desk start`(`packages/app/bin/bd-desk.js`, 명령을 생략해도 같음)는 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 background process group으로 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
 
 - 지금 디렉터리와 그 상위에 `.beads`가 없으면 서버를 띄우거나 바꾸지 않고 종료 코드 1로 끝납니다.
 - 서버가 이미 실행 중이면 새로 띄우지 않고, `POST /api/workspaces`로 지금 디렉터리를 등록해 현재 workspace로 바꿉니다.
@@ -75,6 +75,6 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 1. `packages/app`에서 `pnpm run pack:local`을 실행해 현재 디렉터리에 tarball을 만듭니다.
 2. `npm install -g --prefix <임시 디렉터리> <tarball 경로>`로 설치합니다.
-3. bd workspace 디렉터리에서 `XDG_RUNTIME_DIR=<다른 임시 디렉터리> <임시 디렉터리>/bin/beads-desk start`를 실행합니다. `XDG_RUNTIME_DIR`을 따로 주어야 평소에 쓰는 서버의 상태 파일을 건드리지 않습니다.
+3. bd workspace 디렉터리에서 `XDG_RUNTIME_DIR=<다른 임시 디렉터리> <임시 디렉터리>/bin/bd-desk start`를 실행합니다. `XDG_RUNTIME_DIR`을 따로 주어야 평소에 쓰는 서버의 상태 파일을 건드리지 않습니다.
 4. 출력된 URL의 `/api/health` 응답에서 `runtime.workspaceRoot`가 3번의 디렉터리이고 `runtime.bdVersion`이 비어 있지 않으면 정상입니다.
-5. 같은 `XDG_RUNTIME_DIR`로 `<임시 디렉터리>/bin/beads-desk stop`을 실행해 서버를 종료합니다.
+5. 같은 `XDG_RUNTIME_DIR`로 `<임시 디렉터리>/bin/bd-desk stop`을 실행해 서버를 종료합니다.

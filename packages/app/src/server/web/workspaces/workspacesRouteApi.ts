@@ -11,11 +11,11 @@ export function handleWorkspacesRequest(): Response {
   return respond({ ok: true, data: workspaceList() }, 200);
 }
 
-/** `beads-desk` 명령이 실행 중인 서버에 자신이 실행된 디렉터리를 등록할 때 호출합니다. */
+/** `bd-desk` 명령이 실행 중인 서버에 자신이 실행된 디렉터리를 등록할 때 호출합니다. */
 export async function handleRegisterWorkspaceRequest(request: Request): Promise<Response> {
   // Route Handler는 Server Action과 달리 Next가 요청 출처를 검사하지 않습니다.
   // 다른 사이트의 페이지가 현재 workspace를 바꾸지 못하게, 브라우저가 사전 확인 없이 보내는 JSON 외 본문과
-  // 브라우저가 다른 사이트에서 보냈다고 표시한 요청을 거부합니다. beads-desk 명령은 Sec-Fetch-Site를 보내지 않습니다.
+  // 브라우저가 다른 사이트에서 보냈다고 표시한 요청을 거부합니다. bd-desk 명령은 Sec-Fetch-Site를 보내지 않습니다.
   const contentType = request.headers.get("Content-Type") ?? "";
   if (contentType.split(";")[0]?.trim().toLowerCase() !== "application/json") {
     return respond({ ok: false, error: "JSON 본문만 받습니다." }, 415);

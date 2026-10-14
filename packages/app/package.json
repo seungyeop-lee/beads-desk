@@ -4,7 +4,7 @@
   "description": "Local web UI for Beads (bd)",
   "license": "MIT",
   "bin": {
-    "beads-desk": "bin/beads-desk.js"
+    "bd-desk": "bin/bd-desk.js"
   },
   "files": [
     ".next/BUILD_ID",
@@ -20,7 +20,7 @@
     ".next/routes-manifest.json",
     ".next/server",
     ".next/static",
-    "bin/beads-desk.js",
+    "bin/bd-desk.js",
     "bin/daemon.js",
     "next.config.ts"
   ],
