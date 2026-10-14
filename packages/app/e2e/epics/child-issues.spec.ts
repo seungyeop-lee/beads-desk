@@ -50,3 +50,20 @@ test("에픽에서 기존 이슈를 찾아 하위로 넣으면 하위 목록에 
     .poll(async () => (await workspace.showIssue(task)).parent, { timeout: SAVE_TIMEOUT })
     .toBe(epic);
 });
+
+test("기존 이슈를 하위로 넣기 후보에는 이미 그 에픽에 속한 기능과 기능 아래 작업이 없다", async ({
+  page,
+  workspace,
+}) => {
+  await workspace.createIssues({
+    epic: { title: "후보 검사 에픽", type: "epic" },
+    feature: { title: "후보 검사 기능", type: "feature", parent: "epic" },
+    nested: { title: "후보 검사 기능 아래 작업", type: "task", parent: "feature" },
+    outside: { title: "후보 검사 바깥 작업", type: "task" },
+  });
+
+  await page.goto("/epics");
+  await page.getByRole("combobox", { name: "기존 이슈를 하위로 넣기" }).fill("후보 검사");
+  const candidates = page.getByRole("listbox", { name: "기존 이슈를 하위로 넣기" });
+  await expect(candidates.getByRole("option")).toHaveText([/후보 검사 바깥 작업/]);
+});

@@ -40,18 +40,10 @@ export function settleExpandedEpics(
   return new Set([sorted[0]!.epic.id]);
 }
 
-/**
- * 에픽에 기존 이슈를 하위로 넣을 때 후보에서 뺄 이슈를 고릅니다. 에픽 자신과 다른 에픽, 이미 직접 하위인 이슈입니다.
- * 하위의 하위 이슈는 후보에 남겨, 기능 아래에 있던 이슈도 에픽 바로 아래로 옮길 수 있습니다.
- */
-export function notChildCandidate(
-  epicId: string,
-  descendants: readonly Issue[],
-): (issue: Issue) => boolean {
-  const childIds = new Set(
-    descendants.filter((issue) => issue.parent === epicId).map((child) => child.id),
-  );
-  return (issue) => issue.issueType === "epic" || childIds.has(issue.id);
+/** 에픽에 기존 이슈를 하위로 넣을 때 후보에서 뺄 이슈를 고릅니다. 에픽 자신과 다른 에픽, 이미 그 에픽에 속한 후손 이슈입니다. */
+export function notChildCandidate(descendants: readonly Issue[]): (issue: Issue) => boolean {
+  const descendantIds = new Set(descendants.map((issue) => issue.id));
+  return (issue) => issue.issueType === "epic" || descendantIds.has(issue.id);
 }
 
 /** 펼친 에픽의 후손 이슈를 상태 순으로 정렬하고, 하위 이슈는 상위 이슈 바로 아래에 둡니다. */

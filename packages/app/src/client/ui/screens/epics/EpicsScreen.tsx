@@ -162,7 +162,7 @@ function EpicDescendants({
           <IssuePicker
             label={messages.epics.addExistingChild}
             disabled={writes.pending || !descendants}
-            exclude={notChildCandidate(epic.id, descendants ?? [])}
+            exclude={notChildCandidate(descendants ?? [])}
             onPick={async (issue) => {
               const result = await writes.run(() =>
                 addDependencyAction(issue.id, epic.id, "parent-child"),
