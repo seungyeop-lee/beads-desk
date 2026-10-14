@@ -19,15 +19,16 @@ test("상세의 관계 맺기에서 다섯 가지 관계를 제목으로 찾아 
   const search = dialog.getByRole("combobox", { name: "연결할 이슈 찾기" });
   const candidates = dialog.getByRole("listbox", { name: "연결할 이슈 찾기" });
 
-  const link = async (relation: string, query: string, target: string) => {
-    await kind.selectOption({ label: relation });
+  // toast에는 선택지의 설명 없이 관계 이름만 나옵니다.
+  const link = async (relation: string, query: string, target: string, option = relation) => {
+    await kind.selectOption({ label: option });
     await search.fill(query);
     await candidates.getByRole("option", { name: new RegExp(target) }).click();
     await expect(page.getByText(`${target}을(를) ${relation}로 연결했습니다.`)).toBeVisible();
   };
 
-  await link("이 이슈를 막는 이슈", "막는", blocker);
-  await link("이 이슈가 막는 이슈", "막히는", blocked);
+  await link("선행 이슈", "막는", blocker, "선행 이슈 (이 이슈보다 먼저 끝나야 함)");
+  await link("후속 이슈", "막히는", blocked, "후속 이슈 (이 이슈가 끝나야 시작)");
   await link("상위 이슈", "상위", parent);
   await link("하위 이슈", "하위", child);
   await link("관련 이슈", "관련", related);
@@ -91,7 +92,7 @@ test("bd가 관계 맺기를 거부하면 상세에 오류가 보인다", async 
 
   await page.goto(`/issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
-  await dialog.getByLabel("맺을 관계").selectOption({ label: "이 이슈가 막는 이슈" });
+  await dialog.getByLabel("맺을 관계").selectOption({ label: "후속 이슈 (이 이슈가 끝나야 시작)" });
   await dialog.getByRole("combobox", { name: "연결할 이슈 찾기" }).fill("순환 끝");
   await dialog
     .getByRole("listbox", { name: "연결할 이슈 찾기" })

@@ -1,6 +1,7 @@
-import type { IssueDetail, IssueLink } from "@beads-desk/bd/issue";
+import type { IssueDetail } from "@beads-desk/bd/issue";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { linkedIssues, type LinkedIssue } from "@/client/modules/issues/domain/issueRelations";
 import {
   addCommentAction,
   addLabelAction,
@@ -39,7 +40,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
   const locale = useLocale();
   const messages = useMessages();
 
-  const removeDependency = (link: IssueLink, side: "dependencies" | "dependents") => {
+  const removeDependency = ({ side, link }: LinkedIssue) => {
     if (!window.confirm(messages.issueDetail.confirmRemoveDependency(link.id))) return;
     void run(() =>
       side === "dependencies"
@@ -152,24 +153,9 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
             </section>
 
             <DependencyList
-              title={messages.issueDetail.dependencies}
-              side="dependencies"
-              links={issue.dependencies}
+              links={linkedIssues(issue)}
               issueHref={issueHref}
-              edit={{
-                disabled: pending,
-                onRemove: (link) => removeDependency(link, "dependencies"),
-              }}
-            />
-            <DependencyList
-              title={messages.issueDetail.dependents}
-              side="dependents"
-              links={issue.dependents}
-              issueHref={issueHref}
-              edit={{
-                disabled: pending,
-                onRemove: (link) => removeDependency(link, "dependents"),
-              }}
+              edit={{ disabled: pending, onRemove: removeDependency }}
             />
             <RelationAddForm issue={issue} writes={writes} />
 

@@ -86,7 +86,7 @@ test("옆 패널의 이슈로 이동하고 돌아오기를 되풀이해도 dialo
 /** 막힘 안내에도 같은 이슈 링크가 있으므로, 의존 관계 목록의 링크를 고릅니다. */
 function dependencyLink(dialog: Locator, dependency: string) {
   return dialog
-    .getByRole("region", { name: "이 이슈가 의존하는 이슈" })
+    .getByRole("region", { name: "연결된 이슈" })
     .getByRole("link", { name: `${dependency} 선행 이슈` });
 }
 

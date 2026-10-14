@@ -34,11 +34,15 @@ export function RelationAddForm({ issue, writes }: { issue: IssueDetail; writes:
         value={kind}
         onChange={(event) => setKind(event.target.value as RelationKind)}
       >
-        {RELATION_KINDS.map((option) => (
-          <option key={option} value={option}>
-            {messages.relations.kinds[option]}
-          </option>
-        ))}
+        {RELATION_KINDS.map((option) => {
+          const name = messages.relations.kinds[option];
+          const hint = messages.relations.kindHints[option];
+          return (
+            <option key={option} value={option}>
+              {hint ? `${name} (${hint})` : name}
+            </option>
+          );
+        })}
       </select>
       <IssuePicker
         label={messages.relations.search}

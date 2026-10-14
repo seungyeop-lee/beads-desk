@@ -3,6 +3,12 @@ import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { RelationKind } from "@/client/modules/issues/domain/issueRelations";
 import type { ThemeChoice } from "@/shared/contract/theme";
 
+/** 관계 이름만으로 방향이 헷갈리는 선택지에 붙이는 설명입니다. */
+const relationKindHints: Partial<Record<RelationKind, string>> = {
+  blockedBy: "이 이슈보다 먼저 끝나야 함",
+  blocks: "이 이슈가 끝나야 시작",
+};
+
 /** 화면 문구의 기준 사전입니다. 다른 언어의 사전은 이 모양을 그대로 따릅니다. */
 export const koMessages = {
   common: {
@@ -89,7 +95,7 @@ export const koMessages = {
     priorityOf: (id: string) => `${id} 우선순위`,
     assigneeOf: (id: string) => `${id} 담당자`,
     dependencyCounts: (dependencies: number, dependents: number) =>
-      `이 이슈가 의존하는 이슈 ${dependencies}개 · 이 이슈에 의존하는 이슈 ${dependents}개`,
+      `선행 ${dependencies}개 · 후속 ${dependents}개`,
   },
   blocking: {
     chip: "막힘",
@@ -126,8 +132,7 @@ export const koMessages = {
     working: "처리 중",
     loadFailed: (error: string) => `이슈를 불러오지 못했습니다: ${error}`,
     closeReason: "닫은 이유",
-    dependencies: "이 이슈가 의존하는 이슈",
-    dependents: "이 이슈에 의존하는 이슈",
+    linkedIssues: "연결된 이슈",
     createdAt: "만든 시각",
     updatedAt: "고친 시각",
     closedAt: "닫은 시각",
@@ -147,12 +152,13 @@ export const koMessages = {
     title: "관계 맺기",
     kind: "맺을 관계",
     kinds: {
-      blockedBy: "이 이슈를 막는 이슈",
-      blocks: "이 이슈가 막는 이슈",
+      blockedBy: "선행 이슈",
+      blocks: "후속 이슈",
       parent: "상위 이슈",
       child: "하위 이슈",
       related: "관련 이슈",
     } satisfies Record<RelationKind, string>,
+    kindHints: relationKindHints,
     search: "연결할 이슈 찾기",
     linked: (id: string, kind: string) => `${id}을(를) ${kind}로 연결했습니다.`,
   },

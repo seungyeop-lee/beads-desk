@@ -1,6 +1,7 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
+import { linkedIssues } from "@/client/modules/issues/domain/issueRelations";
 import { Markdown } from "@/client/ui/designSystem/Markdown";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { statusLabel, statusTone } from "../issueLabels";
@@ -76,6 +77,7 @@ function IssueSummary({
   sideHref: (issueId: string) => string;
 }) {
   const messages = useMessages();
+  const links = linkedIssues(issue);
   return (
     <div className="flex flex-col gap-6 px-6 pt-5 pb-8">
       <div className="flex flex-col gap-3">
@@ -92,22 +94,7 @@ function IssueSummary({
           <Markdown text={issue[field]} />
         </section>
       ))}
-      {issue.dependencies.length > 0 && (
-        <DependencyList
-          title={messages.issueDetail.dependencies}
-          side="dependencies"
-          links={issue.dependencies}
-          issueHref={sideHref}
-        />
-      )}
-      {issue.dependents.length > 0 && (
-        <DependencyList
-          title={messages.issueDetail.dependents}
-          side="dependents"
-          links={issue.dependents}
-          issueHref={sideHref}
-        />
-      )}
+      {links.length > 0 && <DependencyList links={links} issueHref={sideHref} />}
     </div>
   );
 }
