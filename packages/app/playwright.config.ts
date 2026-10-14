@@ -1,31 +1,18 @@
-import { tmpdir } from "node:os";
 import { defineConfig, devices } from "@playwright/test";
-
-// bd-desk와 next dev가 쓰는 3000번대와 겹치지 않는 포트입니다.
-const port = 3900;
-const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: "./e2e",
-  // 서버의 현재 workspace는 서버 전체에서 하나라서, 시나리오가 workspace를 바꾸는 동안 다른 시나리오가 돌면 안 됩니다.
-  fullyParallel: false,
-  workers: 1,
+  // worker마다 서버를 따로 띄우므로(e2e/support/appServer.ts) 시나리오를 worker 사이에 나눠 실행할 수 있습니다.
+  fullyParallel: true,
+  workers: 4,
+  // worker들이 bd를 동시에 실행하면 시나리오가 혼자 돌 때보다 두 배쯤 느려져, 저장을 여러 번 확인하는 시나리오가 기본 30초를 넘깁니다.
+  timeout: 60_000,
+  // 같은 이유로 서버에서 목록을 받아 와야 보이는 요소가 기본 5초 안에 나타나지 않을 때가 있습니다.
+  expect: { timeout: 10_000 },
   retries: 0,
   forbidOnly: true,
   reporter: "list",
-  webServer: {
-    command: `next start --hostname 127.0.0.1 --port ${port}`,
-    url: `${baseURL}/api/health`,
-    // 시작 workspace를 지정하지 않으면 서버가 cwd의 상위에서 이 저장소의 `.beads`를 찾아 씁니다.
-    // `.beads`가 없는 디렉터리를 주어, 시나리오가 workspace를 고르기 전에도 실제 저장소를 보지 않게 합니다.
-    env: { BEADS_DESK_WORKSPACE: tmpdir() },
-    reuseExistingServer: false,
-    gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
-    stdout: "pipe",
-    stderr: "pipe",
-  },
   use: {
-    baseURL,
     // 화면 언어는 브라우저 언어로 정해집니다. 시나리오가 한국어 이름으로 요소를 찾으므로 한국어 브라우저로 엽니다.
     locale: "ko-KR",
     trace: "retain-on-failure",

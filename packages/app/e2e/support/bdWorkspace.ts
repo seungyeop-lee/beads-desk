@@ -3,11 +3,12 @@ import { cp, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { test as base, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import {
   WORKSPACES_PATH,
   type RegisterWorkspaceRequest,
 } from "../../src/shared/contract/workspaces";
+import { test as base } from "./appServer";
 
 const execFileAsync = promisify(execFile);
 

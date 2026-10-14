@@ -7,7 +7,8 @@
 - 시나리오는 `test`와 `expect`를 `@playwright/test`가 아니라 `support/bdWorkspace.ts`에서 import합니다. 이 `test`는 시나리오마다 빈 bd workspace를 임시 디렉터리에 만들고 서버의 현재 workspace로 바꾼 뒤, 시나리오가 끝나면 지웁니다. `bd init`은 한 번에 수 초씩 걸리므로 worker마다 한 번만 초기화한 원본(`workspaceTemplate`)을 복사해 만듭니다. 시나리오에서 `bd init`을 다시 실행하지 않습니다.
 - 필요한 이슈와 의존 관계는 `workspace` fixture로 심습니다. `workspace.createIssue(제목, ...bd create 인자)`는 만든 이슈의 id를 돌려주고, 그 밖의 bd 명령은 `workspace.bd(...인자)`로 실행합니다.
 - 이 저장소나 다른 실제 workspace의 `.beads`를 쓰지 않습니다. 시나리오에서 `POST /api/workspaces`로 workspace를 직접 바꾸지 않습니다.
-- 서버의 현재 workspace는 서버 전체에서 하나라서 시나리오를 한 worker에서 순서대로 실행합니다. `workers`를 늘리거나 `fullyParallel`을 켜지 않습니다.
+- 서버의 현재 workspace는 서버 전체에서 하나라서, worker마다 서버를 따로 띄우고(`support/appServer.ts`) 한 worker 안의 시나리오는 순서대로 실행합니다. 시나리오에서 `page.goto`와 `request`는 상대 경로로 써서 자기 worker의 서버로 보냅니다.
+- worker들이 bd를 동시에 실행하면 시나리오가 혼자 돌 때보다 두 배쯤 느려집니다. 그래서 `playwright.config.ts`의 test timeout은 60초, expect timeout은 10초입니다.
 
 ## 시나리오 범위
 
