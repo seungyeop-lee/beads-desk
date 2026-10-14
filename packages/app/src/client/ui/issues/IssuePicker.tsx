@@ -46,7 +46,9 @@ export function IssuePicker({ label, disabled, onPick, exclude, rank }: Props) {
     } else if (event.key === "Enter" && activeIssue) {
       event.preventDefault();
       void pick(activeIssue);
-    } else if (event.key === "Escape") {
+    } else if (event.key === "Escape" && open) {
+      // 후보 목록만 닫고, 입력을 감싼 dialog는 닫지 않습니다.
+      event.preventDefault();
       setOpen(false);
     }
   };

@@ -20,6 +20,8 @@ export type NewIssueInput = {
   priority: number | null;
   description: string;
   labels: string[];
+  /** null이면 상위 이슈 없이 만듭니다. */
+  parent: string | null;
 };
 
 export type StatusChangeResult =

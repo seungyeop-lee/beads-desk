@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { EpicSummary } from "@/shared/contract/epics";
-import { settleExpandedEpics, sortEpics } from "./epicsView";
+import { notChildCandidate, settleExpandedEpics, sortEpics } from "./epicsView";
 
 function summary(id: string, status: string, priority = 2, createdAt = 0): EpicSummary {
   return {
@@ -48,4 +48,12 @@ describe("settleExpandedEpics", () => {
   test("펼쳐 둔 epic이 모두 목록에서 사라지면 다시 맨 위 epic만 펼친다", () => {
     expect(settleExpandedEpics(epics, new Set(["other-workspace"]))).toEqual(new Set(["a"]));
   });
+});
+
+test("에픽에 하위로 넣을 후보에서 에픽과 이미 하위인 이슈를 뺀다", () => {
+  const excluded = notChildCandidate([{ id: "child" } as Issue]);
+
+  expect(excluded({ id: "epic", issueType: "epic" } as Issue)).toBe(true);
+  expect(excluded({ id: "child", issueType: "task" } as Issue)).toBe(true);
+  expect(excluded({ id: "other", issueType: "task" } as Issue)).toBe(false);
 });

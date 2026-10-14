@@ -1,22 +1,32 @@
 "use client";
 
+import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useEpicChildren, useEpics } from "@/client/modules/epics/application/useEpics";
-import { settleExpandedEpics, sortEpics } from "@/client/modules/epics/domain/epicsView";
+import {
+  notChildCandidate,
+  settleExpandedEpics,
+  sortEpics,
+} from "@/client/modules/epics/domain/epicsView";
 import {
   useIssueWrites,
   type IssueWrites,
 } from "@/client/modules/issues/application/useIssueWrites";
 import { byStatusGroup } from "@/client/modules/issues/domain/issueListView";
+import { addDependencyAction } from "@/server/web/issues/issueActions";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
+import { IssuePicker } from "@/client/ui/issues/IssuePicker";
+import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { statusLabel, statusTone } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
-import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
+import { ChevronRightIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
+import { showToast } from "@/client/ui/designSystem/Toast";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -119,24 +129,61 @@ function EpicSection({ summary, expanded, onToggle, issueHref, writes }: Section
           {closedChildren}/{totalChildren} · {percent}%
         </span>
       </header>
-      {expanded && <EpicChildren epicId={epic.id} issueHref={issueHref} writes={writes} />}
+      {expanded && <EpicChildren epic={epic} issueHref={issueHref} writes={writes} />}
     </section>
   );
 }
 
 function EpicChildren({
-  epicId,
+  epic,
   issueHref,
   writes,
 }: {
-  epicId: string;
+  epic: Issue;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 }) {
-  const { data: children, error } = useEpicChildren(epicId);
+  const { data: children, error } = useEpicChildren(epic.id);
+  const [creating, setCreating] = useState(false);
+  const router = useRouter();
   const messages = useMessages();
   return (
-    <div className="border-t border-base-300 bg-base-200/40 p-4">
+    <div className="flex flex-col gap-3 border-t border-base-300 bg-base-200/40 p-4">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="btn btn-sm btn-ghost gap-1.5 rounded-full"
+          onClick={() => setCreating(true)}
+        >
+          <PlusIcon width={14} height={14} />
+          {messages.epics.newChild}
+        </button>
+        <div className="w-96">
+          <IssuePicker
+            label={messages.epics.addExistingChild}
+            disabled={writes.pending || !children}
+            exclude={notChildCandidate(children ?? [])}
+            onPick={async (issue) => {
+              const result = await writes.run(() =>
+                addDependencyAction(issue.id, epic.id, "parent-child"),
+              );
+              if (result.ok) showToast(messages.epics.childAdded(issue.id, epic.id));
+              return result.ok;
+            }}
+          />
+        </div>
+        <span className="text-xs text-base-content/50">{messages.epics.addExistingChild}</span>
+      </div>
+      {creating && (
+        <NewIssueDialog
+          initialParent={epic}
+          onCreated={(issueId) => {
+            setCreating(false);
+            router.push(issueHref(issueId), { scroll: false });
+          }}
+          onClose={() => setCreating(false)}
+        />
+      )}
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
           <span>{messages.epics.childrenLoadFailed(error)}</span>

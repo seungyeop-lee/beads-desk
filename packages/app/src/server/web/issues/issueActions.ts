@@ -63,7 +63,7 @@ export async function setIssueStatusAction(
 /** 만든 이슈의 id를 돌려줍니다. */
 export async function createIssueAction(input: NewIssueInput): Promise<ApiResponse<string>> {
   if (!isNewIssueInput(input)) return invalidRequest();
-  const { title, issueType, priority, description, labels } = input;
+  const { title, issueType, priority, description, labels, parent } = input;
   return write((cwd) =>
     createIssue(cwd, {
       title,
@@ -71,6 +71,7 @@ export async function createIssueAction(input: NewIssueInput): Promise<ApiRespon
       labels,
       ...(issueType === null ? {} : { issueType }),
       ...(priority === null ? {} : { priority }),
+      ...(parent === null ? {} : { parent }),
     }),
   );
 }
@@ -144,7 +145,8 @@ function isNewIssueInput(value: unknown): value is NewIssueInput {
     (input.priority === null || isPriority(input.priority)) &&
     isString(input.description) &&
     Array.isArray(input.labels) &&
-    input.labels.every(isString)
+    input.labels.every(isString) &&
+    (input.parent === null || isString(input.parent))
   );
 }
 

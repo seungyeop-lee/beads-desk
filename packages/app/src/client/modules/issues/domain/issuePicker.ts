@@ -4,8 +4,8 @@ import type { Issue } from "@beads-desk/bd/issue";
 export const PICKER_LIMIT = 8;
 
 export type PickerOptions = {
-  /** 후보에서 뺄 이슈 id입니다. */
-  exclude: ReadonlySet<string>;
+  /** true를 돌려준 이슈는 후보에서 뺍니다. */
+  exclude?: (issue: Issue) => boolean;
   /** 후보 순서입니다. 없으면 최근에 고친 순서입니다. */
   rank?: (a: Issue, b: Issue) => number;
 };
@@ -14,11 +14,11 @@ export type PickerOptions = {
 export function pickerCandidates(
   issues: readonly Issue[],
   query: string,
-  { exclude, rank = byRecentlyUpdated }: PickerOptions,
+  { exclude, rank = byRecentlyUpdated }: PickerOptions = {},
 ): Issue[] {
   const search = query.trim().toLowerCase();
   return issues
-    .filter((issue) => !exclude.has(issue.id))
+    .filter((issue) => !exclude?.(issue))
     .filter((issue) =>
       search === ""
         ? issue.status !== "closed"

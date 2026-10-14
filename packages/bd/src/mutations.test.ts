@@ -54,7 +54,7 @@ const succeeded = { ok: true, value: null };
 describe("createIssue", () => {
   test("입력한 값으로 이슈를 만들고 새 id를 돌려준다", async () => {
     await useFakeBd({
-      "create --json --title=-Dash title --type=bug --priority=1 --description=Body --labels=ui,api":
+      "create --json --title=-Dash title --type=bug --priority=1 --description=Body --labels=ui,api --parent=demo-epic":
         { stdout: '{"id":"demo-new","title":"-Dash title"}' },
     });
 
@@ -64,6 +64,7 @@ describe("createIssue", () => {
       priority: 1,
       description: "Body",
       labels: ["ui", "api"],
+      parent: "demo-epic",
     });
 
     expect(result).toEqual({ ok: true, value: "demo-new" });

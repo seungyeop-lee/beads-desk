@@ -12,6 +12,8 @@ export type NewIssue = {
   priority?: number;
   description?: string;
   labels?: string[];
+  /** 상위 이슈 id입니다. bd는 상위 이슈의 라벨을 새 이슈에 물려줍니다. */
+  parent?: string;
 };
 
 /** 만든 이슈의 id를 돌려줍니다. */
@@ -26,6 +28,7 @@ export async function createIssue(cwd: string, issue: NewIssue): Promise<BdOutco
   if (issue.description) args.push(`--description=${issue.description}`);
   const labels = (issue.labels ?? []).map((label) => label.trim()).filter(Boolean);
   if (labels.length > 0) args.push(`--labels=${labels.join(",")}`);
+  if (issue.parent) args.push(`--parent=${issue.parent}`);
 
   const result = await runBdJson(cwd, args, { write: true });
   if (!result.ok) {

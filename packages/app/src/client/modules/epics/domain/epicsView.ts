@@ -1,3 +1,4 @@
+import type { Issue } from "@beads-desk/bd/issue";
 import { byPriorityThenCreated } from "@/client/modules/issues/domain/issueListView";
 import type { EpicSummary } from "@/shared/contract/epics";
 
@@ -33,4 +34,10 @@ export function settleExpandedEpics(
     expanded === null || (expanded.size > 0 && !sorted.some(({ epic }) => expanded.has(epic.id)));
   if (!stale || sorted.length === 0) return expanded;
   return new Set([sorted[0]!.epic.id]);
+}
+
+/** 에픽에 기존 이슈를 하위로 넣을 때 후보에서 뺄 이슈를 고릅니다. 에픽 자신과 다른 에픽, 이미 하위인 이슈입니다. */
+export function notChildCandidate(children: readonly Issue[]): (issue: Issue) => boolean {
+  const childIds = new Set(children.map((child) => child.id));
+  return (issue) => issue.issueType === "epic" || childIds.has(issue.id);
 }

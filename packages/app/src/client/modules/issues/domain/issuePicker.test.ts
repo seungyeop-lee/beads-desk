@@ -22,7 +22,6 @@ function issue(id: string, fields: Partial<Issue> = {}): Issue {
 }
 
 const ids = (issues: Issue[]) => issues.map((it) => it.id);
-const none = new Set<string>();
 
 test("검색어가 없으면 닫히지 않은 이슈를 최근에 고친 순서로 보인다", () => {
   const issues = [
@@ -31,7 +30,7 @@ test("검색어가 없으면 닫히지 않은 이슈를 최근에 고친 순서�
     issue("new", { updatedAt: 2 }),
   ];
 
-  expect(ids(pickerCandidates(issues, " ", { exclude: none }))).toEqual(["new", "old"]);
+  expect(ids(pickerCandidates(issues, " "))).toEqual(["new", "old"]);
 });
 
 test("검색어가 있으면 id나 제목에 든 이슈를 닫힌 이슈까지 대소문자 없이 찾는다", () => {
@@ -41,15 +40,15 @@ test("검색어가 있으면 id나 제목에 든 이슈를 닫힌 이슈까지 �
     issue("demo-3", { title: "설정" }),
   ];
 
-  expect(ids(pickerCandidates(issues, "login", { exclude: none }))).toEqual(["demo-1"]);
-  expect(ids(pickerCandidates(issues, "로그", { exclude: none }))).toEqual(["demo-2"]);
-  expect(ids(pickerCandidates(issues, "DEMO-3", { exclude: none }))).toEqual(["demo-3"]);
+  expect(ids(pickerCandidates(issues, "login"))).toEqual(["demo-1"]);
+  expect(ids(pickerCandidates(issues, "로그"))).toEqual(["demo-2"]);
+  expect(ids(pickerCandidates(issues, "DEMO-3"))).toEqual(["demo-3"]);
 });
 
 test("뺄 이슈는 후보에 넣지 않고, 후보 수를 제한한다", () => {
   const issues = Array.from({ length: PICKER_LIMIT + 2 }, (_, index) => issue(`demo-${index}`));
 
-  const candidates = pickerCandidates(issues, "", { exclude: new Set(["demo-0"]) });
+  const candidates = pickerCandidates(issues, "", { exclude: (it) => it.id === "demo-0" });
 
   expect(candidates).toHaveLength(PICKER_LIMIT);
   expect(ids(candidates)).not.toContain("demo-0");
@@ -62,7 +61,7 @@ test("epicsFirst는 에픽을 먼저 두고, 그 안에서는 최근에 고친 �
     issue("epic-new", { issueType: "epic", updatedAt: 2 }),
   ];
 
-  expect(ids(pickerCandidates(issues, "", { exclude: none, rank: epicsFirst }))).toEqual([
+  expect(ids(pickerCandidates(issues, "", { rank: epicsFirst }))).toEqual([
     "epic-new",
     "epic-old",
     "task-new",

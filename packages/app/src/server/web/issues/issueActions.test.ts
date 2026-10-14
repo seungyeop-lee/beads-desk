@@ -119,6 +119,7 @@ describe("createIssueAction", () => {
       priority: null,
       description: "본문",
       labels: ["ui"],
+      parent: null,
     });
 
     expect(bd.createIssue).toHaveBeenCalledWith("/workspace", {
@@ -137,6 +138,41 @@ describe("createIssueAction", () => {
       priority: null,
       description: "",
       labels: "ui" as unknown as string[],
+      parent: null,
+    });
+
+    expect(bd.createIssue).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
+  });
+
+  test("고른 상위 이슈를 bd에 넘긴다", async () => {
+    vi.mocked(bd.createIssue).mockResolvedValue({ ok: true, value: "demo-9" });
+
+    await createIssueAction({
+      title: "하위 이슈",
+      issueType: null,
+      priority: null,
+      description: "",
+      labels: [],
+      parent: "demo-epic",
+    });
+
+    expect(bd.createIssue).toHaveBeenCalledWith("/workspace", {
+      title: "하위 이슈",
+      description: "",
+      labels: [],
+      parent: "demo-epic",
+    });
+  });
+
+  test("상위 이슈가 문자열이나 null이 아니면 거부한다", async () => {
+    const result = await createIssueAction({
+      title: "하위 이슈",
+      issueType: null,
+      priority: null,
+      description: "",
+      labels: [],
+      parent: undefined as unknown as null,
     });
 
     expect(bd.createIssue).not.toHaveBeenCalled();

@@ -1,16 +1,22 @@
+import type { Issue } from "@beads-desk/bd/issue";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
 import { createIssueAction } from "@/server/web/issues/issueActions";
+import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { ISSUE_TYPES, PRIORITIES, priorityLabel, typeLabel } from "./issueLabels";
+import { IssuePicker } from "./IssuePicker";
+import { ISSUE_TYPES, PRIORITIES, priorityLabel, typeLabel, typeTone } from "./issueLabels";
 
 type Props = {
   onCreated: (issueId: string) => void;
   onClose: () => void;
+  /** 에픽 화면처럼 상위 이슈를 정해 두고 열 때 넘깁니다. */
+  initialParent?: Issue;
 };
 
 /** Ctrl/Cmd+Enter로도 만듭니다. */
-export function NewIssueDialog({ onCreated, onClose }: Props) {
+export function NewIssueDialog({ onCreated, onClose, initialParent }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { run, pending, error } = useIssueWrites();
   const [title, setTitle] = useState("");
@@ -18,6 +24,7 @@ export function NewIssueDialog({ onCreated, onClose }: Props) {
   const [priority, setPriority] = useState(2);
   const [labels, setLabels] = useState("");
   const [description, setDescription] = useState("");
+  const [parent, setParent] = useState<Issue | null>(initialParent ?? null);
   const messages = useMessages();
 
   useEffect(() => {
@@ -35,6 +42,7 @@ export function NewIssueDialog({ onCreated, onClose }: Props) {
         priority,
         description,
         labels: labels.split(","),
+        parent: parent?.id ?? null,
       }),
     );
     if (result.ok) onCreated(result.data);
@@ -101,6 +109,33 @@ export function NewIssueDialog({ onCreated, onClose }: Props) {
                 ))}
               </select>
             </label>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="caption">{messages.newIssue.parent}</span>
+            {parent ? (
+              <span className="flex h-10 items-center gap-2 rounded-field border border-base-300 px-3 text-sm">
+                <span className={`tone-dot ${typeTone(parent.issueType)}`} />
+                <span className="font-mono text-xs text-base-content/55">{parent.id}</span>
+                <span className="min-w-0 grow truncate">{parent.title}</span>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs btn-square"
+                  aria-label={messages.newIssue.clearParent}
+                  onClick={() => setParent(null)}
+                >
+                  <CloseIcon width={13} height={13} />
+                </button>
+              </span>
+            ) : (
+              <IssuePicker
+                label={messages.newIssue.parentSearch}
+                rank={epicsFirst}
+                onPick={async (issue) => {
+                  setParent(issue);
+                  return true;
+                }}
+              />
+            )}
           </div>
           <label className="flex flex-col gap-1.5">
             <span className="caption">{messages.issue.labels}</span>
