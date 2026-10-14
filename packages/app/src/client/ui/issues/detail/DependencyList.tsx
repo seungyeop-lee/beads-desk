@@ -9,24 +9,19 @@ type Props = {
   /** dependencies는 이 이슈가 의존하는 이슈, dependents는 이 이슈에 의존하는 이슈입니다. */
   side: "dependencies" | "dependents";
   links: IssueLink[];
-  disabled: boolean;
   issueHref: (issueId: string) => string;
+  /** 없으면 의존 관계를 더하거나 지우는 control 없이 읽기 전용으로 보입니다. */
+  edit?: DependencyEdit;
+};
+
+type DependencyEdit = {
+  disabled: boolean;
   /** 성공하면 true를 돌려줍니다. */
   onAdd: (issueId: string) => Promise<boolean>;
   onRemove: (link: IssueLink) => void;
 };
 
-export function DependencyList({
-  title,
-  side,
-  links,
-  disabled,
-  issueHref,
-  onAdd,
-  onRemove,
-}: Props) {
-  const [draft, setDraft] = useState("");
-
+export function DependencyList({ title, side, links, issueHref, edit }: Props) {
   return (
     <section className="flex flex-col gap-2">
       <h3 className="caption">{title}</h3>
@@ -52,42 +47,51 @@ export function DependencyList({
               <span className={`chip h-5 px-2 text-[11px] ${statusTone(link.status)}`}>
                 {statusLabel(link.status)}
               </span>
-              <button
-                type="button"
-                className="btn btn-ghost btn-xs btn-square text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                aria-label={`${link.id} 의존 관계 지우기`}
-                disabled={disabled}
-                onClick={() => onRemove(link)}
-              >
-                <CloseIcon width={13} height={13} />
-              </button>
+              {edit && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs btn-square text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  aria-label={`${link.id} 의존 관계 지우기`}
+                  disabled={edit.disabled}
+                  onClick={() => edit.onRemove(link)}
+                >
+                  <CloseIcon width={13} height={13} />
+                </button>
+              )}
             </li>
           ))}
         </ul>
       )}
-      <form
-        className="flex items-center gap-1.5"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          if (draft.trim() && (await onAdd(draft.trim()))) setDraft("");
-        }}
-      >
-        <input
-          className="input input-sm grow font-mono"
-          aria-label={`${title}에 추가할 이슈 id`}
-          placeholder="이슈 id"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-        />
-        <button
-          type="submit"
-          className="btn btn-sm btn-square btn-ghost"
-          aria-label={`${title}에 추가`}
-          disabled={disabled}
-        >
-          <PlusIcon width={15} height={15} />
-        </button>
-      </form>
+      {edit && <DependencyAddForm title={title} edit={edit} />}
     </section>
+  );
+}
+
+function DependencyAddForm({ title, edit }: { title: string; edit: DependencyEdit }) {
+  const [draft, setDraft] = useState("");
+  return (
+    <form
+      className="flex items-center gap-1.5"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (draft.trim() && (await edit.onAdd(draft.trim()))) setDraft("");
+      }}
+    >
+      <input
+        className="input input-sm grow font-mono"
+        aria-label={`${title}에 추가할 이슈 id`}
+        placeholder="이슈 id"
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      <button
+        type="submit"
+        className="btn btn-sm btn-square btn-ghost"
+        aria-label={`${title}에 추가`}
+        disabled={edit.disabled}
+      >
+        <PlusIcon width={15} height={15} />
+      </button>
+    </form>
   );
 }

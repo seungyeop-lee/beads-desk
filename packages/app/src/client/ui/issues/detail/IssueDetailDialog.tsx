@@ -1,15 +1,20 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { CloseIcon } from "@/client/ui/designSystem/icons";
+import type { IssueDetailLocation } from "@/client/modules/issues/domain/issueDetailTrail";
+import { ChevronLeftIcon, CloseIcon } from "@/client/ui/designSystem/icons";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { IssueDetailView } from "./IssueDetailView";
+import { IssueSidePanel } from "./IssueSidePanel";
 import { WriteErrorAlert } from "../WriteErrorAlert";
 
 type Props = {
-  issueId: string;
-  issueHref: (issueId: string) => string;
+  location: IssueDetailLocation;
+  /** 이 dialog에서 지금 주 상세로 넘어오기 전에 보던 상세입니다. 없으면 null입니다. */
+  previous: IssueDetailLocation | null;
+  detailHref: (location: IssueDetailLocation) => string;
   onClose: () => void;
 };
 
@@ -17,8 +22,11 @@ type Props = {
  * 내용을 받은 뒤에 dialog를 열어, 빈 dialog가 내용을 받으면서 커지는 모습이 보이지 않게 합니다.
  * 열기 전까지는 화면 맨 위의 막대와 마우스 커서로 불러오는 중임을 알립니다.
  * 열린 dialog에서 다른 이슈로 옮기면 새 이슈를 받을 때까지 이전 이슈를 그대로 보여 줍니다.
+ * 주 상세에서 의존 이슈를 누르면 옆 패널에 그 이슈를 읽기 전용으로 엽니다.
  */
-export function IssueDetailDialog({ issueId, issueHref, onClose }: Props) {
+export function IssueDetailDialog({ location, previous, detailHref, onClose }: Props) {
+  const { issue: issueId, side } = location;
+  const sideHref = (sideId: string) => detailHref({ issue: issueId, side: sideId });
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { data, error, loading } = useIssueDetail(issueId);
   const [lastIssue, setLastIssue] = useState<IssueDetail | null>(null);
@@ -56,16 +64,31 @@ export function IssueDetailDialog({ issueId, issueHref, onClose }: Props) {
           }
         }}
       >
-        {/* 보이는 이슈가 바뀌면 새로 그려, 이전 이슈의 쓰기 오류와 진행 표시와 스크롤 위치가 남지 않게 합니다. */}
-        <IssueDetailPanel
-          key={issue?.id ?? issueId}
-          issueId={issue?.id ?? issueId}
-          issue={issue}
-          error={issue ? null : error}
-          loading={loading}
-          issueHref={issueHref}
-          onDeleted={() => dialogRef.current?.close()}
-        />
+        <div
+          className={`modal-box flex max-h-[90vh] w-11/12 overflow-hidden p-0 ${side ? "max-w-[110rem]" : "max-w-6xl"}`}
+        >
+          {/* 보이는 이슈가 바뀌면 새로 그려, 이전 이슈의 쓰기 오류와 진행 표시와 스크롤 위치가 남지 않게 합니다. */}
+          <IssueDetailPanel
+            key={issue?.id ?? issueId}
+            issueId={issue?.id ?? issueId}
+            issue={issue}
+            error={issue ? null : error}
+            loading={loading}
+            previous={previous}
+            detailHref={detailHref}
+            sideHref={sideHref}
+            onDeleted={() => dialogRef.current?.close()}
+          />
+          {side && (
+            <IssueSidePanel
+              key={side}
+              issueId={side}
+              closeHref={detailHref({ issue: issueId, side: null })}
+              openHref={detailHref({ issue: side, side: null })}
+              sideHref={sideHref}
+            />
+          )}
+        </div>
         <form method="dialog" className="modal-backdrop">
           <button type="submit">닫기</button>
         </form>
@@ -79,15 +102,38 @@ type PanelProps = {
   issue: IssueDetail | null;
   error: string | null;
   loading: boolean;
-  issueHref: (issueId: string) => string;
+  previous: IssueDetailLocation | null;
+  detailHref: (location: IssueDetailLocation) => string;
+  /** 의존 이슈를 옆 패널에 여는 주소입니다. */
+  sideHref: (issueId: string) => string;
   onDeleted: () => void;
 };
 
-function IssueDetailPanel({ issueId, issue, error, loading, issueHref, onDeleted }: PanelProps) {
+function IssueDetailPanel({
+  issueId,
+  issue,
+  error,
+  loading,
+  previous,
+  detailHref,
+  sideHref,
+  onDeleted,
+}: PanelProps) {
   const writes = useIssueWrites();
   return (
-    <div className="modal-box flex max-h-[90vh] w-11/12 max-w-6xl flex-col overflow-hidden p-0">
+    <div className="flex min-w-0 grow flex-col">
       <header className="flex shrink-0 items-center gap-3 border-b border-base-300 px-6 py-3">
+        {previous && (
+          <Link
+            className="btn btn-ghost btn-sm -ml-3 gap-1 px-2 font-mono text-xs font-normal text-base-content/60"
+            href={detailHref(previous)}
+            scroll={false}
+            aria-label={`이전 이슈 ${previous.issue}로 돌아가기`}
+          >
+            <ChevronLeftIcon width={14} height={14} />
+            {previous.issue}
+          </Link>
+        )}
         <span className="rounded-md bg-base-200 px-2 py-0.5 font-mono text-xs text-base-content/70">
           {issueId}
         </span>
@@ -128,7 +174,7 @@ function IssueDetailPanel({ issueId, issue, error, loading, issueHref, onDeleted
           <IssueDetailView
             issue={issue}
             writes={writes}
-            issueHref={issueHref}
+            issueHref={sideHref}
             onDeleted={onDeleted}
           />
         )}

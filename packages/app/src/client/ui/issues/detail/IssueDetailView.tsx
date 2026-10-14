@@ -27,7 +27,8 @@ type Props = {
   onDeleted: () => void;
 };
 
-const BODY_FIELDS = [
+/** 상세 본문에 차례로 보이는 markdown 필드와 그 이름입니다. */
+export const BODY_FIELDS = [
   ["description", "설명"],
   ["design", "설계"],
   ["acceptanceCriteria", "수용 기준"],
@@ -138,19 +139,23 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
           title="이 이슈가 의존하는 이슈"
           side="dependencies"
           links={issue.dependencies}
-          disabled={pending}
           issueHref={issueHref}
-          onAdd={async (target) => (await run(() => addDependencyAction(id, target))).ok}
-          onRemove={(link) => removeDependency(link, "dependencies")}
+          edit={{
+            disabled: pending,
+            onAdd: async (target) => (await run(() => addDependencyAction(id, target))).ok,
+            onRemove: (link) => removeDependency(link, "dependencies"),
+          }}
         />
         <DependencyList
           title="이 이슈에 의존하는 이슈"
           side="dependents"
           links={issue.dependents}
-          disabled={pending}
           issueHref={issueHref}
-          onAdd={async (source) => (await run(() => addDependencyAction(source, id))).ok}
-          onRemove={(link) => removeDependency(link, "dependents")}
+          edit={{
+            disabled: pending,
+            onAdd: async (source) => (await run(() => addDependencyAction(source, id))).ok,
+            onRemove: (link) => removeDependency(link, "dependents"),
+          }}
         />
 
         <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-base-300 pt-5 text-xs text-base-content/60 tabular-nums">
