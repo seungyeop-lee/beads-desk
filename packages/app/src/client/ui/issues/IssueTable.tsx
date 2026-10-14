@@ -3,6 +3,7 @@ import Link from "next/link";
 import { memo } from "react";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { copyIssueId } from "./copyIssueId";
 import { confirmForceClose } from "./fields/confirmForceClose";
 import { EditableText } from "./fields/EditableText";
 import { PrioritySelect } from "./fields/PrioritySelect";
@@ -18,7 +19,7 @@ type Props = {
   emptyMessage?: string;
 };
 
-/** 제목을 누르면 상세를 열고, 연필 버튼으로 제목을 고칩니다. 상태, 담당자, 우선순위는 표에서 바로 고칩니다. */
+/** ID를 누르면 ID를 복사하고, 제목을 누르면 상세를 열고, 연필 버튼으로 제목을 고칩니다. 상태, 담당자, 우선순위는 표에서 바로 고칩니다. */
 export const IssueTable = memo(function IssueTable({
   issues,
   issueHref,
@@ -56,7 +57,17 @@ function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes:
   const { update, changeStatus } = issueEdits(writes, issue.id);
   return (
     <tr className="group hover:bg-base-200/60">
-      <td className="font-mono text-xs text-base-content/55">{issue.id}</td>
+      <td>
+        <button
+          type="button"
+          className="cursor-copy rounded font-mono text-xs text-base-content/55 hover:text-base-content"
+          title="ID 복사"
+          aria-label={`${issue.id} ID 복사`}
+          onClick={() => void copyIssueId(issue.id)}
+        >
+          {issue.id}
+        </button>
+      </td>
       <td className="text-sm">
         <IssueTypeTag issueType={issue.issueType} />
       </td>
