@@ -143,6 +143,18 @@ export const enMessages: Messages = {
     placeholder: "Leave a comment",
     submit: "Comment",
   },
+  focus: {
+    title: "Now",
+    inProgress: "In progress",
+    nextUp: "Up next",
+    seeAllReady: (count) => `See all ${count} ready`,
+    epicProgress: "Epic progress",
+    epicProgressOf: (title) => `Progress of ${title}`,
+    inProgressEmpty: "No issues in progress.",
+    readyEmpty: "No ready issues.",
+    blockedEmpty: "No blocked issues.",
+    epicsEmpty: "No open epics.",
+  },
   issues: {
     title: "Issues",
     loadFailed: (error) => `Could not load issues: ${error}`,

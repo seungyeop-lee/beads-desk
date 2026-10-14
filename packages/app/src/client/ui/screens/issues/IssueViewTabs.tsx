@@ -7,8 +7,13 @@ import {
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
-/** 보기 탭을 담는 주소 query 이름입니다. 지금 화면의 개수 카드도 이 주소로 이동합니다. */
+/** 보기 탭을 담는 주소 query 이름입니다. */
 export const VIEW_PARAM = "view";
+
+/** 이슈 목록에서 이 작업 상태의 보기 탭을 여는 주소입니다. 지금 화면의 개수 카드도 이 주소로 이동합니다. */
+export function issueViewHref(state: WorkState): string {
+  return `/issues?${VIEW_PARAM}=${state}`;
+}
 
 type Props = {
   /** null이면 전체 보기입니다. */
@@ -33,7 +38,7 @@ export function IssueViewTabs({ view, groups }: Props) {
       state,
       label: messages.workStates.labels[state],
       count: countOf(state),
-      href: `/issues?${VIEW_PARAM}=${state}`,
+      href: issueViewHref(state),
     })),
   ];
 

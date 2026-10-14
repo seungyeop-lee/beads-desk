@@ -146,6 +146,18 @@ export const koMessages = {
     placeholder: "댓글을 남기세요",
     submit: "댓글 남기기",
   },
+  focus: {
+    title: "지금",
+    inProgress: "진행 중",
+    nextUp: "다음에 할 일",
+    seeAllReady: (count: number) => `바로 작업 가능 ${count}개 모두 보기`,
+    epicProgress: "에픽 진행률",
+    epicProgressOf: (title: string) => `${title} 진행률`,
+    inProgressEmpty: "진행 중인 이슈가 없습니다.",
+    readyEmpty: "바로 시작할 수 있는 이슈가 없습니다.",
+    blockedEmpty: "막힌 이슈가 없습니다.",
+    epicsEmpty: "진행 중이거나 열린 에픽이 없습니다.",
+  },
   issues: {
     title: "이슈",
     loadFailed: (error: string) => `이슈 목록을 불러오지 못했습니다: ${error}`,

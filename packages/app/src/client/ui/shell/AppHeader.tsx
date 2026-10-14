@@ -22,7 +22,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-base-300 bg-base-100/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[96rem] items-center gap-6 px-8">
-        <Link href="/issues" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <BeadsMark />
           <span className="text-[15px] font-bold tracking-tight">beads-desk</span>
         </Link>
@@ -64,11 +64,11 @@ export function AppHeader() {
   );
 }
 
-/** 네 화면의 색으로 칠한 구슬 네 개입니다. */
+/** 이슈, 에픽, 보드, 결정 네 화면의 색으로 칠한 구슬 네 개입니다. 지금 화면은 이 네 화면을 모아 보는 화면이라 넣지 않습니다. */
 function BeadsMark() {
   return (
     <span className="grid grid-cols-2 gap-0.5" aria-hidden="true">
-      {SCREEN_TABS.map((tab) => (
+      {SCREEN_TABS.filter((tab) => tab.href !== "/focus").map((tab) => (
         <span key={tab.href} className={`tone-dot ${tab.tone} size-2`} />
       ))}
     </span>
