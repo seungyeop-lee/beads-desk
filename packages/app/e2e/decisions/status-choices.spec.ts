@@ -14,6 +14,7 @@ test("결정의 상태 select에는 결정 탭, 이슈 표, 상세 dialog 모두
   await expect(rowStatus(page, decision).locator("option")).toHaveText(["열림", "닫힘"]);
 
   await page.goto("/issues");
+  await showDecisionsInIssueTable(page);
   await expect(rowStatus(page, decision).locator("option")).toHaveText(["열림", "닫힘"]);
   await expect(rowStatus(page, task).locator("option")).toHaveText(ALL_STATUSES);
 
@@ -26,16 +27,22 @@ test("CLI로 보류한 결정은 세 화면 모두 보류로 보이고, 화면�
   workspace,
 }) => {
   const decision = await workspace.createIssue("e2e 결정", "--type", "decision");
-  const screens: [string, (page: Page) => Locator][] = [
-    ["/decisions", (page) => rowStatus(page, decision)],
-    ["/issues", (page) => rowStatus(page, decision)],
-    [`/issues?issue=${decision}`, (page) => detailStatus(page, decision)],
+  const screens: [string, (page: Page) => Promise<Locator>][] = [
+    ["/decisions", async (page) => rowStatus(page, decision)],
+    [
+      "/issues",
+      async (page) => {
+        await showDecisionsInIssueTable(page);
+        return rowStatus(page, decision);
+      },
+    ],
+    [`/issues?issue=${decision}`, async (page) => detailStatus(page, decision)],
   ];
 
   for (const [path, statusSelect] of screens) {
     await workspace.bd("update", decision, "--status", "deferred");
     await page.goto(path);
-    const select = statusSelect(page);
+    const select = await statusSelect(page);
     await expect(select).toHaveValue("deferred");
     await expect(select.locator("option")).toHaveText(["보류", "열림", "닫힘"]);
 
@@ -69,6 +76,12 @@ test("닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대�
   await expectStatus(workspace, decision, "closed");
   await expect(rowStatus(page, decision)).toHaveValue("closed");
 });
+
+/** 이슈 표는 처음에 결정을 빼고 보이므로 유형 메뉴에서 결정을 고릅니다. */
+async function showDecisionsInIssueTable(page: Page) {
+  await page.locator("summary", { hasText: "유형" }).click();
+  await page.getByRole("checkbox", { name: "결정" }).check();
+}
 
 function rowStatus(page: Page, id: string) {
   return page.getByRole("combobox", { name: `${id} 상태`, exact: true });
