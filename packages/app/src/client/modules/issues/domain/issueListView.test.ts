@@ -1,6 +1,12 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
-import { byStatusGroup, refineIssues } from "./issueListView";
+import {
+  byClosedDesc,
+  byPriorityThenCreated,
+  byStatusGroup,
+  nestUnderParents,
+  refineIssues,
+} from "./issueListView";
 
 function issue(id: string, fields: Partial<Issue> = {}): Issue {
   return {
@@ -46,6 +52,62 @@ describe("byStatusGroup", () => {
       "closed-new",
       "closed-old",
     ]);
+  });
+});
+
+describe("byPriorityThenCreated", () => {
+  test("우선순위와 만든 시각이 같으면 id의 숫자 부분을 숫자로 비교한다", () => {
+    const issues = [issue("demo-x.10"), issue("demo-x.2"), issue("demo-x.1")];
+
+    expect(ids(issues.sort(byPriorityThenCreated))).toEqual(["demo-x.1", "demo-x.2", "demo-x.10"]);
+  });
+});
+
+describe("nestUnderParents", () => {
+  test("하위 이슈를 상위 이슈 바로 아래로 옮기고, 하위끼리와 손자 이슈도 정렬한 순서를 따른다", () => {
+    const sorted = [
+      issue("feature-a", { createdAt: 1 }),
+      issue("feature-b", { createdAt: 2 }),
+      issue("task-b1", { parent: "feature-b", priority: 0, createdAt: 3 }),
+      issue("task-a2", { parent: "feature-a", createdAt: 4 }),
+      issue("task-a1-sub", { parent: "task-a1", createdAt: 5 }),
+      issue("task-a1", { parent: "feature-a", createdAt: 6 }),
+    ];
+
+    expect(ids(nestUnderParents(sorted))).toEqual([
+      "feature-a",
+      "task-a2",
+      "task-a1",
+      "task-a1-sub",
+      "feature-b",
+      "task-b1",
+    ]);
+  });
+
+  test("상위 이슈가 목록에 없는 하위 이슈는 정렬한 자리에 둔다", () => {
+    const sorted = [
+      issue("orphan-early", { parent: "elsewhere" }),
+      issue("feature"),
+      issue("orphan-late", { parent: "elsewhere" }),
+    ];
+
+    expect(ids(nestUnderParents(sorted))).toEqual(["orphan-early", "feature", "orphan-late"]);
+  });
+
+  test("닫힘처럼 최근에 닫은 순으로 정렬한 목록도 상위 아래에서 그 순서를 지킨다", () => {
+    const sorted = [
+      issue("task-new", { status: "closed", parent: "feature", closedAt: 30 }),
+      issue("feature", { status: "closed", closedAt: 20 }),
+      issue("task-old", { status: "closed", parent: "feature", closedAt: 10 }),
+    ].sort(byClosedDesc);
+
+    expect(ids(nestUnderParents(sorted))).toEqual(["feature", "task-new", "task-old"]);
+  });
+
+  test("상위 관계가 순환해도 모든 이슈를 한 번씩 돌려준다", () => {
+    const sorted = [issue("a", { parent: "b" }), issue("b", { parent: "a" }), issue("c")];
+
+    expect(ids(nestUnderParents(sorted))).toEqual(["c", "a", "b"]);
   });
 });
 

@@ -5,6 +5,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import {
+  nestUnderParents,
   refineIssues,
   type IssueListRefinement,
 } from "@/client/modules/issues/domain/issueListView";
@@ -39,8 +40,13 @@ export function IssuesScreen() {
   const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
   // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
   const deferredRefinement = useDeferredValue(refinement);
+  // 묶음 안에서는 하위 이슈를 상위 이슈 바로 아래에 보입니다.
   const groups = useMemo(
-    () => groupByWorkState(issues ? refineIssues(issues, deferredRefinement) : []),
+    () =>
+      groupByWorkState(issues ? refineIssues(issues, deferredRefinement) : []).map((group) => ({
+        ...group,
+        issues: nestUnderParents(group.issues),
+      })),
     [issues, deferredRefinement],
   );
   const view = parseViewState(useSearchParams().get(VIEW_PARAM));
