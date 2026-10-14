@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -42,14 +42,28 @@ export type BdIssue = {
 /**
  * 시나리오마다 빈 bd workspace를 임시 디렉터리에 만들고 서버의 현재 workspace로 바꿉니다.
  * 시나리오가 workspace를 쓰지 않아도 만들어, 앞 시나리오가 심은 이슈가 다음 시나리오에 보이지 않게 합니다.
+ * `bd init`은 한 번에 수 초씩 걸려서, worker마다 한 번만 초기화한 원본을 복사해 씁니다.
  */
-export const test = base.extend<{ workspace: BdWorkspace }>({
-  workspace: [
-    async ({ request }, use) => {
-      const path = await mkdtemp(join(tmpdir(), "beads-desk-e2e-"));
+export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate: string }>({
+  workspaceTemplate: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright는 fixture의 첫 인자를 구조 분해로만 받습니다.
+    async ({}, use) => {
+      const path = await mkdtemp(join(tmpdir(), "beads-desk-e2e-template-"));
       try {
         await run(path, "git", "init", "--quiet");
         await run(path, "bd", "init", "--prefix", "e2e", "--quiet", "--non-interactive");
+        await use(path);
+      } finally {
+        await rm(path, { recursive: true, force: true, maxRetries: 5 });
+      }
+    },
+    { scope: "worker" },
+  ],
+  workspace: [
+    async ({ request, workspaceTemplate }, use) => {
+      const path = await mkdtemp(join(tmpdir(), "beads-desk-e2e-"));
+      try {
+        await cp(workspaceTemplate, path, { recursive: true });
         const body: RegisterWorkspaceRequest = { path, select: true };
         const response = await request.post(WORKSPACES_PATH, { data: body });
         expect(response.ok(), await response.text()).toBe(true);
