@@ -42,17 +42,36 @@ test("데이터를 읽고, workspace가 바뀌면 다시 읽어 넘긴다", asyn
   expect(results).toEqual([ok(["a"]), ok(["a", "b"])]);
 });
 
-test("나중에 보낸 요청보다 늦게 도착한 이전 응답은 버린다", async () => {
+test("읽는 중에 여러 번 바뀌어도 읽기가 끝난 뒤 한 번만 다시 읽는다", async () => {
   const results: ApiResponse<string[]>[] = [];
   watchWorkspaceRead(read, (result) => results.push(result));
 
   invalidate();
-  pending[1]!.resolve(ok(["new"]));
-  await flush();
+  invalidate();
+  invalidate();
+  expect(read).toHaveBeenCalledTimes(1);
+
   pending[0]!.resolve(ok(["old"]));
   await flush();
+  expect(read).toHaveBeenCalledTimes(2);
+  pending[1]!.resolve(ok(["new"]));
+  await flush();
 
-  expect(results).toEqual([ok(["new"])]);
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(results).toEqual([ok(["old"]), ok(["new"])]);
+});
+
+test("다시 읽기가 끝난 뒤에 온 알림은 새로 읽는다", async () => {
+  watchWorkspaceRead(read, () => {});
+
+  invalidate();
+  pending[0]!.resolve(ok(["a"]));
+  await flush();
+  pending[1]!.resolve(ok(["b"]));
+  await flush();
+  invalidate();
+
+  expect(read).toHaveBeenCalledTimes(3);
 });
 
 test("멈춘 뒤에는 도착한 응답을 넘기지 않고 구독을 해제한다", async () => {

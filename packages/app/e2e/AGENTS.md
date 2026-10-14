@@ -19,5 +19,5 @@
 - spec은 `e2e/<화면이나 기능>/<동작>.spec.ts`에 둡니다. 여러 spec이 함께 쓰는 지원 코드는 `e2e/support`에 둡니다.
 - 요소는 `getByRole`과 접근 가능한 이름으로 찾습니다. 찾을 이름이 없으면 화면에 `aria-label`을 붙이는 것을 먼저 검토합니다.
 - bd CLI로 바꾼 내용이나 서버 알림을 기다릴 때 `page.waitForTimeout`을 쓰지 않고, 조건이 맞을 때까지 다시 확인하는 `expect(locator).toBeVisible()` 같은 assertion을 씁니다.
-- 화면에서 고친 값이 bd에 저장됐는지는 `expect.poll(() => workspace.showIssue(id)..., { timeout: SAVE_TIMEOUT })`로 확인합니다. 서버가 bd를 한 번에 하나씩 실행해서, 연달아 고치면 기본 timeout 5초 안에 저장되지 않을 수 있습니다.
+- 화면에서 고친 값이 bd에 저장됐는지는 `expect.poll(() => workspace.showIssue(id)..., { timeout: SAVE_TIMEOUT })`로 확인합니다. 서버의 bd 실행 한 번이 몇 초씩 걸릴 때가 있어 기본 timeout 5초 안에 저장되지 않을 수 있습니다.
 - spec은 단독으로 실행해도 통과해야 합니다. 앞 spec이 남긴 상태에 기대지 않습니다.

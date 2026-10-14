@@ -87,6 +87,21 @@ describe("runBd", () => {
     expect(await readFile(log, "utf8")).toBe("start\nend\nstart\nend\nstart\nend\n");
   });
 
+  test("기다리는 쓰기를 기다리는 읽기보다 먼저 실행한다", async () => {
+    const log = join(workDir, "runs.log");
+    await useFakeBd(`echo "$2" >> "${log}"\nsleep 0.1`);
+
+    await Promise.all([
+      runBd(["show"], { cwd: workDir }),
+      runBd(["list"], { cwd: workDir }),
+      runBd(["update"], { cwd: workDir, write: true }),
+      runBd(["ready"], { cwd: workDir }),
+      runBd(["close"], { cwd: workDir, write: true }),
+    ]);
+
+    expect(await readFile(log, "utf8")).toBe("show\nupdate\nclose\nlist\nready\n");
+  });
+
   test("Dolt 서버에 연결하지 못하면 bd dolt start 후 한 번 다시 실행한다", async () => {
     const started = join(workDir, "dolt-started");
     await useFakeBd(

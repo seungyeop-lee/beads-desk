@@ -27,7 +27,7 @@ export async function createIssue(cwd: string, issue: NewIssue): Promise<BdOutco
   const labels = (issue.labels ?? []).map((label) => label.trim()).filter(Boolean);
   if (labels.length > 0) args.push(`--labels=${labels.join(",")}`);
 
-  const result = await runBdJson(cwd, args);
+  const result = await runBdJson(cwd, args, { write: true });
   if (!result.ok) {
     return result;
   }
@@ -149,6 +149,8 @@ async function write(
   if (trimmed.some((id) => id.length === 0)) {
     return inputError("이슈 id가 비어 있습니다.");
   }
-  const result = await runBdChecked(cwd, [...command, "--", ...trimmed, ...values]);
+  const result = await runBdChecked(cwd, [...command, "--", ...trimmed, ...values], {
+    write: true,
+  });
   return result.ok ? { ok: true, value: null } : result;
 }

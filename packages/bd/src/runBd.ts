@@ -11,6 +11,8 @@ export type BdResult = {
 
 export type RunBdOptions = {
   cwd: string;
+  /** 쓰기 명령이면 true입니다. 기다리는 읽기보다 먼저 실행합니다. */
+  write?: boolean;
 };
 
 export type BdError = {
@@ -28,7 +30,7 @@ const DOLT_UNREACHABLE = /Dolt server unreachable/i;
 const DOLT_START_COOLDOWN_MS = 30_000;
 
 /**
- * bd를 실행합니다. 같은 process 안의 모든 호출은 한 번에 하나씩 실행됩니다.
+ * bd를 실행합니다. 같은 process 안의 모든 호출은 한 번에 하나씩 실행되고, 기다리는 쓰기가 기다리는 읽기보다 먼저 실행됩니다.
  * server mode workspace의 Dolt 서버가 꺼져 있으면 `bd dolt start`로 켜고 한 번 다시 실행합니다.
  */
 export function runBd(args: string[], options: RunBdOptions): Promise<BdResult> {
@@ -42,29 +44,52 @@ export function runBd(args: string[], options: RunBdOptions): Promise<BdResult> 
       return spawnBd(args, options.cwd);
     }
     return result;
-  });
+  }, options.write ?? false);
 }
 
 type BdProcessState = {
-  queue: Promise<unknown>;
+  writes: (() => Promise<void>)[];
+  reads: (() => Promise<void>)[];
+  running: boolean;
   lastDoltStartAt: Map<string, number>;
 };
 
 // bd를 동시에 실행하면 같은 workspace의 Dolt가 손상될 수 있어 실행을 process 전체에서 직렬화합니다.
+// 화면은 쓰기가 끝날 때마다 다시 조회하므로, 쓰기가 읽기 뒤에 줄 서면 연달아 고친 값이 몇 초씩 늦게 저장됩니다.
 // 이 module은 instrumentation과 route handler에 서로 다른 사본으로 들어가므로 상태를 globalThis에 둡니다.
 const PROCESS_STATE_KEY = Symbol.for("beads-desk.bd.processState");
 
 function processState(): BdProcessState {
   const holder = globalThis as { [PROCESS_STATE_KEY]?: BdProcessState };
-  holder[PROCESS_STATE_KEY] ??= { queue: Promise.resolve(), lastDoltStartAt: new Map() };
+  holder[PROCESS_STATE_KEY] ??= {
+    writes: [],
+    reads: [],
+    running: false,
+    lastDoltStartAt: new Map(),
+  };
   return holder[PROCESS_STATE_KEY];
 }
 
-function serialized<T>(operation: () => Promise<T>): Promise<T> {
+function serialized<T>(operation: () => Promise<T>, write: boolean): Promise<T> {
   const state = processState();
-  const run = state.queue.then(operation, operation);
-  state.queue = run.catch(() => undefined);
-  return run;
+  return new Promise<T>((resolve, reject) => {
+    (write ? state.writes : state.reads).push(() => operation().then(resolve, reject));
+    void drain(state);
+  });
+}
+
+async function drain(state: BdProcessState): Promise<void> {
+  if (state.running) return;
+  state.running = true;
+  try {
+    for (let next = nextJob(state); next; next = nextJob(state)) await next();
+  } finally {
+    state.running = false;
+  }
+}
+
+function nextJob(state: BdProcessState): (() => Promise<void>) | undefined {
+  return state.writes.shift() ?? state.reads.shift();
 }
 
 async function startDoltServer(cwd: string): Promise<boolean> {
@@ -122,8 +147,12 @@ function bdBin(): string {
 }
 
 /** bd를 실행하고 JSON 출력을 해석합니다. */
-export async function runBdJson(cwd: string, args: string[]): Promise<BdOutcome<unknown>> {
-  const result = await runBdChecked(cwd, args);
+export async function runBdJson(
+  cwd: string,
+  args: string[],
+  options: Omit<RunBdOptions, "cwd"> = {},
+): Promise<BdOutcome<unknown>> {
+  const result = await runBdChecked(cwd, args, options);
   if (!result.ok) {
     return result;
   }
@@ -138,8 +167,12 @@ export async function runBdJson(cwd: string, args: string[]): Promise<BdOutcome<
 }
 
 /** bd를 실행하고, 실패하면 bd가 남긴 실패 이유를 오류 메시지로 돌려줍니다. 성공하면 stdout을 돌려줍니다. */
-export async function runBdChecked(cwd: string, args: string[]): Promise<BdOutcome<string>> {
-  const result = await runBd(args, { cwd });
+export async function runBdChecked(
+  cwd: string,
+  args: string[],
+  options: Omit<RunBdOptions, "cwd"> = {},
+): Promise<BdOutcome<string>> {
+  const result = await runBd(args, { cwd, ...options });
   if (result.code !== 0) {
     const message =
       (result.stderr.trim() ? result.stderr : jsonError(result.stdout)) ??
