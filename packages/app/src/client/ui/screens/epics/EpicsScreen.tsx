@@ -192,7 +192,7 @@ function EpicDescendants({
       {!descendants && !error && <span className="loading loading-spinner loading-xs" />}
       {descendants && (
         <IssueTable
-          issues={epicDescendantRows(descendants)}
+          tree={epicDescendantRows(descendants)}
           issueHref={issueHref}
           writes={writes}
           emptyMessage={messages.epics.childrenEmpty}

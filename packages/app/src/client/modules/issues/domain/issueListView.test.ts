@@ -4,8 +4,10 @@ import {
   byClosedDesc,
   byPriorityThenCreated,
   byStatusGroup,
+  issueTree,
   nestUnderParents,
   refineIssues,
+  visibleTreeRows,
 } from "./issueListView";
 
 function issue(id: string, fields: Partial<Issue> = {}): Issue {
@@ -108,6 +110,60 @@ describe("nestUnderParents", () => {
     const sorted = [issue("a", { parent: "b" }), issue("b", { parent: "a" }), issue("c")];
 
     expect(ids(nestUnderParents(sorted))).toEqual(["c", "a", "b"]);
+  });
+});
+
+describe("issueTree", () => {
+  const tree = (rows: ReturnType<typeof issueTree>) =>
+    rows.map(({ issue, depth, childCount }) => [issue.id, depth, childCount]);
+
+  test("상위가 목록에 없는 행은 깊이 0이고, 하위는 한 단계마다 깊이가 1씩 늘며, 바로 아래 하위 행만 센다", () => {
+    const sorted = [
+      issue("feature", { parent: "epic" }),
+      issue("task", { parent: "feature" }),
+      issue("sub", { parent: "task" }),
+      issue("task-2", { parent: "feature" }),
+      issue("loose", { parent: "epic" }),
+    ];
+
+    expect(tree(issueTree(sorted))).toEqual([
+      ["feature", 0, 2],
+      ["task", 1, 1],
+      ["sub", 2, 0],
+      ["task-2", 1, 0],
+      ["loose", 0, 0],
+    ]);
+  });
+
+  test("상위 관계가 순환해도 모든 행을 한 번씩 놓고, 이미 놓인 행은 하위로 세지 않는다", () => {
+    const sorted = [issue("a", { parent: "b" }), issue("b", { parent: "a" }), issue("c")];
+
+    expect(tree(issueTree(sorted))).toEqual([
+      ["c", 0, 0],
+      ["a", 0, 1],
+      ["b", 1, 0],
+    ]);
+  });
+});
+
+describe("visibleTreeRows", () => {
+  const rows = issueTree([
+    issue("feature"),
+    issue("task", { parent: "feature" }),
+    issue("sub", { parent: "task" }),
+    issue("loose"),
+  ]);
+  const visible = (expanded: string[]) =>
+    visibleTreeRows(rows, new Set(expanded)).map((row) => row.issue.id);
+
+  test("접은 행 아래의 후손 행은 모두 숨기고, 접은 행 다음의 같은 깊이 행부터 다시 보인다", () => {
+    expect(visible([])).toEqual(["feature", "loose"]);
+    expect(visible(["task"])).toEqual(["feature", "loose"]);
+  });
+
+  test("펼친 행의 하위 행은 보이고, 그 하위 행을 접었으면 그 아래는 숨긴다", () => {
+    expect(visible(["feature"])).toEqual(["feature", "task", "loose"]);
+    expect(visible(["feature", "task"])).toEqual(["feature", "task", "sub", "loose"]);
   });
 });
 

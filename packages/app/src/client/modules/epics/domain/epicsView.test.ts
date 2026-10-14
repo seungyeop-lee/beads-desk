@@ -62,7 +62,7 @@ test("에픽에 하위로 넣을 후보에서 에픽과 이미 그 에픽에 속
   expect(excluded({ id: "other", issueType: "task" } as Issue)).toBe(false);
 });
 
-test("에픽의 후손 이슈는 상태 순으로 정렬하되, 상태가 달라도 하위 이슈를 상위 이슈 바로 아래에 둔다", () => {
+test("에픽의 후손 이슈는 상태 순으로 정렬하되, 상태가 달라도 하위 이슈를 상위 이슈 바로 아래에 한 단계 깊게 둔다", () => {
   const row = (id: string, status: string, parent: string, fields: Partial<Issue> = {}) =>
     ({ id, status, parent, priority: 2, createdAt: 0, closedAt: null, ...fields }) as Issue;
 
@@ -75,12 +75,12 @@ test("에픽의 후손 이슈는 상태 순으로 정렬하되, 상태가 달라
     row("task-loose", "open", "epic", { createdAt: 3 }),
   ]);
 
-  expect(rows.map((issue) => issue.id)).toEqual([
-    "feature-a",
-    "task-a-doing",
-    "task-a-done",
-    "feature-b",
-    "task-b",
-    "task-loose",
+  expect(rows.map((row) => [row.issue.id, row.depth])).toEqual([
+    ["feature-a", 0],
+    ["task-a-doing", 1],
+    ["task-a-done", 1],
+    ["feature-b", 0],
+    ["task-b", 1],
+    ["task-loose", 0],
   ]);
 });

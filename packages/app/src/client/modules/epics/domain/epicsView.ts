@@ -2,7 +2,8 @@ import type { Issue } from "@beads-desk/bd/issue";
 import {
   byPriorityThenCreated,
   byStatusGroup,
-  nestUnderParents,
+  issueTree,
+  type IssueTreeRow,
 } from "@/client/modules/issues/domain/issueListView";
 import type { EpicSummary } from "@/shared/contract/epics";
 
@@ -47,6 +48,6 @@ export function notChildCandidate(descendants: readonly Issue[]): (issue: Issue)
 }
 
 /** 펼친 에픽의 후손 이슈를 상태 순으로 정렬하고, 하위 이슈는 상위 이슈 바로 아래에 둡니다. */
-export function epicDescendantRows(descendants: readonly Issue[]): Issue[] {
-  return nestUnderParents([...descendants].sort(byStatusGroup));
+export function epicDescendantRows(descendants: readonly Issue[]): IssueTreeRow[] {
+  return issueTree([...descendants].sort(byStatusGroup));
 }

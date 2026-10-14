@@ -1,8 +1,9 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, type ReactNode } from "react";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/domain/issueListView";
 import { BlockerLine } from "./BlockerLine";
 import { copyIssueId } from "./copyIssueId";
 import { confirmForceClose } from "./fields/confirmForceClose";
@@ -10,16 +11,23 @@ import { EditableText } from "./fields/EditableText";
 import { PrioritySelect } from "./fields/PrioritySelect";
 import { StatusSelect } from "./fields/StatusSelect";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
+import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssueTypeTag } from "./IssueTypeTag";
 
-type Props = {
-  issues: Issue[];
+type Props = (
+  | { issues: Issue[]; tree?: never }
+  | {
+      issues?: never;
+      /** 주면 하위 행을 상위 행 아래에 들여 쓰고, 하위가 있는 행마다 접고 펼 수 있게 합니다. 처음에는 모두 접혀 있습니다. */
+      tree: readonly IssueTreeRow[];
+    }
+) & {
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
   /** 없으면 필터에 맞는 이슈가 없다고 안내합니다. */
   emptyMessage?: string;
-  /** 막고 있는 이슈의 제목을 찾을 목록입니다. 없으면 issues에서 찾습니다. */
+  /** 막고 있는 이슈의 제목을 찾을 목록입니다. 없으면 표의 이슈에서 찾습니다. */
   titleSource?: Issue[];
   /** 묶음마다 표를 나눠 보일 때, 첫 표가 아니면 열 이름을 감춥니다. 열 너비는 그대로 맞춥니다. */
   hideHeader?: boolean;
@@ -28,18 +36,27 @@ type Props = {
 /** ID를 누르면 ID를 복사하고, 제목을 누르면 상세를 열고, 연필 버튼으로 제목을 고칩니다. 상태, 담당자, 우선순위는 표에서 바로 고칩니다. */
 export const IssueTable = memo(function IssueTable({
   issues,
+  tree,
   issueHref,
   writes,
   emptyMessage,
-  titleSource = issues,
+  titleSource,
   hideHeader,
 }: Props) {
   const messages = useMessages();
-  const titles = useMemo(
-    () => new Map(titleSource.map((issue) => [issue.id, issue.title])),
-    [titleSource],
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const rows = useMemo(
+    () => tree ?? issues.map((issue) => ({ issue, depth: 0, childCount: 0 })),
+    [tree, issues],
   );
-  if (issues.length === 0) {
+  const titles = useMemo(
+    () =>
+      new Map(
+        (titleSource ?? rows.map((row) => row.issue)).map((issue) => [issue.id, issue.title]),
+      ),
+    [titleSource, rows],
+  );
+  if (rows.length === 0) {
     return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
   return (
@@ -57,10 +74,22 @@ export const IssueTable = memo(function IssueTable({
           </tr>
         </thead>
         <tbody>
-          {issues.map((issue) => (
+          {(tree ? visibleTreeRows(rows, expanded) : rows).map((row) => (
             <IssueRow
-              key={issue.id}
-              issue={issue}
+              key={row.issue.id}
+              issue={row.issue}
+              outline={
+                tree && {
+                  depth: row.depth,
+                  childCount: row.childCount,
+                  expanded: expanded.has(row.issue.id),
+                  onToggle: () => {
+                    const next = new Set(expanded);
+                    if (!next.delete(row.issue.id)) next.add(row.issue.id);
+                    setExpanded(next);
+                  },
+                }
+              }
               issueHref={issueHref}
               titleOf={(id) => titles.get(id)}
               writes={writes}
@@ -72,15 +101,24 @@ export const IssueTable = memo(function IssueTable({
   );
 });
 
+/** tree로 그릴 때 제목 칸의 들여쓰기와 접기 버튼을 정합니다. */
+type RowOutline = {
+  depth: number;
+  childCount: number;
+  expanded: boolean;
+  onToggle: () => void;
+};
+
 type RowProps = {
   issue: Issue;
+  outline?: RowOutline | undefined;
   issueHref: (issueId: string) => string;
   /** 막고 있는 이슈의 제목을 표에서 찾습니다. */
   titleOf: (issueId: string) => string | undefined;
   writes: IssueWrites;
 };
 
-function IssueRow({ issue, issueHref, titleOf, writes }: RowProps) {
+function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
   const messages = useMessages();
@@ -101,16 +139,23 @@ function IssueRow({ issue, issueHref, titleOf, writes }: RowProps) {
         <IssueTypeTag issueType={issue.issueType} />
       </td>
       <td>
-        <Link
-          className="font-medium decoration-base-content/30 underline-offset-4 hover:underline"
-          href={href}
-          scroll={false}
-        >
-          {issue.title || messages.common.untitled}
-        </Link>
-        {issue.blockedBy && (
-          <BlockerLine blockedBy={issue.blockedBy} titleOf={titleOf} issueHref={issueHref} />
-        )}
+        <TitleOutline issueId={issue.id} outline={outline}>
+          <Link
+            className="font-medium decoration-base-content/30 underline-offset-4 hover:underline"
+            href={href}
+            scroll={false}
+          >
+            {issue.title || messages.common.untitled}
+          </Link>
+          {outline && outline.childCount > 0 && (
+            <span className="ml-2 font-mono text-xs text-base-content/45 tabular-nums">
+              {messages.issueTable.childCount(outline.childCount)}
+            </span>
+          )}
+          {issue.blockedBy && (
+            <BlockerLine blockedBy={issue.blockedBy} titleOf={titleOf} issueHref={issueHref} />
+          )}
+        </TitleOutline>
       </td>
       <td>
         <StatusSelect
@@ -143,5 +188,55 @@ function IssueRow({ issue, issueHref, titleOf, writes }: RowProps) {
         {issue.dependencyCount} / {issue.dependentCount}
       </td>
     </tr>
+  );
+}
+
+/**
+ * 하위 행은 상위 행의 접기 버튼 아래에서 꺾인 선을 그어 상위 행에 잇습니다.
+ * 깊이마다 접기 버튼과 같은 폭의 칸을 하나씩 두고, 하위가 없는 행도 버튼 자리를 비워 두어 같은 깊이의 제목이 한 줄에 맞춰집니다.
+ */
+function TitleOutline({
+  issueId,
+  outline,
+  children,
+}: {
+  issueId: string;
+  outline: RowOutline | undefined;
+  children: ReactNode;
+}) {
+  const messages = useMessages();
+  if (!outline) return children;
+  return (
+    <div className="flex items-start gap-1">
+      {Array.from({ length: Math.max(outline.depth - 1, 0) }, (_, level) => (
+        <span key={level} className="w-6 shrink-0" aria-hidden="true" />
+      ))}
+      {outline.depth > 0 && (
+        <span
+          className="-mt-2 ml-3 h-[1.125rem] w-3 shrink-0 rounded-bl-md border-b-2 border-l-2 border-base-content/20"
+          aria-hidden="true"
+        />
+      )}
+      {outline.childCount > 0 ? (
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs btn-square -my-0.5 shrink-0 text-base-content/50"
+          aria-expanded={outline.expanded}
+          aria-label={messages.issueTable.toggleChildren(issueId, outline.expanded)}
+          onClick={outline.onToggle}
+        >
+          <ChevronRightIcon
+            width={14}
+            height={14}
+            className={`transition-transform ${outline.expanded ? "rotate-90" : ""}`}
+          />
+        </button>
+      ) : (
+        <span className="-ml-1 flex w-7 shrink-0" aria-hidden="true">
+          {outline.depth > 0 && <span className="mt-2 w-4 border-t-2 border-base-content/20" />}
+        </span>
+      )}
+      <div className="min-w-0">{children}</div>
+    </div>
   );
 }

@@ -85,6 +85,8 @@ export const enMessages: Messages = {
     assigneeOf: (id) => `Assignee of ${id}`,
     dependencyCounts: (dependencies, dependents) =>
       `${dependencies} dependencies · ${dependents} dependents`,
+    toggleChildren: (id, expanded) => `${expanded ? "Collapse" : "Expand"} child issues of ${id}`,
+    childCount: (count) => `${count} ${count === 1 ? "child" : "children"}`,
   },
   blocking: {
     chip: "Blocked",

@@ -52,6 +52,19 @@ function byId(a: Issue, b: Issue): number {
  * 상위 이슈가 목록에 없는 하위 이슈는 제자리에 둡니다.
  */
 export function nestUnderParents(sorted: readonly Issue[]): Issue[] {
+  return issueTree(sorted).map((row) => row.issue);
+}
+
+export type IssueTreeRow = {
+  issue: Issue;
+  /** 목록 안의 상위 이슈를 몇 단계 거쳐 내려왔는지입니다. 상위가 목록에 없으면 0입니다. */
+  depth: number;
+  /** 이 행 바로 아래에 놓인 하위 행의 개수입니다. */
+  childCount: number;
+};
+
+/** nestUnderParents와 같은 순서로 놓고, 행마다 깊이와 바로 아래 하위 행의 개수를 붙입니다. */
+export function issueTree(sorted: readonly Issue[]): IssueTreeRow[] {
   const ids = new Set(sorted.map((issue) => issue.id));
   const childrenByParent = new Map<string, Issue[]>();
   const roots: Issue[] = [];
@@ -63,16 +76,36 @@ export function nestUnderParents(sorted: readonly Issue[]): Issue[] {
     }
   }
 
-  const nested: Issue[] = [];
+  const rows: IssueTreeRow[] = [];
   const placed = new Set<string>();
-  const place = (issue: Issue) => {
-    if (placed.has(issue.id)) return;
+  const place = (issue: Issue, depth: number) => {
     placed.add(issue.id);
-    nested.push(issue);
-    childrenByParent.get(issue.id)?.forEach(place);
+    const row = { issue, depth, childCount: 0 };
+    rows.push(row);
+    for (const child of childrenByParent.get(issue.id) ?? []) {
+      if (placed.has(child.id)) continue;
+      row.childCount += 1;
+      place(child, depth + 1);
+    }
   };
-  roots.forEach(place);
   // 상위 관계가 순환하면 어느 쪽도 최상위가 아니므로, 남은 이슈를 정렬한 순서대로 붙입니다.
-  sorted.forEach(place);
-  return nested;
+  for (const issue of [...roots, ...sorted]) {
+    if (!placed.has(issue.id)) place(issue, 0);
+  }
+  return rows;
+}
+
+/** expanded에 없는 행은 접힌 것으로 보고, 그 아래 후손 행을 모두 뺍니다. */
+export function visibleTreeRows(
+  rows: readonly IssueTreeRow[],
+  expanded: ReadonlySet<string>,
+): IssueTreeRow[] {
+  const visible: IssueTreeRow[] = [];
+  let collapsedDepth = Infinity;
+  for (const row of rows) {
+    if (row.depth > collapsedDepth) continue;
+    collapsedDepth = row.childCount > 0 && !expanded.has(row.issue.id) ? row.depth : Infinity;
+    visible.push(row);
+  }
+  return visible;
 }

@@ -96,6 +96,9 @@ export const koMessages = {
     assigneeOf: (id: string) => `${id} 담당자`,
     dependencyCounts: (dependencies: number, dependents: number) =>
       `선행 ${dependencies}개 · 후속 ${dependents}개`,
+    toggleChildren: (id: string, expanded: boolean) =>
+      `${id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`,
+    childCount: (count: number) => `하위 ${count}개`,
   },
   blocking: {
     chip: "막힘",
