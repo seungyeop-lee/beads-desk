@@ -1,6 +1,7 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { RelationKind } from "@/client/modules/issues/domain/issueRelations";
+import type { ThemeChoice } from "@/shared/contract/theme";
 
 /** 화면 문구의 기준 사전입니다. 다른 언어의 사전은 이 모양을 그대로 따릅니다. */
 export const koMessages = {
@@ -19,6 +20,15 @@ export const koMessages = {
   shell: {
     screens: "화면",
     newIssue: "새 이슈",
+  },
+  settings: {
+    title: "설정",
+    theme: "테마",
+    themes: {
+      system: "시스템 설정 따르기",
+      light: "밝게",
+      dark: "어둡게",
+    } satisfies Record<ThemeChoice, string>,
     language: "언어",
   },
   issue: {

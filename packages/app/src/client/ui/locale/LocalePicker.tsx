@@ -13,8 +13,8 @@ export function LocalePicker() {
   const router = useRouter();
   return (
     <select
-      className="ghost-select text-base-content/70"
-      aria-label={messages.shell.language}
+      className="select w-full"
+      aria-label={messages.settings.language}
       value={locale}
       onChange={(event) => {
         const next = event.target.value;

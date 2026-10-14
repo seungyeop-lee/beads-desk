@@ -5,7 +5,10 @@ import { KeyboardFocusMode } from "@/client/ui/designSystem/KeyboardFocusMode";
 import { ToastRegion } from "@/client/ui/designSystem/Toast";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { AppHeader } from "@/client/ui/shell/AppHeader";
+import { themeAttribute } from "@/client/ui/theme/themeAttribute";
+import { ThemeProvider } from "@/client/ui/theme/ThemeProvider";
 import { requestLocale } from "@/server/web/locale/requestLocale";
+import { requestTheme } from "@/server/web/theme/requestTheme";
 
 import "@/client/ui/designSystem/styles/index.css";
 
@@ -14,15 +17,17 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const locale = await requestLocale();
+  const [locale, theme] = await Promise.all([requestLocale(), requestTheme()]);
   return (
-    <html lang={locale}>
+    <html lang={locale} data-theme={themeAttribute(theme)}>
       <body className="min-h-screen bg-base-200 font-sans text-base-content antialiased">
         <LocaleProvider locale={locale}>
-          <KeyboardFocusMode />
-          <AppHeader />
-          {children}
-          <ToastRegion />
+          <ThemeProvider theme={theme}>
+            <KeyboardFocusMode />
+            <AppHeader />
+            {children}
+            <ToastRegion />
+          </ThemeProvider>
         </LocaleProvider>
       </body>
     </html>

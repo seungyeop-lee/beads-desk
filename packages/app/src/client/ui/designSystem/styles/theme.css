@@ -1,6 +1,7 @@
 /*
  * daisyUI 테마와 Tailwind 디자인 토큰입니다. 컴포넌트 규칙은 components.css에 둡니다.
  * 미색 종이 바탕과 흑갈색 잉크를 기본으로 하고, 운영체제가 다크 모드이면 desk-dark로 바꿉니다.
+ * 설정에서 밝게나 어둡게를 고르면 layout이 `<html data-theme>`에 테마 이름을 넣어 운영체제 설정과 관계없이 고정합니다(theme/themeAttribute.ts).
  * 주요 행동 단추는 잉크 색으로 칠하고, 색은 상태·우선순위·유형·화면을 구분하는 파스텔에만 씁니다.
  */
 @plugin "daisyui" {

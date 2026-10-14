@@ -16,6 +16,15 @@ export const enMessages: Messages = {
   shell: {
     screens: "Screens",
     newIssue: "New issue",
+  },
+  settings: {
+    title: "Settings",
+    theme: "Theme",
+    themes: {
+      system: "Match system",
+      light: "Light",
+      dark: "Dark",
+    },
     language: "Language",
   },
   issue: {

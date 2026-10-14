@@ -3,21 +3,22 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { PlusIcon } from "@/client/ui/designSystem/icons";
+import { PlusIcon, SettingsIcon } from "@/client/ui/designSystem/icons";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
-import { LocalePicker } from "@/client/ui/locale/LocalePicker";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { SettingsDialog } from "@/client/ui/settings/SettingsDialog";
 import { SCREEN_TABS } from "./screenTabs";
 import { WorkspacePicker } from "./WorkspacePicker";
 
-/** 화면 이동 탭과, 어느 화면에서나 새 이슈를 만들고 그 화면 위에 상세를 여는 버튼입니다. */
+/** 화면 이동 탭과, 어느 화면에서나 설정을 열거나 새 이슈를 만들고 그 화면 위에 상세를 여는 버튼입니다. */
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const issueHref = useIssueHref();
   const messages = useMessages();
   const [creating, setCreating] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-20 border-b border-base-300 bg-base-100/85 backdrop-blur">
@@ -40,7 +41,14 @@ export function AppHeader() {
         </nav>
         <div className="ml-auto flex items-center gap-3">
           <WorkspacePicker />
-          <LocalePicker />
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm btn-square text-base-content/70"
+            aria-label={messages.settings.title}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <SettingsIcon width={17} height={17} />
+          </button>
           <button
             type="button"
             className="btn btn-primary btn-sm gap-1.5 rounded-full pr-4 pl-3"
@@ -51,6 +59,7 @@ export function AppHeader() {
           </button>
         </div>
       </div>
+      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {creating && (
         <NewIssueDialog
           onCreated={(issueId) => {
