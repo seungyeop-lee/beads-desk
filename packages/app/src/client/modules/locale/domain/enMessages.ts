@@ -151,6 +151,26 @@ export const enMessages: Messages = {
     typeCount: (count) => `${count}`,
     searchPlaceholder: "Search id or title",
     search: "Search",
+    views: "View",
+    toggleGroup: (label, expanded) => `${expanded ? "Collapse" : "Expand"} ${label}`,
+  },
+  workStates: {
+    labels: {
+      in_progress: "In progress",
+      ready: "Ready",
+      blocked: "Blocked",
+      other: "Other",
+      deferred: "Deferred",
+      closed: "Closed",
+    },
+    hints: {
+      in_progress: "Being worked on",
+      ready: "Nothing blocks these",
+      blocked: "Waiting on other issues",
+      other: "Epics and other issues that are not ready work",
+      deferred: "Postponed",
+      closed: "Done",
+    },
   },
   epics: {
     title: "Epics",

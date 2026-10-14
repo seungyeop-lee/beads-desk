@@ -1,4 +1,5 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
+import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { Messages } from "@/client/modules/locale/domain/messages";
 import type { Locale } from "@/shared/contract/locale";
 
@@ -24,6 +25,20 @@ export function statusTone(status: string): string {
 }
 
 export const READY_TONE = "tone-aqua";
+
+/** 작업 상태의 색은 같은 이름의 저장 상태 색을 따르고, 바로 작업 가능은 READY_TONE입니다. 보드 열의 색과 같습니다. */
+const WORK_STATE_TONES: Record<WorkState, string> = {
+  in_progress: STATUS_TONES.in_progress,
+  ready: READY_TONE,
+  blocked: STATUS_TONES.blocked,
+  other: STATUS_TONES.open,
+  deferred: STATUS_TONES.deferred,
+  closed: STATUS_TONES.closed,
+};
+
+export function workStateTone(state: WorkState): string {
+  return WORK_STATE_TONES[state];
+}
 
 const TYPE_TONES: Record<string, string> = {
   bug: "tone-coral",

@@ -20,6 +20,10 @@ type Props = {
   writes: IssueWrites;
   /** 없으면 필터에 맞는 이슈가 없다고 안내합니다. */
   emptyMessage?: string;
+  /** 막고 있는 이슈의 제목을 찾을 목록입니다. 없으면 issues에서 찾습니다. */
+  titleSource?: Issue[];
+  /** 묶음마다 표를 나눠 보일 때, 첫 표가 아니면 열 이름을 감춥니다. 열 너비는 그대로 맞춥니다. */
+  hideHeader?: boolean;
 };
 
 /** ID를 누르면 ID를 복사하고, 제목을 누르면 상세를 열고, 연필 버튼으로 제목을 고칩니다. 상태, 담당자, 우선순위는 표에서 바로 고칩니다. */
@@ -28,16 +32,21 @@ export const IssueTable = memo(function IssueTable({
   issueHref,
   writes,
   emptyMessage,
+  titleSource = issues,
+  hideHeader,
 }: Props) {
   const messages = useMessages();
-  const titles = useMemo(() => new Map(issues.map((issue) => [issue.id, issue.title])), [issues]);
+  const titles = useMemo(
+    () => new Map(titleSource.map((issue) => [issue.id, issue.title])),
+    [titleSource],
+  );
   if (issues.length === 0) {
     return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
   return (
     <div className="surface overflow-x-auto">
-      <table className="table">
-        <thead>
+      <table className="table table-fixed">
+        <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
           <tr>
             <th className="w-32">ID</th>
             <th className="w-28">{messages.issue.type}</th>

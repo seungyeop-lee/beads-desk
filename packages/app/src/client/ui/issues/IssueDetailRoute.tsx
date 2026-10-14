@@ -12,16 +12,19 @@ const ISSUE_PARAM = "issue";
 /** 상세 dialog 옆 패널에 연 이슈 id를 담는 query 이름입니다. */
 const SIDE_PARAM = "side";
 
-/** 지금 화면 위에 이슈 상세 dialog를 여는 주소를 만듭니다. */
+/** 지금 화면 위에 이슈 상세 dialog를 여는 주소를 만듭니다. 화면이 쓰는 다른 query(이슈 목록의 보기 탭 등)는 그대로 둡니다. */
 function useIssueDetailHref(): (location: IssueDetailLocation) => string {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   return useCallback(
     (location: IssueDetailLocation) => {
-      const params = new URLSearchParams({ [ISSUE_PARAM]: location.issue });
+      const params = new URLSearchParams(searchParams);
+      params.set(ISSUE_PARAM, location.issue);
       if (location.side) params.set(SIDE_PARAM, location.side);
+      else params.delete(SIDE_PARAM);
       return `${pathname}?${params}`;
     },
-    [pathname],
+    [pathname, searchParams],
   );
 }
 
@@ -39,7 +42,13 @@ export function IssueDetailRoute() {
   const location = useIssueDetailLocation();
   const issueId = location?.issue ?? null;
   const currentWorkspace = useWorkspaces().data?.current ?? null;
-  const close = useCallback(() => router.replace(pathname, { scroll: false }), [router, pathname]);
+  const searchParams = useSearchParams();
+  const close = useCallback(() => {
+    const params = new URLSearchParams(searchParams);
+    params.delete(ISSUE_PARAM);
+    params.delete(SIDE_PARAM);
+    router.replace(params.size > 0 ? `${pathname}?${params}` : pathname, { scroll: false });
+  }, [router, pathname, searchParams]);
 
   const [trail, setTrail] = useState<IssueDetailLocation[]>([]);
   const shown = trail.at(-1);

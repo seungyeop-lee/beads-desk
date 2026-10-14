@@ -1,4 +1,5 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
+import type { WorkState } from "@/client/modules/issues/domain/workState";
 
 /** 화면 문구의 기준 사전입니다. 다른 언어의 사전은 이 모양을 그대로 따릅니다. */
 export const koMessages = {
@@ -153,6 +154,28 @@ export const koMessages = {
     typeCount: (count: number) => `${count}개`,
     searchPlaceholder: "id 또는 제목 검색",
     search: "검색",
+    views: "보기",
+    toggleGroup: (label: string, expanded: boolean) =>
+      `${label} 묶음 ${expanded ? "접기" : "펼치기"}`,
+  },
+  /** 저장 상태, 의존 관계, bd ready를 합친 작업 상태(workState)의 이름과 설명입니다. */
+  workStates: {
+    labels: {
+      in_progress: "진행 중",
+      ready: "바로 작업 가능",
+      blocked: "막힘",
+      other: "그 밖의 이슈",
+      deferred: "보류",
+      closed: "닫힘",
+    } satisfies Record<WorkState, string>,
+    hints: {
+      in_progress: "지금 손대고 있는 이슈",
+      ready: "막힌 것 없이 바로 시작할 수 있는 이슈",
+      blocked: "다른 이슈가 끝나야 시작할 수 있는 이슈",
+      other: "에픽처럼 직접 작업하지 않거나 바로 작업 가능에 들지 않는 이슈",
+      deferred: "나중으로 미룬 이슈",
+      closed: "끝난 이슈",
+    } satisfies Record<WorkState, string>,
   },
   epics: {
     title: "에픽",

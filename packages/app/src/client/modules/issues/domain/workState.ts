@@ -1,4 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
+import { byClosedDesc, byPriorityThenCreated } from "./issueListView";
 
 /**
  * 저장 상태와 의존 관계, bd ready를 합쳐 지금 이 이슈로 무엇을 할 수 있는지 나타냅니다. 보드의 열과 같은 기준입니다.
@@ -18,4 +19,34 @@ export function workState(issue: Issue): WorkState {
   if (issue.status === "in_progress") return "in_progress";
   if (issue.status === "open" && issue.ready) return "ready";
   return "other";
+}
+
+/** 묶음을 보이는 순서입니다. 지금 손대고 있는 것과 바로 시작할 수 있는 것을 먼저 보입니다. */
+export const WORK_STATE_ORDER: WorkState[] = [
+  "in_progress",
+  "ready",
+  "blocked",
+  "other",
+  "deferred",
+  "closed",
+];
+
+/** 이슈 목록의 보기 탭에서 하나만 골라 볼 수 있는 작업 상태입니다. other는 전체 보기에서만 보입니다. */
+export const VIEW_STATES: WorkState[] = ["in_progress", "ready", "blocked", "deferred", "closed"];
+
+/** 주소의 view 값을 보기 탭의 작업 상태로 읽습니다. 없거나 알 수 없는 값이면 전체 보기인 null입니다. */
+export function parseViewState(value: string | null): WorkState | null {
+  return VIEW_STATES.find((state) => state === value) ?? null;
+}
+
+export type WorkStateGroup = { state: WorkState; issues: Issue[] };
+
+/** 작업 상태로 묶어 WORK_STATE_ORDER 순서로 돌려주고, 빈 묶음은 뺍니다. 닫힘은 최근에 닫은 순, 나머지는 우선순위와 만든 시각 순입니다. */
+export function groupByWorkState(issues: Issue[]): WorkStateGroup[] {
+  return WORK_STATE_ORDER.map((state) => ({
+    state,
+    issues: issues
+      .filter((issue) => workState(issue) === state)
+      .sort(state === "closed" ? byClosedDesc : byPriorityThenCreated),
+  })).filter((group) => group.issues.length > 0);
 }

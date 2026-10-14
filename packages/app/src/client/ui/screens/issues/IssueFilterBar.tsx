@@ -1,32 +1,16 @@
-import { ISSUE_STATUSES, type IssueStatus } from "@beads-desk/bd/issue";
 import { useEffect, useRef } from "react";
-import {
-  toggleStatusFilter,
-  type IssueListRefinement,
-} from "@/client/modules/issues/domain/issueListView";
-import type { IssueListFilter } from "@/shared/contract/issueList";
+import type { IssueListRefinement } from "@/client/modules/issues/domain/issueListView";
 import { ChevronDownIcon, SearchIcon } from "@/client/ui/designSystem/icons";
-import {
-  ISSUE_TYPES,
-  READY_TONE,
-  statusLabel,
-  statusTone,
-  typeLabel,
-  typeTone,
-} from "@/client/ui/issues/issueLabels";
+import { ISSUE_TYPES, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
-  filter: IssueListFilter;
   refinement: IssueListRefinement;
-  onFilterChange: (filter: IssueListFilter) => void;
   onRefinementChange: (refinement: IssueListRefinement) => void;
 };
 
-export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinementChange }: Props) {
-  const isSelected = (status: IssueStatus) =>
-    filter.kind === "status" && filter.statuses.includes(status);
-  const allStatuses = filter.kind === "status" && filter.statuses.length === 0;
+/** 고른 보기 탭 안에서 유형과 검색어로 결과를 좁힙니다. */
+export function IssueFilterBar({ refinement, onRefinementChange }: Props) {
   const typeMenuRef = useRef<HTMLDetailsElement>(null);
   const messages = useMessages();
 
@@ -50,38 +34,6 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <fieldset className="segmented">
-        <legend className="sr-only">{messages.issue.status}</legend>
-        <button
-          type="button"
-          aria-pressed={allStatuses}
-          onClick={() => {
-            if (!allStatuses) onFilterChange({ kind: "status", statuses: [] });
-          }}
-        >
-          {messages.issues.allStatuses}
-        </button>
-        <button
-          type="button"
-          aria-pressed={filter.kind === "ready"}
-          onClick={() => onFilterChange(toggleStatusFilter(filter, "ready"))}
-        >
-          <span className={`tone-dot ${READY_TONE}`} />
-          {messages.issue.ready}
-        </button>
-        {ISSUE_STATUSES.map((status) => (
-          <button
-            key={status}
-            type="button"
-            aria-pressed={isSelected(status)}
-            onClick={() => onFilterChange(toggleStatusFilter(filter, status))}
-          >
-            <span className={`tone-dot ${statusTone(status)}`} />
-            {statusLabel(messages, status)}
-          </button>
-        ))}
-      </fieldset>
-
       <details ref={typeMenuRef} className="dropdown">
         <summary className="btn btn-sm btn-ghost gap-1.5 rounded-full font-medium">
           {messages.issue.type}

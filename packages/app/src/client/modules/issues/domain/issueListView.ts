@@ -1,5 +1,4 @@
-import { ISSUE_STATUSES, type Issue, type IssueStatus } from "@beads-desk/bd/issue";
-import type { IssueListFilter } from "@/shared/contract/issueList";
+import { ISSUE_STATUSES, type Issue } from "@beads-desk/bd/issue";
 
 /** 서버에서 받은 목록을 화면에서 더 좁히는 조건입니다. */
 export type IssueListRefinement = {
@@ -8,44 +7,19 @@ export type IssueListRefinement = {
   search: string;
 };
 
-/** 상태 선택을 바꿉니다. ready는 다른 상태와 함께 고를 수 없어, 고르면 다른 선택을 대신합니다. */
-export function toggleStatusFilter(
-  filter: IssueListFilter,
-  choice: IssueStatus | "ready",
-): IssueListFilter {
-  if (choice === "ready") {
-    return filter.kind === "ready" ? { kind: "status", statuses: [] } : { kind: "ready" };
-  }
-  const statuses = filter.kind === "ready" ? [] : filter.statuses;
-  return {
-    kind: "status",
-    statuses: statuses.includes(choice)
-      ? statuses.filter((status) => status !== choice)
-      : [...statuses, choice],
-  };
-}
-
-/**
- * 유형과 검색어로 거른 뒤 화면 순서로 정렬합니다.
- * 상태별로 묶어 open → in_progress → blocked → deferred → closed 순으로 보이고, closed는 최근에 닫은 것부터 보입니다.
- * ready 목록은 상태로 묶지 않습니다.
- */
-export function visibleIssues(
-  issues: Issue[],
-  filter: IssueListFilter,
-  refinement: IssueListRefinement,
-): Issue[] {
+/** 유형과 검색어(id나 제목, 대소문자 무시)로 거릅니다. 순서는 바꾸지 않습니다. */
+export function refineIssues(issues: Issue[], refinement: IssueListRefinement): Issue[] {
   const search = refinement.search.trim().toLowerCase();
-  const matched = issues.filter(
+  return issues.filter(
     (issue) =>
       (refinement.types.length === 0 || refinement.types.includes(issue.issueType)) &&
       (search === "" ||
         issue.id.toLowerCase().includes(search) ||
         issue.title.toLowerCase().includes(search)),
   );
-  return matched.sort(filter.kind === "ready" ? byPriorityThenCreated : byStatusGroup);
 }
 
+/** 상태별로 묶어 open → in_progress → blocked → deferred → closed 순으로 보이고, closed는 최근에 닫은 것부터 보입니다. */
 export function byStatusGroup(a: Issue, b: Issue): number {
   const rank = statusRank(a.status) - statusRank(b.status);
   if (rank !== 0) return rank;
