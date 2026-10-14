@@ -2,7 +2,7 @@ export type { Issue, IssueDetail, IssueStatus } from "./issue";
 export {
   boardIssues,
   decisionRecords,
-  epicChildren,
+  epicDescendants,
   epicStatuses,
   listIssues,
   openChangeFingerprint,

@@ -87,13 +87,33 @@ export async function withWorkSignals(
   };
 }
 
-export async function epicChildren(cwd: string, epicId: string): Promise<BdOutcome<Issue[]>> {
+/**
+ * epic 아래의 모든 후손 이슈(하위 이슈와 그 하위 이슈들)를 읽습니다.
+ * bd children은 직접 하위 이슈만 돌려주므로, 모든 이슈를 한 번에 읽고 parent를 따라 모읍니다.
+ */
+export async function epicDescendants(cwd: string, epicId: string): Promise<BdOutcome<Issue[]>> {
   const id = epicId.trim();
-  // bd children은 빈 id를 parent 조건 없음으로 해석해 workspace의 모든 이슈를 돌려줍니다.
   if (id.length === 0) {
     return inputError("epic id가 비어 있습니다.");
   }
-  return queryIssues(cwd, ["children", "--json", "--", id]);
+  const result = await queryIssues(cwd, listArgs([]));
+  if (!result.ok) {
+    return result;
+  }
+  const childrenByParent = groupByParent(result.value);
+  const descendants: Issue[] = [];
+  const reached = new Set([id]);
+  const pending = [id];
+  while (pending.length > 0) {
+    for (const child of childrenByParent.get(pending.shift()!) ?? []) {
+      // 상위 관계가 순환해도 같은 이슈를 두 번 담지 않습니다.
+      if (reached.has(child.id)) continue;
+      reached.add(child.id);
+      descendants.push(child);
+      pending.push(child.id);
+    }
+  }
+  return { ok: true, value: descendants };
 }
 
 export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome<IssueDetail>> {
@@ -128,12 +148,7 @@ export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>
   if (!result.ok) {
     return result;
   }
-  const childrenByParent = new Map<string, Issue[]>();
-  for (const issue of result.value) {
-    if (issue.parent) {
-      childrenByParent.set(issue.parent, [...(childrenByParent.get(issue.parent) ?? []), issue]);
-    }
-  }
+  const childrenByParent = groupByParent(result.value);
   return {
     ok: true,
     value: result.value
@@ -261,6 +276,16 @@ async function databaseHash(cwd: string): Promise<string | null> {
 
 // 상태를 지정하지 않으면 --all로 조회합니다. --status를 비우면 bd가 기본 필터(closed 제외)를 쓰고,
 // 알려진 상태를 모두 나열하면 pinned, hooked와 사용자 정의 상태가 빠집니다.
+function groupByParent(issues: Issue[]): Map<string, Issue[]> {
+  const childrenByParent = new Map<string, Issue[]>();
+  for (const issue of issues) {
+    if (issue.parent) {
+      childrenByParent.set(issue.parent, [...(childrenByParent.get(issue.parent) ?? []), issue]);
+    }
+  }
+  return childrenByParent;
+}
+
 function listArgs(statuses: IssueStatus[]): string[] {
   const filter = statuses.length > 0 ? ["--status", statuses.join(",")] : ["--all"];
   return ["list", "--json", "--tree=false", ...filter, "--limit", LIST_LIMIT];

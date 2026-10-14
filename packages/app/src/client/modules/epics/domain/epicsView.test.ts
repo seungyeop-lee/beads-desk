@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { EpicSummary } from "@/shared/contract/epics";
-import { notChildCandidate, settleExpandedEpics, sortEpics } from "./epicsView";
+import { epicDescendantRows, notChildCandidate, settleExpandedEpics, sortEpics } from "./epicsView";
 
 function summary(id: string, status: string, priority = 2, createdAt = 0): EpicSummary {
   return {
@@ -50,10 +50,37 @@ describe("settleExpandedEpics", () => {
   });
 });
 
-test("에픽에 하위로 넣을 후보에서 에픽과 이미 하위인 이슈를 뺀다", () => {
-  const excluded = notChildCandidate([{ id: "child" } as Issue]);
+test("에픽에 하위로 넣을 후보에서 에픽과 이미 직접 하위인 이슈를 빼고, 하위의 하위 이슈는 남긴다", () => {
+  const excluded = notChildCandidate("epic", [
+    { id: "feature", parent: "epic" } as Issue,
+    { id: "task", parent: "feature" } as Issue,
+  ]);
 
-  expect(excluded({ id: "epic", issueType: "epic" } as Issue)).toBe(true);
-  expect(excluded({ id: "child", issueType: "task" } as Issue)).toBe(true);
+  expect(excluded({ id: "other-epic", issueType: "epic" } as Issue)).toBe(true);
+  expect(excluded({ id: "feature", issueType: "feature" } as Issue)).toBe(true);
+  expect(excluded({ id: "task", issueType: "task" } as Issue)).toBe(false);
   expect(excluded({ id: "other", issueType: "task" } as Issue)).toBe(false);
+});
+
+test("에픽의 후손 이슈는 상태 순으로 정렬하되, 상태가 달라도 하위 이슈를 상위 이슈 바로 아래에 둔다", () => {
+  const row = (id: string, status: string, parent: string, fields: Partial<Issue> = {}) =>
+    ({ id, status, parent, priority: 2, createdAt: 0, closedAt: null, ...fields }) as Issue;
+
+  const rows = epicDescendantRows([
+    row("feature-b", "open", "epic", { createdAt: 2 }),
+    row("task-a-done", "closed", "feature-a", { closedAt: 5 }),
+    row("feature-a", "open", "epic", { createdAt: 1 }),
+    row("task-a-doing", "in_progress", "feature-a"),
+    row("task-b", "open", "feature-b"),
+    row("task-loose", "open", "epic", { createdAt: 3 }),
+  ]);
+
+  expect(rows.map((issue) => issue.id)).toEqual([
+    "feature-a",
+    "task-a-doing",
+    "task-a-done",
+    "feature-b",
+    "task-b",
+    "task-loose",
+  ]);
 });

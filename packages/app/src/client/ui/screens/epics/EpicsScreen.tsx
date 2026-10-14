@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useEpicChildren, useEpics } from "@/client/modules/epics/application/useEpics";
 import {
+  epicDescendantRows,
   notChildCandidate,
   settleExpandedEpics,
   sortEpics,
@@ -14,7 +15,6 @@ import {
   useIssueWrites,
   type IssueWrites,
 } from "@/client/modules/issues/application/useIssueWrites";
-import { byStatusGroup } from "@/client/modules/issues/domain/issueListView";
 import { addDependencyAction } from "@/server/web/issues/issueActions";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssuePicker } from "@/client/ui/issues/IssuePicker";
@@ -143,7 +143,8 @@ function EpicChildren({
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 }) {
-  const { data: children, error } = useEpicChildren(epic.id);
+  // 직접 하위 이슈뿐 아니라 기능 아래 작업처럼 그 아래 이슈까지 받습니다.
+  const { data: descendants, error } = useEpicChildren(epic.id);
   const [creating, setCreating] = useState(false);
   const router = useRouter();
   const messages = useMessages();
@@ -161,8 +162,8 @@ function EpicChildren({
         <div className="w-96">
           <IssuePicker
             label={messages.epics.addExistingChild}
-            disabled={writes.pending || !children}
-            exclude={notChildCandidate(children ?? [])}
+            disabled={writes.pending || !descendants}
+            exclude={notChildCandidate(epic.id, descendants ?? [])}
             onPick={async (issue) => {
               const result = await writes.run(() =>
                 addDependencyAction(issue.id, epic.id, "parent-child"),
@@ -189,10 +190,10 @@ function EpicChildren({
           <span>{messages.epics.childrenLoadFailed(error)}</span>
         </div>
       )}
-      {!children && !error && <span className="loading loading-spinner loading-xs" />}
-      {children && (
+      {!descendants && !error && <span className="loading loading-spinner loading-xs" />}
+      {descendants && (
         <IssueTable
-          issues={[...children].sort(byStatusGroup)}
+          issues={epicDescendantRows(descendants)}
           issueHref={issueHref}
           writes={writes}
           emptyMessage={messages.epics.childrenEmpty}

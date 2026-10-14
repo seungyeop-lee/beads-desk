@@ -6,7 +6,7 @@ import type { Issue } from "./issue";
 import {
   boardIssues,
   decisionRecords,
-  epicChildren,
+  epicDescendants,
   epicStatuses,
   listIssues,
   openChangeFingerprint,
@@ -267,27 +267,47 @@ describe("decisionRecords", () => {
   });
 });
 
-describe("epicChildren", () => {
-  test("epic의 하위 이슈를 조회한다", async () => {
-    await useFakeBd({ "children --json -- demo-8g0": { stdout: await fixture("children.json") } });
+describe("epicDescendants", () => {
+  const listAll = "list --json --tree=false --all --limit 0";
 
-    const result = await epicChildren(workDir, "demo-8g0");
+  test("모든 이슈를 한 번에 읽어 epic의 하위 이슈와 그 아래 이슈를 모두 돌려주고, 다른 epic의 이슈는 뺀다", async () => {
+    await useFakeBd({
+      [listAll]: {
+        stdout: JSON.stringify([
+          { id: "e-1", issue_type: "epic", status: "open" },
+          { id: "e-1.1", issue_type: "feature", status: "open", parent: "e-1" },
+          { id: "e-1.1.1", status: "closed", parent: "e-1.1" },
+          { id: "e-1.1.1.1", status: "open", parent: "e-1.1.1" },
+          { id: "e-1.2", status: "open", parent: "e-1" },
+          { id: "e-2", issue_type: "epic", status: "open" },
+          { id: "e-2.1", status: "open", parent: "e-2" },
+          { id: "loose", status: "open" },
+        ]),
+      },
+    });
 
-    expect(result.ok && result.value.map((issue) => issue.id)).toEqual(["demo-8g0.1"]);
+    const result = await epicDescendants(workDir, "e-1");
+
+    expect(result.ok && result.value.map((issue) => issue.id).sort()).toEqual([
+      "e-1.1",
+      "e-1.1.1",
+      "e-1.1.1.1",
+      "e-1.2",
+    ]);
   });
 
-  test("-로 시작하는 epic id도 옵션이 아니라 id로 넘긴다", async () => {
-    await useFakeBd({ "children --json -- -h": { stdout: "[]" } });
+  test("bd가 실패하면 오류를 돌려준다", async () => {
+    await useFakeBd({ [listAll]: { stderr: "boom", code: 1 } });
 
-    const result = await epicChildren(workDir, "-h");
+    const result = await epicDescendants(workDir, "e-1");
 
-    expect(result).toEqual({ ok: true, value: [] });
+    expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
   });
 
   test("epic id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
     await useFakeBd({});
 
-    const result = await epicChildren(workDir, "  ");
+    const result = await epicDescendants(workDir, "  ");
 
     expect(result).toEqual({
       ok: false,

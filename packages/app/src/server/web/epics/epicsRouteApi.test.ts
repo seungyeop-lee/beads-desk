@@ -1,5 +1,5 @@
 import {
-  epicChildren,
+  epicDescendants,
   epicStatuses,
   withWorkSignals,
   type EpicStatus,
@@ -9,7 +9,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { handleEpicChildrenRequest, handleEpicsRequest } from "./epicsRouteApi";
 
 vi.mock("@beads-desk/bd", () => ({
-  epicChildren: vi.fn<typeof epicChildren>(),
+  epicDescendants: vi.fn<typeof epicDescendants>(),
   epicStatuses: vi.fn<typeof epicStatuses>(),
   withWorkSignals: vi.fn<typeof withWorkSignals>(),
 }));
@@ -39,15 +39,15 @@ test("workspace의 epic 진행 현황을 돌려준다", async () => {
   expect(await response.json()).toEqual({ ok: true, data: epics });
 });
 
-test("epic의 하위 이슈를 돌려주고, 실패하면 bd의 메시지를 오류로 돌려준다", async () => {
-  vi.mocked(epicChildren)
+test("epic의 후손 이슈를 돌려주고, 실패하면 bd의 메시지를 오류로 돌려준다", async () => {
+  vi.mocked(epicDescendants)
     .mockResolvedValueOnce({ ok: true, value: [{ id: "e-1.1" } as Issue] })
     .mockResolvedValueOnce({ ok: false, error: { message: "boom\n", exitCode: 1 } });
 
   const found = await handleEpicChildrenRequest("e-1");
   const failed = await handleEpicChildrenRequest("e-2");
 
-  expect(epicChildren).toHaveBeenCalledWith("/workspace", "e-1");
+  expect(epicDescendants).toHaveBeenCalledWith("/workspace", "e-1");
   expect(withWorkSignals).toHaveBeenCalledWith("/workspace", expect.any(Promise));
   expect(await found.json()).toEqual({ ok: true, data: [{ id: "e-1.1" }] });
   expect(failed.status).toBe(500);

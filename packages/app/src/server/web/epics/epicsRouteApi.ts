@@ -1,4 +1,4 @@
-import { epicChildren, epicStatuses, withWorkSignals } from "@beads-desk/bd";
+import { epicDescendants, epicStatuses, withWorkSignals } from "@beads-desk/bd";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 
@@ -8,7 +8,7 @@ export async function handleEpicsRequest(): Promise<Response> {
 
 export async function handleEpicChildrenRequest(epicId: string): Promise<Response> {
   const cwd = currentWorkspaceRoot();
-  return respond(await withWorkSignals(cwd, epicChildren(cwd, epicId)));
+  return respond(await withWorkSignals(cwd, epicDescendants(cwd, epicId)));
 }
 
 function respond<T>(
