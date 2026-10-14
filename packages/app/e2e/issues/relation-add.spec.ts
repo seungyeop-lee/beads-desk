@@ -4,12 +4,14 @@ test("상세의 관계 맺기에서 다섯 가지 관계를 제목으로 찾아 
   page,
   workspace,
 }) => {
-  const main = await workspace.createIssue("주 이슈", "--type", "task");
-  const blocker = await workspace.createIssue("막는 작업", "--type", "task");
-  const blocked = await workspace.createIssue("막히는 작업", "--type", "task");
-  const parent = await workspace.createIssue("상위 에픽", "--type", "epic");
-  const child = await workspace.createIssue("하위 작업", "--type", "task");
-  const related = await workspace.createIssue("관련 작업", "--type", "task");
+  const { main, blocker, blocked, parent, child, related } = await workspace.createIssues({
+    main: { title: "주 이슈", type: "task" },
+    blocker: { title: "막는 작업", type: "task" },
+    blocked: { title: "막히는 작업", type: "task" },
+    parent: { title: "상위 에픽", type: "epic" },
+    child: { title: "하위 작업", type: "task" },
+    related: { title: "관련 작업", type: "task" },
+  });
 
   await page.goto(`/issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
@@ -41,11 +43,15 @@ test("키보드만으로 후보를 골라 연결하고, 자기 자신과 이미 
   page,
   workspace,
 }) => {
-  const main = await workspace.createIssue("키보드 주 작업", "--type", "task");
-  const first = await workspace.createIssue("키보드 후보 하나", "--type", "task");
-  const second = await workspace.createIssue("키보드 후보 둘", "--type", "task");
-  const third = await workspace.createIssue("키보드 후보 셋", "--type", "task");
-  await workspace.bd("dep", "add", main, first);
+  const { main, first, second, third } = await workspace.createIssues(
+    {
+      main: { title: "키보드 주 작업", type: "task" },
+      first: { title: "키보드 후보 하나", type: "task" },
+      second: { title: "키보드 후보 둘", type: "task" },
+      third: { title: "키보드 후보 셋", type: "task" },
+    },
+    [["main", "first"]],
+  );
 
   await page.goto(`/issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
@@ -71,11 +77,17 @@ test("키보드만으로 후보를 골라 연결하고, 자기 자신과 이미 
 });
 
 test("bd가 관계 맺기를 거부하면 상세에 오류가 보인다", async ({ page, workspace }) => {
-  const main = await workspace.createIssue("순환 주 작업", "--type", "task");
-  const middle = await workspace.createIssue("순환 가운데 작업", "--type", "task");
-  const end = await workspace.createIssue("순환 끝 작업", "--type", "task");
-  await workspace.bd("dep", "add", main, middle);
-  await workspace.bd("dep", "add", middle, end);
+  const { main, end } = await workspace.createIssues(
+    {
+      main: { title: "순환 주 작업", type: "task" },
+      middle: { title: "순환 가운데 작업", type: "task" },
+      end: { title: "순환 끝 작업", type: "task" },
+    },
+    [
+      ["main", "middle"],
+      ["middle", "end"],
+    ],
+  );
 
   await page.goto(`/issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });

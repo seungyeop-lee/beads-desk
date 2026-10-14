@@ -7,10 +7,14 @@ test("다른 이슈에 막힌 열린 이슈를 목록, 에픽, 보드, 상세에
   page,
   workspace,
 }) => {
-  const epic = await workspace.createIssue("묶음 에픽", "--type", "epic");
-  const blocker = await workspace.createIssue("선행 작업", "--type", "task", "--parent", epic);
-  const waiting = await workspace.createIssue("기다리는 작업", "--type", "task", "--parent", epic);
-  await workspace.bd("dep", "add", waiting, blocker);
+  const { blocker, waiting } = await workspace.createIssues(
+    {
+      epic: { title: "묶음 에픽", type: "epic" },
+      blocker: { title: "선행 작업", type: "task", parent: "epic" },
+      waiting: { title: "기다리는 작업", type: "task", parent: "epic" },
+    },
+    [["waiting", "blocker"]],
+  );
   const waitingLine = (scope: ReturnType<typeof page.locator>) =>
     scope.getByRole("link", { name: `${blocker}을(를) 기다리는 중` });
 

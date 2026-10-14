@@ -27,9 +27,13 @@ test("에픽에서 기존 이슈를 찾아 하위로 넣으면 하위 목록에 
   page,
   workspace,
 }) => {
-  const epic = await workspace.createIssue("넣을 곳 에픽", "--type", "epic");
-  await workspace.createIssue("넣을 후보 다른 에픽", "--type", "epic");
-  const task = await workspace.createIssue("넣을 후보 작업", "--type", "task");
+  // 에픽 화면은 우선순위와 만든 시각 순으로 맨 위 에픽만 펼칩니다. bd의 만든 시각은 초 단위라
+  // 같은 우선순위로는 두 에픽의 순서가 정해지지 않으므로, 넣을 곳 에픽의 우선순위를 높여 맨 위에 둡니다.
+  const { epic, task } = await workspace.createIssues({
+    epic: { title: "넣을 곳 에픽", type: "epic", priority: 1 },
+    otherEpic: { title: "넣을 후보 다른 에픽", type: "epic" },
+    task: { title: "넣을 후보 작업", type: "task" },
+  });
 
   await page.goto("/epics");
   const search = page.getByRole("combobox", { name: "기존 이슈를 하위로 넣기" });

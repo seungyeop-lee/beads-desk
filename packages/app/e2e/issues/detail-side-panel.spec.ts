@@ -91,16 +91,13 @@ function dependencyLink(dialog: Locator, dependency: string) {
 }
 
 async function seedDependency(workspace: BdWorkspace) {
-  const main = await workspace.createIssue("주 이슈", "--type", "task");
-  const dependency = await workspace.createIssue(
-    "선행 이슈",
-    "--type",
-    "task",
-    "--description",
-    "선행 이슈 설명",
+  return workspace.createIssues(
+    {
+      main: { title: "주 이슈", type: "task" },
+      dependency: { title: "선행 이슈", type: "task", description: "선행 이슈 설명" },
+    },
+    [["main", "dependency"]],
   );
-  await workspace.bd("dep", "add", main, dependency);
-  return { main, dependency };
 }
 
 function sidePanel(page: Page, id: string) {

@@ -7,9 +7,10 @@ test("상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸면 새로
   page,
   workspace,
 }) => {
-  const main = await workspace.createIssue("주 이슈", "--type", "task");
-  const dependency = await workspace.createIssue("선행 이슈", "--type", "task");
-  await workspace.bd("dep", "add", main, dependency);
+  const { main, dependency } = await workspace.createIssues(
+    { main: { title: "주 이슈", type: "task" }, dependency: { title: "선행 이슈", type: "task" } },
+    [["main", "dependency"]],
+  );
 
   await page.goto(`/issues?issue=${main}&side=${dependency}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });

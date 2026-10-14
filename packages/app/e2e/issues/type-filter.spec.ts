@@ -4,8 +4,10 @@ test("이슈 표는 처음에 결정을 빼고 보이고, 유형 메뉴에서 �
   page,
   workspace,
 }) => {
-  await workspace.createIssue("e2e 결정", "--type", "decision");
-  await workspace.createIssue("e2e 작업", "--type", "task");
+  await workspace.createIssues({
+    decision: { title: "e2e 결정", type: "decision" },
+    task: { title: "e2e 작업", type: "task" },
+  });
 
   await page.goto("/issues");
   await expect(page.getByRole("link", { name: "e2e 작업" })).toBeVisible();

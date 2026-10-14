@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -26,9 +26,32 @@ export type BdWorkspace = {
   bd(...args: string[]): Promise<string>;
   /** 이슈를 만들고 id를 돌려줍니다. args는 `bd create`의 나머지 인자입니다(예: `--type`, `decision`). */
   createIssue(title: string, ...args: string[]): Promise<string>;
+  /**
+   * 이슈 여러 개와 그 사이 의존 관계를 `bd create --graph` 한 번으로 만들고, key마다 만든 id를 돌려줍니다.
+   * bd 한 번이 수 초씩 걸릴 때가 있어, 이슈를 둘 이상 심을 때는 `createIssue`를 되풀이하지 않고 이것을 씁니다.
+   */
+  createIssues<K extends string>(
+    issues: Record<K, SeedIssue<NoInfer<K>>>,
+    dependencies?: SeedDependency<NoInfer<K>>[],
+  ): Promise<Record<K, string>>;
   /** `bd show --json`으로 읽은 이슈입니다. 화면에서 바꾼 값이 bd에 저장됐는지 확인할 때 씁니다. */
   showIssue(id: string): Promise<BdIssue>;
 };
+
+/** `createIssues`로 심는 이슈 하나입니다. 적지 않은 값은 `bd create`의 기본값을 따릅니다. */
+export type SeedIssue<K extends string = string> = {
+  title: string;
+  type?: string;
+  description?: string;
+  priority?: number;
+  status?: string;
+  assignee?: string;
+  /** 같은 `createIssues` 호출에서 심는 상위 이슈의 key입니다. */
+  parent?: K;
+};
+
+/** `[기다리는 이슈 key, 먼저 끝나야 하는 이슈 key]`입니다. `bd dep add`와 같은 방향의 blocks 관계입니다. */
+export type SeedDependency<K extends string = string> = [K, K];
 
 /** `bd show --json` 출력 가운데 시나리오가 확인하는 필드입니다. */
 export type BdIssue = {
@@ -88,6 +111,23 @@ function bdWorkspace(path: string): BdWorkspace {
     async createIssue(title, ...args) {
       const created: { id: string } = JSON.parse(await bd("create", title, ...args, "--json"));
       return created.id;
+    },
+    async createIssues(issues, dependencies = []) {
+      const plan = {
+        nodes: Object.entries<SeedIssue>(issues).map(([key, { parent, ...issue }]) => ({
+          key,
+          ...issue,
+          parent_key: parent,
+        })),
+        edges: dependencies.map(([from, to]) => ({ from_key: from, to_key: to, type: "blocks" })),
+      };
+      // bd create --graph는 계획을 파일로만 받습니다. workspace와 함께 지워지도록 그 안에 둡니다.
+      const planPath = join(path, "e2e-seed-plan.json");
+      await writeFile(planPath, JSON.stringify(plan));
+      const created: { ids: Record<keyof typeof issues, string> } = JSON.parse(
+        await bd("create", "--graph", planPath, "--json"),
+      );
+      return created.ids;
     },
     async showIssue(id) {
       const [issue]: BdIssue[] = JSON.parse(await bd("show", id, "--json"));

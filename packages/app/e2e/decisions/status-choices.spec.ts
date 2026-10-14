@@ -7,8 +7,10 @@ test("결정의 상태 select에는 결정 탭, 이슈 표, 상세 dialog 모두
   page,
   workspace,
 }) => {
-  const decision = await workspace.createIssue("e2e 결정", "--type", "decision");
-  const task = await workspace.createIssue("e2e 작업", "--type", "task");
+  const { decision, task } = await workspace.createIssues({
+    decision: { title: "e2e 결정", type: "decision" },
+    task: { title: "e2e 작업", type: "task" },
+  });
 
   await page.goto("/decisions");
   await expect(rowStatus(page, decision).locator("option")).toHaveText(["열림", "닫힘"]);
@@ -55,9 +57,13 @@ test("닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대�
   page,
   workspace,
 }) => {
-  const decision = await workspace.createIssue("e2e 결정", "--type", "decision");
-  const blocker = await workspace.createIssue("e2e 선행 작업", "--type", "task");
-  await workspace.bd("dep", "add", decision, blocker);
+  const { decision } = await workspace.createIssues(
+    {
+      decision: { title: "e2e 결정", type: "decision" },
+      blocker: { title: "e2e 선행 작업", type: "task" },
+    },
+    [["decision", "blocker"]],
+  );
 
   await page.goto("/decisions");
   const select = rowStatus(page, decision);

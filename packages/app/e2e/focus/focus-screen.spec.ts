@@ -4,16 +4,26 @@ test("첫 화면은 지금 화면이고, 개수 카드와 모두 보기는 이�
   page,
   workspace,
 }) => {
-  const epic = await workspace.createIssue("묶음 에픽", "--type", "epic");
-  const doing = await workspace.createIssue("진행하는 작업", "--type", "task", "--parent", epic);
-  await workspace.bd("update", doing, "--status", "in_progress", "--assignee", "minji");
-  await workspace.createIssue("급한 작업", "--type", "task", "--priority", "0");
-  const blocker = await workspace.createIssue("선행 작업", "--type", "task");
-  for (const title of ["작업 셋", "작업 넷", "작업 다섯", "작업 여섯"]) {
-    await workspace.createIssue(title, "--type", "task", "--priority", "3");
-  }
-  const waiting = await workspace.createIssue("기다리는 작업", "--type", "task");
-  await workspace.bd("dep", "add", waiting, blocker);
+  const { blocker } = await workspace.createIssues(
+    {
+      epic: { title: "묶음 에픽", type: "epic" },
+      doing: {
+        title: "진행하는 작업",
+        type: "task",
+        parent: "epic",
+        status: "in_progress",
+        assignee: "minji",
+      },
+      urgent: { title: "급한 작업", type: "task", priority: 0 },
+      blocker: { title: "선행 작업", type: "task" },
+      third: { title: "작업 셋", type: "task", priority: 3 },
+      fourth: { title: "작업 넷", type: "task", priority: 3 },
+      fifth: { title: "작업 다섯", type: "task", priority: 3 },
+      sixth: { title: "작업 여섯", type: "task", priority: 3 },
+      waiting: { title: "기다리는 작업", type: "task" },
+    },
+    [["waiting", "blocker"]],
+  );
 
   await page.goto("/");
   await expect(page).toHaveURL(/\/focus$/);
@@ -48,9 +58,10 @@ test("지금 화면의 줄을 누르면 그 위에 상세가 열리고, 닫으�
   page,
   workspace,
 }) => {
-  const doing = await workspace.createIssue("진행하는 작업", "--type", "task");
-  await workspace.bd("update", doing, "--status", "in_progress");
-  await workspace.createIssue("다음 작업", "--type", "task");
+  const { doing } = await workspace.createIssues({
+    doing: { title: "진행하는 작업", type: "task", status: "in_progress" },
+    next: { title: "다음 작업", type: "task" },
+  });
 
   await page.goto("/focus");
   const nextUp = page.getByRole("region", { name: "다음에 할 일" });

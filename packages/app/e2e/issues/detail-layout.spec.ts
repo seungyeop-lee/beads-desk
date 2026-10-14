@@ -72,11 +72,14 @@ test("옆 패널 때문에 주 상세가 좁아지면 핵심 속성은 본문 �
 });
 
 async function seed(workspace: BdWorkspace) {
-  const main = await workspace.createIssue("주 이슈", "--type", "task", "--description", BODY_TEXT);
-  const dependency = await workspace.createIssue("선행 이슈", "--type", "task");
-  const extra = await workspace.createIssue("추가할 선행 이슈", "--type", "task");
-  await workspace.bd("dep", "add", main, dependency);
-  return { main, dependency, extra };
+  return workspace.createIssues(
+    {
+      main: { title: "주 이슈", type: "task", description: BODY_TEXT },
+      dependency: { title: "선행 이슈", type: "task" },
+      extra: { title: "추가할 선행 이슈", type: "task" },
+    },
+    [["main", "dependency"]],
+  );
 }
 
 function detailParts(page: Page, id: string) {
