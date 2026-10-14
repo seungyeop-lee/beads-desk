@@ -69,7 +69,7 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 `next dev`가 실행 중일 때 `packages/bd`를 고치면, 서버를 다시 시작하기 전까지 API가 고치기 전의 코드로 bd를 실행합니다. bd 패키지를 고친 뒤 화면이나 API로 확인하려면 `next dev`를 다시 시작합니다.
 
-`next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) 개발 서버를 끄고 `packages/app/.next/dev`를 지운 뒤 다시 시작합니다. 원인은 확인하지 못했습니다. 다시 생기면 지우기 전에 `.next/dev`를 다른 곳에 복사해 두어야 원인을 조사할 수 있습니다.
+`next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) 개발 서버를 끄고 `packages/app/.next/dev`를 지운 뒤 다시 시작합니다. 원인은 확인하지 못했습니다. 지우기 전에 개발 서버에 연결된 브라우저 탭, `/_next/hmr` WebSocket에서 반복되는 메시지, `.next/dev` 복사본을 남깁니다. 확인 방법과 지금까지의 조사 기록은 `docs/troubleshooting.md`에 있습니다.
 
 배포 패키지 구성(`files`, 의존성, launcher)을 바꿨다면 저장소 밖에서 설치해 실행해 봅니다.
 
