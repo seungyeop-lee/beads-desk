@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
   title: string;
@@ -13,6 +14,7 @@ type Props = {
 
 /** 화면 맨 위의 제목 줄입니다. */
 export function ScreenHeader({ title, tone, count, loading, description, children }: Props) {
+  const messages = useMessages();
   return (
     <header className="flex flex-wrap items-end gap-x-6 gap-y-3 pt-10 pb-6">
       <div className="flex min-w-0 flex-col gap-2">
@@ -25,7 +27,7 @@ export function ScreenHeader({ title, tone, count, loading, description, childre
           {loading && (
             <span
               className="loading loading-spinner loading-xs text-base-content/40"
-              aria-label="불러오는 중"
+              aria-label={messages.common.loading}
             />
           )}
         </div>

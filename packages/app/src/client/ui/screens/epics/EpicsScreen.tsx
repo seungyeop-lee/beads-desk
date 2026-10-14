@@ -18,6 +18,7 @@ import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /**
  * epic마다 하위 이슈 진행률을 보여 주고, 펼친 epic은 하위 이슈를 목록처럼 바로 고칠 수 있게 보여 줍니다.
@@ -32,6 +33,7 @@ export function EpicsScreen() {
   const settled = epics ? settleExpandedEpics(epics, expanded) : expanded;
   if (settled !== expanded) setExpanded(settled);
   const open = settled ?? new Set<string>();
+  const messages = useMessages();
 
   const toggle = (epicId: string) => {
     const next = new Set(open);
@@ -42,7 +44,7 @@ export function EpicsScreen() {
   return (
     <main className="mx-auto flex max-w-[96rem] flex-col gap-3 px-8 pb-16">
       <ScreenHeader
-        title="에픽"
+        title={messages.epics.title}
         tone={screenTone("/epics")}
         count={epics?.length}
         loading={loading || writes.pending}
@@ -50,11 +52,11 @@ export function EpicsScreen() {
 
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
-          <span>에픽을 불러오지 못했습니다: {error}</span>
+          <span>{messages.epics.loadFailed(error)}</span>
         </div>
       )}
       <WriteErrorAlert writes={writes} />
-      {epics?.length === 0 && <EmptyState message="에픽이 없습니다." />}
+      {epics?.length === 0 && <EmptyState message={messages.epics.empty} />}
 
       {epics?.map((summary) => (
         <EpicSection
@@ -83,6 +85,7 @@ type SectionProps = {
 function EpicSection({ summary, expanded, onToggle, issueHref, writes }: SectionProps) {
   const { epic, totalChildren, closedChildren } = summary;
   const percent = totalChildren === 0 ? 0 : Math.round((closedChildren / totalChildren) * 100);
+  const messages = useMessages();
   return (
     <section className="surface">
       <header className="flex items-center gap-4 py-3.5 pr-5 pl-3">
@@ -90,7 +93,7 @@ function EpicSection({ summary, expanded, onToggle, issueHref, writes }: Section
           type="button"
           className="btn btn-ghost btn-sm btn-square text-base-content/50"
           aria-expanded={expanded}
-          aria-label={`${epic.id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`}
+          aria-label={messages.epics.toggleChildren(epic.id, expanded)}
           onClick={onToggle}
         >
           <ChevronRightIcon className={`transition-transform ${expanded ? "rotate-90" : ""}`} />
@@ -101,14 +104,16 @@ function EpicSection({ summary, expanded, onToggle, issueHref, writes }: Section
           href={issueHref(epic.id)}
           scroll={false}
         >
-          {epic.title || "(제목 없음)"}
+          {epic.title || messages.common.untitled}
         </Link>
-        <span className={`chip ${statusTone(epic.status)}`}>{statusLabel(epic.status)}</span>
+        <span className={`chip ${statusTone(epic.status)}`}>
+          {statusLabel(messages, epic.status)}
+        </span>
         <progress
           className="progress h-1.5 w-40 shrink-0 text-[color-mix(in_oklab,var(--color-sage),#3f6212_25%)]"
           value={closedChildren}
           max={Math.max(totalChildren, 1)}
-          aria-label={`${epic.id} 진행률`}
+          aria-label={messages.epics.progress(epic.id)}
         />
         <span className="w-20 shrink-0 text-right font-mono text-xs text-base-content/55 tabular-nums">
           {closedChildren}/{totalChildren} · {percent}%
@@ -129,11 +134,12 @@ function EpicChildren({
   writes: IssueWrites;
 }) {
   const { data: children, error } = useEpicChildren(epicId);
+  const messages = useMessages();
   return (
     <div className="border-t border-base-300 bg-base-200/40 p-4">
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
-          <span>하위 이슈를 불러오지 못했습니다: {error}</span>
+          <span>{messages.epics.childrenLoadFailed(error)}</span>
         </div>
       )}
       {!children && !error && <span className="loading loading-spinner loading-xs" />}
@@ -142,7 +148,7 @@ function EpicChildren({
           issues={[...children].sort(byStatusGroup)}
           issueHref={issueHref}
           writes={writes}
-          emptyMessage="하위 이슈가 없습니다."
+          emptyMessage={messages.epics.childrenEmpty}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 import { PencilIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { Markdown } from "@/client/ui/designSystem/Markdown";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { focusOnMount, useInlineEdit } from "../fields/useInlineEdit";
 
 type Props = {
@@ -15,13 +16,14 @@ type Props = {
  */
 export function EditableMarkdown({ label, value, onSave }: Props) {
   const { shown, draft, saving, edit, change, cancel, save } = useInlineEdit(value, onSave);
+  const messages = useMessages();
 
   if (draft === null && !shown) {
     return (
       <button
         type="button"
         className="btn btn-sm gap-1.5 rounded-full border-dashed border-base-300 bg-transparent font-medium text-base-content/55 shadow-none hover:border-base-content/30 hover:text-base-content"
-        aria-label={`${label} 추가`}
+        aria-label={messages.editable.addField(label)}
         onClick={edit}
       >
         <PlusIcon width={14} height={14} />
@@ -41,7 +43,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
             onClick={edit}
           >
             <PencilIcon width={12} height={12} />
-            편집
+            {messages.editable.edit}
           </button>
         )}
       </div>
@@ -74,7 +76,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
           />
           <div className="flex gap-2">
             <button type="submit" className="btn btn-sm btn-primary" disabled={saving}>
-              저장
+              {messages.common.save}
             </button>
             <button
               type="button"
@@ -82,7 +84,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
               disabled={saving}
               onClick={cancel}
             >
-              취소
+              {messages.common.cancel}
             </button>
           </div>
         </form>

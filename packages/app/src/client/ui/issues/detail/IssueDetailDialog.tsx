@@ -9,6 +9,7 @@ import { IssueTypeTag } from "../IssueTypeTag";
 import { IssueDetailView } from "./IssueDetailView";
 import { IssueSidePanel } from "./IssueSidePanel";
 import { WriteErrorAlert } from "../WriteErrorAlert";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
   location: IssueDetailLocation;
@@ -33,6 +34,7 @@ export function IssueDetailDialog({ location, previous, detailHref, onClose }: P
   if (data && data !== lastIssue) setLastIssue(data);
   const issue = data ?? (loading ? lastIssue : null);
   const opening = loading && lastIssue === null;
+  const messages = useMessages();
 
   useEffect(() => {
     if (!opening) return;
@@ -50,11 +52,11 @@ export function IssueDetailDialog({ location, previous, detailHref, onClose }: P
 
   return (
     <>
-      {opening && <output className="loading-bar" aria-label="이슈를 불러오는 중" />}
+      {opening && <output className="loading-bar" aria-label={messages.issueDetail.loading} />}
       <dialog
         ref={dialogRef}
         className="modal"
-        aria-label={`${issueId} 이슈`}
+        aria-label={messages.issueDetail.dialog(issueId)}
         onClose={onClose}
         onCancel={(event) => {
           // 입력 중에 누른 Escape는 편집 취소로만 쓰고 dialog를 닫지 않습니다.
@@ -90,7 +92,7 @@ export function IssueDetailDialog({ location, previous, detailHref, onClose }: P
           )}
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button type="submit">닫기</button>
+          <button type="submit">{messages.common.close}</button>
         </form>
       </dialog>
     </>
@@ -120,6 +122,7 @@ function IssueDetailPanel({
   onDeleted,
 }: PanelProps) {
   const writes = useIssueWrites();
+  const messages = useMessages();
   return (
     <div className="flex min-w-0 grow flex-col">
       <header className="flex shrink-0 items-center gap-3 border-b border-base-300 px-6 py-3">
@@ -128,7 +131,7 @@ function IssueDetailPanel({
             className="btn btn-ghost btn-sm -ml-3 gap-1 px-2 font-mono text-xs font-normal text-base-content/60"
             href={detailHref(previous)}
             scroll={false}
-            aria-label={`이전 이슈 ${previous.issue}로 돌아가기`}
+            aria-label={messages.issueDetail.backTo(previous.issue)}
           >
             <ChevronLeftIcon width={14} height={14} />
             {previous.issue}
@@ -145,14 +148,14 @@ function IssueDetailPanel({
         {(loading || writes.pending) && (
           <span
             className="loading loading-spinner loading-xs text-base-content/40"
-            aria-label="처리 중"
+            aria-label={messages.issueDetail.working}
           />
         )}
         <form method="dialog" className="ml-auto">
           <button
             type="submit"
             className="btn btn-ghost btn-sm btn-square text-base-content/60"
-            aria-label="닫기"
+            aria-label={messages.common.close}
           >
             <CloseIcon />
           </button>
@@ -165,7 +168,9 @@ function IssueDetailPanel({
             <WriteErrorAlert writes={writes} />
             {error && (
               <div role="alert" className="alert alert-error alert-soft">
-                <span className="whitespace-pre-wrap">이슈를 불러오지 못했습니다: {error}</span>
+                <span className="whitespace-pre-wrap">
+                  {messages.issueDetail.loadFailed(error)}
+                </span>
               </div>
             )}
           </div>

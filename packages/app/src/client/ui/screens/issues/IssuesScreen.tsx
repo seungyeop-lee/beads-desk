@@ -9,15 +9,16 @@ import {
 } from "@/client/modules/issues/domain/issueListView";
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import { TYPE_LABELS } from "@/client/ui/issues/issueLabels";
+import { ISSUE_TYPES } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { IssueFilterBar } from "./IssueFilterBar";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /** 결정은 결정 탭에서 보므로, 처음에는 유형 메뉴에서 결정만 뺀 유형을 고른 상태로 엽니다. */
-const INITIAL_TYPES = Object.keys(TYPE_LABELS).filter((type) => type !== "decision");
+const INITIAL_TYPES = ISSUE_TYPES.filter((type) => type !== "decision");
 
 /** 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다. */
 export function IssuesScreen() {
@@ -35,11 +36,12 @@ export function IssuesScreen() {
   );
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
+  const messages = useMessages();
 
   return (
     <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
       <ScreenHeader
-        title="이슈"
+        title={messages.issues.title}
         tone={screenTone("/issues")}
         count={issues ? shown.length : undefined}
         loading={loading}
@@ -54,7 +56,7 @@ export function IssuesScreen() {
 
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
-          <span>이슈 목록을 불러오지 못했습니다: {error}</span>
+          <span>{messages.issues.loadFailed(error)}</span>
         </div>
       )}
 

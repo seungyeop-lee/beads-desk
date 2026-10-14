@@ -15,6 +15,7 @@ import {
 import { ISSUE_STATUSES, type IssueStatus } from "@beads-desk/bd/issue";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
+import { serverMessages } from "@/server/web/locale/serverMessages";
 import type { ApiFailure, ApiResponse } from "@/shared/contract/apiResponse";
 import type {
   IssueChanges,
@@ -115,8 +116,8 @@ async function finish<T>(cwd: string, result: BdOutcome<T>): Promise<ApiResponse
   return { ok: true, data: result.value };
 }
 
-function invalidRequest(): ApiFailure {
-  return { ok: false, error: "요청 형식이 올바르지 않습니다." };
+async function invalidRequest(): Promise<ApiFailure> {
+  return { ok: false, error: (await serverMessages()).invalidRequest };
 }
 
 function isIssueChanges(value: unknown): value is IssueChanges {

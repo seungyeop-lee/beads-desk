@@ -1,6 +1,7 @@
 "use server";
 
 import { selectWorkspace } from "@/server/infra/runtime/serverRuntime";
+import { serverMessages } from "@/server/web/locale/serverMessages";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 
 /**
@@ -8,8 +9,9 @@ import type { ApiResponse } from "@/shared/contract/apiResponse";
  * 바뀌면 열려 있는 SSE 연결이 새 workspace를 감시하면서 invalidate를 보냅니다.
  */
 export async function selectWorkspaceAction(root: string): Promise<ApiResponse<null>> {
-  if (typeof root !== "string") return { ok: false, error: "요청 형식이 올바르지 않습니다." };
+  const messages = await serverMessages();
+  if (typeof root !== "string") return { ok: false, error: messages.invalidRequest };
   return selectWorkspace(root)
     ? { ok: true, data: null }
-    : { ok: false, error: `등록되지 않은 workspace입니다: ${root}` };
+    : { ok: false, error: messages.unknownWorkspace(root) };
 }

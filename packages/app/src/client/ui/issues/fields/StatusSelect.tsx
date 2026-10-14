@@ -1,5 +1,6 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
 import { statusChoices } from "@/client/modules/issues/domain/issueStatusChoices";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { statusLabel, statusTone } from "../issueLabels";
 import { useSavedValue } from "./useSavedValue";
 
@@ -16,6 +17,7 @@ type Props = {
 /** 상태 색의 chip 모양으로 그린 select입니다. */
 export function StatusSelect({ value, issueType, onChange, ...attributes }: Props) {
   const [shown, show, reset] = useSavedValue(value);
+  const messages = useMessages();
   return (
     <select
       {...attributes}
@@ -29,7 +31,7 @@ export function StatusSelect({ value, issueType, onChange, ...attributes }: Prop
     >
       {statusChoices(issueType, shown).map((status) => (
         <option key={status} value={status}>
-          {statusLabel(status)}
+          {statusLabel(messages, status)}
         </option>
       ))}
     </select>

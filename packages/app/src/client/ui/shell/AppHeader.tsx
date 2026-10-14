@@ -6,6 +6,8 @@ import { useState } from "react";
 import { PlusIcon } from "@/client/ui/designSystem/icons";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
+import { LocalePicker } from "@/client/ui/locale/LocalePicker";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { SCREEN_TABS } from "./screenTabs";
 import { WorkspacePicker } from "./WorkspacePicker";
 
@@ -14,6 +16,7 @@ export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const issueHref = useIssueHref();
+  const messages = useMessages();
   const [creating, setCreating] = useState(false);
 
   return (
@@ -23,7 +26,7 @@ export function AppHeader() {
           <BeadsMark />
           <span className="text-[15px] font-bold tracking-tight">beads-desk</span>
         </Link>
-        <nav className="flex items-center gap-1" aria-label="화면">
+        <nav className="flex items-center gap-1" aria-label={messages.shell.screens}>
           {SCREEN_TABS.map((tab) => (
             <Link
               key={tab.href}
@@ -31,18 +34,20 @@ export function AppHeader() {
               aria-current={pathname === tab.href ? "page" : undefined}
               className={`nav-tab ${tab.tone}`}
             >
-              {tab.label}
+              {messages[tab.screen].title}
             </Link>
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3">
           <WorkspacePicker />
+          <LocalePicker />
           <button
             type="button"
             className="btn btn-primary btn-sm gap-1.5 rounded-full pr-4 pl-3"
             onClick={() => setCreating(true)}
           >
-            <PlusIcon width={15} height={15} />새 이슈
+            <PlusIcon width={15} height={15} />
+            {messages.shell.newIssue}
           </button>
         </div>
       </div>

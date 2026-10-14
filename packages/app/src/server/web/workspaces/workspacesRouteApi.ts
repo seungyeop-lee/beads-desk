@@ -11,7 +11,10 @@ export function handleWorkspacesRequest(): Response {
   return respond({ ok: true, data: workspaceList() }, 200);
 }
 
-/** `bd-desk` 명령이 실행 중인 서버에 자신이 실행된 디렉터리를 등록할 때 호출합니다. */
+/**
+ * `bd-desk` 명령이 실행 중인 서버에 자신이 실행된 디렉터리를 등록할 때 호출합니다.
+ * 오류 문구는 명령이 터미널에 그대로 출력하므로, 화면 언어를 따르지 않고 명령의 다른 출력과 같은 한국어로 둡니다.
+ */
 export async function handleRegisterWorkspaceRequest(request: Request): Promise<Response> {
   // Route Handler는 Server Action과 달리 Next가 요청 출처를 검사하지 않습니다.
   // 다른 사이트의 페이지가 현재 workspace를 바꾸지 못하게, 브라우저가 사전 확인 없이 보내는 JSON 외 본문과

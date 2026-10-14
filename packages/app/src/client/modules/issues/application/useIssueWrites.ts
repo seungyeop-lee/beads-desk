@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { documentMessages } from "@/client/infra/locale/documentLocale";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 
 export type IssueWrites = {
@@ -27,10 +28,7 @@ export function useIssueWrites(): IssueWrites {
       result = await write();
     } catch {
       // 서버가 꺼졌거나, 새로 빌드한 서버에 이전 화면이 요청해 Server Action을 찾지 못한 경우입니다.
-      result = {
-        ok: false,
-        error: "요청을 처리하지 못했습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.",
-      } as R;
+      result = { ok: false, error: documentMessages().common.requestFailed } as R;
     } finally {
       setPending((count) => count - 1);
     }

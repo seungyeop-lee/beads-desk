@@ -1,13 +1,14 @@
 import { listIssues, readyIssues } from "@beads-desk/bd";
 import type { Issue } from "@beads-desk/bd/issue";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
+import { serverMessages } from "@/server/web/locale/serverMessages";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 import { parseIssueListFilter } from "@/shared/contract/issueList";
 
 export async function handleIssueListRequest(request: Request): Promise<Response> {
   const filter = parseIssueListFilter(new URL(request.url).searchParams);
   if (!filter) {
-    return respond({ ok: false, error: "조회할 이슈 상태가 올바르지 않습니다." }, 400);
+    return respond({ ok: false, error: (await serverMessages()).invalidIssueStatus }, 400);
   }
 
   const cwd = currentWorkspaceRoot();

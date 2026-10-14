@@ -10,12 +10,14 @@ import { PrioritySelect } from "./fields/PrioritySelect";
 import { StatusSelect } from "./fields/StatusSelect";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { PencilIcon } from "@/client/ui/designSystem/icons";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssueTypeTag } from "./IssueTypeTag";
 
 type Props = {
   issues: Issue[];
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
+  /** 없으면 필터에 맞는 이슈가 없다고 안내합니다. */
   emptyMessage?: string;
 };
 
@@ -24,10 +26,11 @@ export const IssueTable = memo(function IssueTable({
   issues,
   issueHref,
   writes,
-  emptyMessage = "조건에 맞는 이슈가 없습니다.",
+  emptyMessage,
 }: Props) {
+  const messages = useMessages();
   if (issues.length === 0) {
-    return <EmptyState message={emptyMessage} />;
+    return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
   return (
     <div className="surface overflow-x-auto">
@@ -35,12 +38,12 @@ export const IssueTable = memo(function IssueTable({
         <thead>
           <tr>
             <th className="w-32">ID</th>
-            <th className="w-28">유형</th>
-            <th>제목</th>
-            <th className="w-32">상태</th>
-            <th className="w-32">우선순위</th>
-            <th className="w-40">담당자</th>
-            <th className="w-20 text-right">의존</th>
+            <th className="w-28">{messages.issue.type}</th>
+            <th>{messages.issue.title}</th>
+            <th className="w-32">{messages.issue.status}</th>
+            <th className="w-32">{messages.issue.priority}</th>
+            <th className="w-40">{messages.issue.assignee}</th>
+            <th className="w-20 text-right">{messages.issue.dependencyCount}</th>
           </tr>
         </thead>
         <tbody>
@@ -55,14 +58,15 @@ export const IssueTable = memo(function IssueTable({
 
 function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes: IssueWrites }) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
+  const messages = useMessages();
   return (
     <tr className="group hover:bg-base-200/60">
       <td>
         <button
           type="button"
           className="cursor-copy rounded font-mono text-xs text-base-content/55 hover:text-base-content"
-          title="ID 복사"
-          aria-label={`${issue.id} ID 복사`}
+          title={messages.issueTable.copyId}
+          aria-label={messages.issueTable.copyIdOf(issue.id)}
           onClick={() => void copyIssueId(issue.id)}
         >
           {issue.id}
@@ -73,9 +77,9 @@ function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes:
       </td>
       <td>
         <EditableText
-          label={`${issue.id} 제목`}
+          label={messages.issueTable.titleOf(issue.id)}
           value={issue.title}
-          placeholder="제목 없음"
+          placeholder={messages.common.titlePlaceholder}
           required
           compact
           onSave={(title) => update({ title })}
@@ -86,12 +90,12 @@ function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes:
                 href={href}
                 scroll={false}
               >
-                {title || "(제목 없음)"}
+                {title || messages.common.untitled}
               </Link>
               <button
                 type="button"
                 className="btn btn-ghost btn-xs btn-square text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                aria-label={`${issue.id} 제목 고치기`}
+                aria-label={messages.issueTable.editTitleOf(issue.id)}
                 onClick={edit}
               >
                 <PencilIcon width={13} height={13} />
@@ -102,7 +106,7 @@ function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes:
       </td>
       <td>
         <StatusSelect
-          aria-label={`${issue.id} 상태`}
+          aria-label={messages.issueTable.statusOf(issue.id)}
           value={issue.status}
           issueType={issue.issueType}
           onChange={(status) => changeStatus(status, confirmForceClose)}
@@ -110,23 +114,23 @@ function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes:
       </td>
       <td>
         <PrioritySelect
-          aria-label={`${issue.id} 우선순위`}
+          aria-label={messages.issueTable.priorityOf(issue.id)}
           value={issue.priority}
           onChange={(priority) => update({ priority })}
         />
       </td>
       <td className="text-sm">
         <EditableText
-          label={`${issue.id} 담당자`}
+          label={messages.issueTable.assigneeOf(issue.id)}
           value={issue.assignee ?? ""}
-          placeholder="없음"
+          placeholder={messages.common.none}
           compact
           onSave={(assignee) => update({ assignee })}
         />
       </td>
       <td
         className={`text-right font-mono text-xs tabular-nums ${issue.dependencyCount + issue.dependentCount === 0 ? "text-base-content/30" : ""}`}
-        title={`이 이슈가 의존하는 이슈 ${issue.dependencyCount}개 · 이 이슈에 의존하는 이슈 ${issue.dependentCount}개`}
+        title={messages.issueTable.dependencyCounts(issue.dependencyCount, issue.dependentCount)}
       >
         {issue.dependencyCount} / {issue.dependentCount}
       </td>

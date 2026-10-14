@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { CheckIcon, CloseIcon } from "@/client/ui/designSystem/icons";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { focusOnMount, useInlineEdit } from "./useInlineEdit";
 
 type Props = {
@@ -33,13 +34,14 @@ export function EditableText({
     onSave,
     required,
   );
+  const messages = useMessages();
 
   if (draft === null) {
     if (renderValue) return renderValue(shown, edit);
     return (
       <button
         type="button"
-        title={`${label} 고치기`}
+        title={messages.editable.editField(label)}
         className={`-mx-1.5 cursor-text rounded-md px-1.5 text-left hover:bg-base-content/6 ${className}`}
         onClick={edit}
       >
@@ -74,7 +76,7 @@ export function EditableText({
           <button
             type="submit"
             className="btn btn-xs btn-square btn-primary"
-            aria-label="저장"
+            aria-label={messages.common.save}
             disabled={saving}
           >
             <CheckIcon width={14} height={14} />
@@ -82,7 +84,7 @@ export function EditableText({
           <button
             type="button"
             className="btn btn-xs btn-square btn-ghost"
-            aria-label="취소"
+            aria-label={messages.common.cancel}
             disabled={saving}
             onClick={cancel}
           >
@@ -92,10 +94,10 @@ export function EditableText({
       ) : (
         <>
           <button type="submit" className="btn btn-sm btn-primary" disabled={saving}>
-            저장
+            {messages.common.save}
           </button>
           <button type="button" className="btn btn-sm btn-ghost" disabled={saving} onClick={cancel}>
-            취소
+            {messages.common.cancel}
           </button>
         </>
       )}

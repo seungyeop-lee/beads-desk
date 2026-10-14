@@ -1,9 +1,14 @@
 import { mkdir, mkdtemp, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { selectWorkspaceAction } from "./workspaceActions";
 import { handleRegisterWorkspaceRequest, handleWorkspacesRequest } from "./workspacesRouteApi";
+
+// Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.
+vi.mock("@/server/web/locale/requestLocale", () => ({
+  requestLocale: () => Promise.resolve("ko"),
+}));
 
 let launchRoot: string;
 let otherRoot: string;

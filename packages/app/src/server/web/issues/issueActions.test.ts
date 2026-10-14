@@ -28,6 +28,10 @@ vi.mock("@beads-desk/bd", () => ({
 vi.mock("@/server/infra/workspaceChanges/workspaceChangeFeed", () => ({
   checkWorkspaceChangesNow: vi.fn<typeof checkWorkspaceChangesNow>(),
 }));
+// Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.
+vi.mock("@/server/web/locale/requestLocale", () => ({
+  requestLocale: () => Promise.resolve("ko"),
+}));
 
 const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 const written = { ok: true, value: null } as const;

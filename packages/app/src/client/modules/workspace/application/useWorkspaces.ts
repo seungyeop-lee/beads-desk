@@ -1,3 +1,4 @@
+import { documentMessages } from "@/client/infra/locale/documentLocale";
 import { readWorkspaces } from "@/client/infra/workspaces/workspacesApiClient";
 import { selectWorkspaceAction } from "@/server/web/workspaces/workspaceActions";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
@@ -14,9 +15,6 @@ export async function selectWorkspace(root: string): Promise<ApiResponse<null>> 
   try {
     return await selectWorkspaceAction(root);
   } catch {
-    return {
-      ok: false,
-      error: "요청을 처리하지 못했습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.",
-    };
+    return { ok: false, error: documentMessages().common.requestFailed };
   }
 }

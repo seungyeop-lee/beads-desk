@@ -1,5 +1,9 @@
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { readIssueDetail, readIssueList } from "./issueApiClient";
+
+beforeEach(() => {
+  vi.stubGlobal("document", { documentElement: { lang: "ko" } });
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();

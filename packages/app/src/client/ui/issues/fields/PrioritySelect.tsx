@@ -1,3 +1,4 @@
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { PRIORITIES, priorityLabel, priorityTone } from "../issueLabels";
 import { useSavedValue } from "./useSavedValue";
 
@@ -12,6 +13,7 @@ type Props = {
 /** 우선순위 색의 chip 모양으로 그린 select입니다. */
 export function PrioritySelect({ value, onChange, ...attributes }: Props) {
   const [shown, show, reset] = useSavedValue(value);
+  const messages = useMessages();
   return (
     <select
       {...attributes}
@@ -23,10 +25,10 @@ export function PrioritySelect({ value, onChange, ...attributes }: Props) {
         if (!(await onChange(next))) reset();
       }}
     >
-      {shown === null && <option value="">없음</option>}
+      {shown === null && <option value="">{messages.common.none}</option>}
       {PRIORITIES.map((priority) => (
         <option key={priority} value={priority}>
-          P{priority} {priorityLabel(priority)}
+          P{priority} {priorityLabel(messages, priority)}
         </option>
       ))}
     </select>

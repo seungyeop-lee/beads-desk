@@ -1,12 +1,6 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
-
-export const STATUS_LABELS: Record<IssueStatus, string> = {
-  open: "열림",
-  in_progress: "진행 중",
-  blocked: "막힘",
-  deferred: "보류",
-  closed: "닫힘",
-};
+import type { Messages } from "@/client/modules/locale/domain/messages";
+import type { Locale } from "@/shared/contract/locale";
 
 /*
  * 아래 tone-*은 styles/components.css의 파스텔이고, tone-none은 색이 없다는 뜻입니다.
@@ -21,29 +15,15 @@ const STATUS_TONES: Record<IssueStatus, string> = {
 };
 
 /** bd에 새 상태가 생겨도 원래 이름 그대로, 색 없이 보입니다. */
-export function statusLabel(status: string): string {
-  return STATUS_LABELS[status as IssueStatus] ?? status;
+export function statusLabel(messages: Messages, status: string): string {
+  return labelOf(messages.issue.statuses, status);
 }
 
 export function statusTone(status: string): string {
   return STATUS_TONES[status as IssueStatus] ?? "tone-none";
 }
 
-export const READY_LABEL = "바로 작업 가능";
 export const READY_TONE = "tone-aqua";
-
-/** bd의 기본 이슈 유형입니다. 설정으로 추가한 유형은 원래 이름 그대로 보입니다. */
-export const TYPE_LABELS: Record<string, string> = {
-  bug: "버그",
-  feature: "기능",
-  task: "작업",
-  epic: "에픽",
-  chore: "잡무",
-  decision: "결정",
-  spike: "스파이크",
-  story: "스토리",
-  milestone: "마일스톤",
-};
 
 const TYPE_TONES: Record<string, string> = {
   bug: "tone-coral",
@@ -57,37 +37,35 @@ const TYPE_TONES: Record<string, string> = {
   milestone: "tone-pear",
 };
 
-export function typeLabel(issueType: string): string {
-  return TYPE_LABELS[issueType] ?? issueType;
+/** bd의 기본 이슈 유형입니다. 설정으로 추가한 유형은 원래 이름 그대로 보입니다. */
+export const ISSUE_TYPES = Object.keys(TYPE_TONES);
+
+export function typeLabel(messages: Messages, issueType: string): string {
+  return labelOf(messages.issue.types, issueType);
 }
 
 export function typeTone(issueType: string): string {
   return TYPE_TONES[issueType] ?? "tone-none";
 }
 
-const PRIORITY_LABELS = ["긴급", "높음", "보통", "낮음", "백로그"];
-
 /** bd가 받는 우선순위입니다. 0이 가장 높습니다. */
 export const PRIORITIES = [0, 1, 2, 3, 4];
 
 /** 의존 관계 유형을 보는 쪽에 맞춰 부릅니다. 목록에 없는 유형은 원래 이름 그대로 보입니다. */
-export const DEPENDENCY_LABELS: Record<"dependencies" | "dependents", Record<string, string>> = {
-  dependencies: {
-    blocks: "선행",
-    "parent-child": "상위",
-    related: "관련",
-    "discovered-from": "발견 출처",
-  },
-  dependents: {
-    blocks: "후속",
-    "parent-child": "하위",
-    related: "관련",
-    "discovered-from": "여기서 발견",
-  },
-};
+export function dependencyLabel(
+  messages: Messages,
+  side: "dependencies" | "dependents",
+  dependencyType: string,
+): string {
+  return labelOf(messages.issue.dependencyTypes[side], dependencyType);
+}
 
-export function priorityLabel(priority: number): string {
-  return PRIORITY_LABELS[priority] ?? `P${priority}`;
+export function priorityLabel(messages: Messages, priority: number): string {
+  return messages.issue.priorities[priority] ?? `P${priority}`;
+}
+
+function labelOf(labels: object, name: string): string {
+  return (labels as Partial<Record<string, string>>)[name] ?? name;
 }
 
 /** 긴급과 높음만 색으로 눈에 띄게 하고, 나머지는 색 없이 둡니다. */
@@ -119,6 +97,6 @@ export function nameTone(name: string): string {
   return NAME_TONES[hash % NAME_TONES.length];
 }
 
-export function formatTime(ms: number): string {
-  return new Date(ms).toLocaleString("ko-KR");
+export function formatTime(locale: Locale, ms: number): string {
+  return new Date(ms).toLocaleString(locale);
 }

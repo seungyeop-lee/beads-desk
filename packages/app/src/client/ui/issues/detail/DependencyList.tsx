@@ -2,7 +2,8 @@ import type { IssueLink } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useState } from "react";
 import { CloseIcon, PlusIcon } from "@/client/ui/designSystem/icons";
-import { DEPENDENCY_LABELS, statusLabel, statusTone } from "../issueLabels";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { dependencyLabel, statusLabel, statusTone } from "../issueLabels";
 
 type Props = {
   title: string;
@@ -22,6 +23,7 @@ type DependencyEdit = {
 };
 
 export function DependencyList({ title, side, links, issueHref, edit }: Props) {
+  const messages = useMessages();
   return (
     <section className="flex flex-col gap-2">
       <h3 className="caption">{title}</h3>
@@ -32,8 +34,8 @@ export function DependencyList({ title, side, links, issueHref, edit }: Props) {
               key={`${link.dependencyType}:${link.id}`}
               className="group -mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-base-content/5"
             >
-              <span className="w-12 shrink-0 text-xs text-base-content/50">
-                {DEPENDENCY_LABELS[side][link.dependencyType] ?? link.dependencyType}
+              <span className="w-20 shrink-0 text-xs text-base-content/50">
+                {dependencyLabel(messages, side, link.dependencyType)}
               </span>
               <Link
                 className="min-w-0 grow truncate text-sm hover:underline"
@@ -45,13 +47,13 @@ export function DependencyList({ title, side, links, issueHref, edit }: Props) {
                 {link.title}
               </Link>
               <span className={`chip h-5 px-2 text-[11px] ${statusTone(link.status)}`}>
-                {statusLabel(link.status)}
+                {statusLabel(messages, link.status)}
               </span>
               {edit && (
                 <button
                   type="button"
                   className="btn btn-ghost btn-xs btn-square text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  aria-label={`${link.id} 의존 관계 지우기`}
+                  aria-label={messages.dependencyList.remove(link.id)}
                   disabled={edit.disabled}
                   onClick={() => edit.onRemove(link)}
                 >
@@ -69,6 +71,7 @@ export function DependencyList({ title, side, links, issueHref, edit }: Props) {
 
 function DependencyAddForm({ title, edit }: { title: string; edit: DependencyEdit }) {
   const [draft, setDraft] = useState("");
+  const messages = useMessages();
   return (
     <form
       className="flex items-center gap-1.5"
@@ -79,15 +82,15 @@ function DependencyAddForm({ title, edit }: { title: string; edit: DependencyEdi
     >
       <input
         className="input input-sm grow font-mono"
-        aria-label={`${title}에 추가할 이슈 id`}
-        placeholder="이슈 id"
+        aria-label={messages.dependencyList.idToAdd(title)}
+        placeholder={messages.dependencyList.idPlaceholder}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
       />
       <button
         type="submit"
         className="btn btn-sm btn-square btn-ghost"
-        aria-label={`${title}에 추가`}
+        aria-label={messages.dependencyList.add(title)}
         disabled={edit.disabled}
       >
         <PlusIcon width={15} height={15} />

@@ -26,6 +26,8 @@ export default defineConfig({
   },
   use: {
     baseURL,
+    // 화면 언어는 브라우저 언어로 정해집니다. 시나리오가 한국어 이름으로 요소를 찾으므로 한국어 브라우저로 엽니다.
+    locale: "ko-KR",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

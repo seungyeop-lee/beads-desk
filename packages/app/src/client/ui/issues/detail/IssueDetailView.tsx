@@ -15,6 +15,7 @@ import { PrioritySelect } from "../fields/PrioritySelect";
 import { StatusSelect } from "../fields/StatusSelect";
 import { TrashIcon } from "@/client/ui/designSystem/icons";
 import { formatTime } from "../issueLabels";
+import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { CommentList } from "./CommentList";
 import { DependencyList } from "./DependencyList";
 import { EditableMarkdown } from "./EditableMarkdown";
@@ -27,21 +28,18 @@ type Props = {
   onDeleted: () => void;
 };
 
-/** 상세 본문에 차례로 보이는 markdown 필드와 그 이름입니다. */
-export const BODY_FIELDS = [
-  ["description", "설명"],
-  ["design", "설계"],
-  ["acceptanceCriteria", "수용 기준"],
-  ["notes", "메모"],
-] as const;
+/** 상세 본문에 차례로 보이는 markdown 필드입니다. */
+export const BODY_FIELDS = ["description", "design", "acceptanceCriteria", "notes"] as const;
 
 export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) {
   const { id } = issue;
   const { run, pending } = writes;
   const { update, changeStatus } = issueEdits(writes, id);
+  const locale = useLocale();
+  const messages = useMessages();
 
   const removeDependency = (link: IssueLink, side: "dependencies" | "dependents") => {
-    if (!window.confirm(`${link.id} 이슈와의 의존 관계를 지울까요?`)) return;
+    if (!window.confirm(messages.issueDetail.confirmRemoveDependency(link.id))) return;
     void run(() =>
       side === "dependencies"
         ? removeDependencyAction(id, link.id)
@@ -50,7 +48,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
   };
 
   const remove = async () => {
-    if (!window.confirm(`${id} 이슈를 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    if (!window.confirm(messages.issueDetail.confirmDelete(id))) return;
     if ((await run(() => deleteIssueAction(id))).ok) onDeleted();
   };
 
@@ -64,9 +62,9 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
         <div className="contents @4xl:flex @4xl:min-w-0 @4xl:flex-col @4xl:gap-7 @4xl:px-8 @4xl:pt-6 @4xl:pb-10">
           <div className="order-1">
             <EditableText
-              label="제목"
+              label={messages.issue.title}
               value={issue.title}
-              placeholder="제목 없음"
+              placeholder={messages.common.titlePlaceholder}
               required
               className="text-2xl leading-snug font-bold tracking-tight"
               onSave={(title) => update({ title })}
@@ -74,10 +72,10 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
           </div>
           <div className="order-3 flex flex-col gap-7">
             <div className="flex flex-wrap gap-x-2 gap-y-7">
-              {BODY_FIELDS.map(([field, label]) => (
+              {BODY_FIELDS.map((field) => (
                 <EditableMarkdown
                   key={field}
-                  label={label}
+                  label={messages.issue.bodyFields[field]}
                   value={issue[field]}
                   onSave={(value) => update({ [field]: value })}
                 />
@@ -95,7 +93,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
           <dl className="order-2 flex flex-wrap items-center gap-x-6 gap-y-3 @4xl:grid @4xl:grid-cols-[4.5rem_minmax(0,1fr)] @4xl:gap-x-3">
             <div className="flex items-center gap-3 @4xl:contents">
               <dt className="caption">
-                <label htmlFor="issue-status">상태</label>
+                <label htmlFor="issue-status">{messages.issue.status}</label>
               </dt>
               <dd>
                 <StatusSelect
@@ -109,14 +107,14 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
 
             {issue.closeReason && (
               <div className="order-last flex basis-full items-baseline gap-3 @4xl:order-none @4xl:contents">
-                <dt className="caption shrink-0">닫은 이유</dt>
+                <dt className="caption shrink-0">{messages.issueDetail.closeReason}</dt>
                 <dd className="min-w-0 break-words">{issue.closeReason}</dd>
               </div>
             )}
 
             <div className="flex items-center gap-3 @4xl:contents">
               <dt className="caption">
-                <label htmlFor="issue-priority">우선순위</label>
+                <label htmlFor="issue-priority">{messages.issue.priority}</label>
               </dt>
               <dd>
                 <PrioritySelect
@@ -128,12 +126,12 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
             </div>
 
             <div className="flex min-w-0 items-center gap-3 @4xl:contents">
-              <dt className="caption">담당자</dt>
+              <dt className="caption">{messages.issue.assignee}</dt>
               <dd className="min-w-0">
                 <EditableText
-                  label="담당자"
+                  label={messages.issue.assignee}
                   value={issue.assignee ?? ""}
-                  placeholder="없음"
+                  placeholder={messages.common.none}
                   onSave={(assignee) => update({ assignee })}
                 />
               </dd>
@@ -142,7 +140,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
 
           <div className="order-4 flex flex-col gap-6 border-t border-base-300 pt-7 @4xl:border-0 @4xl:pt-0">
             <section className="flex flex-col gap-2">
-              <h3 className="caption">라벨</h3>
+              <h3 className="caption">{messages.issue.labels}</h3>
               <LabelEditor
                 labels={issue.labels}
                 disabled={pending}
@@ -152,7 +150,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
             </section>
 
             <DependencyList
-              title="이 이슈가 의존하는 이슈"
+              title={messages.issueDetail.dependencies}
               side="dependencies"
               links={issue.dependencies}
               issueHref={issueHref}
@@ -163,7 +161,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               }}
             />
             <DependencyList
-              title="이 이슈에 의존하는 이슈"
+              title={messages.issueDetail.dependents}
               side="dependents"
               links={issue.dependents}
               issueHref={issueHref}
@@ -175,14 +173,14 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
             />
 
             <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-base-300 pt-5 text-xs text-base-content/60 tabular-nums">
-              <dt className="caption">만든 시각</dt>
-              <dd>{formatTime(issue.createdAt)}</dd>
-              <dt className="caption">고친 시각</dt>
-              <dd>{formatTime(issue.updatedAt)}</dd>
+              <dt className="caption">{messages.issueDetail.createdAt}</dt>
+              <dd>{formatTime(locale, issue.createdAt)}</dd>
+              <dt className="caption">{messages.issueDetail.updatedAt}</dt>
+              <dd>{formatTime(locale, issue.updatedAt)}</dd>
               {issue.closedAt !== null && (
                 <>
-                  <dt className="caption">닫은 시각</dt>
-                  <dd>{formatTime(issue.closedAt)}</dd>
+                  <dt className="caption">{messages.issueDetail.closedAt}</dt>
+                  <dd>{formatTime(locale, issue.closedAt)}</dd>
                 </>
               )}
             </dl>
@@ -194,7 +192,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               onClick={() => void remove()}
             >
               <TrashIcon width={15} height={15} />
-              이슈 삭제
+              {messages.issueDetail.delete}
             </button>
           </div>
         </aside>

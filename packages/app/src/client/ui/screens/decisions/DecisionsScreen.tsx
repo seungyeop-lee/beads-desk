@@ -15,8 +15,7 @@ import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
-
-const DATE_FORMAT = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" });
+import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /**
  * decision 유형의 이슈를 유효한 것과 닫힌 것으로 나눠 보이고, bd supersede로 대체한 관계를 함께 보여 줍니다.
@@ -27,11 +26,12 @@ export function DecisionsScreen() {
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const groups = data ? decisionGroups(data) : null;
+  const messages = useMessages();
 
   return (
     <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
       <ScreenHeader
-        title="결정"
+        title={messages.decisions.title}
         tone={screenTone("/decisions")}
         count={data?.length}
         loading={loading || writes.pending}
@@ -39,7 +39,7 @@ export function DecisionsScreen() {
 
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
-          <span>결정을 불러오지 못했습니다: {error}</span>
+          <span>{messages.decisions.loadFailed(error)}</span>
         </div>
       )}
       <WriteErrorAlert writes={writes} />
@@ -47,16 +47,16 @@ export function DecisionsScreen() {
       {groups && (
         <div className="flex flex-col gap-10">
           <DecisionTable
-            title="유효한 결정"
+            title={messages.decisions.current}
             rows={groups.current}
-            emptyMessage="유효한 결정이 없습니다."
+            emptyMessage={messages.decisions.currentEmpty}
             issueHref={issueHref}
             writes={writes}
           />
           <DecisionTable
-            title="닫힌 결정"
+            title={messages.decisions.retired}
             rows={groups.retired}
-            emptyMessage="닫힌 결정이 없습니다."
+            emptyMessage={messages.decisions.retiredEmpty}
             issueHref={issueHref}
             writes={writes}
           />
@@ -77,6 +77,7 @@ type TableProps = {
 };
 
 function DecisionTable({ title, rows, emptyMessage, issueHref, writes }: TableProps) {
+  const messages = useMessages();
   return (
     <section className="flex flex-col gap-3">
       <h2 className="flex items-baseline gap-2 text-lg font-bold tracking-tight">
@@ -91,10 +92,10 @@ function DecisionTable({ title, rows, emptyMessage, issueHref, writes }: TablePr
             <thead>
               <tr>
                 <th className="w-32">ID</th>
-                <th>제목</th>
-                <th className="w-32">상태</th>
-                <th className="w-72">대체 관계</th>
-                <th className="w-36">만든 날</th>
+                <th>{messages.issue.title}</th>
+                <th className="w-32">{messages.issue.status}</th>
+                <th className="w-72">{messages.decisions.supersession}</th>
+                <th className="w-36">{messages.decisions.createdOn}</th>
               </tr>
             </thead>
             <tbody>
@@ -125,6 +126,8 @@ function DecisionRowView({
 }) {
   const { decision, supersededBy, supersedes } = row;
   const { changeStatus } = issueEdits(writes, decision.id);
+  const locale = useLocale();
+  const messages = useMessages();
   return (
     <tr className="hover:bg-base-200/60">
       <td className="font-mono text-xs text-base-content/55">{decision.id}</td>
@@ -134,12 +137,12 @@ function DecisionRowView({
           href={issueHref(decision.id)}
           scroll={false}
         >
-          {decision.title || "(제목 없음)"}
+          {decision.title || messages.common.untitled}
         </Link>
       </td>
       <td>
         <StatusSelect
-          aria-label={`${decision.id} 상태`}
+          aria-label={messages.issueTable.statusOf(decision.id)}
           value={decision.status}
           issueType={decision.issueType}
           onChange={(status) => changeStatus(status, confirmForceClose)}
@@ -149,20 +152,20 @@ function DecisionRowView({
         <div className="flex flex-col gap-1">
           {supersededBy && (
             <span className="flex items-center gap-2">
-              <span className="text-base-content/50">새 결정</span>
+              <span className="text-base-content/50">{messages.decisions.supersededBy}</span>
               <IssueLinks ids={[supersededBy]} issueHref={issueHref} />
             </span>
           )}
           {supersedes.length > 0 && (
             <span className="flex items-center gap-2">
-              <span className="text-base-content/50">이전 결정</span>
+              <span className="text-base-content/50">{messages.decisions.supersedes}</span>
               <IssueLinks ids={supersedes} issueHref={issueHref} />
             </span>
           )}
         </div>
       </td>
       <td className="text-sm text-base-content/70 tabular-nums">
-        {DATE_FORMAT.format(decision.createdAt)}
+        {new Date(decision.createdAt).toLocaleDateString(locale, { dateStyle: "medium" })}
       </td>
     </tr>
   );

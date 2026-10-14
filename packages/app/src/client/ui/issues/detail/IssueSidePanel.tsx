@@ -7,6 +7,7 @@ import { statusLabel, statusTone } from "../issueLabels";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { DependencyList } from "./DependencyList";
 import { BODY_FIELDS } from "./IssueDetailView";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
   issueId: string;
@@ -21,10 +22,11 @@ type Props = {
 /** 주 상세와 나란히 다른 이슈를 읽기 전용으로 보여 주는 패널입니다. */
 export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props) {
   const { data, error, loading } = useIssueDetail(issueId);
+  const messages = useMessages();
   return (
     <section
       className="flex w-[34rem] max-w-[45%] shrink-0 flex-col border-l border-base-300 bg-base-200/30"
-      aria-label={`${issueId} 이슈 옆 패널`}
+      aria-label={messages.issueDetail.sidePanel(issueId)}
     >
       <header className="flex shrink-0 items-center gap-3 border-b border-base-300 px-5 py-3">
         <span className="rounded-md bg-base-200 px-2 py-0.5 font-mono text-xs text-base-content/70">
@@ -38,17 +40,17 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
         {loading && (
           <span
             className="loading loading-spinner loading-xs text-base-content/40"
-            aria-label="불러오는 중"
+            aria-label={messages.common.loading}
           />
         )}
         <Link className="btn btn-ghost btn-sm ml-auto font-medium" href={openHref} scroll={false}>
-          이 이슈로 이동
+          {messages.issueDetail.openInMain}
         </Link>
         <Link
           className="btn btn-ghost btn-sm btn-square text-base-content/60"
           href={closeHref}
           scroll={false}
-          aria-label="옆 패널 닫기"
+          aria-label={messages.issueDetail.closeSidePanel}
         >
           <CloseIcon />
         </Link>
@@ -57,7 +59,7 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
       <div className="flex min-h-0 grow flex-col overflow-y-auto">
         {error && !data && (
           <div role="alert" className="alert alert-error alert-soft m-5">
-            <span className="whitespace-pre-wrap">이슈를 불러오지 못했습니다: {error}</span>
+            <span className="whitespace-pre-wrap">{messages.issueDetail.loadFailed(error)}</span>
           </div>
         )}
         {data && <IssueSummary issue={data} sideHref={sideHref} />}
@@ -73,25 +75,26 @@ function IssueSummary({
   issue: IssueDetail;
   sideHref: (issueId: string) => string;
 }) {
+  const messages = useMessages();
   return (
     <div className="flex flex-col gap-6 px-6 pt-5 pb-8">
       <div className="flex flex-col gap-3">
         <h2 className="text-xl leading-snug font-bold tracking-tight">
-          {issue.title || "(제목 없음)"}
+          {issue.title || messages.common.untitled}
         </h2>
         <span className={`chip self-start ${statusTone(issue.status)}`}>
-          {statusLabel(issue.status)}
+          {statusLabel(messages, issue.status)}
         </span>
       </div>
-      {BODY_FIELDS.filter(([field]) => issue[field]).map(([field, label]) => (
+      {BODY_FIELDS.filter((field) => issue[field]).map((field) => (
         <section key={field} className="flex flex-col gap-2">
-          <h3 className="caption">{label}</h3>
+          <h3 className="caption">{messages.issue.bodyFields[field]}</h3>
           <Markdown text={issue[field]} />
         </section>
       ))}
       {issue.dependencies.length > 0 && (
         <DependencyList
-          title="이 이슈가 의존하는 이슈"
+          title={messages.issueDetail.dependencies}
           side="dependencies"
           links={issue.dependencies}
           issueHref={sideHref}
@@ -99,7 +102,7 @@ function IssueSummary({
       )}
       {issue.dependents.length > 0 && (
         <DependencyList
-          title="이 이슈에 의존하는 이슈"
+          title={messages.issueDetail.dependents}
           side="dependents"
           links={issue.dependents}
           issueHref={sideHref}

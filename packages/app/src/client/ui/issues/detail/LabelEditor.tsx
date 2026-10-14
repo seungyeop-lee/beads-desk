@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CloseIcon, PlusIcon } from "@/client/ui/designSystem/icons";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { nameTone } from "../issueLabels";
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export function LabelEditor({ labels, disabled, onAdd, onRemove }: Props) {
   const [draft, setDraft] = useState("");
+  const messages = useMessages();
 
   return (
     <div className="flex flex-col gap-2">
@@ -23,7 +25,7 @@ export function LabelEditor({ labels, disabled, onAdd, onRemove }: Props) {
               <button
                 type="button"
                 className="grid size-4 cursor-pointer place-items-center rounded-full opacity-50 hover:bg-base-content/10 hover:opacity-100"
-                aria-label={`${label} 라벨 지우기`}
+                aria-label={messages.labelEditor.remove(label)}
                 disabled={disabled}
                 onClick={() => onRemove(label)}
               >
@@ -42,15 +44,15 @@ export function LabelEditor({ labels, disabled, onAdd, onRemove }: Props) {
       >
         <input
           className="input input-sm grow"
-          aria-label="추가할 라벨"
-          placeholder="라벨"
+          aria-label={messages.labelEditor.labelToAdd}
+          placeholder={messages.labelEditor.placeholder}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
         />
         <button
           type="submit"
           className="btn btn-sm btn-square btn-ghost"
-          aria-label="라벨 추가"
+          aria-label={messages.labelEditor.add}
           disabled={disabled}
         >
           <PlusIcon width={15} height={15} />

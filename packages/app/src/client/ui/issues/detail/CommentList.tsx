@@ -1,5 +1,6 @@
 import type { IssueComment } from "@beads-desk/bd/issue";
 import { useState } from "react";
+import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { formatTime, nameTone } from "../issueLabels";
 
 type Props = {
@@ -12,6 +13,8 @@ type Props = {
 /** 댓글은 bd가 보여 주는 대로 일반 글자로 보여 줍니다. Ctrl/Cmd+Enter로 남깁니다. */
 export function CommentList({ comments, disabled, onAdd }: Props) {
   const [draft, setDraft] = useState("");
+  const locale = useLocale();
+  const messages = useMessages();
   // Ctrl/Cmd+Enter는 비활성화된 버튼을 거치지 않으므로 여기서도 처리 중인지 확인합니다.
   const submit = async () => {
     if (disabled || !draft.trim()) return;
@@ -21,7 +24,8 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
   return (
     <section className="flex flex-col gap-3">
       <h3 className="caption">
-        댓글 {comments.length > 0 && <span className="font-mono">{comments.length}</span>}
+        {messages.comments.title}{" "}
+        {comments.length > 0 && <span className="font-mono">{comments.length}</span>}
       </h3>
       {comments.map((comment) => (
         <article key={comment.id} className="flex gap-3 text-sm">
@@ -38,7 +42,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
                 className="text-base-content/50"
                 dateTime={new Date(comment.createdAt).toISOString()}
               >
-                {formatTime(comment.createdAt)}
+                {formatTime(locale, comment.createdAt)}
               </time>
             </header>
             <p className="break-words whitespace-pre-wrap">{comment.text}</p>
@@ -54,8 +58,8 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
       >
         <textarea
           className="textarea field-sizing-content min-h-20 w-full text-sm"
-          aria-label="새 댓글"
-          placeholder="댓글을 남기세요"
+          aria-label={messages.comments.newComment}
+          placeholder={messages.comments.placeholder}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
@@ -72,7 +76,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
             className="btn btn-sm btn-primary"
             disabled={disabled || !draft.trim()}
           >
-            댓글 남기기
+            {messages.comments.submit}
           </button>
         </div>
       </form>

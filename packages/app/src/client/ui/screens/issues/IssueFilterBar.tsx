@@ -7,13 +7,14 @@ import {
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { ChevronDownIcon, SearchIcon } from "@/client/ui/designSystem/icons";
 import {
-  READY_LABEL,
+  ISSUE_TYPES,
   READY_TONE,
-  STATUS_LABELS,
+  statusLabel,
   statusTone,
-  TYPE_LABELS,
+  typeLabel,
   typeTone,
 } from "@/client/ui/issues/issueLabels";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
   filter: IssueListFilter;
@@ -27,6 +28,7 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
     filter.kind === "status" && filter.statuses.includes(status);
   const allStatuses = filter.kind === "status" && filter.statuses.length === 0;
   const typeMenuRef = useRef<HTMLDetailsElement>(null);
+  const messages = useMessages();
 
   // details는 summary를 누를 때만 닫히므로, 목록 바깥을 누르면 직접 닫습니다.
   useEffect(() => {
@@ -49,7 +51,7 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
   return (
     <div className="flex flex-wrap items-center gap-3">
       <fieldset className="segmented">
-        <legend className="sr-only">상태</legend>
+        <legend className="sr-only">{messages.issue.status}</legend>
         <button
           type="button"
           aria-pressed={allStatuses}
@@ -57,7 +59,7 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
             if (!allStatuses) onFilterChange({ kind: "status", statuses: [] });
           }}
         >
-          전체
+          {messages.issues.allStatuses}
         </button>
         <button
           type="button"
@@ -65,7 +67,7 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
           onClick={() => onFilterChange(toggleStatusFilter(filter, "ready"))}
         >
           <span className={`tone-dot ${READY_TONE}`} />
-          {READY_LABEL}
+          {messages.issue.ready}
         </button>
         {ISSUE_STATUSES.map((status) => (
           <button
@@ -75,21 +77,23 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
             onClick={() => onFilterChange(toggleStatusFilter(filter, status))}
           >
             <span className={`tone-dot ${statusTone(status)}`} />
-            {STATUS_LABELS[status]}
+            {statusLabel(messages, status)}
           </button>
         ))}
       </fieldset>
 
       <details ref={typeMenuRef} className="dropdown">
         <summary className="btn btn-sm btn-ghost gap-1.5 rounded-full font-medium">
-          유형
+          {messages.issue.type}
           <span className="text-base-content/50">
-            {refinement.types.length === 0 ? "전체" : `${refinement.types.length}개`}
+            {refinement.types.length === 0
+              ? messages.issues.allTypes
+              : messages.issues.typeCount(refinement.types.length)}
           </span>
           <ChevronDownIcon width={14} height={14} className="text-base-content/50" />
         </summary>
         <ul className="dropdown-content menu z-10 mt-1 w-44 rounded-box border border-base-300 bg-base-100 p-1.5 shadow-lg">
-          {Object.entries(TYPE_LABELS).map(([type, label]) => (
+          {ISSUE_TYPES.map((type) => (
             <li key={type}>
               <label className="flex cursor-pointer items-center gap-2.5">
                 <input
@@ -99,7 +103,7 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
                   onChange={() => toggleType(type)}
                 />
                 <span className={`tone-dot ${typeTone(type)}`} />
-                {label}
+                {typeLabel(messages, type)}
               </label>
             </li>
           ))}
@@ -111,8 +115,8 @@ export function IssueFilterBar({ filter, refinement, onFilterChange, onRefinemen
         <input
           type="search"
           className="grow"
-          placeholder="id 또는 제목 검색"
-          aria-label="검색"
+          placeholder={messages.issues.searchPlaceholder}
+          aria-label={messages.issues.search}
           value={refinement.search}
           onChange={(event) => onRefinementChange({ ...refinement, search: event.target.value })}
         />
