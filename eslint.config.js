@@ -143,6 +143,11 @@ export default defineConfig([
     },
   },
   {
+    // Playwright fixture가 값을 넘기는 `use` 인자를 React의 `use` hook으로 오인합니다.
+    files: ["packages/app/e2e/**/*.ts"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
+  {
     files: ["packages/bd/src/**/*.ts"],
     rules: restrict(boundaries.bdPackage),
   },

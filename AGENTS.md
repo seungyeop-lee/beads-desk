@@ -67,6 +67,13 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 `pnpm run check`가 typecheck, lint, format 검사, unit test를 차례로 실행합니다. lefthook이 pre-commit에서 staged 파일의 format과 lint를, pre-push에서 `pnpm run check`를 실행합니다. hook은 `pnpm install` 때 설치됩니다.
 
+화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 끝내기 전에 `pnpm run test:e2e`를 실행합니다. 바뀐 동작을 다루는 시나리오가 없으면 함께 추가합니다. 시나리오 작성 규칙은 `packages/app/e2e/AGENTS.md`에 있습니다.
+
+- 처음 한 번 `pnpm run test:e2e:install`로 chromium을 설치합니다.
+- `pnpm run test:e2e`는 app을 production build로 빌드하고, 3900번 포트에서 `next start`로 띄워 시나리오를 실행한 뒤 서버를 종료합니다. `next dev`가 떠 있어도 됩니다. 3900번 포트를 다른 프로세스가 쓰고 있으면 시나리오를 실행하지 않고 실패합니다.
+- 시나리오 일부만 다시 실행하려면 `packages/app`에서 `pnpm exec playwright test <spec 경로>`를 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고친 뒤에는 `pnpm run test:e2e`나 `pnpm run build`로 다시 빌드합니다.
+- 시나리오가 실패하면 `packages/app/test-results`에 screenshot과 trace가 남습니다. trace는 `pnpm exec playwright show-trace <trace.zip 경로>`로 엽니다.
+
 `next dev`가 실행 중일 때 `packages/bd`를 고치면, 서버를 다시 시작하기 전까지 API가 고치기 전의 코드로 bd를 실행합니다. bd 패키지를 고친 뒤 화면이나 API로 확인하려면 `next dev`를 다시 시작합니다.
 
 `next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) 개발 서버를 끄고 `packages/app/.next/dev`를 지운 뒤 다시 시작합니다. 원인은 확인하지 못했습니다. 지우기 전에 개발 서버에 연결된 브라우저 탭, `/_next/hmr` WebSocket에서 반복되는 메시지, `.next/dev` 복사본을 남깁니다. 확인 방법과 지금까지의 조사 기록은 `docs/troubleshooting.md`에 있습니다.

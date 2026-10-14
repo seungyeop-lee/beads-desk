@@ -28,3 +28,7 @@ tmp/
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+
+# Playwright output
+test-results/
+playwright-report/

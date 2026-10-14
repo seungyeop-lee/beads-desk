@@ -32,10 +32,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p e2e",
     "pack:local": "pnpm run build && node scripts/run-npm-release.mjs pack",
     "install:global": "pnpm run pack:local && pnpm add -g \"$PWD\"/seungyeop-lee-beads-desk-*.tgz; EXIT=$?; rm -f seungyeop-lee-beads-desk-*.tgz; exit $EXIT",
-    "uninstall:global": "pnpm remove -g @seungyeop-lee/beads-desk"
+    "uninstall:global": "pnpm remove -g @seungyeop-lee/beads-desk",
+    "test:e2e": "next build && playwright test",
+    "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "next": "^16.4.0",
@@ -44,6 +46,7 @@
   },
   "devDependencies": {
     "@beads-desk/bd": "workspace:*",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/typography": "^0.5.20",
     "@types/node": "^22.20.5",
