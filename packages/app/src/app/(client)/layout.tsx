@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { KeyboardFocusMode } from "@/client/ui/designSystem/KeyboardFocusMode";
+import { ToastRegion } from "@/client/ui/designSystem/Toast";
 import { AppHeader } from "@/client/ui/shell/AppHeader";
 
 import "@/client/ui/designSystem/styles/index.css";
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <KeyboardFocusMode />
         <AppHeader />
         {children}
+        <ToastRegion />
       </body>
     </html>
   );

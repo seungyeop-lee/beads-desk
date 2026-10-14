@@ -24,6 +24,7 @@ import { BOARD_COLUMNS, type BoardColumn } from "@/shared/contract/board";
 import { useMinuteClock } from "./useMinuteClock";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
+import { showToast } from "@/client/ui/designSystem/Toast";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 
 const COLUMN_LABELS: Record<BoardColumn, string> = {
@@ -61,7 +62,6 @@ export function BoardScreen() {
   const issueHref = useIssueHref();
   const [closedWindow, setClosedWindow] = useState<ClosedWindow>("today");
   const [dropTarget, setDropTarget] = useState<BoardColumn | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const now = useMinuteClock();
   const columns = items ? boardColumns(items, closedWindow, now) : null;
 
@@ -76,11 +76,12 @@ export function BoardScreen() {
       status: string;
     };
     const outcome = dropOutcome(from, column, status);
-    setNotice(
-      outcome.kind === "blockedByDependencies"
-        ? `${issueId}: 다른 이슈에 막혀 있어 막힘 열에 남습니다. 막고 있는 이슈를 먼저 닫아 주세요.`
-        : null,
-    );
+    if (outcome.kind === "blockedByDependencies") {
+      showToast(
+        `${issueId}: 다른 이슈에 막혀 있어 막힘 열에 남습니다. 막고 있는 이슈를 먼저 닫아 주세요.`,
+        { tone: statusTone("blocked") },
+      );
+    }
     if (outcome.kind === "change") {
       void issueEdits(writes, issueId).changeStatus(outcome.status, confirmForceClose);
     }
@@ -101,15 +102,6 @@ export function BoardScreen() {
         </div>
       )}
       <WriteErrorAlert writes={writes} />
-
-      {notice && (
-        <output className="alert alert-info alert-soft">
-          <span>{notice}</span>
-          <button type="button" className="btn btn-ghost btn-xs" onClick={() => setNotice(null)}>
-            닫기
-          </button>
-        </output>
-      )}
 
       {columns && (
         <div className="grid items-start gap-3 md:grid-cols-5">
