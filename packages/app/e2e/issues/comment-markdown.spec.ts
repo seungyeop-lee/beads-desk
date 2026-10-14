@@ -30,7 +30,8 @@ test("화면에서 남긴 댓글은 bd에 저장되고 markdown으로 보인다"
   await page.goto("/issues");
   await page.getByRole("link", { name: "새 댓글 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-  await dialog.getByRole("textbox", { name: "새 댓글" }).fill("**강조한 댓글**");
+  await dialog.getByRole("textbox", { name: "새 댓글" }).click();
+  await page.keyboard.type("**강조한 댓글**");
   await dialog.getByRole("button", { name: "댓글 남기기" }).click();
 
   await expect

@@ -1,7 +1,8 @@
 import { PencilIcon, PlusIcon } from "@/client/ui/designSystem/icons";
-import { Markdown } from "@/client/ui/designSystem/Markdown";
+import { keepUnchangedBlocks } from "@/client/modules/markdown/domain/keepUnchangedBlocks";
+import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { focusOnMount, useInlineEdit } from "../fields/useInlineEdit";
+import { useInlineEdit } from "../fields/useInlineEdit";
 
 type Props = {
   label: string;
@@ -11,7 +12,8 @@ type Props = {
 };
 
 /**
- * markdown으로 보여 주다가 편집을 누르면 textarea로 바뀌는 본문입니다. Ctrl/Cmd+Enter로 저장하고 Escape로 취소합니다.
+ * 읽기 전용 markdown 편집기로 보여 주다가 편집을 누르면 같은 편집기로 고칩니다. Ctrl/Cmd+Enter로 저장합니다.
+ * 저장하는 값은 고치지 않은 블록의 원문 글자를 그대로 둡니다.
  * 비어 있으면 작은 추가 단추만 보이므로, 부모가 flex-wrap으로 늘어놓으면 빈 본문들의 단추가 한 줄에 모입니다.
  */
 export function EditableMarkdown({ label, value, onSave }: Props) {
@@ -48,7 +50,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
         )}
       </div>
       {draft === null ? (
-        <Markdown text={shown} />
+        <MarkdownEditor readOnly value={shown} />
       ) : (
         <form
           className="flex flex-col gap-2"
@@ -57,23 +59,16 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
             void save();
           }}
         >
-          <textarea
-            ref={focusOnMount}
-            className="textarea field-sizing-content min-h-32 w-full font-mono text-sm"
-            aria-label={label}
-            value={draft}
-            disabled={saving}
-            onChange={(event) => change(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                event.preventDefault();
-                void save();
-              } else if (event.key === "Escape") {
-                event.preventDefault();
-                cancel();
-              }
-            }}
-          />
+          <div className="rounded-field border border-base-300 px-3 py-2 focus-within:border-base-content/40">
+            <MarkdownEditor
+              value={shown}
+              label={label}
+              focusOnCreate
+              disabled={saving}
+              onChange={(markdown) => change(keepUnchangedBlocks(shown, markdown))}
+              onSubmit={() => void save()}
+            />
+          </div>
           <div className="flex gap-2">
             <button type="submit" className="btn btn-sm btn-primary" disabled={saving}>
               {messages.common.save}

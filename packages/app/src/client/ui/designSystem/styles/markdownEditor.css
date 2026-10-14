@@ -1,0 +1,105 @@
+/*
+ * Milkdown Crepe 편집기(MarkdownEditor)를 앱 테마에 맞춥니다.
+ * Crepe의 CSS는 layer 밖에 있어 Tailwind layer보다 우선하므로, 이 파일도 layer 밖에 두고 .markdown-editor로 범위를 좁혀 덮습니다.
+ */
+.markdown-editor .milkdown {
+  --crepe-color-background: var(--color-base-100);
+  --crepe-color-on-background: var(--color-base-content);
+  --crepe-color-surface: var(--color-base-200);
+  --crepe-color-surface-low: var(--color-base-200);
+  --crepe-color-on-surface: var(--color-base-content);
+  --crepe-color-on-surface-variant: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  --crepe-color-outline: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+  --crepe-color-primary: var(--color-base-content);
+  --crepe-color-secondary: var(--color-base-300);
+  --crepe-color-on-secondary: var(--color-base-content);
+  --crepe-color-inverse: var(--color-neutral);
+  --crepe-color-on-inverse: var(--color-neutral-content);
+  --crepe-color-inline-code: var(--color-base-content);
+  --crepe-color-error: var(--color-error);
+  --crepe-color-hover: var(--color-base-200);
+  --crepe-color-selected: var(--color-base-300);
+  --crepe-color-inline-area: var(--color-base-200);
+  --crepe-base-font-size: 14px;
+  --crepe-font-title: var(--font-sans);
+  --crepe-font-default: var(--font-sans);
+  --crepe-font-code: var(--font-mono);
+  --crepe-shadow-1: 0 1px 3px rgb(0 0 0 / 0.12);
+  --crepe-shadow-2: 0 2px 8px rgb(0 0 0 / 0.14);
+  background: transparent;
+}
+
+.markdown-editor .milkdown .ProseMirror {
+  padding: 0;
+}
+
+.markdown-editor .milkdown .ProseMirror > :first-child {
+  margin-top: 0;
+}
+
+/* Crepe 기본 제목은 문서 편집기 크기라, 이슈 상세의 본문 글자 크기에 맞춰 줄입니다. */
+.markdown-editor .milkdown .ProseMirror h1 {
+  font-size: 1.5em;
+  margin-top: 16px;
+}
+.markdown-editor .milkdown .ProseMirror h2 {
+  font-size: 1.3em;
+  margin-top: 14px;
+}
+.markdown-editor .milkdown .ProseMirror h3 {
+  font-size: 1.15em;
+  margin-top: 12px;
+}
+.markdown-editor .milkdown .ProseMirror :is(h4, h5, h6) {
+  font-size: 1em;
+  margin-top: 10px;
+}
+
+.markdown-editor .milkdown .milkdown-code-block {
+  padding: 8px 12px;
+  border-radius: var(--radius-field);
+}
+.markdown-editor .milkdown .milkdown-code-block .cm-gutters {
+  display: none;
+}
+
+.markdown-editor .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 600;
+}
+
+/* 읽기 전용에서는 코드 블록의 언어 고르기·복사 도구 줄과 현재 줄 강조를 감춥니다. */
+.markdown-editor[data-readonly] .milkdown .milkdown-code-block .tools {
+  display: none;
+}
+.markdown-editor[data-readonly] .milkdown .milkdown-code-block .cm-activeLine {
+  background: transparent;
+}
+
+/* 순서 목록 번호와 글머리 기호는 본문보다 조금 옅게만 둡니다. */
+.markdown-editor .milkdown .milkdown-list-item-block li .label-wrapper,
+.markdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .label {
+  color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+}
+.markdown-editor .milkdown .milkdown-list-item-block li .label-wrapper svg {
+  fill: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+}
+
+/*
+ * 글자를 고르면 나오는 서식 도구 모음입니다. 모든 단추를 누를 수 있으므로 아이콘을 본문 색에 가깝게 칠하고,
+ * 고른 글자에 이미 적용된 서식만 바탕을 칠해 구분합니다.
+ */
+.markdown-editor .milkdown .milkdown-toolbar {
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+}
+.markdown-editor .milkdown .milkdown-toolbar .toolbar-item svg {
+  color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
+  fill: color-mix(in oklab, var(--color-base-content) 80%, transparent);
+}
+.markdown-editor .milkdown .milkdown-toolbar .toolbar-item.active {
+  background: var(--color-base-300);
+}
+.markdown-editor .milkdown .milkdown-toolbar .toolbar-item.active svg {
+  color: var(--color-base-content);
+  fill: var(--color-base-content);
+}

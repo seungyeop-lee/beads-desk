@@ -56,6 +56,7 @@ export type SeedDependency<K extends string = string> = [K, K];
 /** `bd show --json` 출력 가운데 시나리오가 확인하는 필드입니다. */
 export type BdIssue = {
   title: string;
+  description?: string;
   status: string;
   priority: number;
   assignee?: string;

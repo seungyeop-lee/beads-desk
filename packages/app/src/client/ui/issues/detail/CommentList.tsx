@@ -1,6 +1,6 @@
 import type { IssueComment } from "@beads-desk/bd/issue";
 import { useState } from "react";
-import { Markdown } from "@/client/ui/designSystem/Markdown";
+import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { formatTime, nameTone } from "../issueLabels";
 
@@ -14,12 +14,17 @@ type Props = {
 /** 댓글 본문은 이슈 본문 필드처럼 markdown으로 보여 줍니다. Ctrl/Cmd+Enter로 남깁니다. */
 export function CommentList({ comments, disabled, onAdd }: Props) {
   const [draft, setDraft] = useState("");
+  // 남긴 뒤 입력란을 비우려면 편집기를 새로 만듭니다. 편집기는 처음 값만 받습니다.
+  const [inputKey, setInputKey] = useState(0);
   const locale = useLocale();
   const messages = useMessages();
   // Ctrl/Cmd+Enter는 비활성화된 버튼을 거치지 않으므로 여기서도 처리 중인지 확인합니다.
   const submit = async () => {
     if (disabled || !draft.trim()) return;
-    if (await onAdd(draft)) setDraft("");
+    if (await onAdd(draft)) {
+      setDraft("");
+      setInputKey((key) => key + 1);
+    }
   };
 
   return (
@@ -46,7 +51,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
                 {formatTime(locale, comment.createdAt)}
               </time>
             </header>
-            <Markdown text={comment.text} />
+            <MarkdownEditor readOnly value={comment.text} />
           </div>
         </article>
       ))}
@@ -57,19 +62,16 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
           void submit();
         }}
       >
-        <textarea
-          className="textarea field-sizing-content min-h-20 w-full text-sm"
-          aria-label={messages.comments.newComment}
-          placeholder={messages.comments.placeholder}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault();
-              void submit();
-            }
-          }}
-        />
+        <div className="textarea h-auto min-h-20 w-full text-sm">
+          <MarkdownEditor
+            key={inputKey}
+            value=""
+            label={messages.comments.newComment}
+            placeholder={messages.comments.placeholder}
+            onChange={setDraft}
+            onSubmit={() => void submit()}
+          />
+        </div>
         <div className="flex items-center justify-end gap-3">
           <span className="text-xs text-base-content/40">Ctrl/⌘ + Enter</span>
           <button

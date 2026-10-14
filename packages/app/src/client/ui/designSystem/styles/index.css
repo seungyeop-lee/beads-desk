@@ -1,11 +1,11 @@
 /*
  * 클래스 탐색은 실행 디렉터리 대신 src에 고정합니다.
  * 테마와 토큰은 theme.css, 앱 전체의 기본 동작은 base.css, 여러 화면이 쓰는 시각 요소는 components.css에 있습니다.
- * 이슈 본문 markdown은 typography의 prose class로 꾸밉니다.
+ * 이슈 본문 markdown은 Milkdown 편집기로 그리고, markdownEditor.css가 앱 테마에 맞춥니다.
  */
 @import "tailwindcss" source(none);
 @import "./theme.css";
 @import "./base.css";
 @import "./components.css";
+@import "./markdownEditor.css";
 @source "../../../..";
-@plugin "@tailwindcss/typography";

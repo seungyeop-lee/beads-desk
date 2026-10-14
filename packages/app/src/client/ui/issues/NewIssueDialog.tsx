@@ -4,6 +4,7 @@ import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrit
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
 import { createIssueAction } from "@/server/web/issues/issueActions";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
+import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssuePicker } from "./IssuePicker";
 import { ISSUE_TYPES, PRIORITIES, priorityLabel, typeLabel, typeTone } from "./issueLabels";
@@ -150,16 +151,18 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
               onKeyDown={submitOnModEnter}
             />
           </label>
-          <label className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="caption">{messages.issue.bodyFields.description}</span>
-            <textarea
-              className="textarea field-sizing-content min-h-32 w-full font-mono text-sm"
-              placeholder={messages.newIssue.descriptionPlaceholder}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              onKeyDown={submitOnModEnter}
-            />
-          </label>
+            <div className="textarea h-auto min-h-32 w-full text-sm">
+              <MarkdownEditor
+                value=""
+                label={messages.issue.bodyFields.description}
+                placeholder={messages.newIssue.descriptionPlaceholder}
+                onChange={setDescription}
+                onSubmit={() => void submit()}
+              />
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2 border-t border-base-300 bg-base-200/50 px-7 py-4">
           <span className="text-xs text-base-content/40">{messages.newIssue.submitHint}</span>

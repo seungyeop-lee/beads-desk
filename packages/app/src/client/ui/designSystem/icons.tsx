@@ -114,3 +114,85 @@ export function SettingsIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function BoldIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z" />
+    </Icon>
+  );
+}
+
+export function ItalicIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M19 4h-9M14 20H5M15 4 9 20" />
+    </Icon>
+  );
+}
+
+export function StrikethroughIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M16 6.5A4 4 0 0 0 12 4h-1a3.5 3.5 0 0 0-1 6.9M14 13a3.5 3.5 0 0 1-2 7h-1a4 4 0 0 1-4-2.5M4 12h16" />
+    </Icon>
+  );
+}
+
+export function CodeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />
+    </Icon>
+  );
+}
+
+export function BulletListIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />
+    </Icon>
+  );
+}
+
+export function OrderedListIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M10 6h10M10 12h10M10 18h10M4 4h1v5M4 9h2M6 19H4c0-1 2-2 2-3s-1-1.5-2-1" />
+    </Icon>
+  );
+}
+
+export function QuoteIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 5v14M9 7h11M9 12h11M9 17h7" />
+    </Icon>
+  );
+}
+
+export function CodeBlockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="m10 9-3 3 3 3M14 15l3-3-3-3" />
+    </Icon>
+  );
+}
+
+export function TableIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 10h18M3 15h18M12 4v16" />
+    </Icon>
+  );
+}
+
+export function DividerIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 12h16" />
+    </Icon>
+  );
+}
