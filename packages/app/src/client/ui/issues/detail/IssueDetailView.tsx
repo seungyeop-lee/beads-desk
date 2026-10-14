@@ -90,6 +90,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
             <StatusSelect
               id="issue-status"
               value={issue.status}
+              issueType={issue.issueType}
               onChange={(status) => changeStatus(status, confirmForceClose)}
             />
           </dd>

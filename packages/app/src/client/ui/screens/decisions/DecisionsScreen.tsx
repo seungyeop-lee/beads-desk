@@ -141,6 +141,7 @@ function DecisionRowView({
         <StatusSelect
           aria-label={`${decision.id} 상태`}
           value={decision.status}
+          issueType={decision.issueType}
           onChange={(status) => changeStatus(status, confirmForceClose)}
         />
       </td>

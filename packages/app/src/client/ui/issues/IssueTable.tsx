@@ -104,6 +104,7 @@ function IssueRow({ issue, href, writes }: { issue: Issue; href: string; writes:
         <StatusSelect
           aria-label={`${issue.id} 상태`}
           value={issue.status}
+          issueType={issue.issueType}
           onChange={(status) => changeStatus(status, confirmForceClose)}
         />
       </td>
