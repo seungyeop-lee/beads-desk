@@ -125,6 +125,20 @@ export function parseIssueDetail(value: unknown): IssueDetail | null {
   };
 }
 
+/** 의존 관계 한 건입니다. issueId가 dependsOnId에 의존합니다. blocks이면 dependsOnId를 먼저 끝내야 합니다. */
+export type IssueDependency = { issueId: string; dependsOnId: string; type: string };
+
+/** bd list --json이 이슈마다 담는 dependencies 배열을 한 목록으로 모읍니다. */
+export function parseIssueDependencies(value: unknown): IssueDependency[] {
+  return recordsOf(value).flatMap((issue) =>
+    recordsOf(issue.dependencies).map((dependency) => ({
+      issueId: stringOr(dependency.issue_id, ""),
+      dependsOnId: stringOr(dependency.depends_on_id, ""),
+      type: stringOr(dependency.type, ""),
+    })),
+  );
+}
+
 /** 이벤트 하나에서 바뀐 필드입니다. 필드 이름은 Issue처럼 camelCase로 바꾸고, 값은 bd가 기록한 그대로 둡니다. */
 export type IssueFieldChange = { field: string; before: unknown; after: unknown };
 

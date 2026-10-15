@@ -6,6 +6,7 @@ import type { Issue } from "./issue";
 import {
   boardIssues,
   decisionRecords,
+  dependencyGraph,
   duplicateCandidates,
   epicDescendants,
   epicStatuses,
@@ -554,6 +555,48 @@ describe("staleIssues", () => {
 
     expect(await staleIssues(workDir, 0)).toMatchObject({ ok: false, error: { exitCode: null } });
     expect(await staleIssues(workDir, 1.5)).toMatchObject({ ok: false, error: { exitCode: null } });
+  });
+});
+
+describe("dependencyGraph", () => {
+  const signals = {
+    "blocked --json": { stdout: JSON.stringify([{ id: "b", status: "open", blocked_by: ["a"] }]) },
+    "ready --limit 0 --json": { stdout: JSON.stringify([{ id: "a", status: "open" }]) },
+  };
+  const listed = JSON.stringify([
+    { id: "a", status: "open" },
+    {
+      id: "b",
+      status: "open",
+      dependencies: [
+        { issue_id: "b", depends_on_id: "a", type: "blocks" },
+        { issue_id: "b", depends_on_id: "epic", type: "parent-child" },
+      ],
+    },
+  ]);
+
+  test("닫히지 않은 이슈와 그 의존 관계를 모든 유형으로 읽고, 작업 상태를 정하는 값을 채운다", async () => {
+    await useFakeBd({ "list --json --tree=false --limit 0": { stdout: listed }, ...signals });
+
+    const result = await dependencyGraph(workDir, false);
+
+    expect(result.ok && result.value.dependencies).toEqual([
+      { issueId: "b", dependsOnId: "a", type: "blocks" },
+      { issueId: "b", dependsOnId: "epic", type: "parent-child" },
+    ]);
+    expect(result.ok && result.value.issues).toMatchObject([
+      { id: "a", ready: true },
+      { id: "b", blockedBy: ["a"] },
+    ]);
+  });
+
+  test("닫힌 이슈를 포함하면 모든 상태의 이슈를 읽는다", async () => {
+    await useFakeBd({ "list --json --tree=false --all --limit 0": { stdout: "[]" }, ...signals });
+
+    expect(await dependencyGraph(workDir, true)).toEqual({
+      ok: true,
+      value: { issues: [], dependencies: [] },
+    });
   });
 });
 

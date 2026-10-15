@@ -299,3 +299,14 @@
 .btn {
   font-weight: 600;
 }
+
+/* React Flow(의존 그래프)의 기본 색은 밝은 테마 고정이라, 조작 버튼과 간선을 지금 테마의 색으로 맞춥니다. */
+.react-flow {
+  --xy-edge-stroke: color-mix(in oklab, var(--color-base-content) 35%, #0000);
+  --xy-controls-button-background-color: var(--color-base-100);
+  --xy-controls-button-background-color-hover: var(--color-base-200);
+  --xy-controls-button-color: var(--color-base-content);
+  --xy-controls-button-color-hover: var(--color-base-content);
+  --xy-controls-button-border-color: var(--color-base-300);
+  --xy-attribution-background-color: transparent;
+}

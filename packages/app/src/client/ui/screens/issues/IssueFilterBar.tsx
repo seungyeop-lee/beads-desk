@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
 import type {
   IssueDateField,
   IssueDateFilter,
 } from "@/client/modules/issues/domain/issueDateFilter";
-import { ChevronDownIcon, SearchIcon } from "@/client/ui/designSystem/icons";
+import { CheckboxMenu } from "@/client/ui/designSystem/CheckboxMenu";
+import { SearchIcon } from "@/client/ui/designSystem/icons";
 import { ISSUE_TYPES, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -28,53 +28,23 @@ export function IssueFilterBar({
   dates,
   onDatesChange,
 }: Props) {
-  const typeMenuRef = useRef<HTMLDetailsElement>(null);
   const messages = useMessages();
-
-  // details는 summary를 누를 때만 닫히므로, 목록 바깥을 누르면 직접 닫습니다.
-  useEffect(() => {
-    const closeOnOutsidePointer = (event: PointerEvent) => {
-      const menu = typeMenuRef.current;
-      if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
-    };
-    document.addEventListener("pointerdown", closeOnOutsidePointer);
-    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
-  }, []);
-
-  const toggleType = (type: string) =>
-    onTypesChange(
-      types.includes(type) ? types.filter((selected) => selected !== type) : [...types, type],
-    );
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <details ref={typeMenuRef} className="dropdown">
-        <summary className="btn btn-sm btn-ghost gap-1.5 rounded-full font-medium">
-          {messages.issue.type}
-          <span className="text-base-content/50">
-            {types.length === 0
-              ? messages.issues.allTypes
-              : messages.issues.typeCount(types.length)}
-          </span>
-          <ChevronDownIcon width={14} height={14} className="text-base-content/50" />
-        </summary>
-        <ul className="dropdown-content menu z-10 mt-1 w-44 rounded-box border border-base-300 bg-base-100 p-1.5 shadow-lg">
-          {ISSUE_TYPES.map((type) => (
-            <li key={type}>
-              <label className="flex cursor-pointer items-center gap-2.5">
-                <input
-                  type="checkbox"
-                  className="checkbox checkbox-xs rounded"
-                  checked={types.includes(type)}
-                  onChange={() => toggleType(type)}
-                />
-                <span className={`tone-dot ${typeTone(type)}`} />
-                {typeLabel(messages, type)}
-              </label>
-            </li>
-          ))}
-        </ul>
-      </details>
+      <CheckboxMenu
+        label={messages.issue.type}
+        summary={
+          types.length === 0 ? messages.issues.allTypes : messages.issues.typeCount(types.length)
+        }
+        options={ISSUE_TYPES.map((type) => ({
+          value: type,
+          label: typeLabel(messages, type),
+          tone: typeTone(type),
+        }))}
+        selected={types}
+        onChange={onTypesChange}
+      />
 
       <fieldset aria-label={messages.issues.dates} className="flex items-center gap-1.5">
         <select

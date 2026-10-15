@@ -3,10 +3,12 @@ import { join } from "node:path";
 import {
   isRecord,
   parseIssue,
+  parseIssueDependencies,
   parseIssueDetail,
   parseIssueEvents,
   parseIssues,
   type Issue,
+  type IssueDependency,
   type IssueDetail,
   type IssueEvent,
   type IssueStatus,
@@ -47,6 +49,38 @@ const NON_WORK_TYPES = new Set(["decision", "epic"]);
 
 export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutcome<Issue[]>> {
   return queryIssues(cwd, listArgs(statuses));
+}
+
+export type DependencyGraph = { issues: Issue[]; dependencies: IssueDependency[] };
+
+/**
+ * 의존 그래프를 그릴 이슈와 그 이슈들의 의존 관계(모든 유형)를 bd list 한 번으로 읽고, 작업 상태를 정하는 값을 채웁니다.
+ * 닫힌 이슈를 빼면 bd list의 기본 필터(closed 제외)를 써서 pinned, hooked, 사용자 정의 상태는 남깁니다.
+ */
+export async function dependencyGraph(
+  cwd: string,
+  includeClosed: boolean,
+): Promise<BdOutcome<DependencyGraph>> {
+  const status = includeClosed ? ["--all"] : [];
+  const result = await runBdJson(cwd, [
+    "list",
+    "--json",
+    "--tree=false",
+    ...status,
+    "--limit",
+    LIST_LIMIT,
+  ]);
+  if (!result.ok) return result;
+  const issues = await withWorkSignals(
+    cwd,
+    Promise.resolve({ ok: true, value: parseIssues(result.value) }),
+  );
+  return issues.ok
+    ? {
+        ok: true,
+        value: { issues: issues.value, dependencies: parseIssueDependencies(result.value) },
+      }
+    : issues;
 }
 
 /** 이슈의 변경 이벤트를 읽습니다. 댓글은 이벤트로 남지 않으므로 showIssue의 comments로 읽습니다. */
