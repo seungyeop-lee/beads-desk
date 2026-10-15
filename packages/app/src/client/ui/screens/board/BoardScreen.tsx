@@ -76,8 +76,9 @@ export function BoardScreen() {
     }
   };
 
+  // 열이 나란히 놓이는 너비에서는 AppHeader(h-14와 아래 border 1px)를 뺀 화면 높이를 열이 채우고, 카드는 열 안에서 스크롤합니다.
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
+    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16 md:h-[calc(100dvh-3.5rem-1px)] md:pb-6">
       <ScreenHeader
         title={messages.board.title}
         tone={screenTone("/board")}
@@ -93,14 +94,14 @@ export function BoardScreen() {
       <WriteErrorAlert writes={writes} />
 
       {columns && (
-        <div className="grid items-start gap-3 md:grid-cols-5">
+        <div className="grid items-start gap-3 md:min-h-0 md:flex-1 md:grid-cols-5 md:grid-rows-[minmax(0,1fr)] md:items-stretch">
           {BOARD_COLUMNS.map((column) => (
             // 카드를 놓을 자리라 열 영역이 drag event를 받습니다. 키보드로는 상세 dialog의 상태 선택으로 같은 일을 합니다.
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
             <section
               key={column}
               aria-label={messages.board.columns[column]}
-              className={`tone-wash ${COLUMN_TONES[column]} flex min-h-[60vh] min-w-0 flex-col gap-2 rounded-box p-2 transition-shadow ${dropTarget === column ? "ring-2 ring-base-content/30 ring-inset" : ""}`}
+              className={`tone-wash ${COLUMN_TONES[column]} flex min-h-[60vh] min-w-0 flex-col gap-2 rounded-box md:min-h-0 p-2 transition-shadow ${dropTarget === column ? "ring-2 ring-base-content/30 ring-inset" : ""}`}
               onDragOver={(event) => {
                 if (!event.dataTransfer.types.includes(DRAG_TYPE)) return;
                 event.preventDefault();
@@ -132,7 +133,7 @@ export function BoardScreen() {
                   </select>
                 )}
               </h2>
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col gap-2 md:min-h-0 md:flex-1 md:overflow-y-auto">
                 {columns[column].map((issue) => (
                   <BoardCard
                     key={issue.id}
