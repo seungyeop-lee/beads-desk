@@ -11,6 +11,7 @@ import {
 import { useBoard } from "@/client/modules/board/application/useBoard";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { closePrompts } from "@/client/ui/issues/fields/closePrompts";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import {
@@ -184,7 +185,9 @@ function BoardCard({ issue, column, href }: { issue: Issue; column: BoardColumn;
               P{issue.priority} {priorityLabel(messages, issue.priority)}
             </span>
           )}
-          <span className="ml-auto font-mono text-base-content/45">{issue.id}</span>
+          <span className="ml-auto font-mono text-base-content/45" title={issue.id}>
+            {shortIssueId(issue.id)}
+          </span>
         </span>
       </Link>
     </li>

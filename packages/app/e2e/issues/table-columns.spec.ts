@@ -70,3 +70,13 @@ test("지금 화면의 줄은 ID를 prefix 없이 보이고 전체 ID를 title�
     ).toHaveAttribute("title", id);
   }
 });
+
+test("보드 카드는 ID를 prefix 없이 보이고 전체 ID를 title로 보인다", async ({
+  page,
+  workspace,
+}) => {
+  const id = await workspace.createIssue("e2e 보드 작업", "--type", "task");
+
+  await page.goto("/board");
+  await expect(page.getByText(shortId(id), { exact: true })).toHaveAttribute("title", id);
+});
