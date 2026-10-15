@@ -196,6 +196,18 @@ export const koMessages = {
     unblocked: (count: number) => `막힘이 풀려 바로 작업할 수 있게 된 이슈가 ${count}개 있습니다.`,
     andMore: (count: number) => `외 ${count}개`,
   },
+  deferral: {
+    title: "이슈 보류",
+    until: "보류 기한",
+    periods: { tomorrow: "내일", week: "일주일 뒤", indefinite: "무기한", date: "날짜 지정" },
+    date: "보류할 날짜",
+    dateHint: "고른 날 0시에 다시 열립니다",
+    reason: "보류 사유",
+    reasonPlaceholder: "비워 두면 사유를 남기지 않습니다. 사유는 메모에 덧붙습니다",
+    submit: "보류",
+    reopen: "다시 열기",
+    reopenHint: "보류 기한을 지우고 열림으로 바꿉니다",
+  },
   dependencyList: {
     remove: (id: string) => `${id} 의존 관계 지우기`,
   },

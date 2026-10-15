@@ -186,6 +186,23 @@ export const enMessages: Messages = {
         : `${count} issues are now unblocked and ready:`,
     andMore: (count) => `and ${count} more`,
   },
+  deferral: {
+    title: "Defer issue",
+    until: "Defer until",
+    periods: {
+      tomorrow: "Tomorrow",
+      week: "In a week",
+      indefinite: "Indefinitely",
+      date: "Pick a date",
+    },
+    date: "Defer date",
+    dateHint: "Reopens at 00:00 on this date",
+    reason: "Defer reason",
+    reasonPlaceholder: "Optional. Appended to notes",
+    submit: "Defer",
+    reopen: "Undefer",
+    reopenHint: "Clear the defer date and reopen the issue",
+  },
   dependencyList: {
     remove: (id) => `Remove dependency ${id}`,
   },

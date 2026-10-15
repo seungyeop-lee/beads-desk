@@ -78,12 +78,49 @@ export async function updateIssueFields(
   return write(cwd, ["update", ...flags], [issueId]);
 }
 
+/**
+ * 보류가 아닌 상태로 바꾸면 보류 기한을 함께 지웁니다.
+ * bd update --status는 기한을 남겨 두고, 기한이 남은 이슈는 열려 있어도 기한까지 bd ready에 나오지 않습니다.
+ */
 export function setIssueStatus(
   cwd: string,
   issueId: string,
   status: IssueStatus,
 ): Promise<BdOutcome<null>> {
-  return write(cwd, ["update", `--status=${status}`], [issueId]);
+  const clearDeferral = status === "deferred" ? [] : ["--defer="];
+  return write(cwd, ["update", `--status=${status}`, ...clearDeferral], [issueId]);
+}
+
+/** 정해 둔 보류 기한을 bd update --defer가 받는 표기로 바꿉니다. 빈 값은 기한을 지웁니다. */
+const DEFER_UNTIL = { tomorrow: "+1d", week: "+7d", indefinite: "" } as const;
+
+/** 정해 둔 보류 기한입니다. indefinite는 다시 열 때까지 보류로 남깁니다. */
+export type DeferPeriod = keyof typeof DEFER_UNTIL;
+
+/** 정해 둔 기한이거나, bd를 실행하는 시간대의 그날 0시까지 보류할 YYYY-MM-DD 날짜입니다. */
+export type DeferUntil = DeferPeriod | { date: string };
+
+// bd는 +1m(1달 뒤)이나 next monday 같은 표기도 받으므로, 날짜 자리로 다른 표기가 들어가지 않게 막습니다.
+const DEFER_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * 이슈를 보류하고 기한을 정합니다. 사유가 있으면 bd defer --reason처럼 메모에 덧붙입니다.
+ * bd defer는 --until 없이 실행하면 이미 정해 둔 기한을 지우지 못해, 무기한 보류까지 다루는 bd update로 보류합니다.
+ */
+export function deferIssue(
+  cwd: string,
+  issueId: string,
+  options: { until: DeferUntil; reason: string },
+): Promise<BdOutcome<null>> {
+  const { until } = options;
+  if (typeof until === "object" && !DEFER_DATE.test(until.date)) {
+    return Promise.resolve(inputError("보류 날짜는 YYYY-MM-DD 형식이어야 합니다."));
+  }
+  const defer = typeof until === "object" ? until.date : DEFER_UNTIL[until];
+  const args = ["update", "--status=deferred", `--defer=${defer}`];
+  const reason = options.reason.trim();
+  if (reason) args.push(`--append-notes=${reason}`);
+  return write(cwd, args, [issueId]);
 }
 
 /**

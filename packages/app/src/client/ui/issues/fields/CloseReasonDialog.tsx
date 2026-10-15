@@ -1,60 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { createDialogRequest, type DialogRequest } from "./dialogRequest";
 
-type ReasonRequest = {
-  id: number;
-  issueId: string;
-  /** 한 번만 효과가 있습니다. 확인하면 입력한 사유, 취소하면 null을 넘깁니다. */
-  settle: (reason: string | null) => void;
-};
-
-let request: ReasonRequest | null = null;
-let nextId = 0;
-const listeners = new Set<() => void>();
-
-function setRequest(next: ReasonRequest | null) {
-  request = next;
-  for (const listener of listeners) listener();
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
+const reasonRequest = createDialogRequest<string>();
 
 /**
  * 닫는 사유를 묻는 dialog를 띄우고, 확인하면 입력한 사유를, 취소하면 null을 돌려줍니다.
  * 표, 상세, 보드, 결정 화면이 같은 dialog를 쓰도록 layout의 CloseReasonDialogHost가 그립니다.
  */
-export function askCloseReason(issueId: string): Promise<string | null> {
-  request?.settle(null);
-  return new Promise((resolve) => {
-    const current: ReasonRequest = {
-      id: nextId++,
-      issueId,
-      settle: (reason) => {
-        if (request !== current) return;
-        setRequest(null);
-        resolve(reason);
-      },
-    };
-    setRequest(current);
-  });
-}
+export const askCloseReason = reasonRequest.ask;
 
 /** askCloseReason으로 연 dialog를 그립니다. layout에서 한 번만 렌더링합니다. */
 export function CloseReasonDialogHost() {
-  const current = useSyncExternalStore(
-    subscribe,
-    () => request,
-    () => null,
-  );
+  const current = reasonRequest.useCurrent();
   return current && <CloseReasonDialog key={current.id} request={current} />;
 }
 
-function CloseReasonDialog({ request }: { request: ReasonRequest }) {
+function CloseReasonDialog({ request }: { request: DialogRequest<string> }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [reason, setReason] = useState("");
   const messages = useMessages();

@@ -9,13 +9,13 @@ import {
   removeDependencyAction,
   removeLabelAction,
 } from "@/server/web/issues/issueActions";
-import { closePrompts } from "../fields/closePrompts";
+import { statusPrompts } from "../fields/statusPrompts";
 import { EditableText } from "../fields/EditableText";
 import { PrioritySelect } from "../fields/PrioritySelect";
 import { StatusSelect } from "../fields/StatusSelect";
 import { TrashIcon } from "@/client/ui/designSystem/icons";
 import { ClaimButton } from "../ClaimButton";
-import { formatTime } from "../issueLabels";
+import { deferUntilLabel, formatTime } from "../issueLabels";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { BlockerBanner } from "./BlockerBanner";
 import { CloseAsReplacedForm } from "./CloseAsReplacedForm";
@@ -107,11 +107,31 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
                   id="issue-status"
                   value={issue.status}
                   issueType={issue.issueType}
-                  onChange={(status) => changeStatus(status, closePrompts)}
+                  onChange={(status) => changeStatus(status, statusPrompts)}
                 />
                 <ClaimButton issue={issue} writes={writes} />
+                {issue.status === "deferred" && (
+                  <button
+                    type="button"
+                    className="btn btn-xs shrink-0"
+                    title={messages.deferral.reopenHint}
+                    disabled={pending}
+                    onClick={() => void changeStatus("open", statusPrompts)}
+                  >
+                    {messages.deferral.reopen}
+                  </button>
+                )}
               </dd>
             </div>
+
+            {issue.status === "deferred" && (
+              <div className="flex items-center gap-3 @4xl:contents">
+                <dt className="caption">{messages.deferral.until}</dt>
+                <dd className="tabular-nums">
+                  {deferUntilLabel(messages, locale, issue.deferUntil)}
+                </dd>
+              </div>
+            )}
 
             {issue.closeReason && (
               <div className="order-last flex basis-full items-baseline gap-3 @4xl:order-none @4xl:contents">

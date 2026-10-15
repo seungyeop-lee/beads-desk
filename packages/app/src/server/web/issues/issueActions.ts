@@ -8,6 +8,7 @@ import {
   closeAsReplaced,
   closeIssue,
   createIssue,
+  deferIssue,
   deleteIssue,
   dismissHuman,
   removeDependency,
@@ -23,8 +24,10 @@ import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/worksp
 import { serverMessages } from "@/server/web/locale/serverMessages";
 import type { ApiFailure, ApiResponse } from "@/shared/contract/apiResponse";
 import {
+  DEFER_PERIODS,
   LINKABLE_DEPENDENCY_TYPES,
   REPLACEMENTS,
+  type DeferUntil,
   type IssueChanges,
   type LinkableDependencyType,
   type CloseIssueResult,
@@ -51,15 +54,26 @@ export async function updateIssueAction(
   return write((cwd) => updateIssueFields(cwd, issueId, changes));
 }
 
-/** 닫힘은 사유를 받는 closeIssueAction으로 바꿉니다. */
+/** 닫힘은 사유를 받는 closeIssueAction으로, 보류는 기한을 받는 deferIssueAction으로 바꿉니다. 보류 기한은 지웁니다. */
 export async function setIssueStatusAction(
   issueId: string,
   status: IssueStatus,
 ): Promise<ApiResponse<null>> {
-  if (!isString(issueId) || !isIssueStatus(status) || status === "closed") {
+  if (
+    !isString(issueId) ||
+    !isIssueStatus(status) ||
+    status === "closed" ||
+    status === "deferred"
+  ) {
     return invalidRequest();
   }
   return write((cwd) => setIssueStatus(cwd, issueId, status));
+}
+
+/** 사유가 있으면 메모에 덧붙입니다. */
+export async function deferIssueAction(issueId: string, until: DeferUntil, reason: string) {
+  if (!isString(issueId) || !isDeferUntil(until) || !isString(reason)) return invalidRequest();
+  return write((cwd) => deferIssue(cwd, issueId, { until, reason }));
 }
 
 /** 담당자를 bd를 실행한 사람으로 정하고 진행 중으로 바꿉니다. */
@@ -207,6 +221,13 @@ function isIssueStatus(value: unknown): value is IssueStatus {
 
 function isLinkableDependencyType(value: unknown): value is LinkableDependencyType {
   return (LINKABLE_DEPENDENCY_TYPES as readonly unknown[]).includes(value);
+}
+
+function isDeferUntil(value: unknown): value is DeferUntil {
+  if (typeof value === "object" && value !== null) {
+    return Object.keys(value).length === 1 && isString((value as { date?: unknown }).date);
+  }
+  return (DEFER_PERIODS as readonly unknown[]).includes(value);
 }
 
 function isReplacement(value: unknown): value is Replacement {

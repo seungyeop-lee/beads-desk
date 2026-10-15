@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { KeyboardFocusMode } from "@/client/ui/designSystem/KeyboardFocusMode";
 import { ToastRegion } from "@/client/ui/designSystem/Toast";
 import { CloseReasonDialogHost } from "@/client/ui/issues/fields/CloseReasonDialog";
+import { DeferDialogHost } from "@/client/ui/issues/fields/DeferDialog";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { AppHeader } from "@/client/ui/shell/AppHeader";
 import { themeAttribute } from "@/client/ui/theme/themeAttribute";
@@ -28,6 +29,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <AppHeader />
             {children}
             <CloseReasonDialogHost />
+            <DeferDialogHost />
             <ToastRegion />
           </ThemeProvider>
         </LocaleProvider>

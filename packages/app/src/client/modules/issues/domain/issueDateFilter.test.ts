@@ -23,6 +23,7 @@ function issue(id: string, fields: Partial<Issue> = {}): Issue {
     updatedAt: 0,
     startedAt: null,
     closedAt: null,
+    deferUntil: null,
     ...fields,
   };
 }

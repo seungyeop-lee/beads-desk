@@ -8,7 +8,8 @@ import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/doma
 import { BlockerLine } from "./BlockerLine";
 import { HumanDecisionChip } from "./HumanDecisionChip";
 import { copyIssueId } from "./copyIssueId";
-import { closePrompts } from "./fields/closePrompts";
+import { DeferralLine } from "./DeferralLine";
+import { statusPrompts } from "./fields/statusPrompts";
 import { PrioritySelect } from "./fields/PrioritySelect";
 import { StatusSelect } from "./fields/StatusSelect";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
@@ -157,6 +158,7 @@ function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
           {issue.blockedBy && (
             <BlockerLine blockedBy={issue.blockedBy} titleOf={titleOf} issueHref={issueHref} />
           )}
+          <DeferralLine issue={issue} />
         </TitleOutline>
       </td>
       <td>
@@ -164,7 +166,7 @@ function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
           aria-label={messages.issueTable.statusOf(issue.id)}
           value={issue.status}
           issueType={issue.issueType}
-          onChange={(status) => changeStatus(status, closePrompts)}
+          onChange={(status) => changeStatus(status, statusPrompts)}
         />
       </td>
       <td>

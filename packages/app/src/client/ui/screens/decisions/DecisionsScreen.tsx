@@ -9,7 +9,7 @@ import {
   useIssueWrites,
   type IssueWrites,
 } from "@/client/modules/issues/application/useIssueWrites";
-import { closePrompts } from "@/client/ui/issues/fields/closePrompts";
+import { statusPrompts } from "@/client/ui/issues/fields/statusPrompts";
 import { StatusSelect } from "@/client/ui/issues/fields/StatusSelect";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
@@ -148,7 +148,7 @@ function DecisionRowView({
           aria-label={messages.issueTable.statusOf(decision.id)}
           value={decision.status}
           issueType={decision.issueType}
-          onChange={(status) => changeStatus(status, closePrompts)}
+          onChange={(status) => changeStatus(status, statusPrompts)}
         />
       </td>
       <td className="text-xs">

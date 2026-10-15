@@ -1,15 +1,17 @@
 import { beforeEach, expect, test, vi } from "vitest";
 import {
   closeIssueAction,
+  deferIssueAction,
   setIssueStatusAction,
   updateIssueAction,
 } from "@/server/web/issues/issueActions";
 import type { CloseIssueResult } from "@/shared/contract/issueActions";
-import { issueEdits, type ClosePrompts } from "./issueEdits";
+import { issueEdits, type StatusPrompts } from "./issueEdits";
 import type { IssueWrites } from "./useIssueWrites";
 
 vi.mock("@/server/web/issues/issueActions", () => ({
   closeIssueAction: vi.fn<typeof closeIssueAction>(),
+  deferIssueAction: vi.fn<typeof deferIssueAction>(),
   setIssueStatusAction: vi.fn<typeof setIssueStatusAction>(),
   updateIssueAction: vi.fn<typeof updateIssueAction>(),
 }));
@@ -21,14 +23,18 @@ const writes: IssueWrites = {
   run: (write) => write(),
 };
 const blocked: CloseIssueResult = { ok: false, closeBlocked: true, error: "cannot close\nmore" };
-let prompts: ClosePrompts;
+let prompts: StatusPrompts;
 
 beforeEach(() => {
   vi.resetAllMocks();
   prompts = {
-    askReason: vi.fn<ClosePrompts["askReason"]>(async () => "끝냄"),
-    confirmForce: vi.fn<ClosePrompts["confirmForce"]>(() => true),
-    announceUnblocked: vi.fn<ClosePrompts["announceUnblocked"]>(),
+    askReason: vi.fn<StatusPrompts["askReason"]>(async () => "끝냄"),
+    confirmForce: vi.fn<StatusPrompts["confirmForce"]>(() => true),
+    announceUnblocked: vi.fn<StatusPrompts["announceUnblocked"]>(),
+    askDeferral: vi.fn<StatusPrompts["askDeferral"]>(async () => ({
+      until: "tomorrow",
+      reason: "대기",
+    })),
   };
 });
 
@@ -41,13 +47,14 @@ test("필드를 고치고 성공 여부를 돌려준다", async () => {
   expect(saved).toBe(true);
 });
 
-test("닫힘이 아닌 상태는 묻지 않고 바꾼다", async () => {
+test("닫힘과 보류가 아닌 상태는 묻지 않고 바꾼다", async () => {
   vi.mocked(setIssueStatusAction).mockResolvedValue({ ok: true, data: null });
 
   const changed = await issueEdits(writes, "demo-1").changeStatus("in_progress", prompts);
 
   expect(setIssueStatusAction).toHaveBeenCalledWith("demo-1", "in_progress");
   expect(prompts.askReason).not.toHaveBeenCalled();
+  expect(prompts.askDeferral).not.toHaveBeenCalled();
   expect(changed).toBe(true);
 });
 
@@ -103,5 +110,25 @@ test("강제로 닫기를 취소하면 다시 요청하지 않고 실패로 돌�
   const changed = await issueEdits(writes, "demo-1").changeStatus("closed", prompts);
 
   expect(closeIssueAction).toHaveBeenCalledOnce();
+  expect(changed).toBe(false);
+});
+
+test("보류면 기한과 사유를 물어 그대로 보류한다", async () => {
+  vi.mocked(deferIssueAction).mockResolvedValue({ ok: true, data: null });
+
+  const changed = await issueEdits(writes, "demo-1").changeStatus("deferred", prompts);
+
+  expect(prompts.askDeferral).toHaveBeenCalledWith("demo-1");
+  expect(deferIssueAction).toHaveBeenCalledWith("demo-1", "tomorrow", "대기");
+  expect(setIssueStatusAction).not.toHaveBeenCalled();
+  expect(changed).toBe(true);
+});
+
+test("보류 입력을 취소하면 보류하지 않고 실패로 돌려준다", async () => {
+  vi.mocked(prompts.askDeferral).mockResolvedValue(null);
+
+  const changed = await issueEdits(writes, "demo-1").changeStatus("deferred", prompts);
+
+  expect(deferIssueAction).not.toHaveBeenCalled();
   expect(changed).toBe(false);
 });

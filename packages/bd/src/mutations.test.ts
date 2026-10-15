@@ -10,6 +10,7 @@ import {
   closeAsReplaced,
   closeIssue,
   createIssue,
+  deferIssue,
   deleteIssue,
   dismissHuman,
   removeDependency,
@@ -143,10 +144,54 @@ describe("updateIssueFields", () => {
 });
 
 describe("setIssueStatus", () => {
-  test("상태를 바꾼다", async () => {
-    await useFakeBd({ "update --status=in_progress -- demo-1": {} });
+  test("보류가 아닌 상태로 바꾸면 보류 기한을 함께 지운다", async () => {
+    await useFakeBd({ "update --status=in_progress --defer= -- demo-1": {} });
 
     expect(await setIssueStatus(workDir, "demo-1", "in_progress")).toEqual(succeeded);
+  });
+
+  test("보류로 바꾸면 보류 기한을 그대로 둔다", async () => {
+    await useFakeBd({ "update --status=deferred -- demo-1": {} });
+
+    expect(await setIssueStatus(workDir, "demo-1", "deferred")).toEqual(succeeded);
+  });
+});
+
+describe("deferIssue", () => {
+  test("정해 둔 기한을 bd 기간 표기로 넘기고 사유를 메모에 덧붙인다", async () => {
+    await useFakeBd({
+      "update --status=deferred --defer=+1d --append-notes=API 열림 대기 -- demo-1": {},
+      "update --status=deferred --defer=+7d -- demo-2": {},
+    });
+
+    expect(
+      await deferIssue(workDir, "demo-1", { until: "tomorrow", reason: " API 열림 대기 " }),
+    ).toEqual(succeeded);
+    expect(await deferIssue(workDir, "demo-2", { until: "week", reason: " " })).toEqual(succeeded);
+  });
+
+  test("무기한이면 이미 정해 둔 기한도 지운다", async () => {
+    await useFakeBd({ "update --status=deferred --defer= -- demo-1": {} });
+
+    expect(await deferIssue(workDir, "demo-1", { until: "indefinite", reason: "" })).toEqual(
+      succeeded,
+    );
+  });
+
+  test("지정한 날짜는 그대로 넘긴다", async () => {
+    await useFakeBd({ "update --status=deferred --defer=2026-12-01 -- demo-1": {} });
+
+    expect(
+      await deferIssue(workDir, "demo-1", { until: { date: "2026-12-01" }, reason: "" }),
+    ).toEqual(succeeded);
+  });
+
+  test("날짜 자리에 YYYY-MM-DD가 아닌 표기가 오면 bd를 실행하지 않고 거부한다", async () => {
+    await useFakeBd({});
+
+    const result = await deferIssue(workDir, "demo-1", { until: { date: "+1m" }, reason: "" });
+
+    expect(result).toMatchObject({ ok: false });
   });
 });
 

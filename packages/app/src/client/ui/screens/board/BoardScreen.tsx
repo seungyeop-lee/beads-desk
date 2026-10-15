@@ -13,7 +13,7 @@ import { useBoard } from "@/client/modules/board/application/useBoard";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
-import { closePrompts } from "@/client/ui/issues/fields/closePrompts";
+import { statusPrompts } from "@/client/ui/issues/fields/statusPrompts";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import {
   priorityLabel,
@@ -72,7 +72,7 @@ export function BoardScreen() {
       showToast(messages.board.stillBlocked(issueId), { tone: statusTone("blocked") });
     }
     if (outcome.kind === "change") {
-      void issueEdits(writes, issueId).changeStatus(outcome.status, closePrompts);
+      void issueEdits(writes, issueId).changeStatus(outcome.status, statusPrompts);
     }
   };
 

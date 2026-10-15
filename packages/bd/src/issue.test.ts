@@ -31,6 +31,7 @@ describe("parseIssues", () => {
       updatedAt: Date.parse("2026-10-13T12:07:18Z"),
       startedAt: null,
       closedAt: null,
+      deferUntil: null,
     });
   });
 
@@ -47,6 +48,14 @@ describe("parseIssues", () => {
 
     expect(closed?.status).toBe("closed");
     expect(closed?.closedAt).toBeTypeOf("number");
+  });
+
+  test("보류 기한이 있는 이슈는 deferUntil을 epoch ms로 담는다", () => {
+    const [deferred] = parseIssues([
+      { id: "x-1", status: "deferred", defer_until: "2026-10-16T13:04:46Z" },
+    ]);
+
+    expect(deferred?.deferUntil).toBe(Date.parse("2026-10-16T13:04:46Z"));
   });
 
   test("id가 없는 항목은 건너뛰고, 없는 필드는 빈 값으로 채운다", () => {
@@ -68,6 +77,7 @@ describe("parseIssues", () => {
         updatedAt: 0,
         startedAt: null,
         closedAt: null,
+        deferUntil: null,
       },
     ]);
   });

@@ -20,6 +20,8 @@ export type Issue = {
   /** bd update --claim이나 진행 중으로 바꿔 착수한 시각입니다. 착수하지 않고 닫은 이슈는 null입니다. */
   startedAt: number | null;
   closedAt: number | null;
+  /** 보류 기한입니다. 기한이 지나면 다음 bd ready 조회 때 bd가 이슈를 다시 엽니다. 기한 없이 보류했거나 보류가 아니면 null입니다. */
+  deferUntil: number | null;
   /** 의존 관계 때문에 이 이슈를 막고 있는 이슈 id입니다. bd blocked 출력에만 있어, 목록 조회가 따로 채웁니다. */
   blockedBy?: string[];
   /** bd ready에 들어 있으면 true입니다. 목록 조회가 따로 채웁니다. */
@@ -93,6 +95,7 @@ export function parseIssue(value: unknown): Issue | null {
     updatedAt: timestampOr(value.updated_at, 0),
     startedAt: timestampOr(value.started_at, null),
     closedAt: timestampOr(value.closed_at, null),
+    deferUntil: timestampOr(value.defer_until, null),
     ...(Array.isArray(value.blocked_by)
       ? { blockedBy: value.blocked_by.filter((id) => typeof id === "string") }
       : {}),

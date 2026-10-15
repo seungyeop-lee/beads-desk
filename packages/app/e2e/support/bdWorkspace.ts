@@ -66,6 +66,8 @@ export type BdIssue = {
   labels?: string[];
   parent?: string;
   close_reason?: string;
+  notes?: string;
+  defer_until?: string;
   dependencies?: { id: string; dependency_type: string }[];
 };
 

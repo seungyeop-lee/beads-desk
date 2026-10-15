@@ -2,6 +2,7 @@ import * as bd from "@beads-desk/bd";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
 import type {
+  DeferUntil,
   IssueChanges,
   LinkableDependencyType,
   Replacement,
@@ -14,6 +15,7 @@ import {
   closeAsReplacedAction,
   closeIssueAction,
   createIssueAction,
+  deferIssueAction,
   deleteIssueAction,
   removeDependencyAction,
   removeLabelAction,
@@ -29,6 +31,7 @@ vi.mock("@beads-desk/bd", () => ({
   closeAsReplaced: vi.fn<typeof bd.closeAsReplaced>(),
   closeIssue: vi.fn<typeof bd.closeIssue>(),
   createIssue: vi.fn<typeof bd.createIssue>(),
+  deferIssue: vi.fn<typeof bd.deferIssue>(),
   deleteIssue: vi.fn<typeof bd.deleteIssue>(),
   removeDependency: vi.fn<typeof bd.removeDependency>(),
   removeLabel: vi.fn<typeof bd.removeLabel>(),
@@ -103,10 +106,43 @@ describe("setIssueStatusAction", () => {
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
   });
 
-  test("닫힘은 사유를 받는 closeIssueAction으로만 바꾼다", async () => {
-    const result = await setIssueStatusAction("demo-1", "closed");
+  test.each<bd.IssueStatus>(["closed", "deferred"])(
+    "%s는 사유를 받는 전용 action으로만 바꾼다",
+    async (status) => {
+      const result = await setIssueStatusAction("demo-1", status);
 
-    expect(bd.setIssueStatus).not.toHaveBeenCalled();
+      expect(bd.setIssueStatus).not.toHaveBeenCalled();
+      expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
+    },
+  );
+});
+
+describe("deferIssueAction", () => {
+  test.each<DeferUntil>(["week", { date: "2026-12-01" }])(
+    "기한 %o와 사유로 보류하고 다른 화면에 알린다",
+    async (until) => {
+      vi.mocked(bd.deferIssue).mockResolvedValue(written);
+
+      const result = await deferIssueAction("demo-1", until, "API 대기");
+
+      expect(bd.deferIssue).toHaveBeenCalledWith("/workspace", "demo-1", {
+        until,
+        reason: "API 대기",
+      });
+      expect(result).toEqual({ ok: true, data: null });
+      expect(checkWorkspaceChangesNow).toHaveBeenCalledWith("/workspace");
+    },
+  );
+
+  test.each<[string, unknown]>([
+    ["정해 두지 않은 기한 표기", "+3d"],
+    ["문자열이 아닌 날짜", { date: 20261201 }],
+    ["날짜 말고 다른 필드가 있는 값", { date: "2026-12-01", time: "09:00" }],
+    ["null", null],
+  ])("%s는 거부한다", async (_case, until) => {
+    const result = await deferIssueAction("demo-1", until as DeferUntil, "");
+
+    expect(bd.deferIssue).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
   });
 });

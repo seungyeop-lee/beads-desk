@@ -41,3 +41,11 @@ export type LinkableDependencyType = (typeof LINKABLE_DEPENDENCY_TYPES)[number];
 export const REPLACEMENTS = ["supersede", "duplicate"] as const;
 
 export type Replacement = (typeof REPLACEMENTS)[number];
+
+/** 정해 둔 보류 기한입니다. indefinite는 다시 열 때까지 보류로 남깁니다. */
+export const DEFER_PERIODS = ["tomorrow", "week", "indefinite"] as const;
+
+export type DeferPeriod = (typeof DEFER_PERIODS)[number];
+
+/** 정해 둔 기한이거나, 그날 0시까지 보류할 YYYY-MM-DD 날짜입니다. */
+export type DeferUntil = DeferPeriod | { date: string };

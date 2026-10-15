@@ -28,6 +28,8 @@ export {
   closeAsReplaced,
   closeIssue,
   createIssue,
+  deferIssue,
+  type DeferUntil,
   deleteIssue,
   dismissHuman,
   removeDependency,
