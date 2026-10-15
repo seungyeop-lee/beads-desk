@@ -259,6 +259,23 @@ export const koMessages = {
     placeholder: "댓글을 남기세요",
     submit: "댓글 남기기",
   },
+  activity: {
+    title: "활동",
+    tabs: "댓글과 활동",
+    loading: "활동 기록을 불러오는 중",
+    loadFailed: (error: string) => `활동 기록을 불러오지 못했습니다: ${error}`,
+    created: "이슈를 만들었습니다.",
+    closed: "이슈를 닫았습니다.",
+    closedWithReason: (reason: string) => `이슈를 닫았습니다: ${reason}`,
+    fieldChanged: (field: string, before: string, after: string) =>
+      `${field}: ${before} → ${after}`,
+    bodyChanged: (field: string) => `${field} 내용을 고쳤습니다.`,
+    dependencyAdded: (relation: string, issueId: string) =>
+      `${relation} 관계로 ${issueId}을(를) 연결했습니다.`,
+    dependencyRemoved: (issueId: string) => `${issueId}과(와)의 관계를 지웠습니다.`,
+    labelAdded: (label: string) => `라벨 ${label}을(를) 붙였습니다.`,
+    labelRemoved: (label: string) => `라벨 ${label}을(를) 뗐습니다.`,
+  },
   focus: {
     title: "지금",
     inProgress: "진행 중",

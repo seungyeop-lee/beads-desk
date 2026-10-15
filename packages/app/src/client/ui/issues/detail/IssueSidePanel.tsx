@@ -7,7 +7,7 @@ import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { statusLabel, statusTone } from "../issueLabels";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { DependencyList } from "./DependencyList";
-import { BODY_FIELDS } from "./IssueDetailView";
+import { BODY_FIELDS } from "./bodyFields";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {

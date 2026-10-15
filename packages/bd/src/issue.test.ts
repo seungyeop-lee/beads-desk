@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
-import { awaitsHumanDecision, parseIssueDetail, parseIssues } from "./issue";
+import { awaitsHumanDecision, parseIssueDetail, parseIssueEvents, parseIssues } from "./issue";
 
 async function fixture(name: string): Promise<unknown> {
   return JSON.parse(await readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));
@@ -157,5 +157,53 @@ describe("awaitsHumanDecision", () => {
     expect(awaitsHumanDecision({ status: "in_progress", labels: ["ops", "human"] })).toBe(true);
     expect(awaitsHumanDecision({ status: "closed", labels: ["human"] })).toBe(false);
     expect(awaitsHumanDecision({ status: "open", labels: ["ops"] })).toBe(false);
+  });
+});
+
+describe("parseIssueEvents", () => {
+  test("bd history --events 출력을 이벤트 종류별로 해석한다", async () => {
+    const events = parseIssueEvents(await fixture("history-events.json"));
+    const byId = (prefix: string) => events.find((event) => event.id.startsWith(prefix));
+
+    expect(events).toHaveLength(12);
+    expect(byId("2cdf4fca")).toEqual({
+      id: expect.stringMatching(/^2cdf4fca/),
+      type: "created",
+      actor: "tester",
+      createdAt: Date.parse("2026-10-15T13:58:09Z"),
+      changes: [],
+      dependency: null,
+      label: null,
+      text: null,
+    });
+    expect(byId("b15bc41d")?.changes).toEqual([
+      { field: "priority", before: 2, after: 1 },
+      { field: "title", before: "A 이슈", after: "A 새 제목" },
+    ]);
+    expect(byId("3202107c")?.changes).toEqual([
+      { field: "assignee", before: null, after: "tester" },
+      { field: "status", before: "open", after: "in_progress" },
+    ]);
+    expect(byId("8927f86e")?.changes).toEqual([
+      { field: "deferUntil", before: null, after: "2026-11-30T15:00:00Z" },
+      { field: "status", before: "blocked", after: "deferred" },
+    ]);
+    expect(byId("e883be5d")).toMatchObject({ type: "closed", changes: [], text: "끝냈음" });
+    expect(byId("3c8297e5")?.dependency).toEqual({ dependsOnId: "demo-b", type: "blocks" });
+    expect(byId("5d984c0a")?.dependency).toEqual({ dependsOnId: "demo-b", type: null });
+    expect(byId("f931f83b")).toMatchObject({ type: "label_added", label: "ui", text: null });
+    expect(byId("3cc56c75")).toMatchObject({ type: "label_removed", label: "ui", text: null });
+  });
+
+  test("형식을 모르는 기록은 원문을 text로 남긴다", () => {
+    const [event] = parseIssueEvents([
+      { id: "e-1", event_type: "compacted", actor: "a", new_value: "level 1", created_at: "x" },
+    ]);
+
+    expect(event).toMatchObject({ type: "compacted", text: "level 1", createdAt: 0, changes: [] });
+  });
+
+  test("이슈가 없어 bd가 null을 출력하면 빈 목록을 돌려준다", () => {
+    expect(parseIssueEvents(null)).toEqual([]);
   });
 });

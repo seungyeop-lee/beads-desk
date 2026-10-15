@@ -1,0 +1,108 @@
+[
+  {
+    "id": "e883be5d-3d7e-5d10-9594-e04e707e3024",
+    "issue_id": "demo-a",
+    "event_type": "closed",
+    "actor": "tester",
+    "old_value": "",
+    "new_value": "끝냈음",
+    "created_at": "2026-10-15T13:59:39Z"
+  },
+  {
+    "id": "fa7ef776-0a73-5a2c-ba18-56dd688a7856",
+    "issue_id": "demo-a",
+    "event_type": "reopened",
+    "actor": "tester",
+    "old_value": "",
+    "new_value": "",
+    "created_at": "2026-10-15T13:59:39Z"
+  },
+  {
+    "id": "8927f86e-e8b4-50f3-b201-ffe31a43f6cb",
+    "issue_id": "demo-a",
+    "event_type": "status_changed",
+    "actor": "tester",
+    "old_value": "{\"id\":\"demo-a\",\"title\":\"A 새 제목\",\"status\":\"blocked\",\"priority\":1,\"issue_type\":\"task\",\"assignee\":\"bob\",\"owner\":\"owner@example.com\",\"created_at\":\"2026-10-15T13:58:09Z\",\"created_by\":\"tester\",\"updated_at\":\"2026-10-15T13:58:12Z\",\"started_at\":\"2026-10-15T13:58:12Z\"}",
+    "new_value": "{\"defer_until\":\"2026-11-30T15:00:00Z\",\"status\":\"deferred\"}",
+    "created_at": "2026-10-15T13:58:13Z"
+  },
+  {
+    "id": "2e56bc05-ec7b-5e71-8f7a-f34bffecaf07",
+    "issue_id": "demo-a",
+    "event_type": "updated",
+    "actor": "tester",
+    "old_value": "{\"id\":\"demo-a\",\"title\":\"A 새 제목\",\"status\":\"blocked\",\"priority\":1,\"issue_type\":\"task\",\"assignee\":\"tester\",\"owner\":\"owner@example.com\",\"created_at\":\"2026-10-15T13:58:09Z\",\"created_by\":\"tester\",\"updated_at\":\"2026-10-15T13:58:12Z\",\"started_at\":\"2026-10-15T13:58:12Z\"}",
+    "new_value": "{\"assignee\":\"bob\"}",
+    "created_at": "2026-10-15T13:58:12Z"
+  },
+  {
+    "id": "0a4997d8-7446-534b-9790-6bb128212582",
+    "issue_id": "demo-a",
+    "event_type": "status_changed",
+    "actor": "tester",
+    "old_value": "{\"id\":\"demo-a\",\"title\":\"A 새 제목\",\"status\":\"in_progress\",\"priority\":1,\"issue_type\":\"task\",\"assignee\":\"tester\",\"owner\":\"owner@example.com\",\"created_at\":\"2026-10-15T13:58:09Z\",\"created_by\":\"tester\",\"updated_at\":\"2026-10-15T13:58:12Z\",\"started_at\":\"2026-10-15T13:58:12Z\",\"lease_expires_at\":\"2026-10-15T14:03:12Z\",\"heartbeat_at\":\"2026-10-15T13:58:12Z\"}",
+    "new_value": "{\"status\":\"blocked\"}",
+    "created_at": "2026-10-15T13:58:11Z"
+  },
+  {
+    "id": "3202107c-d9e6-5a38-ab25-b7254f6c4639",
+    "issue_id": "demo-a",
+    "event_type": "claimed",
+    "actor": "tester",
+    "old_value": "{\"id\":\"demo-a\",\"title\":\"A 새 제목\",\"status\":\"open\",\"priority\":1,\"issue_type\":\"task\",\"owner\":\"owner@example.com\",\"created_at\":\"2026-10-15T13:58:09Z\",\"created_by\":\"tester\",\"updated_at\":\"2026-10-15T13:58:10Z\"}",
+    "new_value": "{\"assignee\":\"tester\",\"status\":\"in_progress\"}",
+    "created_at": "2026-10-15T13:58:11Z"
+  },
+  {
+    "id": "5d984c0a-a35f-57c6-ba95-0f4bbcd850ba",
+    "issue_id": "demo-a",
+    "event_type": "dependency_removed",
+    "actor": "tester",
+    "old_value": "",
+    "new_value": "Removed dependency on demo-b",
+    "created_at": "2026-10-15T13:58:11Z"
+  },
+  {
+    "id": "3c8297e5-e022-52e1-b8f8-ae5a37270baf",
+    "issue_id": "demo-a",
+    "event_type": "dependency_added",
+    "actor": "tester",
+    "old_value": "",
+    "new_value": "Added dependency: demo-a blocks demo-b",
+    "created_at": "2026-10-15T13:58:10Z"
+  },
+  {
+    "id": "3cc56c75-38ff-5fdd-ac3b-1ad3fef58c42",
+    "issue_id": "demo-a",
+    "event_type": "label_removed",
+    "actor": "tester",
+    "comment": "Removed label: ui",
+    "created_at": "2026-10-15T13:58:10Z"
+  },
+  {
+    "id": "b15bc41d-8f26-5c77-a466-7d8bd4725074",
+    "issue_id": "demo-a",
+    "event_type": "updated",
+    "actor": "tester",
+    "old_value": "{\"id\":\"demo-a\",\"title\":\"A 이슈\",\"status\":\"open\",\"priority\":2,\"issue_type\":\"task\",\"owner\":\"owner@example.com\",\"created_at\":\"2026-10-15T13:58:09Z\",\"created_by\":\"tester\",\"updated_at\":\"2026-10-15T13:58:09Z\"}",
+    "new_value": "{\"priority\":1,\"title\":\"A 새 제목\"}",
+    "created_at": "2026-10-15T13:58:10Z"
+  },
+  {
+    "id": "f931f83b-262d-56d6-84a4-2dce36b39cbf",
+    "issue_id": "demo-a",
+    "event_type": "label_added",
+    "actor": "tester",
+    "comment": "Added label: ui",
+    "created_at": "2026-10-15T13:58:10Z"
+  },
+  {
+    "id": "2cdf4fca-7b1f-5b14-a576-afd36c20ad31",
+    "issue_id": "demo-a",
+    "event_type": "created",
+    "actor": "tester",
+    "old_value": "",
+    "new_value": "",
+    "created_at": "2026-10-15T13:58:09Z"
+  }
+]

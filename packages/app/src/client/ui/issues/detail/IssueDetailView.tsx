@@ -18,9 +18,10 @@ import { ClaimButton } from "../ClaimButton";
 import { deferUntilLabel, formatTime } from "../issueLabels";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { BlockerBanner } from "./BlockerBanner";
+import { BODY_FIELDS } from "./bodyFields";
 import { CloseAsReplacedForm } from "./CloseAsReplacedForm";
-import { CommentList } from "./CommentList";
 import { DependencyList } from "./DependencyList";
+import { DiscussionTabs } from "./DiscussionTabs";
 import { EditableMarkdown } from "./EditableMarkdown";
 import { HumanDecisionPanel } from "./HumanDecisionPanel";
 import { LabelEditor } from "./LabelEditor";
@@ -32,9 +33,6 @@ type Props = {
   issueHref: (issueId: string) => string;
   onDeleted: () => void;
 };
-
-/** 상세 본문에 차례로 보이는 markdown 필드입니다. */
-export const BODY_FIELDS = ["description", "design", "acceptanceCriteria", "notes"] as const;
 
 export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) {
   const { id } = issue;
@@ -88,10 +86,10 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               ))}
             </div>
             <HumanDecisionPanel issue={issue} writes={writes} />
-            <CommentList
-              comments={issue.comments}
+            <DiscussionTabs
+              issue={issue}
               disabled={pending}
-              onAdd={async (text) => (await run(() => addCommentAction(id, text))).ok}
+              onAddComment={async (text) => (await run(() => addCommentAction(id, text))).ok}
             />
           </div>
         </div>

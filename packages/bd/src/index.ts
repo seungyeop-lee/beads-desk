@@ -1,10 +1,11 @@
-export type { Issue, IssueDetail, IssueStatus } from "./issue";
+export type { Issue, IssueDetail, IssueEvent, IssueStatus } from "./issue";
 export {
   boardIssues,
   decisionRecords,
   duplicateCandidates,
   epicDescendants,
   epicStatuses,
+  issueEvents,
   issueIdsByDescription,
   lintFindings,
   listIssues,

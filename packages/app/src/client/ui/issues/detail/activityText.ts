@@ -1,0 +1,73 @@
+import type { IssueFieldChange } from "@beads-desk/bd/issue";
+import type { ActivityLine } from "@/client/modules/issues/domain/issueActivity";
+import type { Messages } from "@/client/modules/locale/domain/messages";
+import type { Locale } from "@/shared/contract/locale";
+import { dependencyLabel, formatTime, priorityLabel, statusLabel, typeLabel } from "../issueLabels";
+import { BODY_FIELDS } from "./bodyFields";
+
+/** 활동 기록의 한 줄을 화면 문장으로 바꿉니다. */
+export function activityLineText(messages: Messages, locale: Locale, line: ActivityLine): string {
+  const text = messages.activity;
+  switch (line.kind) {
+    case "created":
+      return text.created;
+    case "closed":
+      return line.reason ? text.closedWithReason(line.reason) : text.closed;
+    case "field":
+      return fieldChangeText(messages, locale, line.change);
+    case "dependencyAdded":
+      // bd는 이 이슈가 상대 이슈에 의존하는 방향으로 기록하므로, 상세의 의존하는 쪽 이름으로 부릅니다.
+      return text.dependencyAdded(
+        dependencyLabel(messages, "dependencies", line.dependencyType ?? ""),
+        line.dependsOnId,
+      );
+    case "dependencyRemoved":
+      return text.dependencyRemoved(line.dependsOnId);
+    case "labelAdded":
+      return text.labelAdded(line.label);
+    case "labelRemoved":
+      return text.labelRemoved(line.label);
+    case "other":
+      return line.text ? `${line.eventType}: ${line.text}` : line.eventType;
+  }
+}
+
+function fieldChangeText(messages: Messages, locale: Locale, change: IssueFieldChange): string {
+  const bodyField = BODY_FIELDS.find((field) => field === change.field);
+  if (bodyField) {
+    // 본문은 길어서 한 줄에 담지 않고 고친 사실만 알립니다.
+    return messages.activity.bodyChanged(messages.issue.bodyFields[bodyField]);
+  }
+  const value = (raw: unknown) => fieldValue(messages, locale, change.field, raw);
+  return messages.activity.fieldChanged(
+    fieldName(messages, change.field),
+    value(change.before),
+    value(change.after),
+  );
+}
+
+function fieldName(messages: Messages, field: string): string {
+  const names: Partial<Record<string, string>> = {
+    title: messages.issue.title,
+    status: messages.issue.status,
+    priority: messages.issue.priority,
+    issueType: messages.issue.type,
+    assignee: messages.issue.assignee,
+    labels: messages.issue.labels,
+    deferUntil: messages.deferral.until,
+  };
+  return names[field] ?? field;
+}
+
+function fieldValue(messages: Messages, locale: Locale, field: string, raw: unknown): string {
+  if (raw === null || raw === undefined || raw === "") return messages.common.none;
+  if (field === "status" && typeof raw === "string") return statusLabel(messages, raw);
+  if (field === "issueType" && typeof raw === "string") return typeLabel(messages, raw);
+  if (field === "priority" && typeof raw === "number")
+    return `P${raw} ${priorityLabel(messages, raw)}`;
+  if (field === "deferUntil" && typeof raw === "string" && Number.isFinite(Date.parse(raw))) {
+    return formatTime(locale, Date.parse(raw));
+  }
+  if (Array.isArray(raw)) return raw.join(", ");
+  return typeof raw === "object" ? JSON.stringify(raw) : String(raw);
+}

@@ -9,6 +9,7 @@ import {
   duplicateCandidates,
   epicDescendants,
   epicStatuses,
+  issueEvents,
   issueIdsByDescription,
   lintFindings,
   listIssues,
@@ -553,6 +554,28 @@ describe("staleIssues", () => {
 
     expect(await staleIssues(workDir, 0)).toMatchObject({ ok: false, error: { exitCode: null } });
     expect(await staleIssues(workDir, 1.5)).toMatchObject({ ok: false, error: { exitCode: null } });
+  });
+});
+
+describe("issueEvents", () => {
+  test("이슈의 변경 이벤트를 개수 제한 없이 읽는다", async () => {
+    await useFakeBd({
+      "history --events --json --limit 0 -- demo-1": {
+        stdout: JSON.stringify([
+          { id: "e-1", event_type: "created", actor: "a", created_at: "2026-10-15T00:00:00Z" },
+        ]),
+      },
+    });
+
+    const result = await issueEvents(workDir, " demo-1 ");
+
+    expect(result.ok && result.value.map((event) => event.type)).toEqual(["created"]);
+  });
+
+  test("이슈 id가 비어 있으면 bd를 실행하지 않고 거부한다", async () => {
+    await useFakeBd({});
+
+    expect(await issueEvents(workDir, " ")).toMatchObject({ ok: false, error: { exitCode: null } });
   });
 });
 

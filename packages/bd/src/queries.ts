@@ -4,9 +4,11 @@ import {
   isRecord,
   parseIssue,
   parseIssueDetail,
+  parseIssueEvents,
   parseIssues,
   type Issue,
   type IssueDetail,
+  type IssueEvent,
   type IssueStatus,
 } from "./issue";
 import { inputError, runBdJson, type BdOutcome } from "./runBd";
@@ -45,6 +47,16 @@ const NON_WORK_TYPES = new Set(["decision", "epic"]);
 
 export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutcome<Issue[]>> {
   return queryIssues(cwd, listArgs(statuses));
+}
+
+/** 이슈의 변경 이벤트를 읽습니다. 댓글은 이벤트로 남지 않으므로 showIssue의 comments로 읽습니다. */
+export async function issueEvents(cwd: string, issueId: string): Promise<BdOutcome<IssueEvent[]>> {
+  const id = issueId.trim();
+  if (id.length === 0) {
+    return inputError("이슈 id가 비어 있습니다.");
+  }
+  const result = await runBdJson(cwd, ["history", "--events", "--json", "--limit", "0", "--", id]);
+  return result.ok ? { ok: true, value: parseIssueEvents(result.value) } : result;
 }
 
 /**

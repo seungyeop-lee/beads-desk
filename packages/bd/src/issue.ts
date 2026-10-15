@@ -125,6 +125,84 @@ export function parseIssueDetail(value: unknown): IssueDetail | null {
   };
 }
 
+/** 이벤트 하나에서 바뀐 필드입니다. 필드 이름은 Issue처럼 camelCase로 바꾸고, 값은 bd가 기록한 그대로 둡니다. */
+export type IssueFieldChange = { field: string; before: unknown; after: unknown };
+
+/** bd history --events가 돌려주는 이슈 변경 기록 한 건입니다. 시각은 epoch ms이고 초 단위까지만 기록됩니다. */
+export type IssueEvent = {
+  id: string;
+  /** created, updated, claimed, status_changed, closed, reopened, dependency_added, label_added 같은 bd의 이벤트 종류입니다. */
+  type: string;
+  actor: string;
+  createdAt: number;
+  /** bd가 바뀐 필드를 JSON으로 남긴 이벤트(updated, claimed, status_changed, reopened)의 변경입니다. */
+  changes: IssueFieldChange[];
+  /** 관계를 더하거나 지운 이벤트의 상대 이슈입니다. bd는 지운 이벤트에 관계 유형을 남기지 않습니다. */
+  dependency: { dependsOnId: string; type: string | null } | null;
+  /** 라벨을 붙이거나 뗀 이벤트의 라벨입니다. */
+  label: string | null;
+  /** 닫는 사유처럼 위 형태로 해석하지 않은 bd의 기록입니다. */
+  text: string | null;
+};
+
+const DEPENDENCY_ADDED = /^Added dependency: \S+ (\S+) (\S+)$/;
+const DEPENDENCY_REMOVED = /^Removed dependency on (\S+)$/;
+const LABEL_CHANGED = /^(?:Added|Removed) label: (.+)$/s;
+
+/**
+ * bd는 필드 변경 이벤트의 old_value에 바뀌기 전 이슈 전체를, new_value에 바뀐 필드만 JSON으로 남깁니다.
+ * 관계와 라벨 변경은 JSON이 아니라 문장으로 남기므로(관계는 new_value, 라벨은 comment) 그 문장에서 값을 꺼냅니다.
+ */
+export function parseIssueEvents(value: unknown): IssueEvent[] {
+  return recordsOf(value).map((record) => {
+    const newValue = stringOr(record.new_value, "");
+    const note = newValue || stringOr(record.comment, "");
+    const added = DEPENDENCY_ADDED.exec(note);
+    const removed = DEPENDENCY_REMOVED.exec(note);
+    const label = LABEL_CHANGED.exec(note);
+    const after = jsonRecord(newValue);
+    const changes = after
+      ? fieldChanges(jsonRecord(stringOr(record.old_value, "")) ?? {}, after)
+      : [];
+    const dependency = added
+      ? { dependsOnId: added[2]!, type: added[1]! }
+      : removed
+        ? { dependsOnId: removed[1]!, type: null }
+        : null;
+    return {
+      id: stringOr(record.id, ""),
+      type: stringOr(record.event_type, ""),
+      actor: stringOr(record.actor, ""),
+      createdAt: timestampOr(record.created_at, 0),
+      changes,
+      dependency,
+      label: label ? label[1]! : null,
+      text: after || dependency || label || note === "" ? null : note,
+    };
+  });
+}
+
+function fieldChanges(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): IssueFieldChange[] {
+  return Object.entries(after).map(([key, value]) => ({
+    field: key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase()),
+    before: before[key] ?? null,
+    after: value,
+  }));
+}
+
+function jsonRecord(text: string): Record<string, unknown> | null {
+  if (!text.startsWith("{")) return null;
+  try {
+    const value: unknown = JSON.parse(text);
+    return isRecord(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 function parseIssueLink(value: Record<string, unknown>): IssueLink {
   return {
     id: stringOr(value.id, ""),
