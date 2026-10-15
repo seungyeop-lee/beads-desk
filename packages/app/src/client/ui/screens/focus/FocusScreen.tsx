@@ -7,6 +7,7 @@ import { useEpics } from "@/client/modules/epics/application/useEpics";
 import { focusStats } from "@/client/modules/focus/domain/focusStats";
 import { focusView, NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
@@ -256,8 +257,11 @@ function FocusRow({ issue, href, showAssignee, waitingOn }: RowProps) {
               P{issue.priority} {priorityLabel(messages, issue.priority)}
             </span>
           )}
-          <span className="w-20 shrink-0 text-right font-mono text-xs text-base-content/45">
-            {issue.id}
+          <span
+            className="w-20 shrink-0 truncate text-right font-mono text-xs text-base-content/45"
+            title={issue.id}
+          >
+            {shortIssueId(issue.id)}
           </span>
         </span>
         {waitingOn?.map((line) => (

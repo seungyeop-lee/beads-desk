@@ -48,3 +48,25 @@ test("결정 표는 ID를 prefix 없이 보이고 전체 ID를 title로 보인�
     decision,
   );
 });
+
+test("지금 화면의 줄은 ID를 prefix 없이 보이고 전체 ID를 title로 보인다", async ({
+  page,
+  workspace,
+}) => {
+  const { doing, next } = await workspace.createIssues({
+    doing: { title: "e2e 진행하는 작업", type: "task", status: "in_progress" },
+    next: { title: "e2e 다음 작업", type: "task" },
+  });
+
+  await page.goto("/focus");
+  for (const [region, id] of [
+    ["진행 중", doing],
+    ["다음에 할 일", next],
+  ]) {
+    await expect(
+      page.getByRole("region", { name: region, exact: true }).getByText(shortId(id), {
+        exact: true,
+      }),
+    ).toHaveAttribute("title", id);
+  }
+});
