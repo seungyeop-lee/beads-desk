@@ -220,6 +220,12 @@ export const enMessages: Messages = {
     searchPlaceholder: "Search id or title",
     search: "Search",
     views: "View",
+    dates: "Dates",
+    dateField: "Date field",
+    dateFields: { created: "Created", closed: "Closed" },
+    dateFrom: "From",
+    dateTo: "To",
+    clearDates: "Clear dates",
     toggleGroup: (label, expanded) => `${expanded ? "Collapse" : "Expand"} ${label}`,
   },
   workStates: {

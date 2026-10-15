@@ -18,7 +18,7 @@ import {
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
-import { issueViewHref } from "@/client/ui/screens/issues/IssueViewTabs";
+import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 

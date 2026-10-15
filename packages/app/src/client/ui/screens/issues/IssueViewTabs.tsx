@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { IssueDateFilter } from "@/client/modules/issues/domain/issueDateFilter";
 import {
   VIEW_STATES,
   type WorkState,
@@ -6,24 +7,19 @@ import {
 } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-
-/** 보기 탭을 담는 주소 query 이름입니다. */
-export const VIEW_PARAM = "view";
-
-/** 이슈 목록에서 이 작업 상태의 보기 탭을 여는 주소입니다. 지금 화면의 개수 카드도 이 주소로 이동합니다. */
-export function issueViewHref(state: WorkState): string {
-  return `/issues?${VIEW_PARAM}=${state}`;
-}
+import { issueListHref } from "./issueListAddress";
 
 type Props = {
   /** null이면 전체 보기입니다. */
   view: WorkState | null;
+  /** 탭을 바꿔도 유지하는 날짜 조건입니다. */
+  dates: IssueDateFilter;
   /** 유형과 검색으로 좁힌 뒤의 묶음입니다. 탭의 개수는 이 묶음의 이슈 수입니다. */
   groups: WorkStateGroup[];
 };
 
 /** 작업 상태 하나를 골라 보는 탭입니다. 고른 탭은 주소에 남아 뒤로 가기와 새로고침에도 유지됩니다. */
-export function IssueViewTabs({ view, groups }: Props) {
+export function IssueViewTabs({ view, dates, groups }: Props) {
   const messages = useMessages();
   const countOf = (state: WorkState) =>
     groups.find((group) => group.state === state)?.issues.length ?? 0;
@@ -32,13 +28,13 @@ export function IssueViewTabs({ view, groups }: Props) {
       state: null,
       label: messages.issues.allStatuses,
       count: groups.reduce((sum, group) => sum + group.issues.length, 0),
-      href: "/issues",
+      href: issueListHref(null, dates),
     },
     ...VIEW_STATES.map((state) => ({
       state,
       label: messages.workStates.labels[state],
       count: countOf(state),
-      href: issueViewHref(state),
+      href: issueListHref(state, dates),
     })),
   ];
 

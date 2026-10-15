@@ -232,6 +232,12 @@ export const koMessages = {
     searchPlaceholder: "id 또는 제목 검색",
     search: "검색",
     views: "보기",
+    dates: "날짜",
+    dateField: "날짜 기준",
+    dateFields: { created: "만든 날", closed: "닫은 날" },
+    dateFrom: "시작일",
+    dateTo: "종료일",
+    clearDates: "날짜 지우기",
     toggleGroup: (label: string, expanded: boolean) =>
       `${label} 묶음 ${expanded ? "접기" : "펼치기"}`,
   },
