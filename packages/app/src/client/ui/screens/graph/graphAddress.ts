@@ -1,8 +1,8 @@
 import type { GraphFilter } from "@/client/modules/graph/domain/graphFilter";
 import { WORK_STATE_ORDER, type WorkState } from "@/client/modules/issues/domain/workState";
 
-/** 의존 그래프의 관점별 탭입니다. 계층 탭과 전체 관계 탭은 bd-desk-2lj.2.5, bd-desk-2lj.2.6에서 더합니다. */
-export const GRAPH_TABS = ["order"] as const;
+/** 의존 그래프의 관점별 탭입니다. 전체 관계 탭은 bd-desk-2lj.2.6에서 더합니다. */
+export const GRAPH_TABS = ["order", "hierarchy"] as const;
 export type GraphTab = (typeof GRAPH_TABS)[number];
 
 const TAB_PARAM = "tab";

@@ -365,10 +365,12 @@ export const koMessages = {
     help: {
       order:
         "blocks 관계를 따라 먼저 끝내야 하는 이슈를 왼쪽에 둡니다. 같은 열의 이슈는 함께 진행할 수 있습니다.",
+      hierarchy:
+        "parent-child 관계를 따라 상위 이슈를 왼쪽에, 그 하위 이슈를 바로 오른쪽 열에 둡니다.",
     },
     loadFailed: (error: string) => `그래프를 불러오지 못했습니다: ${error}`,
     tabList: "그래프 관점",
-    tabs: { order: "실행 순서" },
+    tabs: { order: "실행 순서", hierarchy: "계층" },
     epic: "상위 에픽",
     allEpics: "모든 에픽",
     states: "작업 상태",
@@ -376,13 +378,22 @@ export const koMessages = {
     stateCount: (count: number) => `${count}개`,
     includeClosed: "닫힌 이슈 포함",
     canvas: "의존 그래프",
-    edgeLabel: (from: string, to: string) => `${from} 다음에 ${to}`,
+    edgeLabel: {
+      order: (from: string, to: string) => `${from} 다음에 ${to}`,
+      hierarchy: (from: string, to: string) => `${from}의 하위 이슈 ${to}`,
+    },
     controls: "그래프 보기 조작",
     zoomIn: "확대",
     zoomOut: "축소",
     fitView: "전체 보기",
-    unrelated: (count: number) => `blocks 관계가 없는 이슈 ${count}개는 그리지 않았습니다.`,
-    empty: "조건에 맞는 이슈 사이에 blocks 관계가 없습니다.",
+    unrelated: {
+      order: (count: number) => `blocks 관계가 없는 이슈 ${count}개는 그리지 않았습니다.`,
+      hierarchy: (count: number) => `상하위 관계가 없는 이슈 ${count}개는 그리지 않았습니다.`,
+    },
+    empty: {
+      order: "조건에 맞는 이슈 사이에 blocks 관계가 없습니다.",
+      hierarchy: "조건에 맞는 이슈 사이에 상하위 관계가 없습니다.",
+    },
   },
   board: {
     title: "보드",

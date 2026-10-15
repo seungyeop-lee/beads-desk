@@ -16,9 +16,9 @@ test("기본값인 조건은 주소에 넣지 않는다", () => {
   });
 });
 
-test("에픽, 유형, 작업 상태, 닫힌 이슈 포함을 함께 담고, 주소에서 그대로 다시 읽는다", () => {
+test("탭, 에픽, 유형, 작업 상태, 닫힌 이슈 포함을 함께 담고, 주소에서 그대로 다시 읽는다", () => {
   const address = {
-    tab: "order",
+    tab: "hierarchy",
     epic: "demo-1",
     types: ["bug", "task"],
     states: ["ready", "blocked"],

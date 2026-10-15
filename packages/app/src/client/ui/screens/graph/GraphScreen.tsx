@@ -1,17 +1,50 @@
 "use client";
 
+import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { useId, useMemo } from "react";
 import { useGraph } from "@/client/modules/graph/application/useGraph";
 import { executionOrder } from "@/client/modules/graph/domain/executionOrder";
 import { filterGraphIssues } from "@/client/modules/graph/domain/graphFilter";
+import { issueHierarchy } from "@/client/modules/graph/domain/issueHierarchy";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { screenTone } from "@/client/ui/shell/screenTabs";
-import { ExecutionOrderGraph } from "./ExecutionOrderGraph";
+import { GRAPH_TABS, type GraphTab } from "./graphAddress";
 import { GraphFilterBar } from "./GraphFilterBar";
-import { GRAPH_TABS } from "./graphAddress";
+import { type GraphLayout, hierarchyLayout, orderLayout } from "./graphLayout";
+import { IssueGraph } from "./IssueGraph";
 import { useGraphAddress } from "./useGraphAddress";
+
+type TabView = {
+  layout: GraphLayout;
+  /** 탭이 따르는 관계가 없어 그리지 않은 이슈의 수입니다. */
+  unrelated: number;
+};
+
+/** 탭마다 필터를 거친 이슈를 배치하는 방법과 간선 모양입니다. */
+const TAB_VIEWS: Record<
+  GraphTab,
+  {
+    view: (issues: Issue[], dependencies: IssueDependency[]) => TabView;
+    edgeType: "default" | "smoothstep";
+  }
+> = {
+  order: {
+    view: (issues, dependencies) => {
+      const order = executionOrder(issues, dependencies);
+      return { layout: orderLayout(order), unrelated: order.unrelated };
+    },
+    edgeType: "default",
+  },
+  hierarchy: {
+    view: (issues) => {
+      const hierarchy = issueHierarchy(issues);
+      return { layout: hierarchyLayout(hierarchy), unrelated: hierarchy.unrelated };
+    },
+    edgeType: "smoothstep",
+  },
+};
 
 /**
  * 이슈 사이의 관계를 관점별 탭으로 그립니다. 탭과 필터는 주소에 둡니다.
@@ -31,9 +64,11 @@ export function GraphScreen() {
         .sort((a, b) => a.title.localeCompare(b.title)),
     [data],
   );
-  const order = useMemo(
+  const view = useMemo(
     () =>
-      data ? executionOrder(filterGraphIssues(data.issues, address), data.dependencies) : null,
+      data
+        ? TAB_VIEWS[address.tab].view(filterGraphIssues(data.issues, address), data.dependencies)
+        : null,
     [data, address],
   );
 
@@ -77,17 +112,22 @@ export function GraphScreen() {
           </div>
         )}
 
-        {order && order.unrelated > 0 && (
+        {view && view.unrelated > 0 && (
           <p className="text-sm text-base-content/55">
-            {messages.graph.unrelated(order.unrelated)}
+            {messages.graph.unrelated[address.tab](view.unrelated)}
           </p>
         )}
-        {order &&
-          (order.components.length > 0 ? (
-            <ExecutionOrderGraph order={order} issueHref={issueHref} />
+        {view &&
+          (view.layout.nodes.length > 0 ? (
+            <IssueGraph
+              layout={view.layout}
+              edgeLabel={messages.graph.edgeLabel[address.tab]}
+              edgeType={TAB_VIEWS[address.tab].edgeType}
+              issueHref={issueHref}
+            />
           ) : (
             <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
-              {messages.graph.empty}
+              {messages.graph.empty[address.tab]}
             </p>
           ))}
       </div>

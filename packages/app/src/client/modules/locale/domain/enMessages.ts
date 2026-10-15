@@ -354,10 +354,12 @@ export const enMessages: Messages = {
     help: {
       order:
         "Issues that must finish first are on the left, following blocks dependencies. Issues in the same column can proceed in parallel.",
+      hierarchy:
+        "Parents are on the left and their children in the next column, following parent-child dependencies.",
     },
     loadFailed: (error) => `Could not load the graph: ${error}`,
     tabList: "Graph views",
-    tabs: { order: "Execution order" },
+    tabs: { order: "Execution order", hierarchy: "Hierarchy" },
     epic: "Parent epic",
     allEpics: "All epics",
     states: "Work state",
@@ -365,13 +367,22 @@ export const enMessages: Messages = {
     stateCount: (count) => `${count}`,
     includeClosed: "Include closed",
     canvas: "Dependency graph",
-    edgeLabel: (from, to) => `${to} after ${from}`,
+    edgeLabel: {
+      order: (from, to) => `${to} after ${from}`,
+      hierarchy: (from, to) => `${to}, child of ${from}`,
+    },
     controls: "Graph view controls",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
     fitView: "Fit view",
-    unrelated: (count) => `Not drawn: ${count} issues with no blocks dependency.`,
-    empty: "No blocks dependencies among the matching issues.",
+    unrelated: {
+      order: (count) => `Not drawn: ${count} issues with no blocks dependency.`,
+      hierarchy: (count) => `Not drawn: ${count} issues with no parent-child dependency.`,
+    },
+    empty: {
+      order: "No blocks dependencies among the matching issues.",
+      hierarchy: "No parent-child dependencies among the matching issues.",
+    },
   },
   board: {
     title: "Board",

@@ -12,28 +12,29 @@ import {
 import "@xyflow/react/dist/style.css";
 import Link from "next/link";
 import { useMemo } from "react";
-import type { ExecutionOrder } from "@/client/modules/graph/domain/executionOrder";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { NODE_HEIGHT, NODE_WIDTH, orderLayout } from "./graphLayout";
+import { type GraphLayout, NODE_HEIGHT, NODE_WIDTH } from "./graphLayout";
 
 type IssueNodeData = { issue: Issue; href: string };
 type IssueNode = Node<IssueNodeData, "issue">;
 
 type Props = {
-  order: ExecutionOrder;
+  layout: GraphLayout;
+  /** 화면 낭독기가 간선마다 읽을 관계 설명입니다. */
+  edgeLabel: (from: string, to: string) => string;
+  /** smoothstep은 간선을 꺾은 선으로 그립니다. 기본값은 곡선입니다. */
+  edgeType?: "default" | "smoothstep";
   issueHref: (issueId: string) => string;
 };
 
-/** 실행 순서를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
-export function ExecutionOrderGraph({ order, issueHref }: Props) {
+/** 탭마다 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
+export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref }: Props) {
   const messages = useMessages();
-  const { edgeLabel } = messages.graph;
-  const { nodes, edges } = useMemo(() => {
-    const layout = orderLayout(order);
-    return {
+  const { nodes, edges } = useMemo(
+    () => ({
       nodes: layout.nodes.map(({ issue, x, y }): IssueNode => ({
         id: issue.id,
         type: "issue",
@@ -46,11 +47,13 @@ export function ExecutionOrderGraph({ order, issueHref }: Props) {
         id: `${from}->${to}`,
         source: from,
         target: to,
+        type: edgeType,
         markerEnd: { type: MarkerType.ArrowClosed },
         ariaLabel: edgeLabel(from, to),
       })),
-    };
-  }, [order, issueHref, edgeLabel]);
+    }),
+    [layout, issueHref, edgeLabel, edgeType],
+  );
 
   return (
     <section
