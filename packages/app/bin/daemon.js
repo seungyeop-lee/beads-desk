@@ -9,7 +9,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { createServer } from "node:net";
+import { connect, createServer } from "node:net";
 import { dirname, join, resolve } from "node:path";
 
 const HOST = "127.0.0.1";
@@ -334,12 +334,37 @@ async function findAvailablePort(startPort) {
   throw new Error("사용 가능한 로컬 포트를 찾지 못했습니다.");
 }
 
-function isPortAvailable(port) {
+/**
+ * 서버가 이 포트를 열 수 있고, 다른 서버가 localhost의 IPv4와 IPv6 어느 쪽에서도 요청을 받고 있지 않아야 비어 있다고 봅니다.
+ * macOS는 다른 서버가 `::`나 `0.0.0.0`에서 같은 포트를 받고 있어도 `127.0.0.1`을 열게 해 주므로, 열어 보는 것만으로는 판정할 수 없습니다.
+ * 열어 보는 probe에 연결 확인이 붙지 않도록 연결 확인을 먼저 끝냅니다.
+ */
+async function isPortAvailable(port) {
+  return (
+    !(await isAnswering(port, HOST)) &&
+    !(await isAnswering(port, "::1")) &&
+    (await canListenOn(port))
+  );
+}
+
+function canListenOn(port) {
   return new Promise((resolvePort) => {
     const probe = createServer();
     probe.once("error", () => resolvePort(false));
     probe.once("listening", () => probe.close(() => resolvePort(true)));
     probe.listen(port, HOST);
+  });
+}
+
+/** IPv6를 쓸 수 없는 환경처럼 연결이 어떤 이유로든 실패하면 받는 서버가 없다고 봅니다. */
+function isAnswering(port, host) {
+  return new Promise((resolveAnswer) => {
+    const socket = connect(port, host);
+    socket.once("connect", () => {
+      socket.destroy();
+      resolveAnswer(true);
+    });
+    socket.once("error", () => resolveAnswer(false));
   });
 }
 

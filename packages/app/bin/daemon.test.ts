@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { appendFile, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -276,3 +277,50 @@ test("실행 중인 서버와 다른 포트를 지정하면 포트를 바꾸지 
   expect(printed).toContainEqual(expect.stringContaining(`restart --port ${port + 5}`));
   await commands.stop();
 });
+
+test.each([
+  ["IPv6 전체 주소(::)", "::"],
+  ["IPv4 전체 주소(0.0.0.0)", "0.0.0.0"],
+])(
+  "다른 서버가 %s로 기본 포트를 쓰고 있으면 다음 포트로 시작하고 그 사실을 알린다",
+  async (_, host) => {
+    const busy = nextPort;
+    const commands = daemon();
+    const first = await workspace("first");
+    const other = await listen(busy, host);
+
+    try {
+      expect(await commands.start({ cwd: first, open: false })).toBe(0);
+
+      expect((await serverState()).port).toBe(busy + 1);
+      expect(printed).toContain(`${busy}번 포트가 사용 중이라 ${busy + 1}번 포트로 시작합니다.`);
+      await commands.stop();
+    } finally {
+      other.close();
+    }
+  },
+);
+
+test("다른 서버가 IPv6로 쓰고 있는 포트를 지정하면 서버를 띄우지 않는다", async () => {
+  const commands = daemon();
+  const first = await workspace("first");
+  const busy = nextPort;
+  const other = await listen(busy, "::");
+
+  try {
+    await expect(commands.start({ cwd: first, port: busy, open: false })).rejects.toThrow(
+      `${busy}번 포트가 사용 중입니다.`,
+    );
+
+    expect(await startedPids()).toEqual([]);
+  } finally {
+    other.close();
+  }
+});
+
+/** 다른 서버처럼 이 주소에서 요청을 받아 포트를 차지합니다. next dev는 IPv6 전체 주소(`::`)에서 받습니다. */
+async function listen(port: number, host: string): Promise<Server> {
+  const server = createServer();
+  await new Promise<void>((resolve) => server.listen(port, host, resolve));
+  return server;
+}
