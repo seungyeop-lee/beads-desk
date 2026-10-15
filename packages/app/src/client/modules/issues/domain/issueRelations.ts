@@ -1,4 +1,4 @@
-import type { IssueDetail, IssueLink } from "@beads-desk/bd/issue";
+import type { Issue, IssueDetail, IssueLink } from "@beads-desk/bd/issue";
 import type { LinkableDependencyType } from "@/shared/contract/issueActions";
 
 /** 상세에서 지금 이슈를 기준으로 고르는 관계입니다. */
@@ -11,6 +11,20 @@ export type DependencyToAdd = {
   dependsOnId: string;
   type: LinkableDependencyType;
 };
+
+/** 결정은 여러 이슈에 걸친 합의를 기록하므로 상하위 관계(parent-child)에 넣지 않습니다. 관련(related) 관계로는 연결합니다. */
+export function canJoinHierarchy(issue: Pick<Issue, "issueType">): boolean {
+  return issue.issueType !== "decision";
+}
+
+/** 관계 맺기에서 고른 관계의 후보로 쓸 수 없는 이슈를 고릅니다. 이미 연결한 이슈와, 상위·하위 관계일 때의 결정입니다. */
+export function notRelationCandidate(
+  kind: RelationKind,
+  linked: ReadonlySet<string>,
+): (issue: Issue) => boolean {
+  const hierarchy = kind === "parent" || kind === "child";
+  return (issue) => linked.has(issue.id) || (hierarchy && !canJoinHierarchy(issue));
+}
 
 /** 고른 관계를 bd dep add의 (의존하는 이슈, 의존받는 이슈, 유형)으로 바꿉니다. parent-child는 하위 이슈가 상위 이슈에 의존합니다. */
 export function dependencyToAdd(kind: RelationKind, self: string, other: string): DependencyToAdd {

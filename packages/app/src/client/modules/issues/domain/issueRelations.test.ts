@@ -1,6 +1,12 @@
-import type { IssueLink } from "@beads-desk/bd/issue";
+import type { Issue, IssueLink } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { dependencyToAdd, linkedIssues } from "./issueRelations";
+import {
+  canJoinHierarchy,
+  dependencyToAdd,
+  linkedIssues,
+  notRelationCandidate,
+  RELATION_KINDS,
+} from "./issueRelations";
 
 test("고른 관계를 bd dep add의 방향과 유형으로 바꾼다", () => {
   expect(dependencyToAdd("blockedBy", "self", "other")).toEqual({
@@ -96,3 +102,18 @@ test("모르는 의존 유형은 연결된 이슈의 맨 뒤에 둔다", () => {
 function link(id: string, dependencyType: string): IssueLink {
   return { id, title: id, status: "open", priority: 2, issueType: "task", dependencyType };
 }
+
+test("결정은 상하위 관계에 넣지 않는다", () => {
+  expect(canJoinHierarchy({ issueType: "decision" })).toBe(false);
+  expect(canJoinHierarchy({ issueType: "task" })).toBe(true);
+});
+
+test("관계 맺기 후보에서 이미 연결한 이슈는 늘 빼고, 결정은 상위·하위 관계에서만 뺀다", () => {
+  const decision = { id: "decision", issueType: "decision" } as Issue;
+  const linkedTask = { id: "linked", issueType: "task" } as Issue;
+  const excludedKinds = (issue: Issue) =>
+    RELATION_KINDS.filter((kind) => notRelationCandidate(kind, new Set(["linked"]))(issue));
+
+  expect(excludedKinds(decision)).toEqual(["parent", "child"]);
+  expect(excludedKinds(linkedTask)).toEqual(RELATION_KINDS);
+});

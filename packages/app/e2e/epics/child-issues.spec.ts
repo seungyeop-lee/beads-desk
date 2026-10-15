@@ -25,7 +25,7 @@ test("에픽의 새 하위 이슈는 상위 에픽을 바꿀 수 없고, 만든 
   await expect(page.getByLabel(`${epic} 진행률`)).toHaveAttribute("max", "1");
 });
 
-test("에픽에서 기존 이슈를 찾아 하위로 넣으면 하위 목록에 들어가고, 다른 에픽은 후보에 없다", async ({
+test("에픽에서 기존 이슈를 찾아 하위로 넣으면 하위 목록에 들어가고, 다른 에픽과 결정은 후보에 없다", async ({
   page,
   workspace,
 }) => {
@@ -35,6 +35,7 @@ test("에픽에서 기존 이슈를 찾아 하위로 넣으면 하위 목록에 
     epic: { title: "넣을 곳 에픽", type: "epic", priority: 1 },
     otherEpic: { title: "넣을 후보 다른 에픽", type: "epic" },
     task: { title: "넣을 후보 작업", type: "task" },
+    decision: { title: "넣을 후보 결정", type: "decision" },
   });
 
   await page.goto("/epics");

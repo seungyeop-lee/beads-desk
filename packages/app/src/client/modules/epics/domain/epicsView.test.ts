@@ -50,13 +50,14 @@ describe("settleExpandedEpics", () => {
   });
 });
 
-test("에픽에 하위로 넣을 후보에서 에픽과 이미 그 에픽에 속한 후손 이슈를 모두 뺀다", () => {
+test("에픽에 하위로 넣을 후보에서 에픽, 결정, 이미 그 에픽에 속한 후손 이슈를 모두 뺀다", () => {
   const excluded = notChildCandidate([
     { id: "feature", parent: "epic" } as Issue,
     { id: "task", parent: "feature" } as Issue,
   ]);
 
   expect(excluded({ id: "other-epic", issueType: "epic" } as Issue)).toBe(true);
+  expect(excluded({ id: "decision", issueType: "decision" } as Issue)).toBe(true);
   expect(excluded({ id: "feature", issueType: "feature" } as Issue)).toBe(true);
   expect(excluded({ id: "task", issueType: "task" } as Issue)).toBe(true);
   expect(excluded({ id: "other", issueType: "task" } as Issue)).toBe(false);
