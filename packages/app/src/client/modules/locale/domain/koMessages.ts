@@ -331,10 +331,9 @@ export const koMessages = {
   },
   board: {
     title: "보드",
-    description: "카드를 다른 열에 끌어다 놓으면 그 열의 상태로 바뀝니다.",
+    description: "카드를 바로 작업 가능, 진행 중, 닫힘 열에 끌어다 놓으면 그 열의 상태로 바뀝니다.",
     loadFailed: (error: string) => `보드를 불러오지 못했습니다: ${error}`,
     columns: {
-      other: "보류·기타",
       blocked: "막힘",
       ready: "바로 작업 가능",
       in_progress: "진행 중",

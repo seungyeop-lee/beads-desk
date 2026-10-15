@@ -317,10 +317,9 @@ export const enMessages: Messages = {
   },
   board: {
     title: "Board",
-    description: "Drag a card to another column to change its status to match that column.",
+    description: "Drag a card to Ready, In progress, or Closed to change its status to match.",
     loadFailed: (error) => `Could not load the board: ${error}`,
     columns: {
-      other: "Deferred & other",
       blocked: "Blocked",
       ready: "Ready",
       in_progress: "In progress",

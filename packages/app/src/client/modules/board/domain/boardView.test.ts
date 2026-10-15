@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { BoardItem } from "@/shared/contract/board";
-import { boardColumns, DROP_STATUS, dropOutcome } from "./boardView";
+import { boardColumns, dropOutcome } from "./boardView";
 
 const now = new Date(2026, 9, 13, 15, 0).getTime();
 const hoursAgo = (hours: number) => now - hours * 3_600_000;
@@ -17,8 +17,8 @@ test("열마다 우선순위, 만든 시각, id 순으로 정렬한다", () => {
       item("ready", "b", { priority: 1, createdAt: 1 }),
       item("ready", "a", { priority: 3 }),
       item("blocked", "d"),
-      item("other", "f", { priority: 4 }),
-      item("other", "e", { priority: 0 }),
+      item("in_progress", "f", { priority: 4 }),
+      item("in_progress", "e", { priority: 0 }),
     ],
     "7d",
     now,
@@ -26,8 +26,7 @@ test("열마다 우선순위, 만든 시각, id 순으로 정렬한다", () => {
 
   expect(columns.ready.map((issue) => issue.id)).toEqual(["b", "c", "a"]);
   expect(columns.blocked.map((issue) => issue.id)).toEqual(["d"]);
-  expect(columns.other.map((issue) => issue.id)).toEqual(["e", "f"]);
-  expect(columns.in_progress).toEqual([]);
+  expect(columns.in_progress.map((issue) => issue.id)).toEqual(["e", "f"]);
 });
 
 test("닫힌 열은 고른 기간 안에 닫은 이슈만 최근 것부터 보인다", () => {
@@ -46,11 +45,12 @@ test("닫힌 열은 고른 기간 안에 닫은 이슈만 최근 것부터 보�
   expect(ids("7d")).toEqual(["morning", "yesterday", "old"]);
 });
 
-test("보류·기타 열에 놓으면 보류 상태로 바꾼다", () => {
-  expect(DROP_STATUS.other).toBe("deferred");
-});
-
 describe("dropOutcome", () => {
+  test("막힘 열에 놓으면 상태를 바꾸지 않는다", () => {
+    expect(dropOutcome("ready", "blocked", "open")).toEqual({ kind: "none" });
+    expect(dropOutcome("in_progress", "blocked", "in_progress")).toEqual({ kind: "none" });
+  });
+
   test("다른 열에 놓으면 그 열의 상태로 바꾼다", () => {
     expect(dropOutcome("ready", "in_progress", "open")).toEqual({
       kind: "change",

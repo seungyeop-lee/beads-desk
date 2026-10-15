@@ -4,6 +4,7 @@ import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useState, type DragEvent } from "react";
 import {
+  acceptsDrop,
   boardColumns,
   dropOutcome,
   type ClosedWindow,
@@ -31,7 +32,6 @@ import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 const COLUMN_TONES: Record<BoardColumn, string> = {
-  other: statusTone("deferred"),
   blocked: statusTone("blocked"),
   ready: READY_TONE,
   in_progress: statusTone("in_progress"),
@@ -94,7 +94,7 @@ export function BoardScreen() {
       <WriteErrorAlert writes={writes} />
 
       {columns && (
-        <div className="grid items-start gap-3 md:min-h-0 md:flex-1 md:grid-cols-5 md:grid-rows-[minmax(0,1fr)] md:items-stretch">
+        <div className="grid items-start gap-3 md:min-h-0 md:flex-1 md:grid-cols-4 md:grid-rows-[minmax(0,1fr)] md:items-stretch">
           {BOARD_COLUMNS.map((column) => (
             // 카드를 놓을 자리라 열 영역이 drag event를 받습니다. 키보드로는 상세 dialog의 상태 선택으로 같은 일을 합니다.
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
@@ -103,7 +103,7 @@ export function BoardScreen() {
               aria-label={messages.board.columns[column]}
               className={`tone-wash ${COLUMN_TONES[column]} flex min-h-[60vh] min-w-0 flex-col gap-2 rounded-box md:min-h-0 p-2 transition-shadow ${dropTarget === column ? "ring-2 ring-base-content/30 ring-inset" : ""}`}
               onDragOver={(event) => {
-                if (!event.dataTransfer.types.includes(DRAG_TYPE)) return;
+                if (!acceptsDrop(column) || !event.dataTransfer.types.includes(DRAG_TYPE)) return;
                 event.preventDefault();
                 setDropTarget(column);
               }}

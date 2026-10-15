@@ -431,7 +431,7 @@ describe("boardIssues", () => {
     blocked: "blocked --json",
   };
 
-  test("상태로 열을 정하고, 열림 이슈는 bd ready와 bd blocked 결과로 나눈다", async () => {
+  test("상태로 열을 정하고, 열림 이슈는 bd ready와 bd blocked 결과로 나누며, 어느 열에도 맞지 않는 이슈는 뺀다", async () => {
     const issue = (id: string, status: string) => ({ id, status });
     await useFakeBd({
       [boardArgs.all]: {
@@ -469,11 +469,6 @@ describe("boardIssues", () => {
       "doing-blocked": "blocked",
       "marked-blocked": "blocked",
       done: "closed",
-      deferred: "other",
-      pinned: "other",
-      hooked: "other",
-      custom: "other",
-      "open-unknown": "other",
     });
   });
 
