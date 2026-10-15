@@ -56,6 +56,8 @@
     "@types/react-dom": "^19.3.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "daisyui": "^5.7.47",
+    "react-is": "^19.3.0",
+    "recharts": "^3.10.1",
     "remark-gfm": "^4.0.1",
     "remark-inline-links": "^7.0.0",
     "remark-parse": "^11.0.0",

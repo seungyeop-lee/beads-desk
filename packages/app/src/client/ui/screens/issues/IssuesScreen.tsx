@@ -1,56 +1,44 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { filterByDate, type IssueDateFilter } from "@/client/modules/issues/domain/issueDateFilter";
-import {
-  refineIssues,
-  type IssueListRefinement,
-} from "@/client/modules/issues/domain/issueListView";
+import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
+import { refineIssues } from "@/client/modules/issues/domain/issueListView";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import { ISSUE_TYPES } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { IssueFilterBar } from "./IssueFilterBar";
 import { IssueGroups } from "./IssueGroups";
-import { issueListHref, readIssueListAddress } from "./issueListAddress";
 import { IssueViewTabs } from "./IssueViewTabs";
+import { useIssueListAddress } from "./useIssueListAddress";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-
-/** 결정은 결정 탭에서 보므로, 처음에는 유형 메뉴에서 결정만 뺀 유형을 고른 상태로 엽니다. */
-const INITIAL_TYPES = ISSUE_TYPES.filter((type) => type !== "decision");
 
 /** 보기 탭은 화면에서 작업 상태로 나누므로 모든 상태의 이슈를 한 번에 읽습니다. */
 const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
 
 /**
  * 위쪽 보기 탭으로 작업 상태 하나를 고르고, 유형, 날짜, 검색으로 그 안을 좁힙니다.
- * 보기 탭과 날짜 조건은 다른 화면에서 링크로 열 수 있도록 주소에 둡니다.
+ * 보기 탭, 유형, 날짜 조건은 다른 화면에서 링크로 열 수 있도록 주소에 둡니다.
  * 보기 탭과 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function IssuesScreen() {
-  const [refinement, setRefinement] = useState<IssueListRefinement>({
-    types: INITIAL_TYPES,
-    search: "",
-  });
+  const [search, setSearch] = useState("");
   const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
-  const searchParams = useSearchParams();
-  const { view, dates } = useMemo(() => readIssueListAddress(searchParams), [searchParams]);
-  const router = useRouter();
-  const changeDates = (next: IssueDateFilter) =>
-    router.replace(issueListHref(view, next), { scroll: false });
+  const { address, changeFilters } = useIssueListAddress();
+  const { view, dates, types } = address;
   // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
-  const deferredRefinement = useDeferredValue(refinement);
+  const deferredSearch = useDeferredValue(search);
   const groups = useMemo(
     () =>
-      issueListGroups(issues ? refineIssues(filterByDate(issues, dates), deferredRefinement) : []),
-    [issues, deferredRefinement, dates],
+      issueListGroups(
+        issues ? refineIssues(filterByDate(issues, dates), { types, search: deferredSearch }) : [],
+      ),
+    [issues, types, deferredSearch, dates],
   );
   const viewIssues = view
     ? (groups.find((group) => group.state === view)?.issues ?? [])
@@ -68,13 +56,15 @@ export function IssuesScreen() {
         loading={loading}
       />
 
-      <IssueViewTabs view={view} dates={dates} groups={groups} />
+      <IssueViewTabs view={view} filters={{ dates, types }} groups={groups} />
 
       <IssueFilterBar
-        refinement={refinement}
-        onRefinementChange={setRefinement}
+        types={types}
+        onTypesChange={(next) => changeFilters({ types: next })}
+        search={search}
+        onSearchChange={setSearch}
         dates={dates}
-        onDatesChange={changeDates}
+        onDatesChange={(next) => changeFilters({ dates: next })}
       />
 
       {error && (

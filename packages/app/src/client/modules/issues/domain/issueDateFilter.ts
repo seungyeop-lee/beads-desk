@@ -36,6 +36,13 @@ export function parseIssueDateFilter(
   };
 }
 
+/** 시각이 속한 현지 날짜를 "YYYY-MM-DD"로 돌려줍니다. 지금 화면 통계가 하루씩 셀 때 이 필터와 같은 경계를 씁니다. */
+export function localDayOf(time: number): string {
+  const date = new Date(time);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 // 하루의 경계는 브라우저 현지 시각의 자정입니다. 날짜 칸에 고른 날과 사용자가 겪은 하루가 같아야 하기 때문입니다.
 function localDayStart(day: string, daysAfter = 0): number {
   const [year, month, date] = day.split("-").map(Number);

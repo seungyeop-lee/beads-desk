@@ -17,6 +17,8 @@ export type Issue = {
   dependentCount: number;
   createdAt: number;
   updatedAt: number;
+  /** bd update --claim이나 진행 중으로 바꿔 착수한 시각입니다. 착수하지 않고 닫은 이슈는 null입니다. */
+  startedAt: number | null;
   closedAt: number | null;
   /** 의존 관계 때문에 이 이슈를 막고 있는 이슈 id입니다. bd blocked 출력에만 있어, 목록 조회가 따로 채웁니다. */
   blockedBy?: string[];
@@ -89,6 +91,7 @@ export function parseIssue(value: unknown): Issue | null {
     dependentCount: typeof value.dependent_count === "number" ? value.dependent_count : 0,
     createdAt: timestampOr(value.created_at, 0),
     updatedAt: timestampOr(value.updated_at, 0),
+    startedAt: timestampOr(value.started_at, null),
     closedAt: timestampOr(value.closed_at, null),
     ...(Array.isArray(value.blocked_by)
       ? { blockedBy: value.blocked_by.filter((id) => typeof id === "string") }

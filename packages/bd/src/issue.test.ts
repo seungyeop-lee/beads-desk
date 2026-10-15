@@ -29,8 +29,17 @@ describe("parseIssues", () => {
       dependentCount: 0,
       createdAt: Date.parse("2026-10-13T12:04:51Z"),
       updatedAt: Date.parse("2026-10-13T12:07:18Z"),
+      startedAt: null,
       closedAt: null,
     });
+  });
+
+  test("착수한 이슈는 startedAt을 epoch ms로 담는다", async () => {
+    const started = parseIssues(await fixture("list.json")).find(
+      (issue) => issue.id === "demo-x2e",
+    );
+
+    expect(started?.startedAt).toBe(Date.parse("2026-10-13T12:04:59Z"));
   });
 
   test("닫힌 이슈는 closedAt을 epoch ms로 담는다", async () => {
@@ -57,6 +66,7 @@ describe("parseIssues", () => {
         dependentCount: 0,
         createdAt: 0,
         updatedAt: 0,
+        startedAt: null,
         closedAt: null,
       },
     ]);

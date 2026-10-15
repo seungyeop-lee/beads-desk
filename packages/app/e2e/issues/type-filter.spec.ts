@@ -30,3 +30,28 @@ test("기본 선택에서 빠진 결정도 주소로 상세를 열 수 있다", 
   await expect(page.getByRole("dialog", { name: `${decision} 이슈` })).toBeVisible();
   await expect(page.getByRole("link", { name: "e2e 결정" })).toHaveCount(0);
 });
+
+test("고른 유형은 주소에 남아 새로고침과 보기 탭 이동에도 유지된다", async ({
+  page,
+  workspace,
+}) => {
+  await workspace.createIssues({
+    bug: { title: "e2e 버그", type: "bug" },
+    task: { title: "e2e 작업", type: "task" },
+  });
+  const tabs = page.getByRole("navigation", { name: "보기" });
+
+  await page.goto("/issues");
+  await page.locator("summary", { hasText: "유형" }).click();
+  await page.getByRole("checkbox", { name: "버그" }).uncheck();
+  await expect(page).toHaveURL(/\/issues\?type=/);
+  await expect(page.getByRole("link", { name: "e2e 버그" })).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByRole("link", { name: "e2e 작업" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "e2e 버그" })).toHaveCount(0);
+
+  await tabs.getByRole("link", { name: "바로 작업 가능 1" }).click();
+  await expect(page).toHaveURL(/\/issues\?view=ready&type=/);
+  await expect(page.getByRole("link", { name: "e2e 버그" })).toHaveCount(0);
+});

@@ -222,6 +222,26 @@ export const koMessages = {
     readyEmpty: "바로 시작할 수 있는 이슈가 없습니다.",
     blockedEmpty: "막힌 이슈가 없습니다.",
     epicsEmpty: "진행 중이거나 열린 에픽이 없습니다.",
+    stats: {
+      title: "흐름",
+      throughput: "최근 7일 처리량",
+      series: { created: "만든 수", closed: "닫은 수" },
+      dayLabel: (month: number, date: number) => `${month}/${date}`,
+      today: "오늘",
+      openDay: (month: number, date: number, series: "created" | "closed", count: number) =>
+        `${month}월 ${date}일에 ${series === "created" ? "만든" : "닫은"} 이슈 ${count}개 보기`,
+      cycleTime: "착수 후 처리 시간",
+      leadTime: "등록 후 처리 시간",
+      durationBasis: (count: number) => `중앙값 · ${count}개 기준`,
+      noDuration: "최근 7일 동안 닫은 이슈가 없습니다",
+      durations: {
+        minutes: (value: number) => `${value}분`,
+        hours: (value: number) => `${value}시간`,
+        days: (value: number) => `${value}일`,
+      },
+      openIssues: "열린 이슈 분포",
+      closableEpics: "닫을 수 있는 에픽",
+    },
   },
   issues: {
     title: "이슈",

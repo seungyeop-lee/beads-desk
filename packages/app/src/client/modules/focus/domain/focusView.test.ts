@@ -16,6 +16,7 @@ function issue(id: string, fields: Partial<Issue> = {}): Issue {
     dependentCount: 0,
     createdAt: 0,
     updatedAt: 0,
+    startedAt: null,
     closedAt: null,
     ...fields,
   };

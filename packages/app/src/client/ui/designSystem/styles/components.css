@@ -5,7 +5,7 @@
 
 @layer components {
   /*
-   * tone-*은 파스텔 하나를 고르고, chip·tone-dot·tone-fill이 그 색을 씁니다.
+   * tone-*은 파스텔 하나를 고르고, chip·tone-dot·tone-bar·tone-fill이 그 색을 씁니다.
    * 라이트 모드는 파스텔 바탕에 잉크 글자, 다크 모드는 옅게 비친 바탕에 파스텔 글자로 그립니다.
    */
   /* 색이 없는 값입니다. 물들인 면 안에서도 그 면의 tone을 물려받지 않고 회색으로 보입니다. */
@@ -78,6 +78,34 @@
     font-weight: 600;
     line-height: 1;
     white-space: nowrap;
+  }
+
+  /*
+   * 지금 화면 처리량 차트의 계열 색입니다. 열림·닫힘 상태 tone과 같은 색 계열을 막대에 맞게 진하게 했고,
+   * 밝은·어두운 표면 각각에서 밝기, 채도, 색각 이상 구분, 대비 검사를 통과한 값입니다.
+   */
+  .flow-created {
+    --flow: light-dark(#5b8fd9, #6496dd);
+  }
+  .flow-closed {
+    --flow: light-dark(#5e9b3a, #64a03f);
+  }
+  .flow-created path,
+  .flow-closed path,
+  .flow-swatch {
+    fill: var(--flow);
+    background-color: var(--flow);
+  }
+  .flow-swatch {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 2px;
+  }
+
+  /* 글자 없이 색만으로 비율을 보이는 막대 칸입니다. tone-dot처럼 두 모드 모두 파스텔을 그대로 칠해 칸끼리 구분되게 합니다. */
+  .tone-bar {
+    background-color: var(--tone, #d6d3d1);
   }
 
   .tone-dot {

@@ -4,6 +4,7 @@ import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useMemo, type ReactNode } from "react";
 import { useEpics } from "@/client/modules/epics/application/useEpics";
+import { focusStats } from "@/client/modules/focus/domain/focusStats";
 import { focusView, NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
@@ -21,6 +22,8 @@ import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { FocusStatsSection } from "./FocusStatsSection";
+import { useMinuteClock } from "@/client/ui/screens/board/useMinuteClock";
 
 const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
 
@@ -28,7 +31,7 @@ const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
 const CARD_STATES = ["in_progress", "ready", "blocked"] as const satisfies WorkState[];
 
 /**
- * 첫 화면입니다. 위쪽 개수 카드, 왼쪽의 진행 중과 다음에 할 일, 오른쪽의 막힘과 에픽 진행률을 보입니다.
+ * 첫 화면입니다. 위쪽 개수 카드와 흐름 통계, 왼쪽의 진행 중과 다음에 할 일, 오른쪽의 막힘과 에픽 진행률을 보입니다.
  * 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function FocusScreen() {
@@ -37,6 +40,11 @@ export function FocusScreen() {
   const issueHref = useIssueHref();
   const messages = useMessages();
   const view = useMemo(() => (issues ? focusView(issues, epics ?? []) : null), [issues, epics]);
+  const now = useMinuteClock();
+  const stats = useMemo(
+    () => (issues ? focusStats(issues, epics ?? [], now) : null),
+    [issues, epics, now],
+  );
   const titles = useMemo(
     () => new Map((issues ?? []).map((issue) => [issue.id, issue.title])),
     [issues],
@@ -72,6 +80,8 @@ export function FocusScreen() {
               count={view.awaitingHuman.length}
             />
           </div>
+
+          {stats && <FocusStatsSection stats={stats} />}
 
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <div className="flex flex-col gap-6">

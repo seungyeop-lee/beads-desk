@@ -1,6 +1,11 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
-import { filterByDate, parseIssueDateFilter, type IssueDateFilter } from "./issueDateFilter";
+import {
+  filterByDate,
+  localDayOf,
+  parseIssueDateFilter,
+  type IssueDateFilter,
+} from "./issueDateFilter";
 
 function issue(id: string, fields: Partial<Issue> = {}): Issue {
   return {
@@ -16,6 +21,7 @@ function issue(id: string, fields: Partial<Issue> = {}): Issue {
     dependentCount: 0,
     createdAt: 0,
     updatedAt: 0,
+    startedAt: null,
     closedAt: null,
     ...fields,
   };
@@ -104,6 +110,19 @@ describe("parseIssueDateFilter", () => {
     expect(parseIssueDateFilter(null, "2026-2-1", "2026-02-30")).toEqual(created(null, null));
     expect(parseIssueDateFilter(null, "yesterday", "2026-10-15")).toEqual(
       created(null, "2026-10-15"),
+    );
+  });
+});
+
+describe("localDayOf", () => {
+  test("filterByDate와 같은 경계로 시각이 속한 현지 날짜를 돌려준다", () => {
+    const lastMoment = at(15) - 1;
+    const day = localDayOf(lastMoment);
+
+    expect(day).toBe("2026-10-14");
+    expect(localDayOf(at(15))).toBe("2026-10-15");
+    expect(filterByDate([issue("x", { createdAt: lastMoment })], created(day, day))).toHaveLength(
+      1,
     );
   });
 });

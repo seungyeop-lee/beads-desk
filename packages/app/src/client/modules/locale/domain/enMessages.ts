@@ -210,6 +210,26 @@ export const enMessages: Messages = {
     readyEmpty: "No ready issues.",
     blockedEmpty: "No blocked issues.",
     epicsEmpty: "No open epics.",
+    stats: {
+      title: "Flow",
+      throughput: "Last 7 days",
+      series: { created: "Created", closed: "Closed" },
+      dayLabel: (month, date) => `${month}/${date}`,
+      today: "Today",
+      openDay: (month, date, series, count) =>
+        `Show ${count} ${series === "created" ? "created" : "closed"} on ${month}/${date}`,
+      cycleTime: "Cycle time",
+      leadTime: "Lead time",
+      durationBasis: (count) => `median · ${count} issues`,
+      noDuration: "Nothing closed in the last 7 days",
+      durations: {
+        minutes: (value) => `${value}m`,
+        hours: (value) => `${value}h`,
+        days: (value) => `${value}d`,
+      },
+      openIssues: "Open issues",
+      closableEpics: "Epics ready to close",
+    },
   },
   issues: {
     title: "Issues",

@@ -3,14 +3,16 @@ import type {
   IssueDateField,
   IssueDateFilter,
 } from "@/client/modules/issues/domain/issueDateFilter";
-import type { IssueListRefinement } from "@/client/modules/issues/domain/issueListView";
 import { ChevronDownIcon, SearchIcon } from "@/client/ui/designSystem/icons";
 import { ISSUE_TYPES, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
-  refinement: IssueListRefinement;
-  onRefinementChange: (refinement: IssueListRefinement) => void;
+  /** 비어 있으면 모든 유형을 보입니다. */
+  types: readonly string[];
+  onTypesChange: (types: string[]) => void;
+  search: string;
+  onSearchChange: (search: string) => void;
   dates: IssueDateFilter;
   onDatesChange: (dates: IssueDateFilter) => void;
 };
@@ -18,7 +20,14 @@ type Props = {
 const DATE_FIELDS: IssueDateField[] = ["created", "closed"];
 
 /** 고른 보기 탭 안에서 유형, 날짜, 검색어로 결과를 좁힙니다. */
-export function IssueFilterBar({ refinement, onRefinementChange, dates, onDatesChange }: Props) {
+export function IssueFilterBar({
+  types,
+  onTypesChange,
+  search,
+  onSearchChange,
+  dates,
+  onDatesChange,
+}: Props) {
   const typeMenuRef = useRef<HTMLDetailsElement>(null);
   const messages = useMessages();
 
@@ -33,12 +42,9 @@ export function IssueFilterBar({ refinement, onRefinementChange, dates, onDatesC
   }, []);
 
   const toggleType = (type: string) =>
-    onRefinementChange({
-      ...refinement,
-      types: refinement.types.includes(type)
-        ? refinement.types.filter((selected) => selected !== type)
-        : [...refinement.types, type],
-    });
+    onTypesChange(
+      types.includes(type) ? types.filter((selected) => selected !== type) : [...types, type],
+    );
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -46,9 +52,9 @@ export function IssueFilterBar({ refinement, onRefinementChange, dates, onDatesC
         <summary className="btn btn-sm btn-ghost gap-1.5 rounded-full font-medium">
           {messages.issue.type}
           <span className="text-base-content/50">
-            {refinement.types.length === 0
+            {types.length === 0
               ? messages.issues.allTypes
-              : messages.issues.typeCount(refinement.types.length)}
+              : messages.issues.typeCount(types.length)}
           </span>
           <ChevronDownIcon width={14} height={14} className="text-base-content/50" />
         </summary>
@@ -59,7 +65,7 @@ export function IssueFilterBar({ refinement, onRefinementChange, dates, onDatesC
                 <input
                   type="checkbox"
                   className="checkbox checkbox-xs rounded"
-                  checked={refinement.types.includes(type)}
+                  checked={types.includes(type)}
                   onChange={() => toggleType(type)}
                 />
                 <span className={`tone-dot ${typeTone(type)}`} />
@@ -118,8 +124,8 @@ export function IssueFilterBar({ refinement, onRefinementChange, dates, onDatesC
           className="grow"
           placeholder={messages.issues.searchPlaceholder}
           aria-label={messages.issues.search}
-          value={refinement.search}
-          onChange={(event) => onRefinementChange({ ...refinement, search: event.target.value })}
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
         />
       </label>
     </div>

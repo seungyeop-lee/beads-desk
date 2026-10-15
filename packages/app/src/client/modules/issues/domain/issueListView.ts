@@ -3,7 +3,7 @@ import { ISSUE_STATUSES, type Issue } from "@beads-desk/bd/issue";
 /** 서버에서 받은 목록을 화면에서 더 좁히는 조건입니다. */
 export type IssueListRefinement = {
   /** 비어 있으면 모든 유형을 보입니다. */
-  types: string[];
+  types: readonly string[];
   search: string;
 };
 
