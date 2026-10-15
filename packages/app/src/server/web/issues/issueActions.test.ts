@@ -6,6 +6,7 @@ import {
   addCommentAction,
   addDependencyAction,
   addLabelAction,
+  closeIssueAction,
   createIssueAction,
   deleteIssueAction,
   removeDependencyAction,
@@ -18,6 +19,7 @@ vi.mock("@beads-desk/bd", () => ({
   addComment: vi.fn<typeof bd.addComment>(),
   addDependency: vi.fn<typeof bd.addDependency>(),
   addLabel: vi.fn<typeof bd.addLabel>(),
+  closeIssue: vi.fn<typeof bd.closeIssue>(),
   createIssue: vi.fn<typeof bd.createIssue>(),
   deleteIssue: vi.fn<typeof bd.deleteIssue>(),
   removeDependency: vi.fn<typeof bd.removeDependency>(),
@@ -86,26 +88,49 @@ describe("updateIssueAction", () => {
 });
 
 describe("setIssueStatusAction", () => {
+  test("저장 상태가 아닌 값은 거부한다", async () => {
+    const result = await setIssueStatusAction("demo-1", "ready" as bd.IssueStatus);
+
+    expect(bd.setIssueStatus).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
+  });
+
+  test("닫힘은 사유를 받는 closeIssueAction으로만 바꾼다", async () => {
+    const result = await setIssueStatusAction("demo-1", "closed");
+
+    expect(bd.setIssueStatus).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
+  });
+});
+
+describe("closeIssueAction", () => {
+  test("사유와 함께 닫고, 막힘이 풀린 이슈의 id와 제목을 돌려주며 다른 화면에 알린다", async () => {
+    vi.mocked(bd.closeIssue).mockResolvedValue({
+      ok: true,
+      value: [{ id: "demo-2", title: "후행", status: "open" } as bd.Issue],
+    });
+
+    const result = await closeIssueAction("demo-1", "끝냄", false);
+
+    expect(bd.closeIssue).toHaveBeenCalledWith("/workspace", "demo-1", {
+      reason: "끝냄",
+      force: false,
+    });
+    expect(result).toEqual({ ok: true, data: [{ id: "demo-2", title: "후행" }] });
+    expect(checkWorkspaceChangesNow).toHaveBeenCalledWith("/workspace");
+  });
+
   test("닫기가 거부되면 다시 요청할 수 있다고 알린다", async () => {
-    vi.mocked(bd.setIssueStatus).mockResolvedValue({
+    vi.mocked(bd.closeIssue).mockResolvedValue({
       ok: false,
       closeBlocked: true,
       error: { message: "cannot close demo-1\n", exitCode: 1 },
     });
 
-    const result = await setIssueStatusAction("demo-1", "closed", false);
+    const result = await closeIssueAction("demo-1", "", false);
 
-    expect(bd.setIssueStatus).toHaveBeenCalledWith("/workspace", "demo-1", "closed", {
-      force: false,
-    });
     expect(result).toEqual({ ok: false, closeBlocked: true, error: "cannot close demo-1" });
-  });
-
-  test("저장 상태가 아닌 값은 거부한다", async () => {
-    const result = await setIssueStatusAction("demo-1", "ready" as bd.IssueStatus, false);
-
-    expect(bd.setIssueStatus).not.toHaveBeenCalled();
-    expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
+    expect(checkWorkspaceChangesNow).not.toHaveBeenCalled();
   });
 });
 

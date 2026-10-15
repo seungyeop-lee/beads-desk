@@ -70,6 +70,7 @@ test("닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대�
 
   const rejected = page.waitForEvent("dialog");
   await select.selectOption("closed");
+  await submitCloseReason(page);
   const rejectedConfirm = await rejected;
   expect(rejectedConfirm.message()).toContain("그래도 닫을까요?");
   await rejectedConfirm.dismiss();
@@ -78,10 +79,19 @@ test("닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대�
 
   const accepted = page.waitForEvent("dialog");
   await select.selectOption("closed");
+  await submitCloseReason(page);
   await (await accepted).accept();
   await expectStatus(workspace, decision, "closed");
   await expect(rowStatus(page, decision)).toHaveValue("closed");
 });
+
+/** 닫힘을 고르면 먼저 닫는 사유를 묻습니다. 사유 없이 닫기를 요청합니다. */
+async function submitCloseReason(page: Page) {
+  await page
+    .getByRole("dialog", { name: "이슈 닫기" })
+    .getByRole("button", { name: "이슈 닫기" })
+    .click();
+}
 
 /** 이슈 표는 처음에 결정을 빼고 보이므로 유형 메뉴에서 결정을 고릅니다. */
 async function showDecisionsInIssueTable(page: Page) {

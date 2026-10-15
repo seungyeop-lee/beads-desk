@@ -178,6 +178,14 @@ export const koMessages = {
     openInMain: "이 이슈로 이동",
     closeSidePanel: "옆 패널 닫기",
   },
+  closeIssue: {
+    title: "이슈 닫기",
+    reason: "닫는 사유",
+    reasonPlaceholder: "비워 두면 bd가 Closed로 남깁니다",
+    submit: "이슈 닫기",
+    unblocked: (count: number) => `막힘이 풀려 바로 작업할 수 있게 된 이슈가 ${count}개 있습니다.`,
+    andMore: (count: number) => `외 ${count}개`,
+  },
   dependencyList: {
     remove: (id: string) => `${id} 의존 관계 지우기`,
   },

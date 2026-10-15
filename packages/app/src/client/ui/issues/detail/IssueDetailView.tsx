@@ -9,7 +9,7 @@ import {
   removeDependencyAction,
   removeLabelAction,
 } from "@/server/web/issues/issueActions";
-import { confirmForceClose } from "../fields/confirmForceClose";
+import { closePrompts } from "../fields/closePrompts";
 import { EditableText } from "../fields/EditableText";
 import { PrioritySelect } from "../fields/PrioritySelect";
 import { StatusSelect } from "../fields/StatusSelect";
@@ -105,7 +105,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
                   id="issue-status"
                   value={issue.status}
                   issueType={issue.issueType}
-                  onChange={(status) => changeStatus(status, confirmForceClose)}
+                  onChange={(status) => changeStatus(status, closePrompts)}
                 />
               </dd>
             </div>

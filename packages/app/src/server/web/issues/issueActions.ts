@@ -4,6 +4,7 @@ import {
   addComment,
   addDependency,
   addLabel,
+  closeIssue,
   createIssue,
   deleteIssue,
   dismissHuman,
@@ -23,8 +24,8 @@ import {
   LINKABLE_DEPENDENCY_TYPES,
   type IssueChanges,
   type LinkableDependencyType,
+  type CloseIssueResult,
   type NewIssueInput,
-  type StatusChangeResult,
 } from "@/shared/contract/issueActions";
 
 // Server Action은 화면을 거치지 않은 POST 요청으로도 호출되므로, TypeScript 타입과 상관없이 모든 입력을 다시 검사합니다.
@@ -46,20 +47,35 @@ export async function updateIssueAction(
   return write((cwd) => updateIssueFields(cwd, issueId, changes));
 }
 
+/** 닫힘은 사유를 받는 closeIssueAction으로 바꿉니다. */
 export async function setIssueStatusAction(
   issueId: string,
   status: IssueStatus,
+): Promise<ApiResponse<null>> {
+  if (!isString(issueId) || !isIssueStatus(status) || status === "closed") {
+    return invalidRequest();
+  }
+  return write((cwd) => setIssueStatus(cwd, issueId, status));
+}
+
+/** 사유가 비어 있으면 bd 기본 사유로 닫습니다. */
+export async function closeIssueAction(
+  issueId: string,
+  reason: string,
   force: boolean,
-): Promise<StatusChangeResult> {
-  if (!isString(issueId) || !isIssueStatus(status) || typeof force !== "boolean") {
+): Promise<CloseIssueResult> {
+  if (!isString(issueId) || !isString(reason) || typeof force !== "boolean") {
     return invalidRequest();
   }
   const cwd = currentWorkspaceRoot();
-  const result = await setIssueStatus(cwd, issueId, status, { force });
+  const result = await closeIssue(cwd, issueId, { reason, force });
   if (!result.ok && "closeBlocked" in result) {
     return { ok: false, closeBlocked: true, error: result.error.message.trim() };
   }
-  return finish(cwd, result);
+  return finish(
+    cwd,
+    result.ok ? { ok: true, value: result.value.map(({ id, title }) => ({ id, title })) } : result,
+  );
 }
 
 /** 만든 이슈의 id를 돌려줍니다. */

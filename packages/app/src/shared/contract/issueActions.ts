@@ -24,8 +24,11 @@ export type NewIssueInput = {
   parent: string | null;
 };
 
-export type StatusChangeResult =
-  | ApiResponse<null>
+/** 닫은 이슈 때문에 막혀 있다가 막힘이 풀린 이슈입니다. */
+export type UnblockedIssue = { id: string; title: string };
+
+export type CloseIssueResult =
+  | ApiResponse<UnblockedIssue[]>
   /** 열린 하위 이슈나 닫히지 않은 선행 이슈가 있어 닫지 못했습니다. force로 다시 요청하면 닫습니다. */
   | (ApiFailure & { closeBlocked: true });
 

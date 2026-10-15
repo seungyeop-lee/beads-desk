@@ -11,7 +11,7 @@ import {
 import { useBoard } from "@/client/modules/board/application/useBoard";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { confirmForceClose } from "@/client/ui/issues/fields/confirmForceClose";
+import { closePrompts } from "@/client/ui/issues/fields/closePrompts";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import {
   priorityLabel,
@@ -71,7 +71,7 @@ export function BoardScreen() {
       showToast(messages.board.stillBlocked(issueId), { tone: statusTone("blocked") });
     }
     if (outcome.kind === "change") {
-      void issueEdits(writes, issueId).changeStatus(outcome.status, confirmForceClose);
+      void issueEdits(writes, issueId).changeStatus(outcome.status, closePrompts);
     }
   };
 

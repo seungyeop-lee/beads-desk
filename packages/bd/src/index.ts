@@ -17,6 +17,7 @@ export {
   addComment,
   addDependency,
   addLabel,
+  closeIssue,
   createIssue,
   deleteIssue,
   dismissHuman,

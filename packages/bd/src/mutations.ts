@@ -1,4 +1,4 @@
-import { awaitsHumanDecision, isRecord, type IssueStatus } from "./issue";
+import { awaitsHumanDecision, isRecord, parseIssues, type Issue, type IssueStatus } from "./issue";
 import { showIssue } from "./queries";
 import { inputError, runBdChecked, runBdJson, type BdError, type BdOutcome } from "./runBd";
 
@@ -78,25 +78,46 @@ export async function updateIssueFields(
   return write(cwd, ["update", ...flags], [issueId]);
 }
 
-export type StatusChangeOutcome =
-  | BdOutcome<null>
+export function setIssueStatus(
+  cwd: string,
+  issueId: string,
+  status: IssueStatus,
+): Promise<BdOutcome<null>> {
+  return write(cwd, ["update", `--status=${status}`], [issueId]);
+}
+
+export type CloseOutcome =
+  /** 이 이슈를 닫아 막힘이 풀린 이슈입니다. */
+  | BdOutcome<Issue[]>
   /** 열린 하위 이슈나 닫히지 않은 선행 이슈가 있어 bd가 닫기를 거부했습니다. force로 다시 요청할 수 있습니다. */
   | { ok: false; closeBlocked: true; error: BdError };
 
 const CLOSE_BLOCKED = /cannot close/i;
 
-export async function setIssueStatus(
+/** 사유가 비어 있으면 bd 기본 사유(`Closed`)를 남깁니다. */
+export async function closeIssue(
   cwd: string,
   issueId: string,
-  status: IssueStatus,
-  options: { force?: boolean } = {},
-): Promise<StatusChangeOutcome> {
-  const flags = [`--status=${status}`, ...(options.force ? ["--force"] : [])];
-  const result = await write(cwd, ["update", ...flags], [issueId]);
-  if (!result.ok && CLOSE_BLOCKED.test(result.error.message)) {
-    return { ...result, closeBlocked: true };
+  options: { reason: string; force?: boolean },
+): Promise<CloseOutcome> {
+  const id = issueId.trim();
+  if (id.length === 0) {
+    return inputError("이슈 id가 비어 있습니다.");
   }
-  return result;
+  const reason = options.reason.trim();
+  const args = ["close", "--json", "--suggest-next"];
+  if (options.force) args.push("--force");
+  if (reason) args.push(`--reason=${reason}`);
+
+  const result = await runBdJson(cwd, [...args, "--", id], { write: true });
+  if (!result.ok) {
+    return CLOSE_BLOCKED.test(result.error.message) ? { ...result, closeBlocked: true } : result;
+  }
+  // 막힘이 풀린 이슈가 없으면 bd는 {closed, unblocked} 대신 닫은 이슈 배열만 출력합니다.
+  return {
+    ok: true,
+    value: isRecord(result.value) ? parseIssues(result.value.unblocked) : [],
+  };
 }
 
 export function addComment(cwd: string, issueId: string, text: string): Promise<BdOutcome<null>> {

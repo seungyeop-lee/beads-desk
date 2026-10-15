@@ -166,6 +166,17 @@ export const enMessages: Messages = {
     openInMain: "Open this issue",
     closeSidePanel: "Close side panel",
   },
+  closeIssue: {
+    title: "Close issue",
+    reason: "Close reason",
+    reasonPlaceholder: "Leave empty and bd records Closed",
+    submit: "Close issue",
+    unblocked: (count) =>
+      count === 1
+        ? "1 issue is now unblocked and ready:"
+        : `${count} issues are now unblocked and ready:`,
+    andMore: (count) => `and ${count} more`,
+  },
   dependencyList: {
     remove: (id) => `Remove dependency ${id}`,
   },

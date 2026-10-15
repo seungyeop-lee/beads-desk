@@ -6,6 +6,7 @@ import {
   addComment,
   addDependency,
   addLabel,
+  closeIssue,
   createIssue,
   deleteIssue,
   dismissHuman,
@@ -145,16 +146,43 @@ describe("setIssueStatus", () => {
 
     expect(await setIssueStatus(workDir, "demo-1", "in_progress")).toEqual(succeeded);
   });
+});
+
+describe("closeIssue", () => {
+  test("사유와 함께 닫고, 그 때문에 막힘이 풀린 이슈를 돌려준다", async () => {
+    await useFakeBd({
+      "close --json --suggest-next --reason=-끝냄 -- demo-1": {
+        stdout: JSON.stringify({
+          closed: [{ id: "demo-1", title: "선행", status: "closed" }],
+          unblocked: [{ id: "demo-2", title: "후행", status: "open" }],
+        }),
+      },
+    });
+
+    const result = await closeIssue(workDir, "demo-1", { reason: "-끝냄" });
+
+    expect(result.ok && result.value.map(({ id, title }) => ({ id, title }))).toEqual([
+      { id: "demo-2", title: "후행" },
+    ]);
+  });
+
+  test("막힘이 풀린 이슈가 없으면 bd가 닫은 이슈 배열만 출력하므로 빈 목록을 돌려준다", async () => {
+    await useFakeBd({
+      "close --json --suggest-next -- demo-1": { stdout: '[{"id":"demo-1","status":"closed"}]' },
+    });
+
+    expect(await closeIssue(workDir, "demo-1", { reason: "  " })).toEqual({ ok: true, value: [] });
+  });
 
   test("열린 하위 이슈나 선행 이슈 때문에 닫지 못하면 그 사실을 알린다", async () => {
     await useFakeBd({
-      "update --status=closed -- demo-1": {
+      "close --json --suggest-next -- demo-1": {
         stderr: "cannot close demo-1: 1 open child issue(s)",
         code: 1,
       },
     });
 
-    const result = await setIssueStatus(workDir, "demo-1", "closed");
+    const result = await closeIssue(workDir, "demo-1", { reason: "" });
 
     expect(result).toEqual({
       ok: false,
@@ -164,9 +192,14 @@ describe("setIssueStatus", () => {
   });
 
   test("force를 주면 막는 이슈가 있어도 닫는다", async () => {
-    await useFakeBd({ "update --status=closed --force -- demo-1": {} });
+    await useFakeBd({
+      "close --json --suggest-next --force --reason=강제 -- demo-1": { stdout: "[]" },
+    });
 
-    expect(await setIssueStatus(workDir, "demo-1", "closed", { force: true })).toEqual(succeeded);
+    expect(await closeIssue(workDir, "demo-1", { reason: "강제", force: true })).toEqual({
+      ok: true,
+      value: [],
+    });
   });
 });
 

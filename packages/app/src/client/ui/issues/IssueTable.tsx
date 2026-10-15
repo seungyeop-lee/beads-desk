@@ -8,7 +8,7 @@ import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/doma
 import { BlockerLine } from "./BlockerLine";
 import { HumanDecisionChip } from "./HumanDecisionChip";
 import { copyIssueId } from "./copyIssueId";
-import { confirmForceClose } from "./fields/confirmForceClose";
+import { closePrompts } from "./fields/closePrompts";
 import { PrioritySelect } from "./fields/PrioritySelect";
 import { StatusSelect } from "./fields/StatusSelect";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
@@ -164,7 +164,7 @@ function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
           aria-label={messages.issueTable.statusOf(issue.id)}
           value={issue.status}
           issueType={issue.issueType}
-          onChange={(status) => changeStatus(status, confirmForceClose)}
+          onChange={(status) => changeStatus(status, closePrompts)}
         />
       </td>
       <td>
