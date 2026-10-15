@@ -26,6 +26,8 @@ export function statusTone(status: string): string {
 
 export const READY_TONE = "tone-aqua";
 
+export const HUMAN_DECISION_TONE = "tone-lavender";
+
 /** 작업 상태의 색은 같은 이름의 저장 상태 색을 따르고, 바로 작업 가능은 READY_TONE입니다. 보드 열의 색과 같습니다. */
 const WORK_STATE_TONES: Record<WorkState, string> = {
   in_progress: STATUS_TONES.in_progress,

@@ -20,6 +20,7 @@ import { BlockerBanner } from "./BlockerBanner";
 import { CommentList } from "./CommentList";
 import { DependencyList } from "./DependencyList";
 import { EditableMarkdown } from "./EditableMarkdown";
+import { HumanDecisionPanel } from "./HumanDecisionPanel";
 import { LabelEditor } from "./LabelEditor";
 import { RelationAddForm } from "./RelationAddForm";
 
@@ -84,6 +85,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
                 />
               ))}
             </div>
+            <HumanDecisionPanel issue={issue} writes={writes} />
             <CommentList
               comments={issue.comments}
               disabled={pending}

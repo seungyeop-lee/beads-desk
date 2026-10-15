@@ -8,8 +8,10 @@ import {
   addLabel,
   createIssue,
   deleteIssue,
+  dismissHuman,
   removeDependency,
   removeLabel,
+  respondToHuman,
   setIssueStatus,
   updateIssueFields,
 } from "./mutations";
@@ -205,6 +207,49 @@ describe("댓글, 라벨, 의존 관계, 삭제", () => {
     expect(await deleteIssue(workDir, "")).toEqual({
       ok: false,
       error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
+    });
+  });
+});
+
+describe("respondToHuman, dismissHuman", () => {
+  const showArgs = (id: string) => `show --json --include-comments --include-dependents -- ${id}`;
+  const shown = (id: string, status: string, labels: string[]) => ({
+    stdout: JSON.stringify([{ id, status, labels }]),
+  });
+
+  test("판단을 기다리는 이슈면 bd human respond와 dismiss를 실행한다", async () => {
+    await useFakeBd({
+      [showArgs("demo-1")]: shown("demo-1", "open", ["human"]),
+      "human respond -- demo-1 Use OAuth2": {},
+      "human dismiss -- demo-1 No longer applicable": {},
+      "human dismiss -- demo-1": {},
+    });
+
+    expect(await respondToHuman(workDir, "demo-1", "Use OAuth2")).toEqual(succeeded);
+    expect(await dismissHuman(workDir, "demo-1", " No longer applicable ")).toEqual(succeeded);
+    expect(await dismissHuman(workDir, "demo-1", " ")).toEqual(succeeded);
+  });
+
+  test("human 라벨이 없거나 닫힌 이슈에는 bd human 명령을 실행하지 않는다", async () => {
+    await useFakeBd({
+      [showArgs("demo-2")]: shown("demo-2", "open", []),
+      [showArgs("demo-3")]: shown("demo-3", "closed", ["human"]),
+    });
+    const rejected = {
+      ok: false,
+      error: { message: "사람 판단을 기다리는 이슈가 아닙니다.", exitCode: null },
+    };
+
+    expect(await respondToHuman(workDir, "demo-2", "Use OAuth2")).toEqual(rejected);
+    expect(await dismissHuman(workDir, "demo-3", "")).toEqual(rejected);
+  });
+
+  test("빈 응답은 bd를 실행하지 않는다", async () => {
+    await useFakeBd({});
+
+    expect(await respondToHuman(workDir, "demo-1", " \n")).toEqual({
+      ok: false,
+      error: { message: "응답이 비어 있습니다.", exitCode: null },
     });
   });
 });

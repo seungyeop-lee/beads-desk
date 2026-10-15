@@ -1,4 +1,4 @@
-import type { Issue } from "@beads-desk/bd/issue";
+import { awaitsHumanDecision, type Issue } from "@beads-desk/bd/issue";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { sortEpics } from "@/client/modules/epics/domain/epicsView";
 import { groupByWorkState, type WorkState } from "@/client/modules/issues/domain/workState";
@@ -7,6 +7,8 @@ import { groupByWorkState, type WorkState } from "@/client/modules/issues/domain
 export const NEXT_UP_LIMIT = 5;
 
 export type FocusView = {
+  /** 유형과 작업 상태에 상관없이, 사람 판단을 기다리는 이슈를 모두 모읍니다. */
+  awaitingHuman: Issue[];
   inProgress: Issue[];
   /** 우선순위와 만든 시각 순입니다. 다음에 할 일은 앞에서 NEXT_UP_LIMIT개만 보입니다. */
   ready: Issue[];
@@ -23,6 +25,7 @@ export function focusView(issues: Issue[], epics: EpicSummary[]): FocusView {
   const groups = groupByWorkState(issues.filter((issue) => issue.issueType !== "decision"));
   const of = (state: WorkState) => groups.find((group) => group.state === state)?.issues ?? [];
   return {
+    awaitingHuman: issues.filter(awaitsHumanDecision),
     inProgress: of("in_progress"),
     ready: of("ready"),
     blocked: of("blocked"),

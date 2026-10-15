@@ -56,3 +56,17 @@ test("에픽 진행률에는 닫히지 않은 epic만 진행 중인 것부터 �
 
   expect(view.openEpics.map(({ epic }) => epic.id)).toEqual(["doing", "open"]);
 });
+
+test("판단 기다림에는 유형과 작업 상태에 상관없이 human 라벨이 붙은 닫히지 않은 이슈를 모은다", () => {
+  const view = focusView(
+    [
+      issue("question", { labels: ["human"], ready: true }),
+      issue("decision", { issueType: "decision", labels: ["human"] }),
+      issue("answered", { status: "closed", labels: ["human"] }),
+      issue("plain", { ready: true }),
+    ],
+    [],
+  );
+
+  expect(ids(view.awaitingHuman)).toEqual(["question", "decision"]);
+});

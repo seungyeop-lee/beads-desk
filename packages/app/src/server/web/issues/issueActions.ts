@@ -6,8 +6,10 @@ import {
   addLabel,
   createIssue,
   deleteIssue,
+  dismissHuman,
   removeDependency,
   removeLabel,
+  respondToHuman,
   setIssueStatus,
   updateIssueFields,
   type BdOutcome,
@@ -111,6 +113,17 @@ export async function removeDependencyAction(issueId: string, dependsOnId: strin
 export async function deleteIssueAction(issueId: string) {
   if (!isString(issueId)) return invalidRequest();
   return write((cwd) => deleteIssue(cwd, issueId));
+}
+
+export async function respondToHumanAction(issueId: string, response: string) {
+  if (!isString(issueId) || !isString(response)) return invalidRequest();
+  return write((cwd) => respondToHuman(cwd, issueId, response));
+}
+
+/** 사유는 비워 둘 수 있습니다. */
+export async function dismissHumanAction(issueId: string, reason: string) {
+  if (!isString(issueId) || !isString(reason)) return invalidRequest();
+  return write((cwd) => dismissHuman(cwd, issueId, reason));
 }
 
 async function write<T>(run: (cwd: string) => Promise<BdOutcome<T>>): Promise<ApiResponse<T>> {

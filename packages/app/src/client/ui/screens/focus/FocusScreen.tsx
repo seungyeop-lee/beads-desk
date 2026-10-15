@@ -9,7 +9,13 @@ import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import { priorityLabel, priorityTone, workStateTone } from "@/client/ui/issues/issueLabels";
+import {
+  HUMAN_DECISION_TONE,
+  priorityLabel,
+  priorityTone,
+  workStateTone,
+} from "@/client/ui/issues/issueLabels";
+import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { issueViewHref } from "@/client/ui/screens/issues/IssueViewTabs";
@@ -49,22 +55,22 @@ export function FocusScreen() {
 
       {view && (
         <>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {CARD_STATES.map((state) => (
-              <Link
+              <CountCard
                 key={state}
                 href={issueViewHref(state)}
-                className={`tone-wash ${workStateTone(state)} flex flex-col gap-1 rounded-box px-5 py-4 transition hover:shadow-sm`}
-              >
-                <span className="flex items-center gap-2 text-sm font-semibold">
-                  <span className={`tone-dot ${workStateTone(state)}`} />
-                  {messages.workStates.labels[state]}
-                </span>
-                <span className="font-mono text-3xl font-bold tabular-nums">
-                  {countOf[state]?.length}
-                </span>
-              </Link>
+                tone={workStateTone(state)}
+                label={messages.workStates.labels[state]}
+                count={countOf[state]?.length}
+              />
             ))}
+            <CountCard
+              href="/human"
+              tone={HUMAN_DECISION_TONE}
+              label={messages.humanDecisions.title}
+              count={view.awaitingHuman.length}
+            />
           </div>
 
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -153,6 +159,29 @@ export function FocusScreen() {
   );
 }
 
+type CountCardProps = {
+  href: string;
+  tone: string;
+  label: string;
+  count: number | undefined;
+};
+
+/** 누르면 개수에 해당하는 이슈를 모아 보는 화면으로 이동합니다. */
+function CountCard({ href, tone, label, count }: CountCardProps) {
+  return (
+    <Link
+      href={href}
+      className={`tone-wash ${tone} flex flex-col gap-1 rounded-box px-5 py-4 transition hover:shadow-sm`}
+    >
+      <span className="flex items-center gap-2 text-sm font-semibold">
+        <span className={`tone-dot ${tone}`} />
+        {label}
+      </span>
+      <span className="font-mono text-3xl font-bold tabular-nums">{count}</span>
+    </Link>
+  );
+}
+
 type SectionProps = {
   title: string;
   /** 제목 앞 점의 색입니다. 없으면 점을 그리지 않습니다. */
@@ -206,6 +235,7 @@ function FocusRow({ issue, href, showAssignee, waitingOn }: RowProps) {
           <span className="min-w-0 grow truncate font-medium">
             {issue.title || messages.common.untitled}
           </span>
+          <HumanDecisionChip issue={issue} />
           {showAssignee && (
             <span className="shrink-0 text-xs text-base-content/60">
               {issue.assignee ?? messages.common.none}

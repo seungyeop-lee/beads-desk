@@ -107,6 +107,20 @@ export const koMessages = {
     bannerTitle: "먼저 끝나야 하는 이슈가 있습니다",
     bannerBody: "아래 이슈가 모두 닫히면 이 이슈는 바로 작업 가능 목록에 올라옵니다.",
   },
+  humanDecision: {
+    chip: "판단 기다림",
+    panelTitle: "사람의 판단을 기다리는 이슈입니다",
+    panelBody: "응답은 댓글로 남고, 응답하거나 넘기면 이 이슈가 닫힙니다.",
+    response: "응답",
+    placeholder: "판단한 내용을 적으세요",
+    respond: "응답하고 닫기",
+    dismiss: "넘기기",
+    dismissReason: "넘기는 사유",
+    dismissReasonPlaceholder: "적지 않아도 됩니다",
+    confirmDismiss: "넘기고 닫기",
+    responded: (id: string) => `${id}에 응답하고 닫았습니다`,
+    dismissed: (id: string) => `${id}을(를) 넘기고 닫았습니다`,
+  },
   copyId: {
     copied: (id: string) => `ID를 복사했습니다: ${id}`,
     failed: (id: string) => `ID를 복사하지 못했습니다: ${id}`,
@@ -273,6 +287,13 @@ export const koMessages = {
     },
     stillBlocked: (id: string) =>
       `${id}: 다른 이슈에 막혀 있어 막힘 열에 남습니다. 막고 있는 이슈를 먼저 닫아 주세요.`,
+  },
+  humanDecisions: {
+    title: "판단 기다림",
+    description: "agent가 사람에게 넘긴 질문입니다. 응답하거나 넘기면 이슈가 닫힙니다.",
+    empty: "판단을 기다리는 이슈가 없습니다.",
+    openDetail: "상세 열기",
+    noDescription: "설명이 없습니다.",
   },
   decisions: {
     title: "결정",

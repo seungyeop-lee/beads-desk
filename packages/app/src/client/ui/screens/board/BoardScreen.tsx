@@ -19,6 +19,7 @@ import {
   READY_TONE,
   statusTone,
 } from "@/client/ui/issues/issueLabels";
+import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { BOARD_COLUMNS, type BoardColumn } from "@/shared/contract/board";
 import { useMinuteClock } from "./useMinuteClock";
@@ -177,6 +178,7 @@ function BoardCard({ issue, column, href }: { issue: Issue; column: BoardColumn;
         )}
         <span className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
           <IssueTypeTag issueType={issue.issueType} />
+          <HumanDecisionChip issue={issue} />
           {issue.priority !== null && (
             <span className={`chip h-5 px-2 text-[11px] ${priorityTone(issue.priority)}`}>
               P{issue.priority} {priorityLabel(messages, issue.priority)}

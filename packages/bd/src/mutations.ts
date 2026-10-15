@@ -1,4 +1,5 @@
-import { isRecord, type IssueStatus } from "./issue";
+import { awaitsHumanDecision, isRecord, type IssueStatus } from "./issue";
+import { showIssue } from "./queries";
 import { inputError, runBdChecked, runBdJson, type BdError, type BdOutcome } from "./runBd";
 
 // 모든 쓰기 명령은 값을 `--flag=값`으로, id와 본문은 `--` 뒤에 넘깁니다.
@@ -122,6 +123,24 @@ export function removeDependency(cwd: string, issueId: string, dependsOnId: stri
   return write(cwd, ["dep", "remove"], [issueId, dependsOnId]);
 }
 
+/** 응답을 `Response: <응답>` 댓글로 남기고, close reason `Responded`로 이슈를 닫습니다. */
+export function respondToHuman(
+  cwd: string,
+  issueId: string,
+  response: string,
+): Promise<BdOutcome<null>> {
+  if (response.trim().length === 0) {
+    return Promise.resolve(inputError("응답이 비어 있습니다."));
+  }
+  return runHumanCommand(cwd, "respond", issueId, [response]);
+}
+
+/** 댓글 없이 이슈를 닫습니다. close reason은 `Dismissed` 또는 `Dismissed: <사유>`입니다. */
+export function dismissHuman(cwd: string, issueId: string, reason: string) {
+  const trimmed = reason.trim();
+  return runHumanCommand(cwd, "dismiss", issueId, trimmed ? [trimmed] : []);
+}
+
 /** 이 이슈에 의존하던 이슈는 남기고 의존 관계만 지웁니다. */
 export function deleteIssue(cwd: string, issueId: string) {
   return write(cwd, ["delete", "--force"], [issueId]);
@@ -138,6 +157,23 @@ function changeLabel(
     return Promise.resolve(inputError("라벨이 비어 있습니다."));
   }
   return write(cwd, ["label", action], [issueId], [trimmed]);
+}
+
+// bd human respond와 dismiss는 human 라벨이 없는 이슈도 경고만 남기고 닫으므로, 판단을 기다리는 이슈인지 먼저 확인합니다.
+async function runHumanCommand(
+  cwd: string,
+  action: "respond" | "dismiss",
+  issueId: string,
+  values: string[],
+): Promise<BdOutcome<null>> {
+  const shown = await showIssue(cwd, issueId);
+  if (!shown.ok) {
+    return shown;
+  }
+  if (!awaitsHumanDecision(shown.value)) {
+    return inputError("사람 판단을 기다리는 이슈가 아닙니다.");
+  }
+  return write(cwd, ["human", action], [issueId], values);
 }
 
 /** 빈 id가 있으면 bd를 실행하지 않습니다. values는 id 뒤에 그대로 넘깁니다. */

@@ -95,6 +95,20 @@ export const enMessages: Messages = {
     bannerTitle: "Blocked by open issues",
     bannerBody: "This issue becomes ready when all of these issues are closed.",
   },
+  humanDecision: {
+    chip: "Needs human",
+    panelTitle: "This issue is waiting for a human decision",
+    panelBody: "Your response is saved as a comment. Responding or dismissing closes this issue.",
+    response: "Response",
+    placeholder: "Write your decision",
+    respond: "Respond and close",
+    dismiss: "Dismiss",
+    dismissReason: "Reason for dismissing",
+    dismissReasonPlaceholder: "Optional",
+    confirmDismiss: "Dismiss and close",
+    responded: (id) => `Responded to ${id} and closed it`,
+    dismissed: (id) => `Dismissed ${id} and closed it`,
+  },
   copyId: {
     copied: (id) => `Copied ID: ${id}`,
     failed: (id) => `Could not copy ID: ${id}`,
@@ -258,6 +272,13 @@ export const enMessages: Messages = {
     },
     stillBlocked: (id) =>
       `${id}: It stays in Blocked because other issues block it. Close the blocking issues first.`,
+  },
+  humanDecisions: {
+    title: "Needs human",
+    description: "Questions agents handed to a human. Responding or dismissing closes the issue.",
+    empty: "No issues are waiting for a human decision.",
+    openDetail: "Open details",
+    noDescription: "No description.",
   },
   decisions: {
     title: "Decisions",

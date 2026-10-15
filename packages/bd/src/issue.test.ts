@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
-import { parseIssueDetail, parseIssues } from "./issue";
+import { awaitsHumanDecision, parseIssueDetail, parseIssues } from "./issue";
 
 async function fixture(name: string): Promise<unknown> {
   return JSON.parse(await readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));
@@ -129,5 +129,13 @@ describe("parseIssueDetail", () => {
 
   test("id가 없으면 null을 돌려준다", () => {
     expect(parseIssueDetail({ title: "no id" })).toBeNull();
+  });
+});
+
+describe("awaitsHumanDecision", () => {
+  test("human 라벨이 붙은 닫히지 않은 이슈만 판단을 기다린다", () => {
+    expect(awaitsHumanDecision({ status: "in_progress", labels: ["ops", "human"] })).toBe(true);
+    expect(awaitsHumanDecision({ status: "closed", labels: ["human"] })).toBe(false);
+    expect(awaitsHumanDecision({ status: "open", labels: ["ops"] })).toBe(false);
   });
 });

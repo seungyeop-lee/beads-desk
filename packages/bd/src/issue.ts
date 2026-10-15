@@ -24,6 +24,14 @@ export type Issue = {
   ready?: boolean;
 };
 
+/** agent가 사람에게 판단을 넘긴 이슈에 붙이는 라벨입니다. bd human 명령이 이 라벨로 이슈를 모읍니다. */
+export const HUMAN_LABEL = "human";
+
+/** bd human respond와 dismiss는 이슈를 닫기만 하고 라벨은 남기므로, 닫힌 이슈는 판단을 기다리지 않습니다. */
+export function awaitsHumanDecision(issue: Pick<Issue, "status" | "labels">): boolean {
+  return issue.status !== "closed" && issue.labels.includes(HUMAN_LABEL);
+}
+
 /** 상세 화면에서 다른 이슈와의 의존 관계 한 건입니다. */
 export type IssueLink = {
   id: string;

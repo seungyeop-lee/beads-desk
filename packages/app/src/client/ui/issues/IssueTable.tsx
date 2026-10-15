@@ -5,6 +5,7 @@ import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/domain/issueListView";
 import { BlockerLine } from "./BlockerLine";
+import { HumanDecisionChip } from "./HumanDecisionChip";
 import { copyIssueId } from "./copyIssueId";
 import { confirmForceClose } from "./fields/confirmForceClose";
 import { EditableText } from "./fields/EditableText";
@@ -147,6 +148,7 @@ function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
           >
             {issue.title || messages.common.untitled}
           </Link>
+          <HumanDecisionChip issue={issue} className="ml-2" />
           {outline && outline.childCount > 0 && (
             <span className="ml-2 font-mono text-xs text-base-content/45 tabular-nums">
               {messages.issueTable.childCount(outline.childCount)}

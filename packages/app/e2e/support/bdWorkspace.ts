@@ -46,6 +46,7 @@ export type SeedIssue<K extends string = string> = {
   priority?: number;
   status?: string;
   assignee?: string;
+  labels?: string[];
   /** 같은 `createIssues` 호출에서 심는 상위 이슈의 key입니다. */
   parent?: K;
 };
@@ -62,6 +63,7 @@ export type BdIssue = {
   assignee?: string;
   labels?: string[];
   parent?: string;
+  close_reason?: string;
   dependencies?: { id: string; dependency_type: string }[];
 };
 
