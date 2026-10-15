@@ -116,6 +116,10 @@ export const enMessages: Messages = {
     copied: (id) => `Copied ID: ${id}`,
     failed: (id) => `Could not copy ID: ${id}`,
   },
+  claim: {
+    label: "Claim",
+    hint: "Assign it to you and set it in progress",
+  },
   editable: {
     editField: (label) => `Edit ${label}`,
     addField: (label) => `Add ${label}`,

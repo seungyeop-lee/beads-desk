@@ -129,6 +129,10 @@ export const koMessages = {
     copied: (id: string) => `ID를 복사했습니다: ${id}`,
     failed: (id: string) => `ID를 복사하지 못했습니다: ${id}`,
   },
+  claim: {
+    label: "가져가기",
+    hint: "담당자를 나로 정하고 진행 중으로 바꿉니다",
+  },
   editable: {
     editField: (label: string) => `${label} 고치기`,
     addField: (label: string) => `${label} 추가`,

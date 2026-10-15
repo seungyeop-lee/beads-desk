@@ -4,6 +4,7 @@ import {
   addComment,
   addDependency,
   addLabel,
+  claimIssue,
   closeAsReplaced,
   closeIssue,
   createIssue,
@@ -59,6 +60,12 @@ export async function setIssueStatusAction(
     return invalidRequest();
   }
   return write((cwd) => setIssueStatus(cwd, issueId, status));
+}
+
+/** 담당자를 bd를 실행한 사람으로 정하고 진행 중으로 바꿉니다. */
+export async function claimIssueAction(issueId: string) {
+  if (!isString(issueId)) return invalidRequest();
+  return write((cwd) => claimIssue(cwd, issueId));
 }
 
 /** 사유가 비어 있으면 bd 기본 사유로 닫습니다. */

@@ -6,6 +6,7 @@ import {
   addComment,
   addDependency,
   addLabel,
+  claimIssue,
   closeAsReplaced,
   closeIssue,
   createIssue,
@@ -146,6 +147,29 @@ describe("setIssueStatus", () => {
     await useFakeBd({ "update --status=in_progress -- demo-1": {} });
 
     expect(await setIssueStatus(workDir, "demo-1", "in_progress")).toEqual(succeeded);
+  });
+});
+
+describe("claimIssue", () => {
+  test("담당자 지정과 진행 중 전환을 claim 한 번으로 한다", async () => {
+    await useFakeBd({ "update --claim -- demo-1": {} });
+
+    expect(await claimIssue(workDir, "demo-1")).toEqual(succeeded);
+  });
+
+  test("이미 다른 사람에게 지정된 이슈라 bd가 거부하면 첫 줄의 거부 사유만 돌려준다", async () => {
+    await useFakeBd({
+      "update --claim -- demo-1": {
+        stderr:
+          "Error updating demo-1: issue already claimed by other\nError: 1 of 1 issues failed to update\n  demo-1: updating issue: issue already claimed by other",
+        code: 1,
+      },
+    });
+
+    expect(await claimIssue(workDir, "demo-1")).toEqual({
+      ok: false,
+      error: { message: "Error updating demo-1: issue already claimed by other", exitCode: 1 },
+    });
   });
 });
 

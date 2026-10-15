@@ -10,6 +10,7 @@ import {
   addCommentAction,
   addDependencyAction,
   addLabelAction,
+  claimIssueAction,
   closeAsReplacedAction,
   closeIssueAction,
   createIssueAction,
@@ -24,6 +25,7 @@ vi.mock("@beads-desk/bd", () => ({
   addComment: vi.fn<typeof bd.addComment>(),
   addDependency: vi.fn<typeof bd.addDependency>(),
   addLabel: vi.fn<typeof bd.addLabel>(),
+  claimIssue: vi.fn<typeof bd.claimIssue>(),
   closeAsReplaced: vi.fn<typeof bd.closeAsReplaced>(),
   closeIssue: vi.fn<typeof bd.closeIssue>(),
   createIssue: vi.fn<typeof bd.createIssue>(),
@@ -105,6 +107,25 @@ describe("setIssueStatusAction", () => {
     const result = await setIssueStatusAction("demo-1", "closed");
 
     expect(bd.setIssueStatus).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
+  });
+});
+
+describe("claimIssueAction", () => {
+  test("이슈를 가져가고 다른 화면에 알린다", async () => {
+    vi.mocked(bd.claimIssue).mockResolvedValue(written);
+
+    const result = await claimIssueAction("demo-1");
+
+    expect(bd.claimIssue).toHaveBeenCalledWith("/workspace", "demo-1");
+    expect(result).toEqual({ ok: true, data: null });
+    expect(checkWorkspaceChangesNow).toHaveBeenCalledWith("/workspace");
+  });
+
+  test("문자열이 아닌 id는 거부한다", async () => {
+    const result = await claimIssueAction(1 as unknown as string);
+
+    expect(bd.claimIssue).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
   });
 });

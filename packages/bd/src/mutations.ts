@@ -86,6 +86,18 @@ export function setIssueStatus(
   return write(cwd, ["update", `--status=${status}`], [issueId]);
 }
 
+/**
+ * 담당자를 bd를 실행한 사람으로 정하고 상태를 in_progress로 바꿉니다. 다른 사람에게 지정된 이슈와 closed, deferred, blocked 이슈는 bd가 거부합니다.
+ * 담당자 이름은 bd가 `$BEADS_ACTOR`, git user.name, `$USER` 순서로 정합니다.
+ */
+export async function claimIssue(cwd: string, issueId: string): Promise<BdOutcome<null>> {
+  const result = await write(cwd, ["update", "--claim"], [issueId]);
+  // bd는 거부 사유를 첫 줄에 쓰고, 실패한 이슈 수와 같은 사유를 다시 덧붙입니다.
+  return result.ok
+    ? result
+    : { ok: false, error: { ...result.error, message: result.error.message.split("\n")[0] } };
+}
+
 export type CloseOutcome =
   /** 이 이슈를 닫아 막힘이 풀린 이슈입니다. */
   | BdOutcome<Issue[]>

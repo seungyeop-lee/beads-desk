@@ -24,6 +24,7 @@ export {
   addComment,
   addDependency,
   addLabel,
+  claimIssue,
   closeAsReplaced,
   closeIssue,
   createIssue,

@@ -14,6 +14,7 @@ import { EditableText } from "../fields/EditableText";
 import { PrioritySelect } from "../fields/PrioritySelect";
 import { StatusSelect } from "../fields/StatusSelect";
 import { TrashIcon } from "@/client/ui/designSystem/icons";
+import { ClaimButton } from "../ClaimButton";
 import { formatTime } from "../issueLabels";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { BlockerBanner } from "./BlockerBanner";
@@ -101,13 +102,14 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               <dt className="caption">
                 <label htmlFor="issue-status">{messages.issue.status}</label>
               </dt>
-              <dd>
+              <dd className="flex items-center gap-2">
                 <StatusSelect
                   id="issue-status"
                   value={issue.status}
                   issueType={issue.issueType}
                   onChange={(status) => changeStatus(status, closePrompts)}
                 />
+                <ClaimButton issue={issue} writes={writes} />
               </dd>
             </div>
 
