@@ -33,7 +33,17 @@
   padding: 0;
 }
 
-.markdown-editor .milkdown .ProseMirror > :first-child {
+/*
+ * Crepe의 virtual cursor는 선택이 비어 있을 때만 문서 맨 앞에 widget을 넣습니다.
+ * widget이 첫 자식 자리를 차지해도 첫 블록의 위 여백을 없애야, 드래그로 선택할 때 본문이 움직이지 않습니다.
+ * 커서를 그리기 시작하면 widget의 class가 ProseMirror-widget에서 prosemirror-virtual-cursor로 바뀌어 둘 다 건너뜁니다.
+ */
+.markdown-editor .milkdown .ProseMirror > :first-child,
+.markdown-editor
+  .milkdown
+  .ProseMirror
+  > :first-child:is(.ProseMirror-widget, .prosemirror-virtual-cursor)
+  + * {
   margin-top: 0;
 }
 
