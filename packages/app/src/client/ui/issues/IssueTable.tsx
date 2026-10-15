@@ -188,8 +188,8 @@ function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
 }
 
 /**
- * 하위 행은 상위 행의 접기 버튼 아래에서 꺾인 선을 그어 상위 행에 잇습니다.
- * 깊이마다 접기 버튼과 같은 폭의 칸을 하나씩 두고, 하위가 없는 행도 버튼 자리를 비워 두어 같은 깊이의 제목이 한 줄에 맞춰집니다.
+ * 하위 행은 상위 행의 접기 버튼 아래에서 짧게 꺾인 선을 그어 상위 행에 잇습니다.
+ * 깊이마다 접기 버튼과 같은 폭의 칸을 하나씩 두고, 하위가 없는 행은 버튼 자리에 점을 찍어 같은 깊이의 제목이 한 줄에 맞춰집니다.
  */
 function TitleOutline({
   issueId,
@@ -209,7 +209,7 @@ function TitleOutline({
       ))}
       {outline.depth > 0 && (
         <span
-          className="-mt-2 ml-3 h-[1.125rem] w-3 shrink-0 rounded-bl-md border-b-2 border-l-2 border-base-content/20"
+          className="-mt-2 ml-3 h-[1.0625rem] w-3 shrink-0 rounded-bl border-b border-l border-base-content/15"
           aria-hidden="true"
         />
       )}
@@ -228,8 +228,10 @@ function TitleOutline({
           />
         </button>
       ) : (
-        <span className="-ml-1 flex w-7 shrink-0" aria-hidden="true">
-          {outline.depth > 0 && <span className="mt-2 w-4 border-t-2 border-base-content/20" />}
+        <span className="-ml-1 flex w-7 shrink-0 justify-center pl-1" aria-hidden="true">
+          {outline.depth > 0 && (
+            <span className="mt-[7px] size-1.5 rounded-full bg-base-content/30" />
+          )}
         </span>
       )}
       <div className="min-w-0">{children}</div>
