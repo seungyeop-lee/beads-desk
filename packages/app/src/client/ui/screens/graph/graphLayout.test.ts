@@ -2,7 +2,13 @@ import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { ExecutionOrder } from "@/client/modules/graph/domain/executionOrder";
 import type { IssueHierarchy } from "@/client/modules/graph/domain/issueHierarchy";
-import { COLUMN_STEP, COMPONENT_GAP, hierarchyLayout, orderLayout, ROW_STEP } from "./graphLayout";
+import {
+  COLUMN_STEP,
+  COMPONENT_GAP,
+  hierarchyLayout,
+  layeredLayout,
+  ROW_STEP,
+} from "./graphLayout";
 
 const issue = (id: string) => ({ id }) as Issue;
 
@@ -45,7 +51,7 @@ test("layer는 왼쪽에서 오른쪽으로, layer 안의 이슈는 위에서 �
   };
 
   const positions = Object.fromEntries(
-    orderLayout(order).nodes.map((node) => [node.issue.id, [node.x, node.y]]),
+    layeredLayout(order).nodes.map((node) => [node.issue.id, [node.x, node.y]]),
   );
 
   expect(positions).toEqual({

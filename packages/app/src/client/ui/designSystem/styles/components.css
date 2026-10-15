@@ -310,3 +310,23 @@
   --xy-controls-button-border-color: var(--color-base-300);
   --xy-attribution-background-color: transparent;
 }
+
+/* 전체 관계 탭은 관계 유형마다 선 모양을 달리합니다. 범례의 견본 선도 같은 class로 그립니다. */
+.relation-parent-child {
+  --relation-dash: 7 4;
+}
+.relation-related {
+  --relation-dash: 2 4;
+}
+.relation-other {
+  --relation-dash: 10 4 2 4;
+}
+.react-flow__edge.relation .react-flow__edge-path,
+.relation-line {
+  stroke-width: 1.5;
+  stroke-dasharray: var(--relation-dash, none);
+}
+/* 범례는 캔버스 밖에 있어 React Flow의 간선 색 변수를 받지 못하므로 같은 색을 직접 줍니다. */
+.relation-line {
+  stroke: color-mix(in oklab, var(--color-base-content) 35%, #0000);
+}

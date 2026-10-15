@@ -356,10 +356,12 @@ export const enMessages: Messages = {
         "Issues that must finish first are on the left, following blocks dependencies. Issues in the same column can proceed in parallel.",
       hierarchy:
         "Parents are on the left and their children in the next column, following parent-child dependencies.",
+      relations:
+        "Issues connected by any dependency, including blocks, parent-child, and related, are grouped with a line style per dependency type. For directed dependencies, the issue depended on (parent, blocker, discovery source) is on the left.",
     },
     loadFailed: (error) => `Could not load the graph: ${error}`,
     tabList: "Graph views",
-    tabs: { order: "Execution order", hierarchy: "Hierarchy" },
+    tabs: { order: "Execution order", hierarchy: "Hierarchy", relations: "All relations" },
     epic: "Parent epic",
     allEpics: "All epics",
     states: "Work state",
@@ -370,6 +372,14 @@ export const enMessages: Messages = {
     edgeLabel: {
       order: (from, to) => `${to} after ${from}`,
       hierarchy: (from, to) => `${to}, child of ${from}`,
+      relations: (from, to, type) => `${type}: ${from} → ${to}`,
+    },
+    legend: "Dependency legend",
+    relationKinds: {
+      blocks: "blocks",
+      "parent-child": "parent-child",
+      related: "related",
+      other: "Other",
     },
     controls: "Graph view controls",
     zoomIn: "Zoom in",
@@ -378,10 +388,12 @@ export const enMessages: Messages = {
     unrelated: {
       order: (count) => `Not drawn: ${count} issues with no blocks dependency.`,
       hierarchy: (count) => `Not drawn: ${count} issues with no parent-child dependency.`,
+      relations: (count) => `Not drawn: ${count} issues with no dependency.`,
     },
     empty: {
       order: "No blocks dependencies among the matching issues.",
       hierarchy: "No parent-child dependencies among the matching issues.",
+      relations: "No dependencies among the matching issues.",
     },
   },
   board: {

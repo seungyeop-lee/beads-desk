@@ -6,14 +6,16 @@ import { useGraph } from "@/client/modules/graph/application/useGraph";
 import { executionOrder } from "@/client/modules/graph/domain/executionOrder";
 import { filterGraphIssues } from "@/client/modules/graph/domain/graphFilter";
 import { issueHierarchy } from "@/client/modules/graph/domain/issueHierarchy";
+import { relationGraph } from "@/client/modules/graph/domain/relationGraph";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { GRAPH_TABS, type GraphTab } from "./graphAddress";
 import { GraphFilterBar } from "./GraphFilterBar";
-import { type GraphLayout, hierarchyLayout, orderLayout } from "./graphLayout";
+import { type GraphLayout, hierarchyLayout, layeredLayout } from "./graphLayout";
 import { IssueGraph } from "./IssueGraph";
+import { RelationLegend } from "./RelationLegend";
 import { useGraphAddress } from "./useGraphAddress";
 
 type TabView = {
@@ -33,7 +35,7 @@ const TAB_VIEWS: Record<
   order: {
     view: (issues, dependencies) => {
       const order = executionOrder(issues, dependencies);
-      return { layout: orderLayout(order), unrelated: order.unrelated };
+      return { layout: layeredLayout(order), unrelated: order.unrelated };
     },
     edgeType: "default",
   },
@@ -43,6 +45,13 @@ const TAB_VIEWS: Record<
       return { layout: hierarchyLayout(hierarchy), unrelated: hierarchy.unrelated };
     },
     edgeType: "smoothstep",
+  },
+  relations: {
+    view: (issues, dependencies) => {
+      const graph = relationGraph(issues, dependencies);
+      return { layout: layeredLayout(graph), unrelated: graph.unrelated };
+    },
+    edgeType: "default",
   },
 };
 
@@ -112,10 +121,15 @@ export function GraphScreen() {
           </div>
         )}
 
-        {view && view.unrelated > 0 && (
-          <p className="text-sm text-base-content/55">
-            {messages.graph.unrelated[address.tab](view.unrelated)}
-          </p>
+        {view && (
+          <div className="flex flex-wrap items-center gap-4 empty:hidden">
+            {view.unrelated > 0 && (
+              <p className="text-sm text-base-content/55">
+                {messages.graph.unrelated[address.tab](view.unrelated)}
+              </p>
+            )}
+            <RelationLegend edges={view.layout.edges} />
+          </div>
         )}
         {view &&
           (view.layout.nodes.length > 0 ? (

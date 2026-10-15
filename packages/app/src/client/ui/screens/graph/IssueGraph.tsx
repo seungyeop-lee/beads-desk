@@ -24,13 +24,16 @@ type IssueNode = Node<IssueNodeData, "issue">;
 type Props = {
   layout: GraphLayout;
   /** 화면 낭독기가 간선마다 읽을 관계 설명입니다. */
-  edgeLabel: (from: string, to: string) => string;
+  edgeLabel: (from: string, to: string, type?: string) => string;
   /** smoothstep은 간선을 꺾은 선으로 그립니다. 기본값은 곡선입니다. */
   edgeType?: "default" | "smoothstep";
   issueHref: (issueId: string) => string;
 };
 
-/** 탭마다 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
+/**
+ * 탭마다 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다.
+ * 간선에 선 모양(kind)이 있으면 모양마다 class를 붙입니다. 방향이 없는 related에는 화살표를 그리지 않습니다.
+ */
 export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref }: Props) {
   const messages = useMessages();
   const { nodes, edges } = useMemo(
@@ -43,13 +46,14 @@ export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref 
         height: NODE_HEIGHT,
         data: { issue, href: issueHref(issue.id) },
       })),
-      edges: layout.edges.map(({ from, to }): Edge => ({
-        id: `${from}->${to}`,
+      edges: layout.edges.map(({ from, to, type, kind }): Edge => ({
+        id: `${type ?? ""}:${from}->${to}`,
         source: from,
         target: to,
         type: edgeType,
-        markerEnd: { type: MarkerType.ArrowClosed },
-        ariaLabel: edgeLabel(from, to),
+        className: kind && `relation relation-${kind}`,
+        markerEnd: kind === "related" ? undefined : { type: MarkerType.ArrowClosed },
+        ariaLabel: edgeLabel(from, to, type),
       })),
     }),
     [layout, issueHref, edgeLabel, edgeType],
