@@ -363,6 +363,40 @@ export const koMessages = {
     supersededBy: "새 결정",
     supersedes: "이전 결정",
   },
+  hygiene: {
+    title: "정리",
+    description: "bd가 권하는 정리 점검의 결과입니다. 이슈를 누르면 상세가 열립니다.",
+    loadFailed: (error: string) => `정리 점검 결과를 불러오지 못했습니다: ${error}`,
+    stale: {
+      title: "오래 방치된 이슈",
+      hint: (days: number) => `${days}일 넘게 바뀌지 않은 이슈입니다. 결정과 에픽은 뺍니다.`,
+      empty: (days: number) => `${days}일 넘게 바뀌지 않은 이슈가 없습니다.`,
+      days: "기준 일수",
+      dayOption: (days: number) => `${days}일`,
+    },
+    orphans: {
+      title: "커밋에 언급됐지만 열린 이슈",
+      hint: "커밋 메시지에 id가 나오지만 아직 닫히지 않은 이슈입니다.",
+      empty: "커밋 메시지에 id가 나오는 열린 이슈가 없습니다.",
+    },
+    lint: {
+      title: "필수 섹션이 빠진 이슈",
+      hint: "이슈 유형마다 bd가 권하는 섹션이 빠진 열린 이슈입니다.",
+      empty: "필수 섹션이 빠진 이슈가 없습니다.",
+      missing: (sections: string) => `빠진 섹션: ${sections}`,
+    },
+    duplicates: {
+      title: "중복 후보",
+      hint: "제목과 설명이 비슷한 닫히지 않은 이슈 쌍입니다.",
+      empty: "중복 후보가 없습니다.",
+      closeAs: (id: string, target: string) => `${id}을(를) ${target}의 중복으로 닫기`,
+    },
+    closableEpics: {
+      title: "닫을 수 있는 에픽",
+      hint: "하위 이슈가 모두 닫힌 열린 에픽입니다.",
+      empty: "닫을 수 있는 에픽이 없습니다.",
+    },
+  },
 };
 
 export type Messages = typeof koMessages;

@@ -2,6 +2,7 @@ import type { Issue } from "@beads-desk/bd/issue";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { localDayOf } from "@/client/modules/issues/domain/issueDateFilter";
 import { NON_WORK_TYPES, workState } from "@/client/modules/issues/domain/workState";
+import { isClosableEpic } from "@/shared/domain/epics/closableEpic";
 
 /** 처리량과 처리 시간을 보는 기간입니다. 오늘을 포함합니다. */
 export const STATS_DAYS = 7;
@@ -36,7 +37,7 @@ export type FocusStats = {
     assignee: ValueCount<string | null>[];
   };
   deferred: number;
-  /** bd epic close-eligible과 같은 기준으로, 하위 이슈가 하나 이상이고 모두 닫힌 열린 에픽 수입니다. */
+  /** 정리 페이지와 같은 기준(isClosableEpic)으로 센 닫을 수 있는 에픽 수입니다. */
   closableEpics: number;
 };
 
@@ -72,10 +73,7 @@ export function focusStats(issues: Issue[], epics: EpicSummary[], now: number): 
       assignee: countBy(open, (issue) => issue.assignee),
     },
     deferred: tracked.filter((issue) => workState(issue) === "deferred").length,
-    closableEpics: epics.filter(
-      ({ epic, totalChildren, closedChildren }) =>
-        epic.status !== "closed" && totalChildren > 0 && closedChildren === totalChildren,
-    ).length,
+    closableEpics: epics.filter(isClosableEpic).length,
   };
 }
 

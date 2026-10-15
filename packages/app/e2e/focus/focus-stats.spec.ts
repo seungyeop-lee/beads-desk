@@ -55,7 +55,7 @@ test("오늘 막대를 누르면 이슈 목록에서 오늘 닫거나 만든 이
   await expect(tabs.getByRole("link", { name: "전체 2" })).toBeVisible();
 });
 
-test("보류 수와 닫을 수 있는 에픽 수를 보이고, 누르면 보류 보기 탭과 에픽 화면을 연다", async ({
+test("보류 수와 닫을 수 있는 에픽 수를 보이고, 누르면 보류 보기 탭과 그 에픽을 모은 정리 페이지를 연다", async ({
   page,
   workspace,
 }) => {
@@ -74,5 +74,8 @@ test("보류 수와 닫을 수 있는 에픽 수를 보이고, 누르면 보류 
 
   await page.goBack();
   await stats.getByRole("link", { name: "닫을 수 있는 에픽 1" }).click();
-  await expect(page).toHaveURL(/\/epics$/);
+  await expect(page).toHaveURL(/\/hygiene$/);
+  const closable = page.getByRole("region", { name: "닫을 수 있는 에픽" });
+  await expect(closable.getByRole("listitem")).toHaveCount(1);
+  await expect(closable.getByRole("link", { name: /다 끝난 에픽/ })).toBeVisible();
 });

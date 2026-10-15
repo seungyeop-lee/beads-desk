@@ -4,6 +4,7 @@ export const SCREEN_TABS = [
   { href: "/human", screen: "humanDecisions", tone: "tone-lavender" },
   { href: "/issues", screen: "issues", tone: "tone-azure" },
   { href: "/epics", screen: "epics", tone: "tone-lilac" },
+  { href: "/hygiene", screen: "hygiene", tone: "tone-sage" },
   { href: "/board", screen: "board", tone: "tone-mint" },
   { href: "/decisions", screen: "decisions", tone: "tone-sand" },
 ] as const;

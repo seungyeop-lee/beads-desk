@@ -2,15 +2,22 @@ export type { Issue, IssueDetail, IssueStatus } from "./issue";
 export {
   boardIssues,
   decisionRecords,
+  duplicateCandidates,
   epicDescendants,
   epicStatuses,
+  lintFindings,
   listIssues,
   openChangeFingerprint,
+  orphanIssues,
   readyIssues,
   showIssue,
+  staleIssues,
   type ChangeFingerprint,
   type DecisionRecord,
   type EpicStatus,
+  type IssueRef,
+  type LintFinding,
+  type OrphanIssue,
   withWorkSignals,
 } from "./queries";
 export {

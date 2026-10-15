@@ -36,6 +36,8 @@ export type BdWorkspace = {
   ): Promise<Record<K, string>>;
   /** `bd show --json`으로 읽은 이슈입니다. 화면에서 바꾼 값이 bd에 저장됐는지 확인할 때 씁니다. */
   showIssue(id: string): Promise<BdIssue>;
+  /** workspace의 git 저장소에 빈 커밋을 남깁니다. 커밋 메시지에서 이슈 id를 찾는 `bd orphans`를 확인할 때 씁니다. */
+  commit(message: string): Promise<void>;
 };
 
 /** `createIssues`로 심는 이슈 하나입니다. 적지 않은 값은 `bd create`의 기본값을 따릅니다. */
@@ -136,6 +138,22 @@ function bdWorkspace(path: string): BdWorkspace {
     async showIssue(id) {
       const [issue]: BdIssue[] = JSON.parse(await bd("show", id, "--json"));
       return issue;
+    },
+    async commit(message) {
+      // 실행하는 환경에 git 사용자 설정이 없어도 커밋할 수 있도록 작성자를 정해 둡니다.
+      await run(
+        path,
+        "git",
+        "-c",
+        "user.name=e2e",
+        "-c",
+        "user.email=e2e@example.com",
+        "commit",
+        "--allow-empty",
+        "--quiet",
+        "--message",
+        message,
+      );
     },
   };
 }

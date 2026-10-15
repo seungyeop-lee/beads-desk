@@ -349,4 +349,38 @@ export const enMessages: Messages = {
     supersededBy: "Superseded by",
     supersedes: "Supersedes",
   },
+  hygiene: {
+    title: "Hygiene",
+    description: "Results of the hygiene checks bd recommends. Click an issue to open its details.",
+    loadFailed: (error) => `Could not load hygiene checks: ${error}`,
+    stale: {
+      title: "Stale issues",
+      hint: (days) => `Issues not updated in ${days} days. Decisions and epics are excluded.`,
+      empty: (days) => `No issue has gone ${days} days without an update.`,
+      days: "Stale after",
+      dayOption: (days) => `${days} days`,
+    },
+    orphans: {
+      title: "Orphaned issues",
+      hint: "Issues whose id appears in a commit message but are not closed yet.",
+      empty: "No open issue is mentioned in a commit message.",
+    },
+    lint: {
+      title: "Missing sections",
+      hint: "Open issues missing the sections bd recommends for their type.",
+      empty: "No issue is missing a recommended section.",
+      missing: (sections) => `Missing: ${sections}`,
+    },
+    duplicates: {
+      title: "Possible duplicates",
+      hint: "Pairs of open issues with similar titles and descriptions.",
+      empty: "No possible duplicates.",
+      closeAs: (id, target) => `Close ${id} as a duplicate of ${target}`,
+    },
+    closableEpics: {
+      title: "Epics ready to close",
+      hint: "Open epics whose children are all closed.",
+      empty: "No epics are ready to close.",
+    },
+  },
 };

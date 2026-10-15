@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
+import { answerNextConfirm } from "../support/confirmDialog";
 
 test("결정 A를 상세에서 결정 B로 대체하면 A가 닫히고, 결정 화면에서 B가 A를 대체한 것으로 보인다", async ({
   page,
@@ -76,19 +77,6 @@ test("이 이슈가 이미 의존하는 이슈와 자기 자신은 대상 후보
   await expect(options).toHaveCount(1);
   await expect(options).toContainText(other);
 });
-
-/**
- * 다음에 뜨는 확인 창에 답하고 그 문구를 돌려줍니다.
- * 확인 창은 후보를 누르는 동안 열리고, 답하기 전에는 click이 끝나지 않으므로 누르기 전에 답을 정해 둡니다.
- */
-function answerNextConfirm(page: Page, accept: boolean): Promise<string> {
-  return new Promise((resolve) => {
-    page.once("dialog", (dialog) => {
-      resolve(dialog.message());
-      void (accept ? dialog.accept() : dialog.dismiss());
-    });
-  });
-}
 
 /** 상세의 대체·중복으로 닫기에서 방법을 고르고, 검색어로 찾은 대상 이슈를 고릅니다. */
 async function pickTarget(page: Page, id: string, method: string, query: string, target: string) {

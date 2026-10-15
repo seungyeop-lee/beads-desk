@@ -61,8 +61,8 @@ export function FocusStatsSection({ stats }: { stats: FocusStats }) {
             count={stats.deferred}
           />
           <SignalLink
-            href="/epics"
-            tone={screenTone("/epics")}
+            href="/hygiene"
+            tone={screenTone("/hygiene")}
             label={text.closableEpics}
             count={stats.closableEpics}
           />
