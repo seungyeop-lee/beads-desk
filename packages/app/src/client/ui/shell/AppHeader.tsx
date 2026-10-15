@@ -8,6 +8,7 @@ import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { SettingsDialog } from "@/client/ui/settings/SettingsDialog";
+import { LOGO_BEADS } from "./logoBeads";
 import { SCREEN_TABS } from "./screenTabs";
 import { WorkspacePicker } from "./WorkspacePicker";
 
@@ -73,12 +74,11 @@ export function AppHeader() {
   );
 }
 
-/** 이슈, 에픽, 보드, 결정 네 화면의 색으로 칠한 구슬 네 개입니다. 지금 화면은 이 네 화면을 모아 보는 화면이라 넣지 않습니다. */
 function BeadsMark() {
   return (
     <span className="grid grid-cols-2 gap-0.5" aria-hidden="true">
-      {SCREEN_TABS.filter((tab) => tab.href !== "/focus").map((tab) => (
-        <span key={tab.href} className={`tone-dot ${tab.tone} size-2`} />
+      {LOGO_BEADS.map(({ tone }) => (
+        <span key={tone} className={`tone-dot ${tone} size-2`} />
       ))}
     </span>
   );
