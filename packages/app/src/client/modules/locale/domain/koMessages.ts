@@ -294,10 +294,12 @@ export const koMessages = {
   issues: {
     title: "이슈",
     loadFailed: (error: string) => `이슈 목록을 불러오지 못했습니다: ${error}`,
+    descriptionSearchFailed: (error: string) =>
+      `설명을 검색하지 못해 ID와 제목으로 찾은 이슈만 보입니다: ${error}`,
     allStatuses: "전체",
     allTypes: "전체",
     typeCount: (count: number) => `${count}개`,
-    searchPlaceholder: "ID 또는 제목 검색",
+    searchPlaceholder: "ID, 제목, 설명 검색",
     search: "검색",
     views: "보기",
     dates: "날짜",

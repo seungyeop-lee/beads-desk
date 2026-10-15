@@ -5,9 +5,11 @@ export type IssueListRefinement = {
   /** 비어 있으면 모든 유형을 보입니다. */
   types: readonly string[];
   search: string;
+  /** 설명에 search가 든 이슈의 id입니다. 목록 데이터에 설명이 없어 서버가 따로 찾아 줍니다. */
+  descriptionMatches?: ReadonlySet<string>;
 };
 
-/** 유형과 검색어(id나 제목, 대소문자 무시)로 거릅니다. 순서는 바꾸지 않습니다. */
+/** 유형과 검색어(id나 제목, 대소문자 무시) 또는 설명 검색 결과로 거릅니다. 순서는 바꾸지 않습니다. */
 export function refineIssues(issues: Issue[], refinement: IssueListRefinement): Issue[] {
   const search = refinement.search.trim().toLowerCase();
   return issues.filter(
@@ -15,7 +17,8 @@ export function refineIssues(issues: Issue[], refinement: IssueListRefinement): 
       (refinement.types.length === 0 || refinement.types.includes(issue.issueType)) &&
       (search === "" ||
         issue.id.toLowerCase().includes(search) ||
-        issue.title.toLowerCase().includes(search)),
+        issue.title.toLowerCase().includes(search) ||
+        (refinement.descriptionMatches?.has(issue.id) ?? false)),
   );
 }
 

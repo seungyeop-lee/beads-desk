@@ -181,4 +181,21 @@ describe("refineIssues", () => {
     expect(ids(refineIssues(issues, { types: [], search: "LOG" }))).toEqual(["demo-1", "demo-2"]);
     expect(ids(refineIssues(issues, { types: [], search: "demo-3" }))).toEqual(["demo-3"]);
   });
+
+  test("설명 검색으로 찾은 이슈는 id와 제목에 검색어가 없어도 넣고, 유형 조건은 그대로 지킨다", () => {
+    const issues = [
+      issue("demo-1", { title: "Login bug", issueType: "bug" }),
+      issue("demo-2", { title: "Logout", issueType: "task" }),
+      issue("demo-3", { title: "Signup", issueType: "task" }),
+    ];
+    const descriptionMatches = new Set(["demo-1", "demo-3"]);
+
+    expect(ids(refineIssues(issues, { types: [], search: "token", descriptionMatches }))).toEqual([
+      "demo-1",
+      "demo-3",
+    ]);
+    expect(
+      ids(refineIssues(issues, { types: ["task"], search: "token", descriptionMatches })),
+    ).toEqual(["demo-3"]);
+  });
 });

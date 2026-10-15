@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { readIssueDetail, readIssueList } from "./issueApiClient";
+import { readDescriptionMatches, readIssueDetail, readIssueList } from "./issueApiClient";
 
 beforeEach(() => {
   vi.stubGlobal("document", { documentElement: { lang: "ko" } });
@@ -62,4 +62,14 @@ test("이슈 상세는 id를 경로에 넣어 요청한다", async () => {
   await readIssueDetail("demo-1/x");
 
   expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues/demo-1%2Fx");
+});
+
+test("설명 검색은 검색어를 query로 붙여 요청한다", async () => {
+  const fetchMock = vi.fn<typeof fetch>(async () => Response.json({ ok: true, data: ["demo-1"] }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  const result = await readDescriptionMatches("token");
+
+  expect(result).toEqual({ ok: true, data: ["demo-1"] });
+  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issue-search?description=token");
 });

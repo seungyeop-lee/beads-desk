@@ -5,6 +5,7 @@ const ko = {
   invalidRequest: "요청 형식이 올바르지 않습니다.",
   invalidIssueStatus: "조회할 이슈 상태가 올바르지 않습니다.",
   invalidStaleDays: "오래 방치된 이슈의 기준 일수가 올바르지 않습니다.",
+  emptyDescriptionSearch: "설명 검색어가 비어 있습니다.",
   unknownWorkspace: (root: string) =>
     `등록되지 않은 workspace입니다: ${root}. 그 디렉터리에서 bd-desk start를 실행해 등록해 주세요.`,
 };
@@ -15,6 +16,7 @@ const MESSAGES: Record<Locale, typeof ko> = {
     invalidRequest: "The request is malformed.",
     invalidIssueStatus: "The requested issue status is not valid.",
     invalidStaleDays: "The stale threshold in days is not valid.",
+    emptyDescriptionSearch: "The description search text is empty.",
     unknownWorkspace: (root) =>
       `This workspace is not registered: ${root}. Run bd-desk start in that directory to register it.`,
   },

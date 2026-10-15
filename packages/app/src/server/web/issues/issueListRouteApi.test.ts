@@ -2,7 +2,7 @@ import { chmod, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { handleIssueListRequest } from "./issueListRouteApi";
+import { handleDescriptionSearchRequest, handleIssueListRequest } from "./issueListRouteApi";
 
 // Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.
 vi.mock("@/server/web/locale/requestLocale", () => ({
@@ -133,4 +133,29 @@ test("bd가 실패하면 bd의 오류 메시지와 500을 돌려준다", async (
 
   expect(response.status).toBe(500);
   expect(await response.json()).toEqual({ ok: false, error: "database is locked" });
+});
+
+test("설명 검색은 설명에 검색어가 든 이슈의 id만 돌려준다", async () => {
+  await useFakeBd("list --json --tree=false --all --brief --limit 0 --desc-contains=token", {
+    stdout: issues,
+  });
+
+  const response = await handleDescriptionSearchRequest(
+    new Request("http://localhost/api/issue-search?description=token"),
+  );
+
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ ok: true, data: ["demo-1", "demo-2"] });
+});
+
+test("설명 검색어가 비어 있으면 bd를 실행하지 않고 400을 돌려준다", async () => {
+  await useFakeBd("unused", {});
+
+  const response = await handleDescriptionSearchRequest(
+    new Request("http://localhost/api/issue-search?description=%20"),
+  );
+
+  expect(response.status).toBe(400);
+  expect((await response.json()).ok).toBe(false);
+  await expect(readFile(join(workDir, "calls.log"), "utf8")).rejects.toThrow("ENOENT");
 });

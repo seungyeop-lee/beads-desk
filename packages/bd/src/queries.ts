@@ -47,6 +47,34 @@ export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutc
   return queryIssues(cwd, listArgs(statuses));
 }
 
+/**
+ * 설명에 text가 든(대소문자 무시) 이슈의 id를 상태와 관계없이 읽습니다.
+ * 목록 응답에 설명을 담으면 응답이 몇 배로 커지므로 설명 검색은 bd에 맡깁니다.
+ * bd query의 description 조건은 한글 검색어를 찾지 못해 bd list --desc-contains를 씁니다.
+ */
+export async function issueIdsByDescription(
+  cwd: string,
+  text: string,
+): Promise<BdOutcome<string[]>> {
+  const search = text.trim();
+  if (search.length === 0) {
+    return inputError("설명 검색어가 비어 있습니다.");
+  }
+  // --brief는 출력에서 설명 같은 본문을 빼지만 --desc-contains는 설명으로 거릅니다.
+  // 검색어가 -로 시작해도 옵션으로 해석되지 않도록 = 로 붙여 넘깁니다.
+  const result = await queryIssues(cwd, [
+    "list",
+    "--json",
+    "--tree=false",
+    "--all",
+    "--brief",
+    "--limit",
+    LIST_LIMIT,
+    `--desc-contains=${search}`,
+  ]);
+  return result.ok ? { ok: true, value: result.value.map((issue) => issue.id) } : result;
+}
+
 /** 바로 작업할 수 있는 이슈를 읽습니다. decision과 epic은 빼고 돌려줍니다. */
 export async function readyIssues(cwd: string): Promise<BdOutcome<Issue[]>> {
   const result = await queryIssues(cwd, READY_ARGS);

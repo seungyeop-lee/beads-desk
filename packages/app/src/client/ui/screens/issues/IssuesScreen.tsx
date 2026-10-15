@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useMemo, useState } from "react";
+import { useDescriptionMatches } from "@/client/modules/issues/application/useDescriptionMatches";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
@@ -33,12 +34,20 @@ export function IssuesScreen() {
   const { view, dates, types } = address;
   // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
   const deferredSearch = useDeferredValue(search);
+  const description = useDescriptionMatches(search);
+  const descriptionMatches = description.matches;
   const groups = useMemo(
     () =>
       issueListGroups(
-        issues ? refineIssues(filterByDate(issues, dates), { types, search: deferredSearch }) : [],
+        issues
+          ? refineIssues(filterByDate(issues, dates), {
+              types,
+              search: deferredSearch,
+              descriptionMatches,
+            })
+          : [],
       ),
-    [issues, types, deferredSearch, dates],
+    [issues, types, deferredSearch, descriptionMatches, dates],
   );
   const viewIssues = view
     ? (groups.find((group) => group.state === view)?.issues ?? [])
@@ -70,6 +79,12 @@ export function IssuesScreen() {
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
           <span>{messages.issues.loadFailed(error)}</span>
+        </div>
+      )}
+
+      {description.error && (
+        <div role="alert" className="alert alert-error alert-soft">
+          <span>{messages.issues.descriptionSearchFailed(description.error)}</span>
         </div>
       )}
 

@@ -5,6 +5,7 @@ export {
   duplicateCandidates,
   epicDescendants,
   epicStatuses,
+  issueIdsByDescription,
   lintFindings,
   listIssues,
   openChangeFingerprint,

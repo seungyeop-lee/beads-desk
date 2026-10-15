@@ -9,6 +9,7 @@ import {
   duplicateCandidates,
   epicDescendants,
   epicStatuses,
+  issueIdsByDescription,
   lintFindings,
   listIssues,
   openChangeFingerprint,
@@ -552,6 +553,40 @@ describe("staleIssues", () => {
 
     expect(await staleIssues(workDir, 0)).toMatchObject({ ok: false, error: { exitCode: null } });
     expect(await staleIssues(workDir, 1.5)).toMatchObject({ ok: false, error: { exitCode: null } });
+  });
+});
+
+describe("issueIdsByDescription", () => {
+  test("설명에 검색어가 든 이슈의 id만 상태와 관계없이 개수 제한 없이 읽는다", async () => {
+    await useFakeBd({
+      "list --json --tree=false --all --brief --limit 0 --desc-contains=session token": {
+        stdout: JSON.stringify([
+          { id: "t-1", status: "closed" },
+          { id: "t-2", status: "open" },
+        ]),
+      },
+    });
+
+    const result = await issueIdsByDescription(workDir, " session token ");
+
+    expect(result).toEqual({ ok: true, value: ["t-1", "t-2"] });
+  });
+
+  test("검색어가 -로 시작해도 bd 옵션으로 해석되지 않게 넘긴다", async () => {
+    await useFakeBd({
+      "list --json --tree=false --all --brief --limit 0 --desc-contains=--all": { stdout: "[]" },
+    });
+
+    expect(await issueIdsByDescription(workDir, "--all")).toEqual({ ok: true, value: [] });
+  });
+
+  test("검색어가 비어 있으면 bd를 실행하지 않고 거부한다", async () => {
+    await useFakeBd({});
+
+    expect(await issueIdsByDescription(workDir, "  ")).toMatchObject({
+      ok: false,
+      error: { exitCode: null },
+    });
   });
 });
 
