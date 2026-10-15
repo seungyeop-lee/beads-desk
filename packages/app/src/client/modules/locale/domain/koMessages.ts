@@ -20,8 +20,9 @@ export const koMessages = {
     cancel: "취소",
     close: "닫기",
     loading: "불러오는 중",
-    serverUnreachable: "beads-desk 서버에 연결하지 못했습니다.",
-    unreadableResponse: "서버 응답을 해석하지 못했습니다.",
+    serverUnreachable:
+      "beads-desk 서버에 연결하지 못했습니다. 서버가 실행 중인지 확인한 뒤 화면을 새로고침해 주세요.",
+    unreadableResponse: "서버 응답을 해석하지 못했습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.",
     requestFailed: "요청을 처리하지 못했습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.",
   },
   shell: {
@@ -134,7 +135,7 @@ export const koMessages = {
     hint: "담당자를 나로 정하고 진행 중으로 바꿉니다",
   },
   editable: {
-    editField: (label: string) => `${label} 고치기`,
+    editField: (label: string) => `${label} 편집`,
     addField: (label: string) => `${label} 추가`,
     edit: "편집",
   },
@@ -173,7 +174,7 @@ export const koMessages = {
     backTo: (id: string) => `이전 이슈 ${id}로 돌아가기`,
     working: "처리 중",
     loadFailed: (error: string) => `이슈를 불러오지 못했습니다: ${error}`,
-    closeReason: "닫은 이유",
+    closeReason: "닫은 사유",
     linkedIssues: "연결된 이슈",
     createdAt: "만든 시각",
     updatedAt: "고친 시각",
@@ -231,7 +232,7 @@ export const koMessages = {
     } satisfies Record<Replacement, (id: string, target: string) => string>,
   },
   issuePicker: {
-    placeholder: "제목이나 id로 찾기",
+    placeholder: "제목이나 ID로 찾기",
     empty: "맞는 이슈가 없습니다.",
   },
   labelEditor: {
@@ -254,7 +255,7 @@ export const koMessages = {
     epicProgress: "에픽 진행률",
     epicProgressOf: (title: string) => `${title} 진행률`,
     inProgressEmpty: "진행 중인 이슈가 없습니다.",
-    readyEmpty: "바로 시작할 수 있는 이슈가 없습니다.",
+    readyEmpty: "바로 작업 가능한 이슈가 없습니다.",
     blockedEmpty: "막힌 이슈가 없습니다.",
     epicsEmpty: "진행 중이거나 열린 에픽이 없습니다.",
     stats: {
@@ -284,7 +285,7 @@ export const koMessages = {
     allStatuses: "전체",
     allTypes: "전체",
     typeCount: (count: number) => `${count}개`,
-    searchPlaceholder: "id 또는 제목 검색",
+    searchPlaceholder: "ID 또는 제목 검색",
     search: "검색",
     views: "보기",
     dates: "날짜",
@@ -339,7 +340,7 @@ export const koMessages = {
       in_progress: "진행 중",
       closed: "닫힘",
     },
-    closedWindow: "닫힌 이슈 기간",
+    closedWindow: "닫힌 이슈를 보일 기간",
     closedWindows: {
       today: "오늘",
       "3d": "최근 3일",
@@ -369,7 +370,7 @@ export const koMessages = {
   },
   hygiene: {
     title: "정리",
-    description: "bd가 권하는 정리 점검의 결과입니다. 이슈를 누르면 상세가 열립니다.",
+    description: "bd가 권하는 정리 점검의 결과입니다.",
     loadFailed: (error: string) => `정리 점검 결과를 불러오지 못했습니다: ${error}`,
     stale: {
       title: "오래 방치된 이슈",
@@ -380,13 +381,13 @@ export const koMessages = {
     },
     orphans: {
       title: "커밋에 언급됐지만 열린 이슈",
-      hint: "커밋 메시지에 id가 나오지만 아직 닫히지 않은 이슈입니다.",
-      empty: "커밋 메시지에 id가 나오는 열린 이슈가 없습니다.",
+      hint: "커밋 메시지에 ID가 나오지만 아직 닫히지 않은 이슈입니다.",
+      empty: "커밋 메시지에 ID가 나오는 열린 이슈가 없습니다.",
     },
     lint: {
-      title: "필수 섹션이 빠진 이슈",
+      title: "권장 섹션이 빠진 이슈",
       hint: "이슈 유형마다 bd가 권하는 섹션이 빠진 열린 이슈입니다.",
-      empty: "필수 섹션이 빠진 이슈가 없습니다.",
+      empty: "권장 섹션이 빠진 이슈가 없습니다.",
       missing: (sections: string) => `빠진 섹션: ${sections}`,
     },
     duplicates: {

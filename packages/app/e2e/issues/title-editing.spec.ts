@@ -12,7 +12,7 @@ test("이슈 목록과 에픽 화면의 표에서는 제목을 고칠 수 없고
   for (const path of ["/issues", "/epics"]) {
     await page.goto(path);
     await expect(page.getByRole("link", { name: "제목 검사 작업" })).toBeVisible();
-    await expect(page.getByRole("button", { name: `${task} 제목 고치기` })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: `${task} 제목 편집` })).toHaveCount(0);
   }
 
   await page.getByRole("link", { name: "제목 검사 작업" }).click();
@@ -24,7 +24,7 @@ test("상세에서 고친 제목은 bd에 저장된다", async ({ page, workspac
 
   await page.goto(`/issues?issue=${task}`);
   const dialog = page.getByRole("dialog", { name: `${task} 이슈` });
-  await dialog.getByTitle("제목 고치기").click();
+  await dialog.getByTitle("제목 편집").click();
   const input = dialog.getByRole("textbox", { name: "제목" });
   await input.fill("고친 뒤 제목");
   await input.press("Enter");

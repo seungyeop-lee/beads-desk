@@ -46,7 +46,7 @@ test("옆 패널 때문에 주 상세가 좁아지면 핵심 속성은 본문 �
     .poll(async () => (await workspace.showIssue(main)).priority, { timeout: SAVE_TIMEOUT })
     .toBe(1);
 
-  await dialog.getByTitle("담당자 고치기").click();
+  await dialog.getByTitle("담당자 편집").click();
   await dialog.getByRole("textbox", { name: "담당자" }).fill("e2e 담당자");
   await dialog.getByRole("textbox", { name: "담당자" }).press("Enter");
   await expect

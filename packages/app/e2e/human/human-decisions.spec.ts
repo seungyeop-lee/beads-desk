@@ -33,7 +33,7 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
 });
 
-test("넘긴 이슈는 판단 기다림 화면에서 사라지고, 넘긴 사유가 닫은 이유로 남는다", async ({
+test("넘긴 이슈는 판단 기다림 화면에서 사라지고, 넘긴 사유가 닫은 사유로 남는다", async ({
   page,
   workspace,
 }) => {

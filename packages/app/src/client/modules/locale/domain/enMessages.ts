@@ -9,8 +9,9 @@ export const enMessages: Messages = {
     cancel: "Cancel",
     close: "Close",
     loading: "Loading",
-    serverUnreachable: "Could not connect to the beads-desk server.",
-    unreadableResponse: "Could not read the server response.",
+    serverUnreachable:
+      "Could not connect to the beads-desk server. Check that the server is running, then refresh the page.",
+    unreadableResponse: "Could not read the server response. Refresh the page and try again.",
     requestFailed: "Could not process the request. Refresh the page and try again.",
   },
   shell: {
@@ -177,7 +178,7 @@ export const enMessages: Messages = {
   closeIssue: {
     title: "Close issue",
     reason: "Close reason",
-    reasonPlaceholder: "Leave empty and bd records Closed",
+    reasonPlaceholder: "If left empty, bd records Closed",
     submit: "Close issue",
     unblocked: (count) =>
       count === 1
@@ -220,7 +221,7 @@ export const enMessages: Messages = {
     },
   },
   issuePicker: {
-    placeholder: "Search id or title",
+    placeholder: "Search ID or title",
     empty: "No matching issues.",
   },
   labelEditor: {
@@ -245,7 +246,7 @@ export const enMessages: Messages = {
     inProgressEmpty: "No issues in progress.",
     readyEmpty: "No ready issues.",
     blockedEmpty: "No blocked issues.",
-    epicsEmpty: "No open epics.",
+    epicsEmpty: "No open or in-progress epics.",
     stats: {
       title: "Flow",
       throughput: "Last 7 days",
@@ -273,7 +274,7 @@ export const enMessages: Messages = {
     allStatuses: "All",
     allTypes: "All",
     typeCount: (count) => `${count}`,
-    searchPlaceholder: "Search id or title",
+    searchPlaceholder: "Search ID or title",
     search: "Search",
     views: "View",
     dates: "Dates",
@@ -316,7 +317,7 @@ export const enMessages: Messages = {
   },
   board: {
     title: "Board",
-    description: "Drag a card to another column to change its status to that column.",
+    description: "Drag a card to another column to change its status to match that column.",
     loadFailed: (error) => `Could not load the board: ${error}`,
     columns: {
       other: "Deferred & other",
@@ -325,7 +326,7 @@ export const enMessages: Messages = {
       in_progress: "In progress",
       closed: "Closed",
     },
-    closedWindow: "Closed issue period",
+    closedWindow: "Show closed issues from",
     closedWindows: {
       today: "Today",
       "3d": "Last 3 days",
@@ -355,7 +356,7 @@ export const enMessages: Messages = {
   },
   hygiene: {
     title: "Hygiene",
-    description: "Results of the hygiene checks bd recommends. Click an issue to open its details.",
+    description: "Results of the hygiene checks bd recommends.",
     loadFailed: (error) => `Could not load hygiene checks: ${error}`,
     stale: {
       title: "Stale issues",
@@ -366,7 +367,7 @@ export const enMessages: Messages = {
     },
     orphans: {
       title: "Orphaned issues",
-      hint: "Issues whose id appears in a commit message but are not closed yet.",
+      hint: "Issues whose ID appears in a commit message but are not closed yet.",
       empty: "No open issue is mentioned in a commit message.",
     },
     lint: {

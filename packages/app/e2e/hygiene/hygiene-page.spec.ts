@@ -4,7 +4,7 @@ import { answerNextConfirm } from "../support/confirmDialog";
 
 const DUPLICATE_DESCRIPTION = "로그인 페이지의 비밀번호 재설정 링크를 누르면 404가 납니다.";
 
-test("필수 섹션이 빠진 bug와 거의 같은 이슈 두 개는 각각 필수 섹션 카드와 중복 후보 카드에 보이고, 이슈를 누르면 상세가 열린다", async ({
+test("권장 섹션이 빠진 bug와 거의 같은 이슈 두 개는 각각 권장 섹션 카드와 중복 후보 카드에 보이고, 이슈를 누르면 상세가 열린다", async ({
   page,
   workspace,
 }) => {
@@ -15,7 +15,7 @@ test("필수 섹션이 빠진 bug와 거의 같은 이슈 두 개는 각각 필�
   });
 
   await page.goto("/hygiene");
-  const lint = card(page, "필수 섹션이 빠진 이슈");
+  const lint = card(page, "권장 섹션이 빠진 이슈");
   await expect(lint.getByRole("link", { name: new RegExp(bug) })).toContainText(
     "빠진 섹션: Steps to Reproduce, Acceptance Criteria",
   );
@@ -81,7 +81,7 @@ test("오래 방치된 이슈의 기준 일수를 바꾸면 그 카드만 새 �
   await staleRead;
   await expect(stale.getByText("7일 넘게 바뀌지 않은 이슈가 없습니다.")).toBeVisible();
   await expect(
-    card(page, "필수 섹션이 빠진 이슈").getByRole("link", { name: new RegExp(bug) }),
+    card(page, "권장 섹션이 빠진 이슈").getByRole("link", { name: new RegExp(bug) }),
   ).toBeVisible();
 });
 

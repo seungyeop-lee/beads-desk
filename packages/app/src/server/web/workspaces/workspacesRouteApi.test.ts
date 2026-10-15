@@ -88,7 +88,8 @@ test("화면에서는 등록한 workspace로만 바꿀 수 있다", async () => 
   expect(await selectWorkspaceAction(otherRoot)).toEqual({ ok: true, data: null });
   expect(await selectWorkspaceAction("/elsewhere")).toEqual({
     ok: false,
-    error: "등록되지 않은 workspace입니다: /elsewhere",
+    error:
+      "등록되지 않은 workspace입니다: /elsewhere. 그 디렉터리에서 bd-desk start를 실행해 등록해 주세요.",
   });
   expect(await selectWorkspaceAction(1 as unknown as string)).toEqual({
     ok: false,
