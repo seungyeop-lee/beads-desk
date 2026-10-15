@@ -17,14 +17,19 @@ export type ActivityEntry =
 
 /**
  * 변경 이벤트와 댓글을 오래된 것부터 한 목록으로 합칩니다.
- * bd는 이벤트 시각을 초 단위로만 남기고 최신 이벤트를 먼저 돌려주므로, 같은 시각의 이벤트는 받은 순서를 뒤집어 둡니다.
+ * bd는 이벤트 시각을 초 단위로만 남기고, 같은 초의 이벤트는 시각 정보가 없는 id 순으로 돌려줘 실제 순서를 알 수 없습니다.
+ * 다만 이슈를 만든 기록은 다른 기록보다 늦을 수 없으므로 같은 초에서도 맨 앞에 둡니다.
  * 댓글은 이슈 상세의 댓글로 보이므로 commented 이벤트는 뺍니다.
  */
 export function issueActivity(events: IssueEvent[], comments: IssueComment[]): ActivityEntry[] {
+  const createdIds = new Set(
+    events.filter((event) => event.type === "created").map((event) => event.id),
+  );
+  const opening = (entry: ActivityEntry) =>
+    entry.kind === "event" && createdIds.has(entry.key) ? 0 : 1;
   const entries: ActivityEntry[] = [
     ...events
       .filter((event) => event.type !== "commented")
-      .toReversed()
       .map((event) => ({
         kind: "event" as const,
         key: event.id,
@@ -39,7 +44,7 @@ export function issueActivity(events: IssueEvent[], comments: IssueComment[]): A
       comment,
     })),
   ];
-  return entries.sort((a, b) => a.at - b.at);
+  return entries.sort((a, b) => a.at - b.at || opening(a) - opening(b));
 }
 
 function activityLines(event: IssueEvent): ActivityLine[] {

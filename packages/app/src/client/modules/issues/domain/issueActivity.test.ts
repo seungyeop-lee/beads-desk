@@ -20,17 +20,22 @@ function comment(id: string, at: number): IssueComment {
   return { id, author: "tester", text: id, createdAt: at };
 }
 
-test("이벤트와 댓글을 오래된 것부터 합치고, 같은 시각의 이벤트는 bd가 돌려준 순서를 뒤집어 둔다", () => {
+test("이벤트와 댓글을 오래된 것부터 합친다", () => {
   // bd history는 최신 이벤트를 먼저 돌려줍니다.
-  const events = [
-    event("later", "updated", 2_000),
-    event("same-2", "updated", 1_000),
-    event("same-1", "updated", 1_000),
-  ];
+  const events = [event("later", "updated", 3_000), event("earlier", "updated", 1_000)];
 
-  const entries = issueActivity(events, [comment("c-1", 1_500)]);
+  const entries = issueActivity(events, [comment("c-1", 2_000)]);
 
-  expect(entries.map((entry) => entry.key)).toEqual(["same-1", "same-2", "c-1", "later"]);
+  expect(entries.map((entry) => entry.key)).toEqual(["earlier", "c-1", "later"]);
+});
+
+test("같은 초에 남은 이벤트는 bd가 어느 순서로 돌려줘도 이슈를 만든 기록을 먼저 둔다", () => {
+  const created = event("created", "created", 1_000);
+  const changed = event("changed", "status_changed", 1_000);
+  const keys = (events: IssueEvent[]) => issueActivity(events, []).map((entry) => entry.key);
+
+  expect(keys([changed, created])).toEqual(["created", "changed"]);
+  expect(keys([created, changed])).toEqual(["created", "changed"]);
 });
 
 test("댓글은 이슈 상세의 댓글로 보이므로 commented 이벤트는 뺀다", () => {
