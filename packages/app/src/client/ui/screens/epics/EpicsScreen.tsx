@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import {
   epicDescendantRows,
   notChildCandidate,
@@ -108,7 +109,9 @@ function EpicSection({ summary, expanded, onToggle, issueHref, writes }: Section
         >
           <ChevronRightIcon className={`transition-transform ${expanded ? "rotate-90" : ""}`} />
         </button>
-        <span className="w-20 shrink-0 font-mono text-xs text-base-content/55">{epic.id}</span>
+        <span className="w-12 shrink-0 font-mono text-xs text-base-content/55" title={epic.id}>
+          {shortIssueId(epic.id)}
+        </span>
         <Link
           className="min-w-0 grow truncate text-[15px] font-semibold decoration-base-content/30 underline-offset-4 hover:underline"
           href={issueHref(epic.id)}

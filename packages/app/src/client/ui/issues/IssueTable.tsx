@@ -3,12 +3,12 @@ import Link from "next/link";
 import { memo, useMemo, useState, type ReactNode } from "react";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/domain/issueListView";
 import { BlockerLine } from "./BlockerLine";
 import { HumanDecisionChip } from "./HumanDecisionChip";
 import { copyIssueId } from "./copyIssueId";
 import { confirmForceClose } from "./fields/confirmForceClose";
-import { EditableText } from "./fields/EditableText";
 import { PrioritySelect } from "./fields/PrioritySelect";
 import { StatusSelect } from "./fields/StatusSelect";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
@@ -34,7 +34,7 @@ type Props = (
   hideHeader?: boolean;
 };
 
-/** ID를 누르면 ID를 복사하고, 제목을 누르면 상세를 열고, 연필 버튼으로 제목을 고칩니다. 상태, 담당자, 우선순위는 표에서 바로 고칩니다. */
+/** ID를 누르면 전체 ID를 복사하고, 제목을 누르면 상세를 엽니다. 상태와 우선순위는 표에서 바로 고치고, 담당자는 상세에서만 고칩니다. */
 export const IssueTable = memo(function IssueTable({
   issues,
   tree,
@@ -65,12 +65,12 @@ export const IssueTable = memo(function IssueTable({
       <table className="table table-fixed">
         <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
           <tr>
-            <th className="w-32">ID</th>
-            <th className="w-28">{messages.issue.type}</th>
+            <th className="w-24">ID</th>
+            <th className="w-26">{messages.issue.type}</th>
             <th>{messages.issue.title}</th>
             <th className="w-32">{messages.issue.status}</th>
             <th className="w-32">{messages.issue.priority}</th>
-            <th className="w-40">{messages.issue.assignee}</th>
+            <th className="w-36">{messages.issue.assignee}</th>
             <th className="w-20 text-right">{messages.issue.dependencyCount}</th>
           </tr>
         </thead>
@@ -133,7 +133,7 @@ function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
           aria-label={messages.issueTable.copyIdOf(issue.id)}
           onClick={() => void copyIssueId(issue.id)}
         >
-          {issue.id}
+          {shortIssueId(issue.id)}
         </button>
       </td>
       <td className="text-sm">
@@ -174,14 +174,8 @@ function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
           onChange={(priority) => update({ priority })}
         />
       </td>
-      <td className="text-sm">
-        <EditableText
-          label={messages.issueTable.assigneeOf(issue.id)}
-          value={issue.assignee ?? ""}
-          placeholder={messages.common.none}
-          compact
-          onSave={(assignee) => update({ assignee })}
-        />
+      <td className="truncate text-sm" title={issue.assignee ?? undefined}>
+        {issue.assignee || <span className="text-base-content/50">{messages.common.none}</span>}
       </td>
       <td
         className={`text-right font-mono text-xs tabular-nums ${issue.dependencyCount + issue.dependentCount === 0 ? "text-base-content/30" : ""}`}

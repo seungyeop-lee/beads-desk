@@ -93,7 +93,6 @@ export const koMessages = {
     copyIdOf: (id: string) => `${id} ID 복사`,
     statusOf: (id: string) => `${id} 상태`,
     priorityOf: (id: string) => `${id} 우선순위`,
-    assigneeOf: (id: string) => `${id} 담당자`,
     dependencyCounts: (dependencies: number, dependents: number) =>
       `선행 ${dependencies}개 · 후속 ${dependents}개`,
     toggleChildren: (id: string, expanded: boolean) =>

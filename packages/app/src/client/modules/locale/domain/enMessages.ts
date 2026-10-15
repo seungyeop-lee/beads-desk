@@ -82,7 +82,6 @@ export const enMessages: Messages = {
     copyIdOf: (id) => `Copy ID ${id}`,
     statusOf: (id) => `Status of ${id}`,
     priorityOf: (id) => `Priority of ${id}`,
-    assigneeOf: (id) => `Assignee of ${id}`,
     dependencyCounts: (dependencies, dependents) =>
       `${dependencies} dependencies · ${dependents} dependents`,
     toggleChildren: (id, expanded) => `${expanded ? "Collapse" : "Expand"} child issues of ${id}`,

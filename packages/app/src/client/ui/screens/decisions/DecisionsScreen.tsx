@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useDecisions } from "@/client/modules/decisions/application/useDecisions";
 import { decisionGroups, type DecisionRow } from "@/client/modules/decisions/domain/decisionsView";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import {
   useIssueWrites,
   type IssueWrites,
@@ -91,7 +92,7 @@ function DecisionTable({ title, rows, emptyMessage, issueHref, writes }: TablePr
           <table className="table">
             <thead>
               <tr>
-                <th className="w-32">ID</th>
+                <th className="w-24">ID</th>
                 <th>{messages.issue.title}</th>
                 <th className="w-32">{messages.issue.status}</th>
                 <th className="w-72">{messages.decisions.supersession}</th>
@@ -130,7 +131,9 @@ function DecisionRowView({
   const messages = useMessages();
   return (
     <tr className="hover:bg-base-200/60">
-      <td className="font-mono text-xs text-base-content/55">{decision.id}</td>
+      <td className="font-mono text-xs text-base-content/55" title={decision.id}>
+        {shortIssueId(decision.id)}
+      </td>
       <td>
         <Link
           className="font-medium decoration-base-content/30 underline-offset-4 hover:underline"
