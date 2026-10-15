@@ -6,6 +6,7 @@ import {
   addComment,
   addDependency,
   addLabel,
+  closeAsReplaced,
   closeIssue,
   createIssue,
   deleteIssue,
@@ -199,6 +200,42 @@ describe("closeIssue", () => {
     expect(await closeIssue(workDir, "demo-1", { reason: "강제", force: true })).toEqual({
       ok: true,
       value: [],
+    });
+  });
+});
+
+describe("closeAsReplaced", () => {
+  test("대상 이슈로 대체하거나 대상 이슈의 중복으로 표시해 닫는다", async () => {
+    await useFakeBd({
+      "supersede --with=demo-2 -- demo-1": {},
+      "duplicate --of=demo-3 -- demo-1": {},
+    });
+
+    expect(await closeAsReplaced(workDir, "demo-1", "supersede", " demo-2 ")).toEqual(succeeded);
+    expect(await closeAsReplaced(workDir, "demo-1", "duplicate", "demo-3")).toEqual(succeeded);
+  });
+
+  test("bd가 거부하면 오류 뒤에 붙는 명령 도움말을 빼고 오류만 돌려준다", async () => {
+    await useFakeBd({
+      "supersede --with=demo-1 -- demo-1": {
+        stderr:
+          "Error: cannot mark an issue as superseded by itself\nUsage:\n  bd supersede <id> --with <new> [flags]",
+        code: 1,
+      },
+    });
+
+    expect(await closeAsReplaced(workDir, "demo-1", "supersede", "demo-1")).toEqual({
+      ok: false,
+      error: { message: "Error: cannot mark an issue as superseded by itself", exitCode: 1 },
+    });
+  });
+
+  test("대상 이슈 id가 비어 있으면 bd를 실행하지 않는다", async () => {
+    await useFakeBd({});
+
+    expect(await closeAsReplaced(workDir, "demo-1", "duplicate", " ")).toEqual({
+      ok: false,
+      error: { message: "대상 이슈 id가 비어 있습니다.", exitCode: null },
     });
   });
 });

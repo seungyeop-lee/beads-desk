@@ -54,12 +54,16 @@ export const enMessages: Messages = {
         "parent-child": "Parent",
         related: "Related",
         "discovered-from": "Discovered from",
+        supersedes: "Superseded by",
+        duplicates: "Duplicate of",
       },
       dependents: {
         blocks: "Blocks",
         "parent-child": "Child",
         related: "Related",
         "discovered-from": "Discovered",
+        supersedes: "Supersedes",
+        duplicates: "Duplicated by",
       },
     },
     bodyFields: {
@@ -193,6 +197,23 @@ export const enMessages: Messages = {
     kindHints: {},
     search: "Find an issue to link",
     linked: (id, kind) => `Linked ${id}: ${kind}`,
+  },
+  closeAsReplaced: {
+    title: "Close as superseded or duplicate",
+    method: "How to close",
+    methods: {
+      supersede: "Supersede with another issue",
+      duplicate: "Close as duplicate",
+    },
+    search: "Find the target issue",
+    confirm: {
+      supersede: (id, target) => `Close ${id} as superseded by ${target}?`,
+      duplicate: (id, target) => `Close ${id} as a duplicate of ${target}?`,
+    },
+    closed: {
+      supersede: (id, target) => `Closed ${id} as superseded by ${target}.`,
+      duplicate: (id, target) => `Closed ${id} as a duplicate of ${target}.`,
+    },
   },
   issuePicker: {
     placeholder: "Search id or title",

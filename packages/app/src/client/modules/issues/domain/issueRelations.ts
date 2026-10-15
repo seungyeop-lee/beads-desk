@@ -31,8 +31,13 @@ export function dependencyToAdd(kind: RelationKind, self: string, other: string)
 /** 상세의 연결된 이슈 한 줄입니다. side는 bd 상세의 어느 목록에서 왔는지를 뜻하며, 줄 라벨과 관계를 지우는 방향을 정합니다. */
 export type LinkedIssue = { side: "dependencies" | "dependents"; link: IssueLink };
 
-/** 연결된 이슈의 줄 순서입니다. 상위, 선행, 후속, 하위, 관련, 발견 출처, 여기서 발견 순입니다. */
+/**
+ * 연결된 이슈의 줄 순서입니다. 대체한 이슈, 원본, 상위, 선행, 후속, 하위, 관련, 발견 출처, 여기서 발견, 대체된 이슈, 중복 순입니다.
+ * 대체한 이슈와 원본은 이 이슈가 왜 닫혔는지 알려 주므로 맨 앞에 둡니다.
+ */
 const LINKED_ORDER = [
+  "dependencies:supersedes",
+  "dependencies:duplicates",
   "dependencies:parent-child",
   "dependencies:blocks",
   "dependents:blocks",
@@ -41,6 +46,8 @@ const LINKED_ORDER = [
   "dependents:related",
   "dependencies:discovered-from",
   "dependents:discovered-from",
+  "dependents:supersedes",
+  "dependents:duplicates",
 ];
 
 /** 이 이슈가 의존하는 이슈와 이 이슈에 의존하는 이슈를 한 목록으로 합칩니다. 같은 관계 안에서는 받은 순서를 지키고, 모르는 의존 유형은 맨 뒤에 둡니다. */

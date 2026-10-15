@@ -120,6 +120,41 @@ export async function closeIssue(
   };
 }
 
+const REPLACEMENT_FLAGS = { supersede: "--with", duplicate: "--of" } as const;
+
+/** supersede는 대상 이슈로 대체하고, duplicate는 대상 이슈의 중복으로 표시합니다. */
+export type Replacement = keyof typeof REPLACEMENT_FLAGS;
+
+/** bd supersede와 duplicate는 거부할 때 오류 뒤에 명령 도움말을 붙여 출력합니다. dep add나 close는 붙이지 않습니다. */
+const USAGE_AFTER_ERROR = /\s*\nUsage:[\s\S]*$/;
+
+/**
+ * 이슈를 닫고, 이 이슈가 대상 이슈에 의존하는 supersedes나 duplicates 관계를 남깁니다. close reason은 남기지 않습니다.
+ * 이 이슈가 대상 이슈에 이미 다른 유형으로 의존하고 있으면 bd가 거부합니다.
+ */
+export async function closeAsReplaced(
+  cwd: string,
+  issueId: string,
+  replacement: Replacement,
+  targetId: string,
+): Promise<BdOutcome<null>> {
+  const target = targetId.trim();
+  if (target.length === 0) {
+    return inputError("대상 이슈 id가 비어 있습니다.");
+  }
+  const result = await write(
+    cwd,
+    [replacement, `${REPLACEMENT_FLAGS[replacement]}=${target}`],
+    [issueId],
+  );
+  return result.ok
+    ? result
+    : {
+        ok: false,
+        error: { ...result.error, message: result.error.message.replace(USAGE_AFTER_ERROR, "") },
+      };
+}
+
 export function addComment(cwd: string, issueId: string, text: string): Promise<BdOutcome<null>> {
   if (text.trim().length === 0) {
     return Promise.resolve(inputError("댓글이 비어 있습니다."));

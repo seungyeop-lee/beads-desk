@@ -17,6 +17,7 @@ import { TrashIcon } from "@/client/ui/designSystem/icons";
 import { formatTime } from "../issueLabels";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { BlockerBanner } from "./BlockerBanner";
+import { CloseAsReplacedForm } from "./CloseAsReplacedForm";
 import { CommentList } from "./CommentList";
 import { DependencyList } from "./DependencyList";
 import { EditableMarkdown } from "./EditableMarkdown";
@@ -160,6 +161,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               edit={{ disabled: pending, onRemove: removeDependency }}
             />
             <RelationAddForm issue={issue} writes={writes} />
+            <CloseAsReplacedForm issue={issue} writes={writes} />
 
             <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-base-300 pt-5 text-xs text-base-content/60 tabular-nums">
               <dt className="caption">{messages.issueDetail.createdAt}</dt>

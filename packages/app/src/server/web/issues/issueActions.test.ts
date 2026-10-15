@@ -1,11 +1,16 @@
 import * as bd from "@beads-desk/bd";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
-import type { IssueChanges, LinkableDependencyType } from "@/shared/contract/issueActions";
+import type {
+  IssueChanges,
+  LinkableDependencyType,
+  Replacement,
+} from "@/shared/contract/issueActions";
 import {
   addCommentAction,
   addDependencyAction,
   addLabelAction,
+  closeAsReplacedAction,
   closeIssueAction,
   createIssueAction,
   deleteIssueAction,
@@ -19,6 +24,7 @@ vi.mock("@beads-desk/bd", () => ({
   addComment: vi.fn<typeof bd.addComment>(),
   addDependency: vi.fn<typeof bd.addDependency>(),
   addLabel: vi.fn<typeof bd.addLabel>(),
+  closeAsReplaced: vi.fn<typeof bd.closeAsReplaced>(),
   closeIssue: vi.fn<typeof bd.closeIssue>(),
   createIssue: vi.fn<typeof bd.createIssue>(),
   deleteIssue: vi.fn<typeof bd.deleteIssue>(),
@@ -131,6 +137,25 @@ describe("closeIssueAction", () => {
 
     expect(result).toEqual({ ok: false, closeBlocked: true, error: "cannot close demo-1" });
     expect(checkWorkspaceChangesNow).not.toHaveBeenCalled();
+  });
+});
+
+describe("closeAsReplacedAction", () => {
+  test("대체나 중복으로 닫고 다른 화면에 알린다", async () => {
+    vi.mocked(bd.closeAsReplaced).mockResolvedValue(written);
+
+    const result = await closeAsReplacedAction("demo-1", "duplicate", "demo-2");
+
+    expect(bd.closeAsReplaced).toHaveBeenCalledWith("/workspace", "demo-1", "duplicate", "demo-2");
+    expect(result).toEqual({ ok: true, data: null });
+    expect(checkWorkspaceChangesNow).toHaveBeenCalledWith("/workspace");
+  });
+
+  test("대체와 중복이 아닌 방법은 거부한다", async () => {
+    const result = await closeAsReplacedAction("demo-1", "close" as Replacement, "demo-2");
+
+    expect(bd.closeAsReplaced).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
   });
 });
 

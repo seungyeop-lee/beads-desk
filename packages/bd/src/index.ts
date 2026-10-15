@@ -17,6 +17,7 @@ export {
   addComment,
   addDependency,
   addLabel,
+  closeAsReplaced,
   closeIssue,
   createIssue,
   deleteIssue,
@@ -24,6 +25,7 @@ export {
   removeDependency,
   respondToHuman,
   removeLabel,
+  type Replacement,
   setIssueStatus,
   updateIssueFields,
 } from "./mutations";

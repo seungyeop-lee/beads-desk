@@ -60,6 +60,30 @@ test("연결된 이슈는 상위, 선행, 후속, 하위, 관련, 발견 출처,
   ]);
 });
 
+test("대체하거나 원본인 이슈는 이 이슈가 왜 닫혔는지 알리므로 맨 앞에, 이 이슈를 대체했거나 중복인 이슈는 발견 관계 뒤에 둔다", () => {
+  const rows = linkedIssues({
+    dependencies: [
+      link("parent", "parent-child"),
+      link("canonical", "duplicates"),
+      link("replacement", "supersedes"),
+    ],
+    dependents: [
+      link("duplicate", "duplicates"),
+      link("found-here", "discovered-from"),
+      link("superseded", "supersedes"),
+    ],
+  });
+
+  expect(rows.map(({ side, link }) => [side, link.id])).toEqual([
+    ["dependencies", "replacement"],
+    ["dependencies", "canonical"],
+    ["dependencies", "parent"],
+    ["dependents", "found-here"],
+    ["dependents", "superseded"],
+    ["dependents", "duplicate"],
+  ]);
+});
+
 test("모르는 의존 유형은 연결된 이슈의 맨 뒤에 둔다", () => {
   const rows = linkedIssues({
     dependencies: [link("unknown", "waits-for"), link("parent", "parent-child")],

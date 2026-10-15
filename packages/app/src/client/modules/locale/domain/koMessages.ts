@@ -1,6 +1,7 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { RelationKind } from "@/client/modules/issues/domain/issueRelations";
+import type { Replacement } from "@/shared/contract/issueActions";
 import type { ThemeChoice } from "@/shared/contract/theme";
 
 /** 관계 이름만으로 방향이 헷갈리는 선택지에 붙이는 설명입니다. */
@@ -65,12 +66,16 @@ export const koMessages = {
         "parent-child": "상위",
         related: "관련",
         "discovered-from": "발견 출처",
+        supersedes: "대체한 이슈",
+        duplicates: "원본",
       },
       dependents: {
         blocks: "후속",
         "parent-child": "하위",
         related: "관련",
         "discovered-from": "여기서 발견",
+        supersedes: "대체된 이슈",
+        duplicates: "중복",
       },
     },
     bodyFields: {
@@ -202,6 +207,24 @@ export const koMessages = {
     kindHints: relationKindHints,
     search: "연결할 이슈 찾기",
     linked: (id: string, kind: string) => `${id}을(를) ${kind}로 연결했습니다.`,
+  },
+  closeAsReplaced: {
+    title: "대체·중복으로 닫기",
+    method: "닫는 방법",
+    methods: {
+      supersede: "다른 이슈로 대체",
+      duplicate: "중복으로 닫기",
+    } satisfies Record<Replacement, string>,
+    search: "대상 이슈 찾기",
+    confirm: {
+      supersede: (id: string, target: string) => `${id}을(를) ${target}(으)로 대체하고 닫을까요?`,
+      duplicate: (id: string, target: string) =>
+        `${id}을(를) ${target}의 중복으로 표시하고 닫을까요?`,
+    } satisfies Record<Replacement, (id: string, target: string) => string>,
+    closed: {
+      supersede: (id: string, target: string) => `${id}을(를) ${target}(으)로 대체하고 닫았습니다.`,
+      duplicate: (id: string, target: string) => `${id}을(를) ${target}의 중복으로 닫았습니다.`,
+    } satisfies Record<Replacement, (id: string, target: string) => string>,
   },
   issuePicker: {
     placeholder: "제목이나 id로 찾기",

@@ -4,6 +4,7 @@ import {
   addComment,
   addDependency,
   addLabel,
+  closeAsReplaced,
   closeIssue,
   createIssue,
   deleteIssue,
@@ -22,10 +23,12 @@ import { serverMessages } from "@/server/web/locale/serverMessages";
 import type { ApiFailure, ApiResponse } from "@/shared/contract/apiResponse";
 import {
   LINKABLE_DEPENDENCY_TYPES,
+  REPLACEMENTS,
   type IssueChanges,
   type LinkableDependencyType,
   type CloseIssueResult,
   type NewIssueInput,
+  type Replacement,
 } from "@/shared/contract/issueActions";
 
 // Server Action은 화면을 거치지 않은 POST 요청으로도 호출되므로, TypeScript 타입과 상관없이 모든 입력을 다시 검사합니다.
@@ -76,6 +79,18 @@ export async function closeIssueAction(
     cwd,
     result.ok ? { ok: true, value: result.value.map(({ id, title }) => ({ id, title })) } : result,
   );
+}
+
+/** 이슈를 닫고 대상 이슈로 대체했거나 대상 이슈의 중복이라는 관계를 남깁니다. */
+export async function closeAsReplacedAction(
+  issueId: string,
+  replacement: Replacement,
+  targetId: string,
+) {
+  if (!isString(issueId) || !isReplacement(replacement) || !isString(targetId)) {
+    return invalidRequest();
+  }
+  return write((cwd) => closeAsReplaced(cwd, issueId, replacement, targetId));
 }
 
 /** 만든 이슈의 id를 돌려줍니다. */
@@ -185,6 +200,10 @@ function isIssueStatus(value: unknown): value is IssueStatus {
 
 function isLinkableDependencyType(value: unknown): value is LinkableDependencyType {
   return (LINKABLE_DEPENDENCY_TYPES as readonly unknown[]).includes(value);
+}
+
+function isReplacement(value: unknown): value is Replacement {
+  return (REPLACEMENTS as readonly unknown[]).includes(value);
 }
 
 function isPriority(value: unknown): value is number {

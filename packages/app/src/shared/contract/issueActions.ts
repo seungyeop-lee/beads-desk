@@ -36,3 +36,8 @@ export type CloseIssueResult =
 export const LINKABLE_DEPENDENCY_TYPES = ["blocks", "parent-child", "related"] as const;
 
 export type LinkableDependencyType = (typeof LINKABLE_DEPENDENCY_TYPES)[number];
+
+/** 이슈를 닫으며 대상 이슈를 남기는 방법입니다. supersede는 대상 이슈로 대체하고, duplicate는 대상 이슈의 중복으로 표시합니다. */
+export const REPLACEMENTS = ["supersede", "duplicate"] as const;
+
+export type Replacement = (typeof REPLACEMENTS)[number];
