@@ -128,6 +128,10 @@ export const koMessages = {
     dismissed: (id: string) => `${id}을(를) 넘기고 닫았습니다`,
   },
   humanGate: {
+    waiting: "사람 확인 기다림",
+    waitingOn: (title: string) => `사람 확인 기다림: ${title}`,
+    panelTitle: "사람의 확인을 기다리는 작업입니다",
+    panelBody: "아래 gate를 승인해야 막힘이 풀립니다. 승인해도 이 이슈는 닫히지 않습니다.",
     reason: "사유",
     blocks: "막고 있는 작업",
     noBlocks: "이 gate가 막고 있는 작업 이슈가 없습니다. 승인하면 gate만 닫힙니다.",

@@ -12,12 +12,13 @@ type Props = {
   groups: WorkStateGroup[];
   /** 막고 있는 이슈의 제목을 찾을 전체 목록입니다. 선행 이슈가 다른 묶음에 있어도 제목을 보입니다. */
   titleSource: Issue[];
+  humanGateTitles: ReadonlyMap<string, string>;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 };
 
 /** 전체 보기에서 작업 상태 묶음마다 표를 나눠 보입니다. 처음에는 닫힘 묶음만 접어 둡니다. */
-export function IssueGroups({ groups, titleSource, issueHref, writes }: Props) {
+export function IssueGroups({ groups, titleSource, humanGateTitles, issueHref, writes }: Props) {
   const messages = useMessages();
   const [collapsed, setCollapsed] = useState<ReadonlySet<WorkState>>(new Set(["closed"]));
   if (groups.length === 0) return <EmptyState message={messages.issueTable.empty} />;
@@ -66,6 +67,7 @@ export function IssueGroups({ groups, titleSource, issueHref, writes }: Props) {
                 issueHref={issueHref}
                 writes={writes}
                 titleSource={titleSource}
+                humanGateTitles={humanGateTitles}
                 hideHeader={group.state !== headerGroup}
               />
             )}

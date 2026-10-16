@@ -31,6 +31,8 @@ type Props = (
   emptyMessage?: string;
   /** 막고 있는 이슈의 제목을 찾을 목록입니다. 없으면 표의 이슈에서 찾습니다. */
   titleSource?: Issue[];
+  /** 열린 human gate의 id와 제목입니다. bd list가 gate를 돌려주지 않아 따로 받습니다. */
+  humanGateTitles: ReadonlyMap<string, string>;
   /** 묶음마다 표를 나눠 보일 때, 첫 표가 아니면 열 이름을 감춥니다. 열 너비는 그대로 맞춥니다. */
   hideHeader?: boolean;
 };
@@ -43,6 +45,7 @@ export const IssueTable = memo(function IssueTable({
   writes,
   emptyMessage,
   titleSource,
+  humanGateTitles,
   hideHeader,
 }: Props) {
   const messages = useMessages();
@@ -94,6 +97,7 @@ export const IssueTable = memo(function IssueTable({
               }
               issueHref={issueHref}
               titleOf={(id) => titles.get(id)}
+              humanGateTitles={humanGateTitles}
               writes={writes}
             />
           ))}
@@ -117,10 +121,11 @@ type RowProps = {
   issueHref: (issueId: string) => string;
   /** 막고 있는 이슈의 제목을 표에서 찾습니다. */
   titleOf: (issueId: string) => string | undefined;
+  humanGateTitles: ReadonlyMap<string, string>;
   writes: IssueWrites;
 };
 
-function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
+function IssueRow({ issue, outline, issueHref, titleOf, humanGateTitles, writes }: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
   const messages = useMessages();
@@ -156,7 +161,13 @@ function IssueRow({ issue, outline, issueHref, titleOf, writes }: RowProps) {
             </span>
           )}
           {issue.blockedBy && (
-            <BlockerLine blockedBy={issue.blockedBy} titleOf={titleOf} issueHref={issueHref} />
+            <BlockerLine
+              issueId={issue.id}
+              blockedBy={issue.blockedBy}
+              titleOf={titleOf}
+              humanGateTitles={humanGateTitles}
+              issueHref={issueHref}
+            />
           )}
           <DeferralLine issue={issue} />
         </TitleOutline>

@@ -101,7 +101,15 @@ test("모르는 의존 유형은 연결된 이슈의 맨 뒤에 둔다", () => {
 });
 
 function link(id: string, dependencyType: string): IssueLink {
-  return { id, title: id, status: "open", priority: 2, issueType: "task", dependencyType };
+  return {
+    id,
+    title: id,
+    status: "open",
+    priority: 2,
+    issueType: "task",
+    dependencyType,
+    awaitType: "",
+  };
 }
 
 test("결정은 상하위 관계에 넣지 않는다", () => {

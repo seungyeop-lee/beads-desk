@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
+import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import {
   epicDescendantRows,
@@ -37,6 +38,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
  */
 export function EpicsScreen() {
   const { data, error, loading } = useEpics();
+  const humanGateTitles = useHumanGateTitles();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const [expanded, setExpanded] = useState<ReadonlySet<string> | null>(null);
@@ -75,6 +77,7 @@ export function EpicsScreen() {
           summary={summary}
           expanded={open.has(summary.epic.id)}
           onToggle={() => toggle(summary.epic.id)}
+          humanGateTitles={humanGateTitles}
           issueHref={issueHref}
           writes={writes}
         />
@@ -89,11 +92,19 @@ type SectionProps = {
   summary: EpicSummary;
   expanded: boolean;
   onToggle: () => void;
+  humanGateTitles: ReadonlyMap<string, string>;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 };
 
-function EpicSection({ summary, expanded, onToggle, issueHref, writes }: SectionProps) {
+function EpicSection({
+  summary,
+  expanded,
+  onToggle,
+  humanGateTitles,
+  issueHref,
+  writes,
+}: SectionProps) {
   const { epic, totalChildren, closedChildren } = summary;
   const percent = totalChildren === 0 ? 0 : Math.round((closedChildren / totalChildren) * 100);
   const messages = useMessages();
@@ -132,17 +143,26 @@ function EpicSection({ summary, expanded, onToggle, issueHref, writes }: Section
           {closedChildren}/{totalChildren} · {percent}%
         </span>
       </header>
-      {expanded && <EpicDescendants epic={epic} issueHref={issueHref} writes={writes} />}
+      {expanded && (
+        <EpicDescendants
+          epic={epic}
+          humanGateTitles={humanGateTitles}
+          issueHref={issueHref}
+          writes={writes}
+        />
+      )}
     </section>
   );
 }
 
 function EpicDescendants({
   epic,
+  humanGateTitles,
   issueHref,
   writes,
 }: {
   epic: Issue;
+  humanGateTitles: ReadonlyMap<string, string>;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 }) {
@@ -196,6 +216,7 @@ function EpicDescendants({
       {descendants && (
         <IssueTable
           tree={epicDescendantRows(descendants)}
+          humanGateTitles={humanGateTitles}
           issueHref={issueHref}
           writes={writes}
           emptyMessage={messages.epics.childrenEmpty}

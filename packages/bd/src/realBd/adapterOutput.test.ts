@@ -158,6 +158,9 @@ test("bd gate create로 만든 human gate와 막고 있는 이슈를 읽고, 승
     reason: "로그인 화면 수정",
     blocks: [{ id: work, title: "리뷰 받을 작업" }],
   });
+  expect(value(await showIssue(cwd, work)).dependencies).toContainEqual(
+    expect.objectContaining({ id: gateId, issueType: "gate", awaitType: "human" }),
+  );
 
   value(await approveHumanGate(cwd, gateId, "배포해도 됩니다"));
   expect(value(await showIssue(cwd, gateId))).toMatchObject({

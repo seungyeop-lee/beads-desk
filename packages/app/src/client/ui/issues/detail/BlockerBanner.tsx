@@ -1,7 +1,8 @@
-import type { IssueDetail } from "@beads-desk/bd/issue";
+import { isOpenHumanGateLink, type IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useId } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { HumanGateChip } from "../HumanGateChip";
 import { statusLabel, statusTone } from "../issueLabels";
 
 type Props = {
@@ -9,7 +10,10 @@ type Props = {
   issueHref: (issueId: string) => string;
 };
 
-/** 닫히지 않은 선행 이슈(blocks)가 있으면 상세 맨 위에 그 이슈들을 보여 줍니다. 닫힌 이슈에는 보이지 않습니다. */
+/**
+ * 닫히지 않은 선행 이슈(blocks)가 있으면 상세 맨 위에 그 이슈들을 보여 줍니다. 닫힌 이슈에는 보이지 않습니다.
+ * 열린 human gate는 상태 대신 사람 확인 기다림 표시를 붙입니다. 승인은 본문 아래의 HumanGatePanel에서 합니다.
+ */
 export function BlockerBanner({ issue, issueHref }: Props) {
   const messages = useMessages();
   const headingId = useId();
@@ -37,9 +41,13 @@ export function BlockerBanner({ issue, issueHref }: Props) {
             >
               <span className="font-mono text-xs text-base-content/55">{link.id}</span> {link.title}
             </Link>
-            <span className={`chip h-5 px-2 text-[11px] ${statusTone(link.status)}`}>
-              {statusLabel(messages, link.status)}
-            </span>
+            {isOpenHumanGateLink(link) ? (
+              <HumanGateChip />
+            ) : (
+              <span className={`chip h-5 px-2 text-[11px] ${statusTone(link.status)}`}>
+                {statusLabel(messages, link.status)}
+              </span>
+            )}
           </li>
         ))}
       </ul>

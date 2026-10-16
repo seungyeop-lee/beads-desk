@@ -1,6 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
-import { awaitsHumanDecision, parseIssueDetail, parseIssueEvents, parseIssues } from "./issue";
+import {
+  awaitsHumanDecision,
+  isOpenHumanGateLink,
+  parseIssueDetail,
+  parseIssueEvents,
+  parseIssues,
+} from "./issue";
 
 async function fixture(name: string): Promise<unknown> {
   return JSON.parse(await readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));
@@ -111,6 +117,7 @@ describe("parseIssueDetail", () => {
         priority: 2,
         issueType: "task",
         dependencyType: "blocks",
+        awaitType: "",
       },
       {
         id: "demo-865",
@@ -119,6 +126,7 @@ describe("parseIssueDetail", () => {
         priority: 2,
         issueType: "epic",
         dependencyType: "parent-child",
+        awaitType: "",
       },
     ]);
     expect(detail?.dependents.map((link) => [link.id, link.dependencyType])).toEqual([
@@ -131,6 +139,26 @@ describe("parseIssueDetail", () => {
         text: "First comment",
         createdAt: Date.parse("2026-10-13T13:14:21Z"),
       },
+    ]);
+  });
+
+  test("의존 이슈가 gate이면 gate가 기다리는 대상을 담는다", () => {
+    const detail = parseIssueDetail({
+      id: "x-1",
+      dependencies: [
+        {
+          id: "x-gate",
+          title: "Review: x-1",
+          status: "open",
+          issue_type: "gate",
+          await_type: "human",
+          dependency_type: "blocks",
+        },
+      ],
+    });
+
+    expect(detail?.dependencies).toMatchObject([
+      { id: "x-gate", issueType: "gate", awaitType: "human" },
     ]);
   });
 
@@ -157,6 +185,17 @@ describe("awaitsHumanDecision", () => {
     expect(awaitsHumanDecision({ status: "in_progress", labels: ["ops", "human"] })).toBe(true);
     expect(awaitsHumanDecision({ status: "closed", labels: ["human"] })).toBe(false);
     expect(awaitsHumanDecision({ status: "open", labels: ["ops"] })).toBe(false);
+  });
+});
+
+describe("isOpenHumanGateLink", () => {
+  test("열린 human gate만 사람이 닫아야 하는 gate로 본다", () => {
+    const gate = { issueType: "gate", awaitType: "human", status: "open" };
+
+    expect(isOpenHumanGateLink(gate)).toBe(true);
+    expect(isOpenHumanGateLink({ ...gate, status: "closed" })).toBe(false);
+    expect(isOpenHumanGateLink({ ...gate, awaitType: "timer" })).toBe(false);
+    expect(isOpenHumanGateLink({ ...gate, issueType: "task" })).toBe(false);
   });
 });
 

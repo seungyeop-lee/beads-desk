@@ -2,44 +2,20 @@
 
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { useId, useState } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
-import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { addCommentAction, approveHumanGateAction } from "@/server/web/issues/issueActions";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
-import { showToast } from "@/client/ui/designSystem/Toast";
-import { CommentList } from "@/client/ui/issues/detail/CommentList";
+import { HumanGateResponse } from "@/client/ui/issues/detail/HumanGateResponse";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import { HUMAN_DECISION_TONE } from "@/client/ui/issues/issueLabels";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
-import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
-/**
- * 고른 human gate의 사유와 막고 있는 작업을 보이고, 피드백을 남기거나 승인합니다.
- * 피드백은 gate의 댓글이라 gate가 열린 채로 남고, 승인만 gate를 닫습니다.
- */
+/** 고른 human gate의 사유와 막고 있는 작업을 보이고, 피드백을 남기거나 승인합니다. */
 export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
   const { gate, reason, blocks } = summary;
   const { data: detail, error } = useIssueDetail(gate.id);
-  const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const messages = useMessages();
-  const approveHeadingId = useId();
-  const [memo, setMemo] = useState("");
-
-  const sendFeedback = async (text: string) => {
-    const sent = (await writes.run(() => addCommentAction(gate.id, text))).ok;
-    if (sent) showToast(messages.humanGate.feedbackSent(gate.id));
-    return sent;
-  };
-
-  const approve = async () => {
-    if ((await writes.run(() => approveHumanGateAction(gate.id, memo))).ok) {
-      showToast(messages.humanGate.approved(gate.id));
-    }
-  };
 
   return (
     <section className="surface flex flex-col gap-5 p-6" aria-label={gate.title}>
@@ -70,67 +46,7 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
         <BlockedIssues blocks={blocks} />
       </section>
 
-      <WriteErrorAlert writes={writes} />
-
-      <section
-        className="flex flex-col gap-3 text-sm"
-        aria-label={messages.humanGate.feedbackTitle}
-      >
-        <div className="flex flex-col gap-1">
-          <h3 className="font-semibold">{messages.humanGate.feedbackTitle}</h3>
-          <p className="text-xs text-base-content/65">{messages.humanGate.feedbackBody}</p>
-        </div>
-        {error ? (
-          <div role="alert" className="alert alert-error alert-soft">
-            <span>{messages.issueDetail.loadFailed(error)}</span>
-          </div>
-        ) : detail ? (
-          <CommentList
-            comments={detail.comments}
-            disabled={writes.pending}
-            onAdd={sendFeedback}
-            inputText={{
-              label: messages.humanGate.feedback,
-              placeholder: messages.humanGate.feedbackPlaceholder,
-              submit: messages.humanGate.sendFeedback,
-            }}
-          />
-        ) : (
-          <span
-            className="loading loading-spinner loading-sm text-base-content/40"
-            aria-label={messages.issueDetail.loading}
-          />
-        )}
-      </section>
-
-      <form
-        aria-labelledby={approveHeadingId}
-        className={`tone-wash ${HUMAN_DECISION_TONE} flex flex-col gap-3 rounded-box px-4 py-3`}
-        onSubmit={(event) => {
-          event.preventDefault();
-          void approve();
-        }}
-      >
-        <div className="flex flex-col gap-1">
-          <h3 id={approveHeadingId} className="flex items-center gap-2 text-sm font-semibold">
-            <span className={`tone-dot ${HUMAN_DECISION_TONE}`} />
-            {messages.humanGate.approveTitle}
-          </h3>
-          <p className="text-xs text-base-content/65">{messages.humanGate.approveBody}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            className="input input-sm grow bg-base-100"
-            aria-label={messages.humanGate.memo}
-            placeholder={messages.humanGate.memoPlaceholder}
-            value={memo}
-            onChange={(event) => setMemo(event.target.value)}
-          />
-          <button type="submit" className="btn btn-primary btn-sm" disabled={writes.pending}>
-            {messages.humanGate.approve}
-          </button>
-        </div>
-      </form>
+      <HumanGateResponse gateId={gate.id} gate={detail} error={error} />
     </section>
   );
 }

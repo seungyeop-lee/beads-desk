@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
+  humanGateReason,
   isOpenHumanGate,
   isRecord,
   parseIssue,
@@ -287,18 +288,9 @@ export async function humanGates(cwd: string): Promise<BdOutcome<HumanGate[]>> {
         const blocks = blockers
           .filter(({ dependsOnId }) => dependsOnId === gate.id)
           .flatMap(({ issueId }) => openById.get(issueId) ?? []);
-        return [{ gate, reason: gateReason(textOf(record.description)), blocks }];
+        return [{ gate, reason: humanGateReason(textOf(record.description)), blocks }];
       }),
   };
-}
-
-// bd 1.3.1의 bd gate create는 설명을 `Ad-hoc gate blocking <id>`와 `Reason: <사유>` 두 문단으로 만듭니다.
-// 이 형식이 아니면 사유를 따로 적지 않은 것으로 보고 설명 전체를 사유로 보입니다.
-const AD_HOC_GATE = /^Ad-hoc gate blocking \S+(?:\n\nReason: ([\s\S]*))?$/;
-
-function gateReason(description: string): string {
-  const adHoc = AD_HOC_GATE.exec(description);
-  return adHoc ? (adHoc[1] ?? "") : description;
 }
 
 /**

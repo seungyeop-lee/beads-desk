@@ -24,6 +24,7 @@ import { DependencyList } from "./DependencyList";
 import { DiscussionTabs } from "./DiscussionTabs";
 import { EditableMarkdown } from "./EditableMarkdown";
 import { HumanDecisionPanel } from "./HumanDecisionPanel";
+import { HumanGatePanel } from "./HumanGatePanel";
 import { LabelEditor } from "./LabelEditor";
 import { RelationAddForm } from "./RelationAddForm";
 
@@ -86,6 +87,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               ))}
             </div>
             <HumanDecisionPanel issue={issue} writes={writes} />
+            <HumanGatePanel issue={issue} issueHref={issueHref} />
             <DiscussionTabs
               issue={issue}
               disabled={pending}

@@ -49,6 +49,23 @@ export function isOpenHumanGate(record: unknown): boolean {
   );
 }
 
+/** 상세 화면의 의존 관계 한 건이 사람이 닫아야 풀리는 열린 gate인지 확인합니다. */
+export function isOpenHumanGateLink(
+  link: Pick<IssueLink, "issueType" | "awaitType" | "status">,
+): boolean {
+  return link.issueType === "gate" && link.awaitType === "human" && link.status !== "closed";
+}
+
+// bd 1.3.1의 bd gate create는 설명을 `Ad-hoc gate blocking <id>`와 `Reason: <사유>` 두 문단으로 만듭니다.
+// 이 형식이 아니면 사유를 따로 적지 않은 것으로 보고 설명 전체를 사유로 보입니다.
+const AD_HOC_GATE = /^Ad-hoc gate blocking \S+(?:\n\nReason: ([\s\S]*))?$/;
+
+/** gate 설명에서 gate를 만들 때 남긴 사유를 꺼냅니다. 사유가 없으면 빈 문자열입니다. */
+export function humanGateReason(description: string): string {
+  const adHoc = AD_HOC_GATE.exec(description);
+  return adHoc ? (adHoc[1] ?? "") : description;
+}
+
 /** 상세 화면에서 다른 이슈와의 의존 관계 한 건입니다. */
 export type IssueLink = {
   id: string;
@@ -58,6 +75,8 @@ export type IssueLink = {
   issueType: string;
   /** blocks, parent-child, related처럼 bd가 기록한 의존 유형입니다. */
   dependencyType: string;
+  /** gate가 기다리는 대상입니다. human이면 사람이 gate를 닫아야 풀립니다. gate가 아니면 빈 문자열입니다. */
+  awaitType: string;
 };
 
 export type IssueComment = {
@@ -238,6 +257,7 @@ function parseIssueLink(value: Record<string, unknown>): IssueLink {
     priority: typeof value.priority === "number" ? value.priority : null,
     issueType: stringOr(value.issue_type, ""),
     dependencyType: stringOr(value.dependency_type, ""),
+    awaitType: stringOr(value.await_type, ""),
   };
 }
 

@@ -115,6 +115,11 @@ export const enMessages: Messages = {
     dismissed: (id) => `Dismissed ${id} and closed it`,
   },
   humanGate: {
+    waiting: "Awaiting human",
+    waitingOn: (title) => `Awaiting human: ${title}`,
+    panelTitle: "Waiting on human approval",
+    panelBody:
+      "This issue is unblocked when the gates below are approved. Approving does not close this issue.",
     reason: "Reason",
     blocks: "Blocks",
     noBlocks: "This gate blocks no issue. Approving closes only the gate.",

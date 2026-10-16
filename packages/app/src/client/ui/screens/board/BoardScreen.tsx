@@ -10,6 +10,8 @@ import {
   type ClosedWindow,
 } from "@/client/modules/board/domain/boardView";
 import { useBoard } from "@/client/modules/board/application/useBoard";
+import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
+import { blockersOf } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
@@ -22,6 +24,7 @@ import {
   statusTone,
 } from "@/client/ui/issues/issueLabels";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
+import { HumanGateChip } from "@/client/ui/issues/HumanGateChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { BOARD_COLUMNS, type BoardColumn } from "@/shared/contract/board";
 import { useMinuteClock } from "./useMinuteClock";
@@ -49,6 +52,7 @@ const DRAG_TYPE = "application/x-beads-desk-card";
  */
 export function BoardScreen() {
   const { data: items, error, loading } = useBoard();
+  const humanGateTitles = useHumanGateTitles();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const [closedWindow, setClosedWindow] = useState<ClosedWindow>("today");
@@ -140,6 +144,7 @@ export function BoardScreen() {
                     issue={issue}
                     column={column}
                     href={issueHref(issue.id)}
+                    humanGateTitles={humanGateTitles}
                   />
                 ))}
               </ul>
@@ -153,8 +158,21 @@ export function BoardScreen() {
   );
 }
 
-function BoardCard({ issue, column, href }: { issue: Issue; column: BoardColumn; href: string }) {
+type CardProps = {
+  issue: Issue;
+  column: BoardColumn;
+  href: string;
+  humanGateTitles: ReadonlyMap<string, string>;
+};
+
+function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {
   const messages = useMessages();
+  // 보드는 막는 이슈를 id로만 보이고, 열린 human gate만 사람 확인 기다림 표시와 gate 제목으로 보입니다.
+  const [blocker, ...restBlockers] = blockersOf(
+    issue.blockedBy ?? [],
+    humanGateTitles,
+    () => undefined,
+  );
   return (
     <li>
       <Link
@@ -172,10 +190,17 @@ function BoardCard({ issue, column, href }: { issue: Issue; column: BoardColumn;
         <span className="leading-snug font-medium break-words">
           {issue.title || messages.common.untitled}
         </span>
-        {issue.blockedBy?.[0] && (
+        {blocker?.humanGate && (
+          <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-base-content/60">
+            ← <HumanGateChip />
+            <span className="min-w-0 break-words">{blocker.title || messages.common.untitled}</span>
+            {restBlockers.length > 0 && messages.blocking.more(restBlockers.length)}
+          </span>
+        )}
+        {blocker && !blocker.humanGate && (
           <span className="text-xs text-base-content/60">
-            ← {messages.blocking.waitingOn(issue.blockedBy[0])}
-            {issue.blockedBy.length > 1 && ` ${messages.blocking.more(issue.blockedBy.length - 1)}`}
+            ← {messages.blocking.waitingOn(blocker.id)}
+            {restBlockers.length > 0 && ` ${messages.blocking.more(restBlockers.length)}`}
           </span>
         )}
         <span className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">

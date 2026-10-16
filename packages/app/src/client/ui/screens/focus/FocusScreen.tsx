@@ -7,6 +7,11 @@ import { useEpics } from "@/client/modules/epics/application/useEpics";
 import { focusStats } from "@/client/modules/focus/domain/focusStats";
 import { focusView, NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
 import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
+import {
+  blockersOf,
+  humanGateTitles,
+  type Blocker,
+} from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
@@ -19,6 +24,7 @@ import {
   workStateTone,
 } from "@/client/ui/issues/issueLabels";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
+import { HumanGateChip } from "@/client/ui/issues/HumanGateChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
@@ -55,6 +61,7 @@ export function FocusScreen() {
     () => new Map((issues ?? []).map((issue) => [issue.id, issue.title])),
     [issues],
   );
+  const gateTitles = useMemo(() => humanGateTitles(humanGates ?? []), [humanGates]);
   const countOf = { in_progress: view?.inProgress, ready: view?.ready, blocked: view?.blocked };
 
   return (
@@ -132,7 +139,9 @@ export function FocusScreen() {
                     key={issue.id}
                     issue={issue}
                     href={issueHref(issue.id)}
-                    waitingOn={issue.blockedBy?.map((id) => `${id} ${titles.get(id) ?? ""}`)}
+                    waitingOn={blockersOf(issue.blockedBy ?? [], gateTitles, (id) =>
+                      titles.get(id),
+                    )}
                   />
                 ))}
               </FocusSection>
@@ -231,8 +240,8 @@ type RowProps = {
   issue: Issue;
   href: string;
   showAssignee?: boolean;
-  /** 막힌 이슈가 기다리는 이슈를 "id 제목"으로 한 줄씩 보입니다. */
-  waitingOn?: string[];
+  /** 막힌 이슈가 기다리는 이슈를 한 줄씩 보입니다. human gate는 사람 확인 기다림 표시와 gate 제목으로 보입니다. */
+  waitingOn?: Blocker[];
 };
 
 function FocusRow({ issue, href, showAssignee, waitingOn }: RowProps) {
@@ -269,11 +278,22 @@ function FocusRow({ issue, href, showAssignee, waitingOn }: RowProps) {
             {shortIssueId(issue.id)}
           </span>
         </span>
-        {waitingOn?.map((line) => (
-          <span key={line} className="truncate pl-19 text-xs text-base-content/60">
-            ← {line}
-          </span>
-        ))}
+        {waitingOn?.map((blocker) =>
+          blocker.humanGate ? (
+            <span
+              key={blocker.id}
+              className="flex min-w-0 items-center gap-1.5 pl-19 text-xs text-base-content/60"
+            >
+              ←
+              <HumanGateChip />
+              <span className="truncate">{blocker.title || messages.common.untitled}</span>
+            </span>
+          ) : (
+            <span key={blocker.id} className="truncate pl-19 text-xs text-base-content/60">
+              ← {blocker.id} {blocker.title}
+            </span>
+          ),
+        )}
       </Link>
     </li>
   );

@@ -4,6 +4,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useDescriptionMatches } from "@/client/modules/issues/application/useDescriptionMatches";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
@@ -52,6 +53,7 @@ export function IssuesScreen() {
   const viewIssues = view
     ? (groups.find((group) => group.state === view)?.issues ?? [])
     : groups.flatMap((group) => group.issues);
+  const humanGateTitles = useHumanGateTitles();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const messages = useMessages();
@@ -97,9 +99,16 @@ export function IssuesScreen() {
             issueHref={issueHref}
             writes={writes}
             titleSource={issues}
+            humanGateTitles={humanGateTitles}
           />
         ) : (
-          <IssueGroups groups={groups} titleSource={issues} issueHref={issueHref} writes={writes} />
+          <IssueGroups
+            groups={groups}
+            titleSource={issues}
+            humanGateTitles={humanGateTitles}
+            issueHref={issueHref}
+            writes={writes}
+          />
         ))}
 
       <IssueDetailRoute />
