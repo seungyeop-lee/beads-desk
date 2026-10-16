@@ -1,5 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
+import { dragAcrossScroll } from "../support/dragAndDrop";
 
 /**
  * 좁은 창은 사용자가 보고한 Chrome 화면(110% 확대, 500×1410 화면 픽셀)을 CSS 픽셀로 옮긴 크기입니다.
@@ -59,19 +60,6 @@ function measure(region: Locator) {
       lastCardBottom: cards.at(-1)?.bottom ?? null,
     };
   });
-}
-
-/**
- * 카드를 집어 든 뒤 페이지를 스크롤해 놓을 열로 옮깁니다.
- * `dragTo`는 놓을 열을 화면에 보이려고 끌기가 시작되기 전에 스크롤해서, 그 자리에 온 다른 카드를 끌게 됩니다.
- */
-async function dragAcrossScroll(page: Page, card: Locator, target: Locator) {
-  await card.hover();
-  await page.mouse.down();
-  const box = (await card.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2 + 10, box.y + box.height / 2 + 10);
-  await target.hover();
-  await page.mouse.up();
 }
 
 /** 카드가 있는 열은 마지막 카드 아래에 안쪽 여백만 남기고, 목록 안에서 스크롤되거나 잘리지 않습니다. */
@@ -181,11 +169,7 @@ for (const [label, viewport] of Object.entries(VIEWPORTS)) {
       await expect(ready.getByRole("listitem")).toHaveCount(SHORT_TASKS + 4);
 
       await ready.getByRole("link", { name: /e2e 막힘 열에 놓아 볼 작업/ }).dragTo(blocked);
-      await dragAcrossScroll(
-        page,
-        ready.getByRole("link", { name: /e2e 맨 아래 작업/ }),
-        inProgress,
-      );
+      await dragAcrossScroll(ready.getByRole("link", { name: /e2e 맨 아래 작업/ }), inProgress);
       await expect
         .poll(async () => (await workspace.showIssue(ids.last)).status, { timeout: SAVE_TIMEOUT })
         .toBe("in_progress");

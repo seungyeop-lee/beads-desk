@@ -5,6 +5,7 @@ import { enMessages } from "../../src/client/modules/locale/domain/enMessages";
 import { koMessages } from "../../src/client/modules/locale/domain/koMessages";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { answerNextConfirm } from "../support/confirmDialog";
+import { dragAcrossScroll } from "../support/dragAndDrop";
 import { createHumanGate } from "../support/humanGates";
 
 const TITLE =
@@ -348,10 +349,12 @@ for (const locale of ["ko", "en"] as const) {
               page,
             );
           await page.setViewportSize({ width: 768, height: 900 });
-          await main
-            .getByRole("region", { name: messages.board.columns.ready })
-            .getByRole("link", { name: /Existing candidate/ })
-            .dragTo(main.getByRole("region", { name: messages.board.columns.in_progress }));
+          await dragAcrossScroll(
+            main
+              .getByRole("region", { name: messages.board.columns.ready })
+              .getByRole("link", { name: /Existing candidate/ }),
+            main.getByRole("region", { name: messages.board.columns.in_progress }),
+          );
           await expect
             .poll(() => workspace.showIssue(ids.candidate!).then((issue) => issue.status), {
               timeout: SAVE_TIMEOUT,
