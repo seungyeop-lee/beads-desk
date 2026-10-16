@@ -61,7 +61,7 @@ export function hasBlocksLink(issue: Pick<IssueDetail, "dependencies" | "depende
 export type LinkedIssue = { side: "dependencies" | "dependents"; link: IssueLink };
 
 /**
- * 연결된 이슈의 줄 순서입니다. 대체한 이슈, 원본, 상위, 선행, 후속, 하위, 관련, 발견 출처, 여기서 발견, 대체된 이슈, 중복 순입니다.
+ * 연결된 이슈의 줄 순서입니다. 대체한 이슈, 원본, 상위, 선행, 후속, 하위, 관련, 이 이슈를 발견한 작업, 이 작업 중 발견한 이슈, 대체된 이슈, 중복 순입니다.
  * 대체한 이슈와 원본은 이 이슈가 왜 닫혔는지 알려 주므로 맨 앞에 둡니다.
  */
 const LINKED_ORDER = [
