@@ -22,8 +22,8 @@ const SECTORS = 1_048_576;
 export default async function mountRamDisk(): Promise<(() => Promise<void>) | undefined> {
   if (process.platform !== "darwin" || process.env[DISABLE_ENV] === "0") return undefined;
 
-  // 앞 실행이 비정상으로 끝나 남은 volume입니다. volume 경로로 eject하면 RAM 장치까지 떼어집니다.
-  if (existsSync(MOUNT_POINT)) await diskutil("eject", MOUNT_POINT);
+  // 앞 실행이 비정상으로 끝나 남은 volume입니다.
+  if (existsSync(MOUNT_POINT)) await eject(MOUNT_POINT);
 
   const tmp = join(MOUNT_POINT, "tmp");
   let device: string | undefined;
@@ -38,10 +38,31 @@ export default async function mountRamDisk(): Promise<(() => Promise<void>) | un
   }
 
   process.env.TMPDIR = tmp;
-  const mounted = device;
-  return async () => {
-    await diskutil("eject", mounted);
-  };
+  return () => eject(MOUNT_POINT);
+}
+
+/**
+ * RAM disk를 뗍니다. volume 경로로 eject하면 RAM 장치까지 떼어집니다.
+ * 열린 파일이 없는데도 eject가 거부될 때가 있어(원인 미확인, bd-desk-dzt), 그러면 강제로 unmount한 뒤 RAM 장치를 뗍니다.
+ * 그래도 떼지 못하면 경고만 남겨 시나리오 결과가 실행 결과로 그대로 남게 하고, 남은 volume은 다음 실행이 다시 정리합니다.
+ */
+async function eject(mountPoint: string): Promise<void> {
+  try {
+    await diskutil("eject", mountPoint);
+    return;
+  } catch (error) {
+    console.warn(`RAM disk ${mountPoint}을 떼지 못해 강제로 unmount합니다.\n${String(error)}`);
+  }
+  try {
+    const store = /APFS Physical Store:\s+(\S+)/.exec(await diskutil("info", mountPoint))?.[1];
+    if (!store) throw new Error(`${mountPoint}의 RAM 장치를 찾지 못했습니다.`);
+    await diskutil("unmountDisk", "force", mountPoint);
+    await diskutil("eject", store);
+  } catch (error) {
+    console.warn(
+      `RAM disk ${mountPoint}을 강제로도 떼지 못했습니다. 다음 실행이 다시 정리합니다.\n${String(error)}`,
+    );
+  }
 }
 
 async function diskutil(...args: string[]): Promise<string> {
