@@ -91,7 +91,7 @@ export function IssueDetailDialog({
     return (
       <section
         aria-label={messages.issueDetail.dialog(issueId)}
-        className="flex min-h-0 w-[min(48rem,55%)] shrink-0 border-l border-base-300 bg-base-100"
+        className="flex h-[70dvh] min-h-0 w-full shrink-0 flex-col overflow-y-auto border-t border-base-300 bg-base-100 md:flex-row md:overflow-hidden xl:h-auto xl:w-[min(64rem,70%)] xl:border-t-0 xl:border-l"
       >
         {content}
       </section>
@@ -114,7 +114,7 @@ export function IssueDetailDialog({
         }}
       >
         <div
-          className={`modal-box flex max-h-[90vh] w-11/12 overflow-hidden p-0 ${side ? "max-w-[110rem]" : "max-w-6xl"}`}
+          className={`modal-box flex h-[85dvh] max-h-[90dvh] w-11/12 flex-col overflow-y-auto p-0 md:h-auto md:flex-row md:overflow-hidden ${side ? "max-w-[110rem]" : "max-w-6xl"}`}
         >
           {content}
         </div>
@@ -153,8 +153,8 @@ function IssueDetailPanel({
   const writes = useIssueWrites();
   const messages = useMessages();
   return (
-    <div className="flex min-w-0 grow flex-col">
-      <header className="flex shrink-0 items-center gap-3 border-b border-base-300 px-6 py-3">
+    <div className="flex min-h-[32rem] min-w-0 shrink-0 grow flex-col md:min-h-0 md:shrink">
+      <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-base-300 px-6 py-3">
         {previous && (
           <Link
             className="btn btn-ghost btn-sm -ml-3 gap-1 px-2 font-mono text-xs font-normal text-base-content/60"
@@ -166,7 +166,7 @@ function IssueDetailPanel({
             {previous.issue}
           </Link>
         )}
-        <span className="rounded-md bg-base-200 px-2 py-0.5 font-mono text-xs text-base-content/70">
+        <span className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 font-mono text-xs text-base-content/70">
           {issueId}
         </span>
         {issue && (

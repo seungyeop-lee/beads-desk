@@ -88,8 +88,8 @@ function DecisionTable({ title, rows, emptyMessage, issueHref, writes }: TablePr
       {rows.length === 0 ? (
         <EmptyState message={emptyMessage} />
       ) : (
-        <div className="surface overflow-x-auto">
-          <table className="table">
+        <div className="surface min-w-0 max-w-full overflow-x-auto">
+          <table className="table min-w-[64rem] table-fixed">
             <thead>
               <tr>
                 <th className="w-24">ID</th>
@@ -136,7 +136,7 @@ function DecisionRowView({
       </td>
       <td>
         <Link
-          className="font-medium decoration-base-content/30 underline-offset-4 hover:underline"
+          className="font-medium wrap-anywhere decoration-base-content/30 underline-offset-4 hover:underline"
           href={issueHref(decision.id)}
           scroll={false}
         >

@@ -46,7 +46,7 @@ export function IssueGroups({
         const label = messages.workStates.labels[group.state];
         return (
           <section key={group.state} aria-label={label} className="flex flex-col gap-2">
-            <h2 className="flex items-baseline gap-2 px-1">
+            <h2 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-1">
               <button
                 type="button"
                 className="flex items-baseline gap-2 text-[15px] font-bold"

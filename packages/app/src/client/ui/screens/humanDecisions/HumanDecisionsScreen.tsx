@@ -80,7 +80,7 @@ export function HumanDecisionsScreen() {
 
       {loaded &&
         (selected ? (
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
             <div className="flex flex-col gap-5">
               {groups.map((group) => (
                 <section key={group.label} aria-label={group.label} className="flex flex-col gap-2">
@@ -135,14 +135,14 @@ function PendingRow({
     <button
       type="button"
       aria-current={current ? "true" : undefined}
-      className="flex w-full flex-col gap-1 px-4 py-3 text-left text-sm hover:bg-base-200/60 aria-[current=true]:bg-base-300/60"
+      className="flex min-w-0 w-full flex-col gap-1 px-4 py-3 text-left text-sm hover:bg-base-200/60 aria-[current=true]:bg-base-300/60"
       onClick={onSelect}
     >
-      <span className="flex w-full items-center gap-3">
+      <span className="flex w-full flex-wrap items-center gap-2">
         <span className="w-16 shrink-0 text-xs">
           <IssueTypeTag issueType={issue.issueType} />
         </span>
-        <span className="min-w-0 grow truncate font-medium">
+        <span className="order-first w-full font-medium wrap-anywhere">
           {issue.title || messages.common.untitled}
         </span>
         {issue.priority !== null && (
@@ -150,12 +150,12 @@ function PendingRow({
             P{issue.priority} {priorityLabel(messages, issue.priority)}
           </span>
         )}
-        <span className="w-20 shrink-0 text-right font-mono text-xs text-base-content/45">
+        <span className="ml-auto shrink-0 text-right font-mono text-xs text-base-content/45">
           {issue.id}
         </span>
       </span>
       {firstBlocked && (
-        <span className="truncate pl-19 text-xs text-base-content/60">
+        <span className="wrap-anywhere text-xs text-base-content/60">
           ← {firstBlocked.title || messages.common.untitled}
           {restBlocked.length > 0 && ` ${messages.blocking.more(restBlocked.length)}`}
         </span>
@@ -185,9 +185,9 @@ function SelectedDecision({ issueId }: { issueId: string }) {
     );
   }
   return (
-    <section className="surface flex flex-col gap-5 p-6" aria-label={issue.title}>
+    <section className="surface min-w-0 flex flex-col gap-5 p-6" aria-label={issue.title}>
       <header className="flex flex-col gap-2">
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
           <IssueTypeTag issueType={issue.issueType} />
           <span className="font-mono text-base-content/55">{issue.id}</span>
           <Link

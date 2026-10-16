@@ -81,7 +81,9 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
         </div>
       )}
 
-      <div className={`flex min-h-0 flex-1 gap-4 ${panelExpanded ? "" : "flex-col"}`}>
+      <div
+        className={`flex min-h-0 flex-1 gap-4 ${panelExpanded ? "flex-col @2xl/plan:flex-row" : "flex-col"}`}
+      >
         <div ref={graphContainerRef} className="flex min-h-0 min-w-0 flex-1">
           {layout.nodes.length > 0 ? (
             <IssueGraph ready={ready} layout={layout} issueHref={issueHref} plan={graphPlan} />
@@ -123,7 +125,7 @@ function UnorderedIssues({
   return (
     <section
       aria-label={messages.graph.unordered}
-      className={`flex shrink-0 flex-col overflow-hidden rounded-box border border-base-300 bg-base-200/40 ${expanded ? "w-80" : "order-first max-w-full self-end"}`}
+      className={`flex shrink-0 flex-col overflow-hidden rounded-box border border-base-300 bg-base-200/40 ${expanded ? "max-h-64 w-full @2xl/plan:max-h-none @2xl/plan:w-80" : "order-first max-w-full self-end"}`}
     >
       <header className="flex flex-col gap-1 px-3 py-2">
         <div className="flex items-center justify-between gap-3">

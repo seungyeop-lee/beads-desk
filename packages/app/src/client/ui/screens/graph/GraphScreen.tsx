@@ -96,8 +96,8 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
             <CloseIcon />
           </Link>
         </header>
-        <div className="flex min-h-0 flex-1">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-4">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
+          <div className="flex @container/plan min-h-[40rem] min-w-0 shrink-0 flex-1 flex-col gap-3 p-4 xl:min-h-0 xl:shrink">
             {error && (
               <div role="alert" className="alert alert-error alert-soft">
                 <span>{messages.graph.loadFailed(error)}</span>

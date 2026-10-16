@@ -35,7 +35,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
   }
 
   return (
-    <section className="group flex w-full flex-col gap-2">
+    <section aria-label={label} className="group flex w-full flex-col gap-2">
       <div className="flex h-6 items-center gap-2">
         <h3 className="caption">{label}</h3>
         {draft === null && (

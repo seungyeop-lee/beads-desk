@@ -46,7 +46,10 @@ export function IssueFilterBar({
         onChange={onTypesChange}
       />
 
-      <fieldset aria-label={messages.issues.dates} className="flex items-center gap-1.5">
+      <fieldset
+        aria-label={messages.issues.dates}
+        className="flex min-w-0 flex-wrap items-center gap-1.5"
+      >
         <select
           className="select select-sm w-28 rounded-full"
           aria-label={messages.issues.dateField}
@@ -87,7 +90,7 @@ export function IssueFilterBar({
         )}
       </fieldset>
 
-      <label className="input input-sm ml-auto w-64 rounded-full">
+      <label className="input input-sm ml-auto w-64 max-w-full rounded-full">
         <SearchIcon width={15} height={15} className="text-base-content/40" />
         <input
           type="search"

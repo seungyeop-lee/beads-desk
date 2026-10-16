@@ -112,7 +112,7 @@ function EpicSection({
   const messages = useMessages();
   return (
     <section className="surface">
-      <header className="flex items-center gap-4 py-3.5 pr-5 pl-3">
+      <header className="grid grid-cols-[2rem_3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 py-3.5 xl:flex xl:gap-4 pr-5 pl-3">
         <button
           type="button"
           className="btn btn-ghost btn-sm btn-square text-base-content/50"
@@ -126,30 +126,32 @@ function EpicSection({
           {shortIssueId(epic.id)}
         </span>
         <Link
-          className="min-w-0 grow truncate text-[15px] font-semibold decoration-base-content/30 underline-offset-4 hover:underline"
+          className="min-w-0 grow text-[15px] wrap-anywhere font-semibold decoration-base-content/30 underline-offset-4 hover:underline"
           href={issueHref(epic.id)}
           scroll={false}
         >
           {epic.title || messages.common.untitled}
         </Link>
-        <span className={`chip ${statusTone(epic.status)}`}>
-          {statusLabel(messages, epic.status)}
-        </span>
-        <progress
-          className="progress h-1.5 w-40 shrink-0 text-[color-mix(in_oklab,var(--color-sage),#3f6212_25%)]"
-          value={closedChildren}
-          max={Math.max(totalChildren, 1)}
-          aria-label={messages.epics.progress(epic.id)}
-        />
-        <span className="w-20 shrink-0 text-right font-mono text-xs text-base-content/55 tabular-nums">
-          {closedChildren}/{totalChildren} · {percent}%
-        </span>
-        <Link
-          className="btn btn-ghost btn-xs shrink-0 rounded-full"
-          href={graphHref({ kind: "epic", id: epic.id })}
-        >
-          {messages.graph.epicOrder}
-        </Link>
+        <div className="col-span-full flex flex-wrap items-center justify-end gap-3 xl:contents">
+          <span className={`chip ${statusTone(epic.status)}`}>
+            {statusLabel(messages, epic.status)}
+          </span>
+          <progress
+            className="progress h-1.5 w-40 min-w-24 shrink text-[color-mix(in_oklab,var(--color-sage),#3f6212_25%)]"
+            value={closedChildren}
+            max={Math.max(totalChildren, 1)}
+            aria-label={messages.epics.progress(epic.id)}
+          />
+          <span className="w-20 shrink-0 text-right font-mono text-xs text-base-content/55 tabular-nums">
+            {closedChildren}/{totalChildren} · {percent}%
+          </span>
+          <Link
+            className="btn btn-ghost btn-xs shrink-0 rounded-full"
+            href={graphHref({ kind: "epic", id: epic.id })}
+          >
+            {messages.graph.epicOrder}
+          </Link>
+        </div>
       </header>
       {expanded && (
         <EpicDescendants
@@ -182,7 +184,7 @@ function EpicDescendants({
   const messages = useMessages();
   return (
     <div className="flex flex-col gap-3 border-t border-base-300 bg-base-200/40 p-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           className="btn btn-sm btn-ghost gap-1.5 rounded-full"
@@ -191,7 +193,7 @@ function EpicDescendants({
           <PlusIcon width={14} height={14} />
           {messages.epics.newChild}
         </button>
-        <div className="w-96">
+        <div className="w-96 max-w-full">
           <IssuePicker
             label={messages.epics.addExistingChild}
             disabled={writes.pending || !descendants}

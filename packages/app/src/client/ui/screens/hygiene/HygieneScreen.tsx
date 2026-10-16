@@ -68,7 +68,7 @@ export function HygieneScreen() {
       )}
       <WriteErrorAlert writes={writes} />
 
-      <div className="grid items-start gap-x-6 gap-y-8 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-x-6 gap-y-8 lg:grid-cols-2">
         <HygieneCard
           title={text.stale.title}
           hint={text.stale.hint(staleDays)}
@@ -106,7 +106,7 @@ export function HygieneScreen() {
                   <button
                     key={duplicate.id}
                     type="button"
-                    className="btn btn-xs"
+                    className="btn btn-xs h-auto min-h-6 py-1 text-left whitespace-normal"
                     disabled={writes.pending}
                     onClick={() => void closeAsDuplicate(duplicate, canonical)}
                   >
@@ -169,7 +169,7 @@ type CardProps = {
 function HygieneCard({ title, hint, empty, action, children }: CardProps) {
   const titleId = useId();
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-2">
+    <section aria-labelledby={titleId} className="flex min-w-0 flex-col gap-2">
       <div className="flex items-end gap-3 px-1">
         <div className="flex min-w-0 grow flex-col gap-0.5">
           <h2 className="flex items-baseline gap-2 text-[15px] font-bold">
@@ -202,13 +202,13 @@ function IssueLink({ issue, href, detail }: { issue: IssueRef; href: string; det
       scroll={false}
       className="flex flex-col gap-1 px-4 py-2.5 text-sm hover:bg-base-200/60"
     >
-      <span className="flex items-baseline gap-3">
-        <span className="min-w-0 grow truncate font-medium">
+      <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="w-full font-medium wrap-anywhere">
           {issue.title || messages.common.untitled}
         </span>
         <span className="shrink-0 font-mono text-xs text-base-content/45">{issue.id}</span>
       </span>
-      {detail && <span className="truncate text-xs text-base-content/60">{detail}</span>}
+      {detail && <span className="text-xs wrap-anywhere text-base-content/60">{detail}</span>}
     </Link>
   );
 }

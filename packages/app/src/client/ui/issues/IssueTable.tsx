@@ -69,8 +69,8 @@ export const IssueTable = memo(function IssueTable({
     return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
   return (
-    <div className="surface overflow-x-auto">
-      <table className="table table-fixed">
+    <div className="surface min-w-0 max-w-full overflow-x-auto">
+      <table className="table min-w-[64rem] table-fixed">
         <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
           <tr>
             <th className="w-24">ID</th>
@@ -162,7 +162,7 @@ function IssueRow({
       <td>
         <TitleOutline issueId={issue.id} outline={outline}>
           <Link
-            className="font-medium decoration-base-content/30 underline-offset-4 hover:underline"
+            className="font-medium wrap-anywhere decoration-base-content/30 underline-offset-4 hover:underline"
             href={href}
             scroll={false}
           >

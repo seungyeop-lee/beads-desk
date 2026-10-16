@@ -39,7 +39,7 @@ export function IssueViewTabs({ view, filters, groups }: Props) {
 
   return (
     <nav
-      className="flex items-end gap-1 border-b border-base-300"
+      className="flex items-end gap-1 overflow-x-auto border-b border-base-300"
       aria-label={messages.issues.views}
     >
       {tabs.map((tab) => {
@@ -50,7 +50,7 @@ export function IssueViewTabs({ view, filters, groups }: Props) {
             href={tab.href}
             scroll={false}
             aria-current={current ? "page" : undefined}
-            className={`-mb-px flex items-center gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-base-content/55 hover:text-base-content"}`}
+            className={`-mb-px flex shrink-0 items-center whitespace-nowrap gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-base-content/55 hover:text-base-content"}`}
           >
             {tab.state && <span className={`tone-dot ${workStateTone(tab.state)}`} />}
             {tab.label}

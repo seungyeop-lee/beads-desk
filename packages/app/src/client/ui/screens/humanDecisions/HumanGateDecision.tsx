@@ -17,9 +17,9 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
   const messages = useMessages();
 
   return (
-    <section className="surface flex flex-col gap-5 p-6" aria-label={gate.title}>
+    <section className="surface min-w-0 flex flex-col gap-5 p-6" aria-label={gate.title}>
       <header className="flex flex-col gap-2">
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
           <IssueTypeTag issueType={gate.issueType} />
           <span className="font-mono text-base-content/55">{gate.id}</span>
           <Link

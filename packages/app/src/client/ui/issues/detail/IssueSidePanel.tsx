@@ -27,11 +27,11 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
   const messages = useMessages();
   return (
     <section
-      className="flex w-[34rem] max-w-[45%] shrink-0 flex-col border-l border-base-300 bg-base-200/30"
+      className="flex min-h-[32rem] min-w-0 w-full shrink-0 flex-col border-t border-base-300 bg-base-200/30 md:min-h-0 md:w-[34rem] md:max-w-[45%] md:border-t-0 md:border-l"
       aria-label={messages.issueDetail.sidePanel(issueId)}
     >
-      <header className="flex shrink-0 items-center gap-3 border-b border-base-300 px-5 py-3">
-        <span className="rounded-md bg-base-200 px-2 py-0.5 font-mono text-xs text-base-content/70">
+      <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-base-300 px-5 py-3">
+        <span className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 font-mono text-xs text-base-content/70">
           {issueId}
         </span>
         {data && (
@@ -82,7 +82,7 @@ function IssueSummary({
   return (
     <div className="flex flex-col gap-6 px-6 pt-5 pb-8">
       <div className="flex flex-col gap-3">
-        <h2 className="text-xl leading-snug font-bold tracking-tight">
+        <h2 className="text-xl leading-snug font-bold tracking-tight wrap-anywhere">
           {issue.title || messages.common.untitled}
         </h2>
         <span className={`chip self-start ${statusTone(issue.status)}`}>

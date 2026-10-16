@@ -80,9 +80,9 @@ export function BoardScreen() {
     }
   };
 
-  // 열이 나란히 놓이는 너비에서는 AppHeader(h-14와 아래 border 1px)를 뺀 화면 높이를 열이 채우고, 카드는 열 안에서 스크롤합니다.
+  // 나란히 놓인 열은 공통 헤더가 차지하고 남은 높이를 채우고, 카드는 열 안에서 스크롤합니다.
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16 md:h-[calc(100dvh-3.5rem-1px)] md:pb-6">
+    <main className="mx-auto flex w-full max-w-[96rem] shrink-0 flex-col gap-4 px-8 pb-16 md:min-h-0 md:flex-1 md:shrink md:pb-6">
       <ScreenHeader
         title={messages.board.title}
         tone={screenTone("/board")}
@@ -98,7 +98,7 @@ export function BoardScreen() {
       <WriteErrorAlert writes={writes} />
 
       {columns && (
-        <div className="grid items-start gap-3 md:min-h-0 md:flex-1 md:grid-cols-4 md:grid-rows-[minmax(0,1fr)] md:items-stretch">
+        <div className="grid items-start gap-3 md:min-h-0 md:flex-1 md:grid-cols-2 md:grid-rows-[repeat(2,minmax(0,1fr))] xl:grid-cols-4 xl:grid-rows-[minmax(0,1fr)] md:items-stretch">
           {BOARD_COLUMNS.map((column) => (
             // 카드를 놓을 자리라 열 영역이 drag event를 받습니다. 키보드로는 상세 dialog의 상태 선택으로 같은 일을 합니다.
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
@@ -114,9 +114,9 @@ export function BoardScreen() {
               onDragLeave={() => setDropTarget((target) => (target === column ? null : target))}
               onDrop={drop(column)}
             >
-              <h2 className="flex h-8 items-center gap-2 px-1.5 text-sm font-bold">
+              <h2 className="flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1 px-1.5 text-sm font-bold">
                 <span className={`tone-dot ${COLUMN_TONES[column]}`} />
-                <span className="flex items-baseline gap-2">
+                <span className="flex items-baseline gap-2 whitespace-nowrap">
                   {messages.board.columns[column]}
                   <span className="font-mono text-xs font-normal text-base-content/50">
                     {columns[column].length}
