@@ -84,7 +84,7 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 - 컴포넌트 테스트 설정은 `"use server"` 파일을 호출하면 실패하는 함수로 바꿔 불러오므로, Server Action을 실행해야 하는 동작은 e2e로 확인합니다.
 - 실패하면 `packages/app/.vitest/attachments/failure-screenshots`에 screenshot이 남습니다.
 
-화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면 함께 추가합니다. 시나리오 작성 규칙은 `packages/app/e2e/AGENTS.md`에 있습니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
+화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면, unit test나 컴포넌트 테스트로 확인할 수 없는지 먼저 따져 본 뒤 시나리오를 추가합니다. 시나리오를 추가하는 기준과 작성 규칙, 시나리오를 바꾼 작업이 보고할 테스트 수와 실행 시간은 `packages/app/e2e/AGENTS.md`에 있습니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
 
 1. 작업하는 동안에는 `pnpm run build`로 빌드한 뒤, `packages/app`에서 `pnpm exec playwright test <spec 경로>`로 바꾼 동작을 다루는 spec만 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고칠 때마다 다시 빌드합니다.
 2. 화면을 바꿨으면 바뀐 화면을 스크린샷 등으로 직접 확인합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.
