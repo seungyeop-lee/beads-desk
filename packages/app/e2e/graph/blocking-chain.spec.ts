@@ -125,13 +125,18 @@ for (const { type, closed } of [
     workspace,
     request,
   }, testInfo) => {
-    const { epic, work, after } = await workspace.createIssues(
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const { epic, before, work, after } = await workspace.createIssues(
       {
         epic: { title: "gate 검증 에픽", type: "epic" },
+        before: { title: "gate 사슬 선행 작업", parent: "epic" },
         work: { title: "gate를 기다린 작업", parent: "epic", status: closed ? "closed" : "open" },
         after: { title: "gate 사슬 후속 작업", parent: "epic" },
       },
-      [["after", "work"]],
+      [
+        ["work", "before"],
+        ["after", "work"],
+      ],
     );
     const gate: string = JSON.parse(
       await workspace.bd(
@@ -176,11 +181,22 @@ for (const { type, closed } of [
     const afterNode = canvas.getByRole("link", { name: /gate 사슬 후속 작업/ });
     await expect(gateNode).toBeVisible();
     await expect(afterNode).toBeVisible();
-    await expect(canvas.getByLabel(`${gate} 다음에 ${work}`)).toHaveCount(1);
+    await expect(canvas.getByLabel(`${work}의 선행 조건: ${gate} (blocks)`)).toHaveCount(1);
+    await expect(page.getByLabel("관계 범례")).toContainText("굵은 실선 화살표: gate 대기 조건");
     await expect(canvas.getByLabel(`${work} 다음에 ${after}`)).toHaveCount(1);
+    await expect(canvas.getByLabel(`${before} 다음에 ${work}`)).toHaveCount(1);
     await expect(gateNode).toHaveCSS("opacity", closed ? "0.5" : "1");
     await expect(workNode).toHaveCSS("opacity", closed ? "0.5" : "1");
-    expect((await gateNode.boundingBox())!.x).toBeLessThan((await workNode.boundingBox())!.x);
+    const beforeNode = canvas.getByRole("link", { name: /gate 사슬 선행 작업/ });
+    const [beforeBox, workBox, afterBox, gateBox] = await Promise.all(
+      [beforeNode, workNode, afterNode, gateNode].map((node) => node.boundingBox()),
+    );
+    expect(beforeBox!.x).toBeLessThan(workBox!.x);
+    expect(beforeBox!.y).toBeCloseTo(workBox!.y, 0);
+    expect(afterBox!.y).toBeCloseTo(workBox!.y, 0);
+    expect(gateBox!.x).toBeCloseTo(workBox!.x, 0);
+    expect(gateBox!.y).toBeGreaterThan(workBox!.y + workBox!.height);
+    expect(workBox!.x - beforeBox!.x).toBeCloseTo(afterBox!.x - workBox!.x, 0);
     expect((await workNode.boundingBox())!.x).toBeLessThan((await afterNode.boundingBox())!.x);
     await page.screenshot({
       path: testInfo.outputPath("gate-blocking-chain.png"),
@@ -201,6 +217,23 @@ for (const { type, closed } of [
     await expect(afterNode).toBeVisible();
     await expect(gateNode).toHaveAttribute("aria-current", "true");
     await expect(gateNode).toHaveCSS("opacity", closed ? "0.5" : "1");
+    expect((await gateNode.boundingBox())!.y).toBeGreaterThan((await workNode.boundingBox())!.y);
+
+    await page
+      .context()
+      .addCookies([{ name: "beads-desk-locale", value: "en", url: new URL(page.url()).origin }]);
+    await page.reload();
+    await expect(page.getByLabel(`${work} DEPENDS ON ${gate} (gate condition)`)).toHaveCount(1);
+    await expect(page.getByLabel("Relationship legend")).toContainText(
+      "Thick solid arrow: gate condition",
+    );
+    await page.screenshot({
+      path: testInfo.outputPath("gate-center-en.png"),
+      animations: "disabled",
+    });
+    await page
+      .context()
+      .addCookies([{ name: "beads-desk-locale", value: "ko", url: new URL(page.url()).origin }]);
 
     await page.goto(`/graph?epic=${epic}`);
     await expect(workNode).toBeVisible();

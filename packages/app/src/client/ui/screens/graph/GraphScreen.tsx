@@ -159,6 +159,10 @@ function BlockingChainGraph({
               {messages.graph.blockingLegend}
             </span>
             <span className="flex items-center gap-2">
+              <span className="graph-legend-condition w-8" />
+              {messages.graph.conditionLegend}
+            </span>
+            <span className="flex items-center gap-2">
               <span className="graph-legend-related w-8" />
               {messages.graph.relatedLegend}
             </span>

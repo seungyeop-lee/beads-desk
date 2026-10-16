@@ -381,13 +381,15 @@ export const enMessages: Messages = {
     help: {
       epic: "Issues in the epic that must finish first are in the stages on the left, following blocks dependencies. Issues in the same stage can proceed in parallel, and closed issues are dimmed. Issues outside the epic that block its issues are drawn with a dashed border, and issues with no blocks dependency are listed under No blocks dependency.",
       center:
-        "Follows the blocks chain with prerequisites on the left and dependents on the right. Direct related and discovered-from links are also shown without affecting execution order. Discovery arrows point from the originating work to the discovered issue. Closed issues are dimmed.",
+        "Follows the blocks chain with prerequisite work on the left and dependent work on the right. Gates stay out of the work order and appear below the work waiting for them, joined by thick solid arrows in the stored blocks direction. Direct related and discovered-from links are also shown without affecting execution order. Discovery arrows point from the originating work to the discovered issue. Closed issues are dimmed.",
     },
     loadFailed: (error) => `Could not load the graph: ${error}`,
     canvas: "Dependency graph",
     edgeLabel: (from, to) => `${to} after ${from}`,
     legend: "Relationship legend",
     blockingLegend: "Solid arrow: DEPENDS ON → BLOCKS",
+    conditionLegend: "Thick solid arrow: gate condition (DEPENDS ON → BLOCKS)",
+    conditionEdge: (from, to) => `${to} DEPENDS ON ${from} (gate condition)`,
     relatedLegend: "Dotted line: RELATED",
     discoveredLegend: "Dash-dot arrow: discovered in → discovered issue",
     auxiliaryHint:

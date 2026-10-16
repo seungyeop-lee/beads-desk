@@ -7,14 +7,20 @@ export const VIEWPORT_MARGIN = 40;
 export const STAGE_LABEL_HEIGHT = 32;
 
 export function graphBounds(layout: GraphLayout, planned: boolean) {
-  const x = Math.min(0, ...layout.nodes.map((node) => node.x));
+  const bends = layout.edges.flatMap((edge) => edge.condition ?? []);
+  const x = Math.min(0, ...layout.nodes.map((node) => node.x), ...bends.map(({ x }) => x));
   const y = Math.min(0, ...layout.nodes.map((node) => node.y)) - (planned ? STAGE_LABEL_HEIGHT : 0);
   const right = Math.max(
     0,
     ...layout.nodes.map((node) => node.x + NODE_WIDTH),
     ...layout.edges.map((edge) => edge.bypassX ?? 0),
+    ...bends.map(({ x }) => x),
   );
-  const bottom = Math.max(0, ...layout.nodes.map((node) => node.y + node.height));
+  const bottom = Math.max(
+    0,
+    ...layout.nodes.map((node) => node.y + node.height),
+    ...bends.map(({ y }) => y),
+  );
   return { x, y, width: right - x, height: bottom - y };
 }
 

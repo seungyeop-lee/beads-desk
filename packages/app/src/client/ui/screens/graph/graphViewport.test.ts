@@ -34,3 +34,21 @@ test("큰 그래프는 글자가 너무 작아지지 않게 배율을 제한하�
   expect(viewport.zoom).toBe(INITIAL_MIN_ZOOM);
   expect(viewport.x + (graphBounds(large, false).width / 2) * viewport.zoom).toBe(450);
 });
+
+test("gate와 이어진 간선이 꺾이는 점도 초기 보기 범위에 포함한다", () => {
+  const withCondition = {
+    ...layout,
+    edges: [
+      {
+        from: "a",
+        to: "b",
+        passes: [],
+        condition: [
+          { x: -20, y: 70 },
+          { x: 740, y: 260 },
+        ],
+      },
+    ],
+  };
+  expect(graphBounds(withCondition, false)).toEqual({ x: -20, y: 0, width: 760, height: 260 });
+});

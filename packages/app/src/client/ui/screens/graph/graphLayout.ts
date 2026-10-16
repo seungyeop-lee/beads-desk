@@ -18,8 +18,17 @@ export type PlacedIssue = { issue: Issue; x: number; y: number; height: number }
 /** 간선이 사이 layer를 left에서 right까지 y 높이로 가로지르는 구간입니다. 그 자리에는 노드를 두지 않습니다. */
 export type PassingSegment = { left: number; right: number; y: number };
 
-/** passes는 사이 layer를 지나는 구간이고, bypassX는 같은 열 간선이 노드 오른쪽으로 돌아가는 세로 구간의 x 좌표입니다. */
-export type PlacedEdge = OrderEdge & { passes: PassingSegment[]; bypassX?: number };
+export type Point = { x: number; y: number };
+
+/**
+ * passes는 사이 layer를 지나는 구간이고, bypassX는 같은 열 간선이 노드 오른쪽으로 돌아가는 세로 구간의 x 좌표입니다.
+ * condition은 gate와 이어진 간선이 출발점과 도착점 사이에서 꺾이는 점입니다.
+ */
+export type PlacedEdge = OrderEdge & {
+  passes: PassingSegment[];
+  bypassX?: number;
+  condition?: Point[];
+};
 
 /** 화면 좌표와 실제 높이가 정해진 노드 및 노드를 피해 지나는 간선입니다. */
 export type GraphLayout = { nodes: PlacedIssue[]; edges: PlacedEdge[]; nodeHeight: number };

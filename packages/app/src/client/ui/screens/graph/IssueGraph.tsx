@@ -34,7 +34,7 @@ type AuxiliaryFlowEdge = Edge<
   "auxiliary"
 >;
 type GraphEdge = BlocksEdge | AuxiliaryFlowEdge;
-type BlocksEdge = Edge<Pick<PlacedEdge, "passes" | "bypassX">, "blocks">;
+type BlocksEdge = Edge<Pick<PlacedEdge, "passes" | "bypassX" | "condition">, "blocks">;
 
 /** 에픽 계획 보기가 단계 이름과 노드 표시를 그리는 데 쓰는 값입니다. 이슈 중심 보기는 넘기지 않습니다. */
 export type GraphPlan = {
@@ -132,16 +132,18 @@ export function IssueGraph({
                 : messages.graph.discoveredEdge(from, to),
           };
         }),
-        ...layout.edges.map(({ from, to, passes, bypassX }): BlocksEdge => ({
+        ...layout.edges.map(({ from, to, passes, bypassX, condition }): BlocksEdge => ({
           id: `${from}->${to}`,
           type: "blocks",
           source: from,
           target: to,
           sourceHandle: "blocks",
-          targetHandle: bypassX === undefined ? "blocks" : "same-column",
-          data: { passes, bypassX },
+          targetHandle: blocksTargetHandle(layout, to, condition, bypassX),
+          data: { passes, bypassX, condition },
           markerEnd: { type: MarkerType.ArrowClosed },
-          ariaLabel: messages.graph.edgeLabel(from, to),
+          ariaLabel: condition
+            ? messages.graph.conditionEdge(from, to)
+            : messages.graph.edgeLabel(from, to),
         })),
       ],
     }),
@@ -243,6 +245,13 @@ function IssueNodeView({ data: { issue, href, plan, center } }: NodeProps<IssueN
         className="opacity-0"
       />
       <Handle
+        id="condition"
+        type="target"
+        position={Position.Bottom}
+        isConnectable={false}
+        className="left-5/6! opacity-0"
+      />
+      <Handle
         id="same-column"
         type="target"
         position={Position.Right}
@@ -277,6 +286,20 @@ function IssueNodeView({ data: { issue, href, plan, center } }: NodeProps<IssueN
 
 const NODE_TYPES = { issue: IssueNodeView };
 
+/** gate와 이어진 간선은 작업의 아래쪽이나 gate의 왼쪽으로 들어가고, 같은 열 간선은 노드 오른쪽으로 돌아 들어갑니다. */
+function blocksTargetHandle(
+  layout: GraphLayout,
+  to: string,
+  condition: PlacedEdge["condition"],
+  bypassX: number | undefined,
+) {
+  if (condition) {
+    const target = layout.nodes.find(({ issue }) => issue.id === to)!;
+    return target.issue.issueType === "gate" ? "blocks" : "condition";
+  }
+  return bypassX === undefined ? "blocks" : "same-column";
+}
+
 /**
  * 이웃한 layer 사이의 빈 칸은 React Flow 기본 간선과 같은 곡선으로 잇고,
  * 사이 layer에서는 배치가 비워 둔 자리를 곧은 선으로 가로질러 노드 밑으로 지나가지 않게 합니다.
@@ -289,6 +312,11 @@ function BlocksEdgeView({
   data,
   markerEnd,
 }: EdgeProps<BlocksEdge>) {
+  if (data?.condition) {
+    const bends = data.condition.map(({ x, y }) => `L${x},${y}`).join(" ");
+    const path = `M${sourceX},${sourceY} ${bends} L${targetX},${targetY}`;
+    return <BaseEdge path={path} markerEnd={markerEnd} className="graph-condition" />;
+  }
   if (data?.bypassX !== undefined) {
     const [path] = getSmoothStepPath({
       sourceX,

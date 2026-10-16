@@ -10,6 +10,7 @@ import {
   PLAN_NODE_HEIGHT,
 } from "./graphLayout";
 import { IssueCard } from "./IssueCard";
+import { conditionLayout } from "./conditionLayout";
 
 export function useGraphLayout(
   order: ExecutionOrder,
@@ -20,7 +21,7 @@ export function useGraphLayout(
   const [heights, setHeights] = useState<ReadonlyMap<string, number>>(new Map());
   const minimum = planned ? PLAN_NODE_HEIGHT : NODE_HEIGHT;
   const layout = useMemo(() => {
-    const main = layeredLayout(order, minimum, heights);
+    const main = center ? conditionLayout(order, heights) : layeredLayout(order, minimum, heights);
     return center
       ? centerLayout(main, center.extra, center.auxiliary, center.issue, heights)
       : main;

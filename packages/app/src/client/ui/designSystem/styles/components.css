@@ -377,3 +377,11 @@
 .graph-blocks {
   stroke-width: 2;
 }
+
+.graph-condition {
+  stroke: color-mix(in oklab, var(--color-base-content) 65%, #0000);
+  stroke-width: 3;
+}
+.graph-legend-condition {
+  border-top: 3px solid currentColor;
+}
