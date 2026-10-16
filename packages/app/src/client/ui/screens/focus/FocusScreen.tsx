@@ -296,7 +296,7 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
             </span>
           )}
           <span
-            className="w-20 shrink-0 truncate text-right font-mono text-xs text-base-content/45"
+            className="min-w-8 shrink-0 text-right font-mono text-xs whitespace-nowrap text-base-content/45"
             title={issue.id}
           >
             {shortIssueId(issue.id)}
