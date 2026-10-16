@@ -15,7 +15,7 @@ import {
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
-import type { IssueListFilter } from "@/shared/contract/issueList";
+import { ALL_STATUSES } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import {
   HUMAN_DECISION_TONE,
@@ -34,8 +34,6 @@ import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { FocusStatsSection } from "./FocusStatsSection";
 import { useMinuteClock } from "@/client/ui/screens/board/useMinuteClock";
-
-const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
 
 /** 개수 카드로 보이는 작업 상태입니다. 누르면 이슈 목록의 같은 보기 탭으로 이동합니다. */
 const CARD_STATES = ["in_progress", "ready", "blocked"] as const satisfies WorkState[];

@@ -5,9 +5,7 @@ import {
   type WorkspaceReadState,
 } from "@/client/modules/workspace/application/useWorkspaceRead";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
-import type { IssueListFilter } from "@/shared/contract/issueList";
-
-const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
+import { ALL_STATUSES, type IssueListFilter } from "@/shared/contract/issueList";
 
 /**
  * 이슈 찾기 입력의 후보로 모든 이슈를 읽습니다. active가 false이면 bd를 실행하지 않습니다.

@@ -8,7 +8,7 @@ import { useIssueDetail } from "@/client/modules/issues/application/useIssueDeta
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
-import type { IssueListFilter } from "@/shared/contract/issueList";
+import { ALL_STATUSES } from "@/shared/contract/issueList";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
@@ -20,8 +20,6 @@ import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateDecision } from "./HumanGateDecision";
-
-const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
 
 /** 왼쪽 목록의 한 줄입니다. human gate는 막고 있는 작업과 함께, 질문은 이슈 하나로 보입니다. */
 type PendingItem =

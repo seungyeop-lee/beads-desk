@@ -9,7 +9,7 @@ import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
-import type { IssueListFilter } from "@/shared/contract/issueList";
+import { ALL_STATUSES } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { IssueFilterBar } from "./IssueFilterBar";
@@ -20,9 +20,6 @@ import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-
-/** 보기 탭은 화면에서 작업 상태로 나누므로 모든 상태의 이슈를 한 번에 읽습니다. */
-const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
 
 /**
  * 위쪽 보기 탭으로 작업 상태 하나를 고르고, 유형, 날짜, 검색으로 그 안을 좁힙니다.

@@ -12,6 +12,8 @@ export const ISSUE_SEARCH_PATH = "/api/issue-search";
  */
 export type IssueListFilter = { kind: "ready" } | { kind: "status"; statuses: IssueStatus[] };
 
+export const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
+
 const READY = "ready";
 
 export function issueListSearchParams(filter: IssueListFilter): URLSearchParams {
