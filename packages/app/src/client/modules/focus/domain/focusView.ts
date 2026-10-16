@@ -2,7 +2,7 @@ import { awaitsHumanDecision, type Issue } from "@beads-desk/bd/issue";
 import type { EpicSummary } from "@/shared/contract/epics";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { sortEpics } from "@/client/modules/epics/domain/epicsView";
-import { waiterCounts } from "@/client/modules/issues/domain/waiterCounts";
+import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { groupByWorkState, type WorkState } from "@/client/modules/issues/domain/workState";
 
 /** 다음에 할 일에 보이는 바로 작업 가능 이슈의 개수입니다. 나머지는 이슈 목록의 바로 작업 가능 탭에서 봅니다. */

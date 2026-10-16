@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { focusStats } from "@/client/modules/focus/domain/focusStats";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
-import { waiterCounts } from "@/client/modules/issues/domain/waiterCounts";
+import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
 import { readIssueListAddress } from "@/client/ui/screens/issues/issueListAddress";
 import { FLOW_SERIES, flowBarHref } from "./flowBarAddress";

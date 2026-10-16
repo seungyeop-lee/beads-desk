@@ -7,7 +7,7 @@ import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrit
 import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
-import { waiterCounts } from "@/client/modules/issues/domain/waiterCounts";
+import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";

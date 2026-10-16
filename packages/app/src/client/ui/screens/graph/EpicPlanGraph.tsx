@@ -2,7 +2,7 @@ import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { Fragment, useMemo } from "react";
 import { epicPlan } from "@/client/modules/graph/domain/epicPlan";
-import { waiterCounts } from "@/client/modules/issues/domain/waiterCounts";
+import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { layeredLayout, PLAN_NODE_HEIGHT } from "./graphLayout";

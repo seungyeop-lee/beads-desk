@@ -184,22 +184,14 @@ export async function withWorkSignals(
 }
 
 /**
- * epic 아래의 모든 후손 이슈(하위 이슈와 그 하위 이슈들)를 읽습니다.
- * bd children은 직접 하위 이슈만 돌려주므로, 모든 이슈를 한 번에 읽고 parent를 따라 모읍니다.
+ * 이슈 목록에서 epic 아래의 모든 후손 이슈(하위 이슈와 그 하위 이슈들)를 parent를 따라 모읍니다.
+ * bd children은 직접 하위 이슈만 돌려주므로, 모든 이슈를 한 번에 읽은 목록을 넘깁니다.
  */
-export async function epicDescendants(cwd: string, epicId: string): Promise<BdOutcome<Issue[]>> {
-  const id = epicId.trim();
-  if (id.length === 0) {
-    return inputError("epic id가 비어 있습니다.");
-  }
-  const result = await queryIssues(cwd, listArgs([]));
-  if (!result.ok) {
-    return result;
-  }
-  const childrenByParent = groupByParent(result.value);
+export function epicDescendants(issues: Issue[], epicId: string): Issue[] {
+  const childrenByParent = groupByParent(issues);
   const descendants: Issue[] = [];
-  const reached = new Set([id]);
-  const pending = [id];
+  const reached = new Set([epicId]);
+  const pending = [epicId];
   while (pending.length > 0) {
     for (const child of childrenByParent.get(pending.shift()!) ?? []) {
       // 상위 관계가 순환해도 같은 이슈를 두 번 담지 않습니다.
@@ -209,7 +201,7 @@ export async function epicDescendants(cwd: string, epicId: string): Promise<BdOu
       pending.push(child.id);
     }
   }
-  return { ok: true, value: descendants };
+  return descendants;
 }
 
 export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome<IssueDetail>> {

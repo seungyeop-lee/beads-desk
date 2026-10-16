@@ -6,9 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
 import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
-import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
-import { waiterCounts } from "@/client/modules/issues/domain/waiterCounts";
 import {
   epicDescendantRows,
   notChildCandidate,
@@ -26,7 +24,6 @@ import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { statusLabel, statusTone } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import type { EpicSummary } from "@/shared/contract/epics";
-import type { IssueListFilter } from "@/shared/contract/issueList";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ChevronRightIcon, PlusIcon } from "@/client/ui/designSystem/icons";
@@ -35,8 +32,6 @@ import { showToast } from "@/client/ui/designSystem/Toast";
 import { graphHref } from "@/client/ui/screens/graph/graphAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-
-const ALL_STATUSES: IssueListFilter = { kind: "status", statuses: [] };
 
 /**
  * epic마다 하위 이슈 진행률을 보여 주고, 펼친 epic은 하위 이슈를 목록처럼 바로 고칠 수 있게 보여 줍니다.
@@ -47,9 +42,6 @@ export function EpicsScreen() {
   const humanGateTitles = useHumanGateTitles();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
-  // 후손 이슈만으로 세면 에픽 밖에서 기다리는 이슈가 빠지므로, 이슈 목록처럼 전체 목록으로 셉니다.
-  const { data: allIssues } = useIssueList(ALL_STATUSES);
-  const waiters = useMemo(() => waiterCounts(allIssues ?? []), [allIssues]);
   const [expanded, setExpanded] = useState<ReadonlySet<string> | null>(null);
   const epics = data ? sortEpics(data) : null;
   const settled = epics ? settleExpandedEpics(epics, expanded) : expanded;
@@ -87,7 +79,6 @@ export function EpicsScreen() {
           expanded={open.has(summary.epic.id)}
           onToggle={() => toggle(summary.epic.id)}
           humanGateTitles={humanGateTitles}
-          waiters={waiters}
           issueHref={issueHref}
           writes={writes}
         />
@@ -103,7 +94,6 @@ type SectionProps = {
   expanded: boolean;
   onToggle: () => void;
   humanGateTitles: ReadonlyMap<string, string>;
-  waiters: ReadonlyMap<string, number>;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 };
@@ -113,7 +103,6 @@ function EpicSection({
   expanded,
   onToggle,
   humanGateTitles,
-  waiters,
   issueHref,
   writes,
 }: SectionProps) {
@@ -165,7 +154,6 @@ function EpicSection({
         <EpicDescendants
           epic={epic}
           humanGateTitles={humanGateTitles}
-          waiters={waiters}
           issueHref={issueHref}
           writes={writes}
         />
@@ -177,17 +165,17 @@ function EpicSection({
 function EpicDescendants({
   epic,
   humanGateTitles,
-  waiters,
   issueHref,
   writes,
 }: {
   epic: Issue;
   humanGateTitles: ReadonlyMap<string, string>;
-  waiters: ReadonlyMap<string, number>;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 }) {
-  const { data: descendants, error } = useEpicDescendants(epic.id);
+  const { data, error } = useEpicDescendants(epic.id);
+  const descendants = data?.issues;
+  const waiters = useMemo(() => new Map(Object.entries(data?.waiters ?? {})), [data]);
   const [creating, setCreating] = useState(false);
   const router = useRouter();
   const messages = useMessages();

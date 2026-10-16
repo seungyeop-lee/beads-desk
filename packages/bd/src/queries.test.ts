@@ -2,7 +2,7 @@ import { chmod, mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/pr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import type { Issue } from "./issue";
+import { parseIssues, type Issue } from "./issue";
 import {
   boardIssues,
   decisionRecords,
@@ -370,51 +370,32 @@ describe("humanGates", () => {
 });
 
 describe("epicDescendants", () => {
-  const listAll = "list --json --tree=false --all --limit 0";
-
-  test("모든 이슈를 한 번에 읽어 epic의 하위 이슈와 그 아래 이슈를 모두 돌려주고, 다른 epic의 이슈는 뺀다", async () => {
-    await useFakeBd({
-      [listAll]: {
-        stdout: JSON.stringify([
-          { id: "e-1", issue_type: "epic", status: "open" },
-          { id: "e-1.1", issue_type: "feature", status: "open", parent: "e-1" },
-          { id: "e-1.1.1", status: "closed", parent: "e-1.1" },
-          { id: "e-1.1.1.1", status: "open", parent: "e-1.1.1" },
-          { id: "e-1.2", status: "open", parent: "e-1" },
-          { id: "e-2", issue_type: "epic", status: "open" },
-          { id: "e-2.1", status: "open", parent: "e-2" },
-          { id: "loose", status: "open" },
-        ]),
-      },
-    });
-
-    const result = await epicDescendants(workDir, "e-1");
-
-    expect(result.ok && result.value.map((issue) => issue.id).sort()).toEqual([
-      "e-1.1",
-      "e-1.1.1",
-      "e-1.1.1.1",
-      "e-1.2",
+  test("epic의 하위 이슈와 그 아래 이슈를 모두 돌려주고, 다른 epic의 이슈는 뺀다", () => {
+    const issues = parseIssues([
+      { id: "e-1", issue_type: "epic", status: "open" },
+      { id: "e-1.1", issue_type: "feature", status: "open", parent: "e-1" },
+      { id: "e-1.1.1", status: "closed", parent: "e-1.1" },
+      { id: "e-1.1.1.1", status: "open", parent: "e-1.1.1" },
+      { id: "e-1.2", status: "open", parent: "e-1" },
+      { id: "e-2", issue_type: "epic", status: "open" },
+      { id: "e-2.1", status: "open", parent: "e-2" },
+      { id: "loose", status: "open" },
     ]);
+
+    expect(
+      epicDescendants(issues, "e-1")
+        .map((issue) => issue.id)
+        .sort(),
+    ).toEqual(["e-1.1", "e-1.1.1", "e-1.1.1.1", "e-1.2"]);
   });
 
-  test("bd가 실패하면 오류를 돌려준다", async () => {
-    await useFakeBd({ [listAll]: { stderr: "boom", code: 1 } });
+  test("상위 관계가 순환해도 같은 이슈를 한 번만 담는다", () => {
+    const issues = parseIssues([
+      { id: "a", status: "open", parent: "b" },
+      { id: "b", status: "open", parent: "a" },
+    ]);
 
-    const result = await epicDescendants(workDir, "e-1");
-
-    expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
-  });
-
-  test("epic id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
-    await useFakeBd({});
-
-    const result = await epicDescendants(workDir, "  ");
-
-    expect(result).toEqual({
-      ok: false,
-      error: { message: "epic id가 비어 있습니다.", exitCode: null },
-    });
+    expect(epicDescendants(issues, "a").map((issue) => issue.id)).toEqual(["b"]);
   });
 });
 

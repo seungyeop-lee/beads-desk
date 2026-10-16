@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { waiterCounts } from "./waiterCounts";
+import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { groupByWorkState, issueListGroups, parseViewState, workState } from "./workState";
 
 const NO_WAITERS: ReadonlyMap<string, number> = new Map();
