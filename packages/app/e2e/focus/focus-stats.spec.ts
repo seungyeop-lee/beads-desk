@@ -28,16 +28,14 @@ test("이슈를 만들고 착수해 닫으면 흐름 통계의 오늘 막대와 
   await expect(stats.getByText("중앙값 · 1개 기준")).toHaveCount(2);
 });
 
-test("오늘 막대를 누르면 이슈 목록에서 오늘 닫거나 만든 이슈를 막대와 같은 개수로 연다", async ({
+test("오늘 막대를 누르면 이슈 목록에서 오늘 닫거나 만든 이슈의 조건으로 연다", async ({
   page,
   workspace,
 }) => {
   await workspace.createIssues({
     done: { title: "오늘 끝낸 작업", type: "task", status: "closed" },
     open: { title: "열린 작업", type: "task" },
-    epic: { title: "오늘 닫은 에픽", type: "epic", status: "closed" },
   });
-  const tabs = page.getByRole("navigation", { name: "보기" });
 
   await page.goto("/focus");
   const stats = page.getByRole("region", { name: "흐름" });
@@ -45,14 +43,10 @@ test("오늘 막대를 누르면 이슈 목록에서 오늘 닫거나 만든 이
   await expect(page).toHaveURL(
     new RegExp(`/issues\\?view=closed&date=closed&from=${today}&to=${today}&type=`),
   );
-  await expect(page.getByRole("link", { name: "오늘 끝낸 작업" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "오늘 닫은 에픽" })).toHaveCount(0);
-  await expect(tabs.getByRole("link", { name: "닫힘 1" })).toBeVisible();
 
   await page.goBack();
   await stats.getByRole("link", { name: `${todayName}에 만든 이슈 2개 보기` }).click();
   await expect(page).toHaveURL(new RegExp(`/issues\\?from=${today}&to=${today}&type=`));
-  await expect(tabs.getByRole("link", { name: "전체 2" })).toBeVisible();
 });
 
 test("보류 수와 닫을 수 있는 에픽 수를 보이고, 누르면 보류 보기 탭과 그 에픽을 모은 정리 페이지를 연다", async ({

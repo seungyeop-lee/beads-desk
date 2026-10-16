@@ -1,16 +1,14 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import { useId, useState } from "react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { notReplacementTarget } from "@/client/modules/issues/domain/issueRelations";
 import { showToast } from "@/client/ui/designSystem/Toast";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { closeAsReplacedAction } from "@/server/web/issues/issueActions";
 import { REPLACEMENTS, type Replacement } from "@/shared/contract/issueActions";
 import { IssuePicker } from "../IssuePicker";
 
-/**
- * 지금 이슈를 고른 이슈로 대체하거나 고른 이슈의 중복으로 표시해 닫습니다.
- * 이 이슈가 이미 의존하는 이슈는 bd가 거부하므로 후보에서 뺍니다. 반대 방향으로 연결된 이슈는 고를 수 있습니다.
- */
+/** 지금 이슈를 고른 이슈로 대체하거나 고른 이슈의 중복으로 표시해 닫습니다. */
 export function CloseAsReplacedForm({
   issue,
   writes,
@@ -21,7 +19,6 @@ export function CloseAsReplacedForm({
   const messages = useMessages();
   const headingId = useId();
   const [replacement, setReplacement] = useState<Replacement>("supersede");
-  const unavailable = new Set([issue.id, ...issue.dependencies.map((link) => link.id)]);
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-2">
@@ -43,7 +40,7 @@ export function CloseAsReplacedForm({
       <IssuePicker
         label={messages.closeAsReplaced.search}
         disabled={writes.pending}
-        exclude={(candidate) => unavailable.has(candidate.id)}
+        exclude={notReplacementTarget(issue)}
         onPick={async (target) => {
           if (!window.confirm(messages.closeAsReplaced.confirm[replacement](issue.id, target.id))) {
             return false;

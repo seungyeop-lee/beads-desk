@@ -60,24 +60,6 @@ test("이슈 C를 D의 중복으로 표시하면 확인 창에서 거절할 때�
   ).toBeVisible();
 });
 
-test("이 이슈가 이미 의존하는 이슈와 자기 자신은 대상 후보에 없다", async ({ page, workspace }) => {
-  const { main, other } = await workspace.createIssues(
-    {
-      main: { title: "e2e 후보 주 작업", type: "task" },
-      blocker: { title: "e2e 후보 선행 작업", type: "task" },
-      other: { title: "e2e 후보 다른 작업", type: "task" },
-    },
-    [["main", "blocker"]],
-  );
-
-  await page.goto(`/issues?issue=${main}`);
-  const detail = page.getByRole("dialog", { name: `${main} 이슈` });
-  await detail.getByRole("combobox", { name: "대상 이슈 찾기" }).fill("e2e 후보");
-  const options = detail.getByRole("listbox", { name: "대상 이슈 찾기" }).getByRole("option");
-  await expect(options).toHaveCount(1);
-  await expect(options).toContainText(other);
-});
-
 /** 상세의 대체·중복으로 닫기에서 방법을 고르고, 검색어로 찾은 대상 이슈를 고릅니다. */
 async function pickTarget(page: Page, id: string, method: string, query: string, target: string) {
   const detail = page.getByRole("dialog", { name: `${id} 이슈` });

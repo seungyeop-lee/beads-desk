@@ -5,6 +5,7 @@ import {
   dependencyToAdd,
   linkedIssues,
   notRelationCandidate,
+  notReplacementTarget,
   RELATION_KINDS,
 } from "./issueRelations";
 
@@ -116,4 +117,13 @@ test("관계 맺기 후보에서 이미 연결한 이슈는 늘 빼고, 결정�
 
   expect(excludedKinds(decision)).toEqual(["parent", "child"]);
   expect(excludedKinds(linkedTask)).toEqual(RELATION_KINDS);
+});
+
+test("대체·중복 닫기 후보에서 자기 자신과 이미 의존하는 이슈는 빼고, 이 이슈에 의존하는 이슈는 남긴다", () => {
+  const excluded = notReplacementTarget({ id: "self", dependencies: [link("blocker", "blocks")] });
+  const candidate = (id: string) => ({ id }) as Issue;
+
+  expect(excluded(candidate("self"))).toBe(true);
+  expect(excluded(candidate("blocker"))).toBe(true);
+  expect(excluded(candidate("dependent"))).toBe(false);
 });

@@ -26,6 +26,14 @@ export function notRelationCandidate(
   return (issue) => linked.has(issue.id) || (hierarchy && !canJoinHierarchy(issue));
 }
 
+/** 대체·중복으로 닫을 대상의 후보로 쓸 수 없는 이슈를 고릅니다. 자기 자신과, 이 이슈가 이미 의존하는 이슈는 bd가 거부합니다. 반대 방향으로 연결된 이슈는 고를 수 있습니다. */
+export function notReplacementTarget(
+  issue: Pick<IssueDetail, "id" | "dependencies">,
+): (candidate: Issue) => boolean {
+  const unavailable = new Set([issue.id, ...issue.dependencies.map((link) => link.id)]);
+  return (candidate) => unavailable.has(candidate.id);
+}
+
 /** 고른 관계를 bd dep add의 (의존하는 이슈, 의존받는 이슈, 유형)으로 바꿉니다. parent-child는 하위 이슈가 상위 이슈에 의존합니다. */
 export function dependencyToAdd(kind: RelationKind, self: string, other: string): DependencyToAdd {
   switch (kind) {

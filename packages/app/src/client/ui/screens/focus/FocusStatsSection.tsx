@@ -28,18 +28,9 @@ import {
   workStateTone,
 } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { NON_WORK_TYPES } from "@/client/modules/issues/domain/workState";
-import {
-  DEFAULT_TYPES,
-  issueListHref,
-  issueViewHref,
-} from "@/client/ui/screens/issues/issueListAddress";
+import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
-
-const SERIES = ["created", "closed"] as const;
-/** 처리량은 epic과 decision을 세지 않으므로, 막대에서 여는 목록도 이 유형만 골라 막대의 숫자와 개수를 맞춥니다. */
-const FLOW_TYPES = DEFAULT_TYPES.filter((type) => !NON_WORK_TYPES.has(type));
-type Series = (typeof SERIES)[number];
+import { FLOW_SERIES, flowBarHref, type FlowSeries } from "./flowBarAddress";
 
 /**
  * 개수 카드 아래에 두는 통계입니다. 지금 할 일을 보이는 개수 카드와 시선을 다투지 않도록 색 배경 없이 작게 보이고,
@@ -111,22 +102,13 @@ function ThroughputChart({ daily }: { daily: DailyFlow[] }) {
     label: flow.day === today ? text.today : text.dayLabel(...monthAndDate(flow.day)),
   }));
 
-  const hrefOf = (series: Series, day: string) =>
-    series === "closed"
-      ? issueListHref({
-          view: "closed",
-          dates: { field: "closed", from: day, to: day },
-          types: FLOW_TYPES,
-        })
-      : issueListHref({ dates: { field: "created", from: day, to: day }, types: FLOW_TYPES });
-
   // 막대 모양과 함께 그 계열의 세로 칸 전체를 누를 수 있는 링크로 둡니다. 0인 날은 열 목록이 없어 링크를 두지 않습니다.
-  const barOf = (series: Series) =>
+  const barOf = (series: FlowSeries) =>
     function FlowBar(props: BarShapeProps) {
       const flow = props.payload as DailyFlow;
       const count = flow[series];
       if (count === 0) return <g />;
-      const href = hrefOf(series, flow.day);
+      const href = flowBarHref(series, flow.day);
       const area = props.background ?? props;
       return (
         <a
@@ -154,7 +136,7 @@ function ThroughputChart({ daily }: { daily: DailyFlow[] }) {
       <h3 className="flex items-center gap-3 text-sm font-semibold">
         {text.throughput}
         <span className="ml-auto flex gap-3 text-xs font-normal text-base-content/60">
-          {SERIES.map((series) => (
+          {FLOW_SERIES.map((series) => (
             <span key={series} className="flex items-center gap-1.5">
               <span className={`flow-swatch flow-${series}`} />
               {text.series[series]}
@@ -184,7 +166,7 @@ function ThroughputChart({ daily }: { daily: DailyFlow[] }) {
           isAnimationActive={false}
           content={FlowTooltip}
         />
-        {SERIES.map((series) => (
+        {FLOW_SERIES.map((series) => (
           <Bar
             key={series}
             dataKey={series}
@@ -207,7 +189,7 @@ function FlowTooltip({ active, payload, label }: TooltipContentProps) {
   return (
     <div className="surface flex flex-col gap-1 px-3 py-2 text-xs shadow-sm">
       <span className="font-semibold">{label}</span>
-      {SERIES.map((series) => (
+      {FLOW_SERIES.map((series) => (
         <span key={series} className="flex items-center gap-1.5">
           <span className={`flow-swatch flow-${series}`} />
           {messages.focus.stats.series[series]}
