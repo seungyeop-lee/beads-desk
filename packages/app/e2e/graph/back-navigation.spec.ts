@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import type { Page, TestInfo } from "@playwright/test";
 import { expect, test } from "../support/bdWorkspace";
 
-test("에픽 순서 보기의 뒤로가기는 에픽 화면으로 돌아가며 두 언어에서 보인다", async ({
+test("에픽 순서 보기는 두 언어에서 뒤로가기 없이 X를 표시하고 키보드로 닫는다", async ({
   page,
   workspace,
 }, testInfo) => {
@@ -20,14 +20,22 @@ test("에픽 순서 보기의 뒤로가기는 에픽 화면으로 돌아가며 �
   await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
     "돌아갈 에픽 · 순서",
   );
-  const back = page.getByRole("link", { name: "뒤로가기", exact: true });
-  await expect(back).toHaveAttribute("href", "/epics");
-  await capture(page, testInfo, "epic-back-ko");
+  const close = page.getByRole("link", { name: "닫기", exact: true });
+  await expect(close).toHaveAttribute("href", "/epics");
+  await expect(close).toBeVisible();
+  await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveCount(0);
+  await capture(page, testInfo, "epic-close-ko");
   await changeLocale(page, "en");
-  const englishBack = page.getByRole("link", { name: "Back", exact: true });
-  await expect(englishBack).toBeVisible();
-  await capture(page, testInfo, "epic-back-en");
-  await englishBack.click();
+  const englishClose = page.getByRole("link", { name: "Close", exact: true });
+  await expect(englishClose).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
+    "돌아갈 에픽 · Order",
+  );
+  await expect(page.getByRole("link", { name: "Back", exact: true })).toHaveCount(0);
+  await capture(page, testInfo, "epic-close-en");
+  await englishClose.focus();
+  await expect(englishClose).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/epics$/);
   await expect(page.locator("section").filter({ hasText: "돌아갈 에픽" })).toBeVisible();
 });
@@ -55,17 +63,24 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
   await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
     "복귀 둘째 · 선행·후속",
   );
-  await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "닫기", exact: true })).toHaveAttribute(
     "href",
     origin,
   );
   await expect(
     page.getByRole("region", { name: "의존 그래프" }).getByRole("link", { name: /복귀 마지막/ }),
   ).toBeVisible();
-  await capture(page, testInfo, "chain-back-ko");
+  await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveCount(0);
+  await capture(page, testInfo, "chain-close-ko");
   await changeLocale(page, "en");
-  await expect(page.getByRole("link", { name: "Back", exact: true })).toBeVisible();
-  await capture(page, testInfo, "chain-back-en");
+  await expect(page.getByRole("link", { name: "Close", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back", exact: true })).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("region", { name: "Dependency graph" })
+      .getByRole("link", { name: /복귀 마지막/ }),
+  ).toBeVisible();
+  await capture(page, testInfo, "chain-close-en");
   await changeLocale(page, "ko");
 
   await page
@@ -76,7 +91,7 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL((url) => !url.searchParams.has("issue"));
   await page.reload();
-  await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "닫기", exact: true })).toHaveAttribute(
     "href",
     origin,
   );
@@ -93,14 +108,17 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
     "복귀 마지막 · 선행·후속",
   );
   await page.reload();
-  await page.getByRole("link", { name: "뒤로가기", exact: true }).click();
+  await page.getByRole("link", { name: "닫기", exact: true }).click();
   await expect(page).toHaveURL((url) => url.searchParams.get("center") === second);
   await expect(page.getByRole("region", { name: `${last} 이슈` })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
     "복귀 둘째 · 선행·후속",
   );
-  await page.getByRole("link", { name: "뒤로가기", exact: true }).click();
+  const close = page.getByRole("link", { name: "닫기", exact: true });
+  await close.focus();
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(page).toHaveURL(origin);
   await expect(originalDialog).toBeVisible();
   await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
@@ -128,9 +146,9 @@ test("같은 그래프를 다시 열어도 자기 자신을 복귀 순서에 넣
     .getByRole("region", { name: `${second} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
     .click();
-  const back = page.getByRole("link", { name: "뒤로가기", exact: true });
-  await expect(back).toHaveAttribute("href", `/focus?issue=${second}`);
-  await back.click();
+  const close = page.getByRole("link", { name: "닫기", exact: true });
+  await expect(close).toHaveAttribute("href", `/focus?issue=${second}`);
+  await close.click();
   await expect(page).toHaveURL(`/focus?issue=${second}`);
   await expect(page.getByRole("dialog", { name: `${second} 이슈` })).toBeVisible();
 });
@@ -162,19 +180,19 @@ test("직접 진입과 외부·손상된 복귀 정보는 그래프별 대체 �
       const query = new URLSearchParams({ [scope!]: id! });
       if (invalid !== null) query.append("returnTo", invalid);
       await page.goto(`/graph?${query}`);
-      const back = page.getByRole("link", { name: "뒤로가기", exact: true });
-      await expect(back).toHaveAttribute("href", fallback!);
+      const close = page.getByRole("link", { name: "닫기", exact: true });
+      await expect(close).toHaveAttribute("href", fallback!);
     }
-    await page.getByRole("link", { name: "뒤로가기", exact: true }).click();
+    await page.getByRole("link", { name: "닫기", exact: true }).click();
     await expect(page).toHaveURL(fallback!);
   }
 });
 
 async function capture(page: Page, testInfo: TestInfo, name: string) {
-  await page.screenshot({ path: testInfo.outputPath(`${name}.png`) });
-  const directory = resolve(process.cwd(), "../../tmp/837-evidence");
+  await page.screenshot({ path: testInfo.outputPath(`${name}.png`), animations: "disabled" });
+  const directory = resolve(process.cwd(), "../../tmp/0bl-evidence");
   await mkdir(directory, { recursive: true });
-  await page.screenshot({ path: resolve(directory, `${name}.png`) });
+  await page.screenshot({ path: resolve(directory, `${name}.png`), animations: "disabled" });
 }
 
 async function changeLocale(page: Page, locale: string) {

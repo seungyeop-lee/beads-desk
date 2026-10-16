@@ -389,7 +389,6 @@ export const koMessages = {
     childAdded: (id: string, epicId: string) => `${id}을(를) ${epicId}의 하위 이슈로 넣었습니다.`,
   },
   graph: {
-    back: "뒤로가기",
     scopes: { epic: "순서", center: "선행·후속" },
     help: {
       epic: "에픽에 속한 이슈를 blocks 관계를 따라 먼저 끝내야 하는 이슈부터 왼쪽 단계에 둡니다. 같은 단계의 이슈는 함께 진행할 수 있고, 닫힌 이슈는 흐리게 보입니다. 에픽의 이슈를 막는 에픽 밖 이슈는 점선으로 함께 그리고, blocks 관계가 없는 이슈는 선후 관계 없음에 모읍니다.",

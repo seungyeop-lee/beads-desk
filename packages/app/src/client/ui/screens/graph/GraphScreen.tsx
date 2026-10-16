@@ -90,14 +90,6 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
           <Link
             href={backHref}
             scroll={false}
-            className="btn btn-ghost btn-sm shrink-0"
-            aria-label={messages.graph.back}
-          >
-            {messages.graph.back}
-          </Link>
-          <Link
-            href={backHref}
-            scroll={false}
             className="btn btn-ghost btn-sm btn-square shrink-0"
             aria-label={messages.common.close}
           >
