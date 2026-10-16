@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, realpath } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -17,6 +17,7 @@ const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 async function beadsWorkspace(): Promise<string> {
   const root = await realpath(await mkdtemp(join(tmpdir(), "beads-desk-workspaces-")));
   await mkdir(join(root, ".beads"));
+  await writeFile(join(root, ".beads", "config.yaml"), "");
   return root;
 }
 

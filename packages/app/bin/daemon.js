@@ -1,12 +1,15 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   closeSync,
   existsSync,
   linkSync,
   mkdirSync,
   openSync,
+  readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { connect, createServer } from "node:net";
@@ -97,15 +100,15 @@ export function createDaemon({
         await terminate(running.pid);
 
         // 그사이 지워진 workspace는 건너뜁니다. 남은 것이 없으면 이전 현재 workspace로 띄웁니다.
-        const [first = list.current, ...rest] = list.workspaces.filter(isBeadsWorkspace);
+        const [first = list.current, ...rest] = list.workspaces.filter(isWorkspaceRoot);
         const server = await launch(first, port ?? running.port);
         for (const workspace of rest) {
           await registerWorkspace(server.url, workspace, false);
         }
-        for (const workspace of list.workspaces.filter((root) => !isBeadsWorkspace(root))) {
+        for (const workspace of list.workspaces.filter((root) => !isWorkspaceRoot(root))) {
           print(`workspace를 찾지 못해 다시 등록하지 않았습니다: ${workspace}`);
         }
-        const current = isBeadsWorkspace(list.current)
+        const current = isWorkspaceRoot(list.current)
           ? (await registerWorkspace(server.url, list.current, true)).current
           : first;
         print(`workspace: ${current}`);
@@ -270,18 +273,57 @@ function isServerAlive(pid) {
   }
 }
 
-/** 서버와 같은 방식으로 cwd와 그 상위에서 `.beads`가 있는 디렉터리를 찾고, 없으면 실패합니다. */
+/** 서버와 같은 방식으로 cwd에서 bd가 쓰는 workspace 디렉터리를 찾고, 없으면 실패합니다. */
 function workspaceRootOf(cwd) {
-  let dir = resolve(cwd);
-  while (!isBeadsWorkspace(dir)) {
-    if (dirname(dir) === dir) throw new Error(`beads workspace를 찾지 못했습니다: ${cwd}`);
-    dir = dirname(dir);
-  }
-  return dir;
+  const root = findWorkspaceRoot(resolve(cwd));
+  if (!root) throw new Error(`beads workspace를 찾지 못했습니다: ${cwd}`);
+  return root;
 }
 
-function isBeadsWorkspace(root) {
-  return existsSync(join(root, ".beads"));
+function isWorkspaceRoot(root) {
+  return findWorkspaceRoot(root) === root;
+}
+
+// 서버의 `findWorkspaceRoot`(src/server/infra/runtime/serverRuntime.ts)와 같은 기준으로 찾습니다.
+// launcher는 서버 bundle을 불러올 수 없어 같은 규칙을 여기에도 둡니다. 한쪽을 고치면 다른 쪽도 고칩니다.
+function findWorkspaceRoot(path) {
+  if (!isDirectory(path)) return null;
+  const start = realpathSync(path);
+  const git = gitRepository(start);
+  for (let dir = start; ; dir = dirname(dir)) {
+    if (hasBeadsProject(dir)) return dir;
+    if (dir === git?.topLevel || dirname(dir) === dir) break;
+  }
+  return git && hasBeadsProject(dirname(git.commonDir)) ? git.topLevel : null;
+}
+
+function hasBeadsProject(dir) {
+  const beads = join(dir, ".beads");
+  return (
+    isDirectory(beads) &&
+    readdirSync(beads).some(
+      (name) => name === "metadata.json" || name === "config.yaml" || name.endsWith(".db"),
+    )
+  );
+}
+
+function gitRepository(dir) {
+  // git hook 안에서 실행하면 GIT_DIR 등이 다른 저장소를 가리키므로, dir만으로 저장소를 찾게 GIT_ 환경 변수를 뺍니다.
+  const env = { ...process.env };
+  for (const key of Object.keys(env)) if (key.startsWith("GIT_")) delete env[key];
+  const result = spawnSync(
+    "git",
+    ["rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir"],
+    { cwd: dir, env, encoding: "utf8" },
+  );
+  const [topLevel, commonDir] = result.status === 0 ? result.stdout.trim().split("\n") : [];
+  return topLevel && commonDir
+    ? { topLevel: realpathSync(topLevel), commonDir: realpathSync(commonDir) }
+    : null;
+}
+
+function isDirectory(path) {
+  return existsSync(path) && statSync(path).isDirectory();
 }
 
 async function isHealthy(url) {

@@ -12,8 +12,7 @@ import { createDaemon } from "./daemon.js";
  */
 const FAKE_SERVER = `
 import { createServer } from "node:http";
-import { appendFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { appendFileSync } from "node:fs";
 appendFileSync(process.env.PID_LOG, process.pid + "\\n");
 const workspaces = [process.env.BEADS_DESK_WORKSPACE];
 let current = workspaces[0];
@@ -29,7 +28,6 @@ const server = createServer(async (request, response) => {
   let raw = "";
   for await (const chunk of request) raw += chunk;
   const { path, select } = JSON.parse(raw);
-  if (!existsSync(join(path, ".beads"))) return send(400, { ok: false, error: "not a workspace: " + path });
   if (!workspaces.includes(path)) workspaces.push(path);
   if (select) current = path;
   send(200, { ok: true, data: { current, workspaces } });
@@ -88,7 +86,38 @@ function daemon(env: NodeJS.ProcessEnv = {}) {
 async function workspace(name: string): Promise<string> {
   const dir = join(root, name);
   await mkdir(join(dir, ".beads"), { recursive: true });
+  // bd는 설정 파일이 있는 `.beads`만 workspace로 봅니다.
+  await writeFile(join(dir, ".beads", "config.yaml"), "");
   return dir;
+}
+
+// git hook 안에서 실행하면 GIT_DIR 등이 이 저장소를 가리키므로 GIT_ 환경 변수를 빼고 실행합니다.
+function git(cwd: string, ...args: string[]): void {
+  const env = { ...process.env };
+  for (const key of Object.keys(env)) if (key.startsWith("GIT_")) delete env[key];
+  const result = spawnSync("git", args, { cwd, env, encoding: "utf8" });
+  if (result.status !== 0) throw new Error(result.stderr);
+}
+
+/** `.beads`가 있는 git 저장소의 worktree를 만듭니다. worktree에는 `.beads`가 없습니다. */
+async function gitWorktree(name: string): Promise<string> {
+  const main = await workspace(`${name}-main`);
+  const worktree = join(root, name);
+  git(main, "init", "--quiet");
+  git(
+    main,
+    "-c",
+    "user.name=test",
+    "-c",
+    "user.email=test@example.com",
+    "commit",
+    "--quiet",
+    "--allow-empty",
+    "-m",
+    "init",
+  );
+  git(main, "worktree", "add", "--quiet", worktree);
+  return worktree;
 }
 
 async function startedPids(): Promise<number[]> {
@@ -239,6 +268,33 @@ test("beads workspace가 아닌 디렉터리에서는 서버를 띄우지 않는
   );
 
   expect(await startedPids()).toEqual([]);
+});
+
+test("설정이나 DB 파일이 없는 .beads만 있는 디렉터리에서는 서버를 띄우지 않는다", async () => {
+  const commands = daemon();
+  // 홈 디렉터리의 `~/.beads`처럼 bd가 전역 상태만 두는 디렉터리입니다.
+  const home = join(root, "home");
+  await mkdir(join(home, ".beads", "shared-server"), { recursive: true });
+
+  await expect(commands.start({ cwd: home, open: false })).rejects.toThrow(
+    `beads workspace를 찾지 못했습니다: ${home}`,
+  );
+
+  expect(await startedPids()).toEqual([]);
+});
+
+test("git worktree에서 시작하면 worktree 최상위 디렉터리로 띄우고, restart도 이어받는다", async () => {
+  const commands = daemon();
+  const worktree = await gitWorktree("worktree");
+  const nested = join(worktree, "packages", "app");
+  await mkdir(nested, { recursive: true });
+
+  expect(await commands.start({ cwd: nested, open: false })).toBe(0);
+  expect(printed).toContain(`workspace: ${worktree}`);
+  expect(await commands.restart({ open: false })).toBe(0);
+
+  expect(await workspaces()).toEqual({ current: worktree, workspaces: [worktree] });
+  await commands.stop();
 });
 
 test("하위 디렉터리에서 시작하면 상위의 beads workspace로 띄운다", async () => {

@@ -28,7 +28,7 @@ pnpm run install:global
 
 ## 사용법
 
-beads workspace 디렉터리나 그 하위 디렉터리에서 실행합니다.
+beads workspace 디렉터리나 그 하위 디렉터리에서 실행합니다. `.beads`가 있는 git 저장소의 worktree에서 실행하면 그 worktree를 workspace로 띄우고, bd처럼 main 저장소의 이슈를 보여 줍니다.
 
 ```sh
 bd-desk start --open

@@ -28,7 +28,7 @@ To uninstall, run `pnpm run uninstall:global`.
 
 ## Usage
 
-Run the command in a beads workspace directory or any of its subdirectories.
+Run the command in a beads workspace directory or any of its subdirectories. In a worktree of a git repository that has `.beads`, the worktree becomes the workspace and shows the main repository's issues, as bd does.
 
 ```sh
 bd-desk start --open
