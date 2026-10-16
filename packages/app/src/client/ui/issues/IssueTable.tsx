@@ -16,6 +16,7 @@ import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssueTypeTag } from "./IssueTypeTag";
+import { WaiterCount } from "./WaiterCount";
 
 type Props = (
   | { issues: Issue[]; tree?: never }
@@ -33,6 +34,8 @@ type Props = (
   titleSource?: Issue[];
   /** 열린 human gate의 id와 제목입니다. bd list가 gate를 돌려주지 않아 따로 받습니다. */
   humanGateTitles: ReadonlyMap<string, string>;
+  /** 이슈 id마다 대기 수입니다. 없으면 대기 수를 보이지 않습니다. */
+  waiters?: ReadonlyMap<string, number>;
   /** 묶음마다 표를 나눠 보일 때, 첫 표가 아니면 열 이름을 감춥니다. 열 너비는 그대로 맞춥니다. */
   hideHeader?: boolean;
 };
@@ -46,6 +49,7 @@ export const IssueTable = memo(function IssueTable({
   emptyMessage,
   titleSource,
   humanGateTitles,
+  waiters,
   hideHeader,
 }: Props) {
   const messages = useMessages();
@@ -98,6 +102,7 @@ export const IssueTable = memo(function IssueTable({
               issueHref={issueHref}
               titleOf={(id) => titles.get(id)}
               humanGateTitles={humanGateTitles}
+              waiters={waiters?.get(row.issue.id) ?? 0}
               writes={writes}
             />
           ))}
@@ -122,10 +127,19 @@ type RowProps = {
   /** 막고 있는 이슈의 제목을 표에서 찾습니다. */
   titleOf: (issueId: string) => string | undefined;
   humanGateTitles: ReadonlyMap<string, string>;
+  waiters: number;
   writes: IssueWrites;
 };
 
-function IssueRow({ issue, outline, issueHref, titleOf, humanGateTitles, writes }: RowProps) {
+function IssueRow({
+  issue,
+  outline,
+  issueHref,
+  titleOf,
+  humanGateTitles,
+  waiters,
+  writes,
+}: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
   const messages = useMessages();
@@ -155,6 +169,7 @@ function IssueRow({ issue, outline, issueHref, titleOf, humanGateTitles, writes 
             {issue.title || messages.common.untitled}
           </Link>
           <HumanDecisionChip issue={issue} className="ml-2" />
+          <WaiterCount count={waiters} className="ml-2" />
           {outline && outline.childCount > 0 && (
             <span className="ml-2 font-mono text-xs text-base-content/45 tabular-nums">
               {messages.issueTable.childCount(outline.childCount)}

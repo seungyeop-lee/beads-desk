@@ -7,6 +7,7 @@ import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrit
 import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
+import { waiterCounts } from "@/client/modules/issues/domain/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
 import type { IssueListFilter } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
@@ -37,6 +38,8 @@ export function IssuesScreen() {
   const deferredSearch = useDeferredValue(search);
   const description = useDescriptionMatches(search);
   const descriptionMatches = description.matches;
+  // 대기 수는 거르기 전의 전체 목록으로 세야, 걸러진 이슈를 거쳐 이어지는 사슬도 셉니다.
+  const waiters = useMemo(() => waiterCounts(issues ?? []), [issues]);
   const groups = useMemo(
     () =>
       issueListGroups(
@@ -47,8 +50,9 @@ export function IssuesScreen() {
               descriptionMatches,
             })
           : [],
+        waiters,
       ),
-    [issues, types, deferredSearch, descriptionMatches, dates],
+    [issues, waiters, types, deferredSearch, descriptionMatches, dates],
   );
   const viewIssues = view
     ? (groups.find((group) => group.state === view)?.issues ?? [])
@@ -100,12 +104,14 @@ export function IssuesScreen() {
             writes={writes}
             titleSource={issues}
             humanGateTitles={humanGateTitles}
+            waiters={waiters}
           />
         ) : (
           <IssueGroups
             groups={groups}
             titleSource={issues}
             humanGateTitles={humanGateTitles}
+            waiters={waiters}
             issueHref={issueHref}
             writes={writes}
           />

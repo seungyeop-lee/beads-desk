@@ -35,8 +35,12 @@ function statusRank(status: string): number {
 }
 
 // bd에서 우선순위를 지정하지 않은 이슈는 기본값인 2(보통)로 취급합니다.
+export function byPriority(a: Issue, b: Issue): number {
+  return (a.priority ?? 2) - (b.priority ?? 2);
+}
+
 export function byPriorityThenCreated(a: Issue, b: Issue): number {
-  return (a.priority ?? 2) - (b.priority ?? 2) || a.createdAt - b.createdAt || byId(a, b);
+  return byPriority(a, b) || a.createdAt - b.createdAt || byId(a, b);
 }
 
 export function byClosedDesc(a: Issue, b: Issue): number {

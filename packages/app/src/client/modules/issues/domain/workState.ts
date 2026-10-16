@@ -1,5 +1,5 @@
 import { awaitsHumanDecision, type Issue } from "@beads-desk/bd/issue";
-import { byClosedDesc, byPriorityThenCreated, nestUnderParents } from "./issueListView";
+import { byClosedDesc, byPriority, byPriorityThenCreated, nestUnderParents } from "./issueListView";
 
 /**
  * 저장 상태와 의존 관계, human 라벨, bd ready를 합쳐 지금 이 이슈로 무엇을 할 수 있는지 나타냅니다.
@@ -53,19 +53,38 @@ export function parseViewState(value: string | null): WorkState | null {
 
 export type WorkStateGroup = { state: WorkState; issues: Issue[] };
 
-/** 작업 상태로 묶어 WORK_STATE_ORDER 순서로 돌려주고, 빈 묶음은 뺍니다. 닫힘은 최근에 닫은 순, 나머지는 우선순위와 만든 시각 순입니다. */
-export function groupByWorkState(issues: Issue[]): WorkStateGroup[] {
+/**
+ * 작업 상태로 묶어 WORK_STATE_ORDER 순서로 돌려주고, 빈 묶음은 뺍니다. 닫힘은 최근에 닫은 순, 나머지는 우선순위와 만든 시각 순입니다.
+ * 바로 작업 가능은 같은 우선순위 안에서 대기 수(waiters)가 많은 이슈를 앞에 둡니다. 사용자가 매긴 우선순위는 넘지 않으면서, 먼저 끝내면 가장 많은 일이 풀리는 이슈를 위로 올립니다.
+ */
+export function groupByWorkState(
+  issues: Issue[],
+  waiters: ReadonlyMap<string, number>,
+): WorkStateGroup[] {
+  const byPriorityThenWaiters = (a: Issue, b: Issue) =>
+    byPriority(a, b) ||
+    (waiters.get(b.id) ?? 0) - (waiters.get(a.id) ?? 0) ||
+    byPriorityThenCreated(a, b);
   return WORK_STATE_ORDER.map((state) => ({
     state,
     issues: issues
       .filter((issue) => workState(issue) === state)
-      .sort(state === "closed" ? byClosedDesc : byPriorityThenCreated),
+      .sort(
+        state === "closed"
+          ? byClosedDesc
+          : state === "ready"
+            ? byPriorityThenWaiters
+            : byPriorityThenCreated,
+      ),
   })).filter((group) => group.issues.length > 0);
 }
 
 /** 이슈 목록의 묶음입니다. groupByWorkState의 묶음마다 하위 이슈를 같은 묶음에 있는 상위 이슈 바로 아래로 옮깁니다. */
-export function issueListGroups(issues: Issue[]): WorkStateGroup[] {
-  return groupByWorkState(issues).map((group) => ({
+export function issueListGroups(
+  issues: Issue[],
+  waiters: ReadonlyMap<string, number>,
+): WorkStateGroup[] {
+  return groupByWorkState(issues, waiters).map((group) => ({
     ...group,
     issues: nestUnderParents(group.issues),
   }));

@@ -26,6 +26,7 @@ import {
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { HumanGateChip } from "@/client/ui/issues/HumanGateChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
+import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
@@ -104,7 +105,13 @@ export function FocusScreen() {
                 empty={messages.focus.inProgressEmpty}
               >
                 {view.inProgress.map((issue) => (
-                  <FocusRow key={issue.id} issue={issue} href={issueHref(issue.id)} showAssignee />
+                  <FocusRow
+                    key={issue.id}
+                    issue={issue}
+                    href={issueHref(issue.id)}
+                    waiters={view.waiters.get(issue.id) ?? 0}
+                    showAssignee
+                  />
                 ))}
               </FocusSection>
               <FocusSection
@@ -123,7 +130,12 @@ export function FocusScreen() {
                 }
               >
                 {view.ready.slice(0, NEXT_UP_LIMIT).map((issue) => (
-                  <FocusRow key={issue.id} issue={issue} href={issueHref(issue.id)} />
+                  <FocusRow
+                    key={issue.id}
+                    issue={issue}
+                    href={issueHref(issue.id)}
+                    waiters={view.waiters.get(issue.id) ?? 0}
+                  />
                 ))}
               </FocusSection>
             </div>
@@ -139,6 +151,7 @@ export function FocusScreen() {
                     key={issue.id}
                     issue={issue}
                     href={issueHref(issue.id)}
+                    waiters={view.waiters.get(issue.id) ?? 0}
                     waitingOn={blockersOf(issue.blockedBy ?? [], gateTitles, (id) =>
                       titles.get(id),
                     )}
@@ -239,12 +252,14 @@ function FocusSection({ title, tone, empty, action, children }: SectionProps) {
 type RowProps = {
   issue: Issue;
   href: string;
+  /** 이 이슈가 닫히기를 기다리는 이슈 수입니다. */
+  waiters: number;
   showAssignee?: boolean;
   /** 막힌 이슈가 기다리는 이슈를 한 줄씩 보입니다. human gate는 사람 확인 기다림 표시와 gate 제목으로 보입니다. */
   waitingOn?: Blocker[];
 };
 
-function FocusRow({ issue, href, showAssignee, waitingOn }: RowProps) {
+function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
   const messages = useMessages();
   return (
     <li>
@@ -261,6 +276,7 @@ function FocusRow({ issue, href, showAssignee, waitingOn }: RowProps) {
             {issue.title || messages.common.untitled}
           </span>
           <HumanDecisionChip issue={issue} />
+          <WaiterCount count={waiters} />
           {showAssignee && (
             <span className="shrink-0 text-xs text-base-content/60">
               {issue.assignee ?? messages.common.none}

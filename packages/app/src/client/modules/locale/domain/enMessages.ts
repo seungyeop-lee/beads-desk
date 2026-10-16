@@ -81,6 +81,9 @@ export const enMessages: Messages = {
     assignee: "Assignee",
     labels: "Labels",
     dependencyCount: "Deps",
+    waiters: (count) => `blocks ${count}`,
+    waitersHint: (count) =>
+      `${count} open ${count === 1 ? "issue waits" : "issues wait"} for this issue to close.`,
   },
   issueTable: {
     empty: "No issues match the filters.",

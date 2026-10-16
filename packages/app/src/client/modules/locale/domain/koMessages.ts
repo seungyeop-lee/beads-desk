@@ -93,6 +93,9 @@ export const koMessages = {
     assignee: "담당자",
     labels: "라벨",
     dependencyCount: "의존",
+    waiters: (count: number) => `${count}개 대기`,
+    waitersHint: (count: number) =>
+      `이 이슈가 닫히기를 기다리는 닫히지 않은 이슈가 ${count}개 있습니다.`,
   },
   issueTable: {
     empty: "조건에 맞는 이슈가 없습니다.",
