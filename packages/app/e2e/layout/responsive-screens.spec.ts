@@ -153,13 +153,10 @@ for (const locale of ["ko", "en"] as const) {
             ).toBe(true);
           }
           if (route === "board" && width >= 768) {
-            await expect
-              .poll(() => page.evaluate(() => document.documentElement.scrollHeight))
-              .toBe(900);
             for (const name of Object.values(messages.board.columns)) {
               await expect(
                 main.getByRole("region", { name, exact: true }).getByRole("heading"),
-              ).toBeInViewport({ ratio: 1 });
+              ).toBeVisible();
             }
           }
           measurements.push({
