@@ -33,7 +33,7 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
 });
 
-test("응답 없이 닫은 이슈는 판단 기다림 화면에서 사라지고, 적은 사유가 닫은 사유로 남는다", async ({
+test("응답 없이 닫는 동안에는 응답 편집기가 감춰지고 취소하면 적어 둔 응답이 남으며, 닫은 이슈는 판단 기다림 화면에서 사라지고 적은 사유가 닫은 사유로 남는다", async ({
   page,
   workspace,
 }) => {
@@ -45,6 +45,14 @@ test("응답 없이 닫은 이슈는 판단 기다림 화면에서 사라지고,
   await page.goto("/human");
   await page.getByRole("button", { name: /더는 필요 없는 질문/ }).click();
   const decision = page.getByRole("region", { name: "더는 필요 없는 질문" });
+  const response = decision.getByRole("textbox", { name: "응답", exact: true });
+  await response.click();
+  await page.keyboard.type("아직 정하지 못했습니다");
+  await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
+  await expect(response).toBeHidden();
+  await decision.getByRole("button", { name: "취소" }).click();
+  await expect(response).toHaveText("아직 정하지 못했습니다");
+
   await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
   await decision.getByRole("textbox", { name: "닫는 사유" }).fill("요구 사항이 바뀜");
   await decision.getByRole("button", { name: "응답 없이 닫기" }).click();

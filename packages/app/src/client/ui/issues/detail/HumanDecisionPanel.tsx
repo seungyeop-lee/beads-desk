@@ -47,7 +47,13 @@ export function HumanDecisionPanel({ issue, writes }: Props) {
         </h3>
         <p className="text-xs text-base-content/65">{messages.humanDecision.panelBody}</p>
       </div>
-      <div className="textarea h-auto min-h-20 w-full bg-base-100 text-sm">
+      {/*
+       * 응답 없이 닫는 동안에는 적어 둔 응답이 bd에 넘어가지 않으므로 편집기를 감춥니다.
+       * 편집기는 처음 값으로만 내용을 채우므로, 화면에서 빼지 않고 감추기만 해 취소하면 적어 둔 응답이 그대로 보이게 합니다.
+       */}
+      <div
+        className={`textarea h-auto min-h-20 w-full bg-base-100 text-sm ${dismissReason === null ? "" : "hidden"}`}
+      >
         <MarkdownEditor
           value=""
           label={messages.humanDecision.response}
