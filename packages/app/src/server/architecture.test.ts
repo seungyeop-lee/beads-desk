@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
 
 const SRC_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const APP_DIR = resolve(SRC_DIR, "..");
 
 type Layer =
   | "app"
@@ -96,6 +97,14 @@ const ALLOWED_DEPENDENCIES: Record<Layer, AllowedDependencies> = {
 /** Next.js가 정해진 위치에서 찾는 server entrypoint 파일입니다. app layer로 취급합니다. */
 const FRAMEWORK_ENTRYPOINTS = ["instrumentation.ts"];
 
+/**
+ * src 밖에서 import할 수 있는 파일입니다. launcher(`bin`)는 서버 bundle을 불러올 수 없어서,
+ * launcher와 서버가 같은 규칙을 써야 하는 코드는 `bin`에 plain JS로 두고 server infra가 import합니다.
+ */
+const LAUNCHER_MODULES: Readonly<Record<string, Layer>> = {
+  "bin/workspaceRoot.js": "server/infra",
+};
+
 test("production import는 안쪽 layer만 가리킨다", () => {
   expect(describeBoundaryViolation()).toBeNull();
 });
@@ -123,6 +132,11 @@ function describeBoundaryViolation(): string | null {
     if (!from) return `layer 밖에 production module이 있습니다: ${fromPath}`;
 
     for (const { specifier, line } of importsOf(file)) {
+      const outsidePath = outsideSrcTargetPath(specifier, file);
+      if (outsidePath) {
+        if (LAUNCHER_MODULES[outsidePath] === from) continue;
+        return `${fromPath}:${line}이 허용하지 않은 src 밖 module을 import합니다: ${specifier}`;
+      }
       const targetPath = internalTargetPath(specifier, file);
       if (!targetPath) continue;
       const to = layerOf(targetPath);
@@ -223,6 +237,15 @@ function internalTargetPath(specifier: string, fromFile: string): string | null 
   const target = relative(SRC_DIR, resolve(dirname(fromFile), specifier));
   if (target.startsWith("..")) return null;
   return target.split(sep).join("/");
+}
+
+/** src 밖이면서 app package 안에 있는 상대 경로 import의 대상을 app package 기준 경로로 돌려줍니다. */
+function outsideSrcTargetPath(specifier: string, fromFile: string): string | null {
+  if (!specifier.startsWith(".")) return null;
+  const target = resolve(dirname(fromFile), specifier);
+  if (!relative(SRC_DIR, target).startsWith("..")) return null;
+  const appPath = relative(APP_DIR, target);
+  return appPath.startsWith("..") ? null : appPath.split(sep).join("/");
 }
 
 function sourcePath(file: string): string {

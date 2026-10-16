@@ -22,6 +22,7 @@
     ".next/static",
     "bin/bd-desk.js",
     "bin/daemon.js",
+    "bin/workspaceRoot.js",
     "next.config.ts"
   ],
   "type": "module",

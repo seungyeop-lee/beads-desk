@@ -19,7 +19,7 @@
 
 `bd-desk start`(`packages/app/bin/bd-desk.js`, 명령을 생략해도 같음)는 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 background process group으로 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
 
-- workspace는 bd와 같은 기준으로 찾습니다. 지금 디렉터리부터 git 저장소 최상위까지 설정이나 DB 파일이 있는 `.beads`를 찾고, git worktree라 찾지 못했으면 main 저장소의 `.beads`를 확인해 worktree 최상위 디렉터리를 workspace로 씁니다. 서버의 `findWorkspaceRoot`(`src/server/infra/runtime/serverRuntime.ts`)와 launcher의 `findWorkspaceRoot`(`bin/daemon.js`)가 같은 규칙을 따로 구현하므로 함께 고칩니다.
+- workspace는 bd와 같은 기준으로 찾습니다. 지금 디렉터리부터 git 저장소 최상위까지 설정이나 DB 파일이 있는 `.beads`를 찾고, git worktree라 찾지 못했으면 main 저장소의 `.beads`를 확인해 worktree 최상위 디렉터리를 workspace로 씁니다. 이 규칙은 `packages/app/bin/workspaceRoot.js` 한 곳에 있고, launcher와 서버가 함께 import합니다. launcher는 서버 bundle을 불러올 수 없으므로, 둘이 같은 규칙을 써야 하는 코드는 `bin`에 plain JS로 두고 패키지 `files`에도 넣습니다. 서버에서 import할 수 있는 `bin` 파일은 `architecture.test.ts`의 `LAUNCHER_MODULES`에 등록합니다.
 - workspace를 찾지 못하면 서버를 띄우거나 바꾸지 않고 종료 코드 1로 끝납니다.
 - 서버가 이미 실행 중이면 새로 띄우지 않고, `POST /api/workspaces`로 지금 디렉터리를 등록해 현재 workspace로 바꿉니다.
 - `stop`은 서버가 응답하지 않아도 process group 전체를 종료합니다. 상태 파일의 pid가 서버의 process group 리더가 아니면(pid가 재사용된 경우) 종료하지 않고 상태 파일만 지웁니다.
