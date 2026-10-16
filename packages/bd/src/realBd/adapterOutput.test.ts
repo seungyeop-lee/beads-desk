@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import {
   addDependency,
+  boardIssues,
   claimIssue,
   closeIssue,
   createIssue,
@@ -16,6 +17,7 @@ import {
   humanGates,
   issueEvents,
   lintFindings,
+  listIssues,
   orphanIssues,
   readyIssues,
   respondToHuman,
@@ -135,6 +137,60 @@ test("닫힌 기능도 그래프에 담고, 그 아래의 열린 작업이 그 �
   const graph = value(await dependencyGraph(cwd));
   expect(graph.issues.map(({ id }) => id)).toContain(feature);
   expect(graph.ancestorEpics[task]).toEqual([epic]);
+});
+
+test("그래프는 상태·await 유형과 무관하게 gate를 읽고 일반 목록·보드·ready에서는 제외한다", async () => {
+  const task = value(await createIssue(cwd, { title: "gate 후속 작업" }));
+  const gates: string[] = [];
+  for (const type of ["human", "human", "gh:pr"]) {
+    gates.push(
+      JSON.parse(
+        await run(
+          "bd",
+          "gate",
+          "create",
+          "--type",
+          type,
+          "--blocks",
+          task,
+          "--await-id",
+          "42",
+          "--title",
+          `선행 ${type}`,
+          "--json",
+        ),
+      ).id,
+    );
+  }
+  await run("bd", "gate", "resolve", gates[1], "--reason", "확인 완료");
+
+  const graph = value(await dependencyGraph(cwd));
+  expect(graph.issues).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        id: gates[0],
+        issueType: "gate",
+        status: "open",
+      }),
+      expect.objectContaining({ id: gates[1], issueType: "gate", status: "closed" }),
+      expect.objectContaining({ id: gates[2], issueType: "gate" }),
+    ]),
+  );
+  expect(graph.dependencies).toEqual(
+    expect.arrayContaining(
+      gates.map((id) => ({
+        issueId: task,
+        dependsOnId: id,
+        type: "blocks",
+      })),
+    ),
+  );
+  const ordinary = value(await listIssues(cwd, []));
+  const board = value(await boardIssues(cwd)).map(({ issue }) => issue);
+  const ready = value(await readyIssues(cwd));
+  for (const issues of [ordinary, board, ready]) {
+    expect(issues.some(({ id }) => gates.includes(id))).toBe(false);
+  }
 });
 
 test("bd history 이벤트에서 상태 변경과 관계 추가를 읽는다", async () => {

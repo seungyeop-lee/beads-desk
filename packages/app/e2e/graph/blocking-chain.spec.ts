@@ -114,3 +114,108 @@ test("닫힌 이슈의 상세에서 선행·후속 그래프를 열면 닫힌 �
   await expect(node("완료한 기준 작업")).toHaveAttribute("aria-current", "true");
   await page.screenshot({ path: testInfo.outputPath("closed-center-chain.png") });
 });
+
+for (const { type, closed } of [
+  { type: "human", closed: false },
+  { type: "human", closed: true },
+  { type: "gh:pr", closed: false },
+]) {
+  test(`${closed ? "닫힌" : "열린"} ${type} gate도 작업과 gate 어느 쪽에서 열든 선행·후속 그래프와 상세에 보인다`, async ({
+    page,
+    workspace,
+    request,
+  }, testInfo) => {
+    const { epic, work, after } = await workspace.createIssues(
+      {
+        epic: { title: "gate 검증 에픽", type: "epic" },
+        work: { title: "gate를 기다린 작업", parent: "epic", status: closed ? "closed" : "open" },
+        after: { title: "gate 사슬 후속 작업", parent: "epic" },
+      },
+      [["after", "work"]],
+    );
+    const gate: string = JSON.parse(
+      await workspace.bd(
+        "gate",
+        "create",
+        "--type",
+        type,
+        "--blocks",
+        work,
+        "--await-id",
+        "42",
+        "--title",
+        "일반 선행 gate",
+        "--json",
+      ),
+    ).id;
+    if (closed) await workspace.bd("gate", "resolve", gate, "--reason", "확인 완료");
+
+    const response = await request.get("/api/graph");
+    expect(response.ok()).toBe(true);
+    const { data } = await response.json();
+    expect(data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: gate,
+          issueType: "gate",
+          status: closed ? "closed" : "open",
+        }),
+        expect.objectContaining({ id: work }),
+      ]),
+    );
+    expect(data.dependencies).toContainEqual({ issueId: work, dependsOnId: gate, type: "blocks" });
+
+    await page.goto(`/issues?issue=${work}`);
+    await page
+      .getByRole("dialog", { name: `${work} 이슈` })
+      .getByRole("link", { name: "선행·후속 그래프" })
+      .click();
+    const canvas = page.getByRole("region", { name: "의존 그래프" });
+    const gateNode = canvas.getByRole("link", { name: /일반 선행 gate/ });
+    const workNode = canvas.getByRole("link", { name: /gate를 기다린 작업/ });
+    const afterNode = canvas.getByRole("link", { name: /gate 사슬 후속 작업/ });
+    await expect(gateNode).toBeVisible();
+    await expect(afterNode).toBeVisible();
+    await expect(canvas.getByLabel(`${gate} 다음에 ${work}`)).toHaveCount(1);
+    await expect(canvas.getByLabel(`${work} 다음에 ${after}`)).toHaveCount(1);
+    await expect(gateNode).toHaveCSS("opacity", closed ? "0.5" : "1");
+    await expect(workNode).toHaveCSS("opacity", closed ? "0.5" : "1");
+    expect((await gateNode.boundingBox())!.x).toBeLessThan((await workNode.boundingBox())!.x);
+    expect((await workNode.boundingBox())!.x).toBeLessThan((await afterNode.boundingBox())!.x);
+    await page.screenshot({
+      path: testInfo.outputPath("gate-blocking-chain.png"),
+      animations: "disabled",
+    });
+
+    await gateNode.click();
+    const detail = page.getByRole("region", { name: `${gate} 이슈` });
+    await expect(detail).toBeVisible();
+    await expect(detail.getByRole("button", { name: "일반 선행 gate", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(gateNode).toBeVisible();
+    await page.getByRole("dialog").getByRole("link", { name: "닫기", exact: true }).click();
+    await expect(page).toHaveURL(`/issues?issue=${work}`);
+
+    await page.goto(`/issues?center=${gate}`);
+    await expect(gateNode).toBeVisible();
+    await expect(afterNode).toBeVisible();
+    await expect(gateNode).toHaveAttribute("aria-current", "true");
+    await expect(gateNode).toHaveCSS("opacity", closed ? "0.5" : "1");
+
+    await page.goto(`/graph?epic=${epic}`);
+    await expect(workNode).toBeVisible();
+    await expect(gateNode).toBeVisible();
+    await expect(gateNode).toContainText("에픽 밖");
+    await expect(canvas.getByLabel(`${gate} 다음에 ${work}`)).toHaveCount(1);
+  });
+}
+
+test("실제로 blocks 관계가 없는 이슈를 기준으로 직접 열면 빈 상태를 보인다", async ({
+  page,
+  workspace,
+}) => {
+  const alone = await workspace.createIssue("선후행 없는 작업");
+  await page.goto(`/issues?center=${alone}`);
+  await expect(page.getByText("이 이슈와 blocks 관계로 이어진 이슈가 없습니다.")).toBeVisible();
+  await expect(page.getByRole("region", { name: "의존 그래프" })).toHaveCount(0);
+});

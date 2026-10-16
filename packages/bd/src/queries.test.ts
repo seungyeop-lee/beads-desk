@@ -710,7 +710,10 @@ describe("dependencyGraph", () => {
   ]);
 
   test("모든 상태의 이슈와 그 의존 관계를 모든 유형으로 한 번에 읽고, 작업 상태를 정하는 값을 채운다", async () => {
-    await useFakeBd({ "list --json --tree=false --all --limit 0": { stdout: listed }, ...signals });
+    await useFakeBd({
+      "list --json --tree=false --all --limit 0 --include-gates": { stdout: listed },
+      ...signals,
+    });
 
     const result = await dependencyGraph(workDir);
 
@@ -724,9 +727,55 @@ describe("dependencyGraph", () => {
     ]);
   });
 
+  test("열린 human gate와 닫힌 gate, 다른 await 유형의 gate와 blocks 관계를 보존한다", async () => {
+    const gates = [
+      { id: "human", status: "open", issue_type: "gate", await_type: "human" },
+      { id: "closed", status: "closed", issue_type: "gate", await_type: "human" },
+      { id: "pr", status: "open", issue_type: "gate", await_type: "gh:pr" },
+    ];
+    await useFakeBd({
+      "list --json --tree=false --all --limit 0 --include-gates": {
+        stdout: JSON.stringify([
+          ...gates,
+          {
+            id: "work",
+            status: "closed",
+            dependencies: gates.map(({ id }) => ({
+              issue_id: "work",
+              depends_on_id: id,
+              type: "blocks",
+            })),
+          },
+        ]),
+      },
+      ...signals,
+    });
+
+    const result = await dependencyGraph(workDir);
+
+    expect(result.ok && result.value.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "human",
+          issueType: "gate",
+          status: "open",
+        }),
+        expect.objectContaining({ id: "closed", issueType: "gate", status: "closed" }),
+        expect.objectContaining({ id: "pr", issueType: "gate" }),
+      ]),
+    );
+    expect(result.ok && result.value.dependencies).toEqual(
+      gates.map(({ id }) => ({
+        issueId: "work",
+        dependsOnId: id,
+        type: "blocks",
+      })),
+    );
+  });
+
   test("닫힌 상위 이슈를 거쳐 닿는 에픽까지 가까운 것부터 소속으로 담는다", async () => {
     await useFakeBd({
-      "list --json --tree=false --all --limit 0": {
+      "list --json --tree=false --all --limit 0 --include-gates": {
         stdout: JSON.stringify([
           { id: "outer", status: "open", issue_type: "epic" },
           { id: "inner", status: "open", issue_type: "epic", parent: "outer" },
@@ -749,7 +798,7 @@ describe("dependencyGraph", () => {
 
   test("상위 관계가 순환해도 소속을 정하다 멈춘다", async () => {
     await useFakeBd({
-      "list --json --tree=false --all --limit 0": {
+      "list --json --tree=false --all --limit 0 --include-gates": {
         stdout: JSON.stringify([
           { id: "x", status: "open", issue_type: "epic", parent: "y" },
           { id: "y", status: "open", issue_type: "epic", parent: "x" },

@@ -79,7 +79,7 @@ export type DependencyGraph = {
 
 /** 모든 상태의 이슈와 그 이슈들의 의존 관계(모든 유형)를 bd list 한 번으로 읽고, 작업 상태를 정하는 값을 채웁니다. */
 export async function dependencyGraph(cwd: string): Promise<BdOutcome<DependencyGraph>> {
-  const result = await runBdJson(cwd, listArgs([]));
+  const result = await runBdJson(cwd, [...listArgs([]), "--include-gates"]);
   if (!result.ok) return result;
   const issues = await withWorkSignals(
     cwd,
