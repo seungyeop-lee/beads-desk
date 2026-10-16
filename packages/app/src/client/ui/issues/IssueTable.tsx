@@ -69,12 +69,15 @@ export const IssueTable = memo(function IssueTable({
     return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
   return (
-    <div className="surface min-w-0 max-w-full overflow-x-auto">
-      <table className="table min-w-[64rem] table-fixed">
+    <div className="@container surface min-w-0 max-w-full overflow-x-auto">
+      {/* 제목 열은 표 폭에서 나머지 열의 폭을 뺀 만큼 차지합니다. 표 영역이 64rem보다 좁으면 표를 64rem으로 넓히고
+          상태·우선순위·담당자·의존 열(30rem)은 가로 스크롤로 봅니다. 표 영역이 34rem보다 좁으면 64rem 대신 영역 폭(100cqw)에 그 네 열의 폭만 더해
+          ID와 제목 열이 스크롤하지 않아도 영역 안에 다 보이게 합니다. 이때는 유형 열(6.5rem)을 감추고 유형을 제목 앞에 보여, 그만큼 제목 칸을 넓힙니다. */}
+      <table className="table w-[max(100cqw,min(100cqw_+_30rem,64rem))] table-fixed">
         <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
           <tr>
             <th className="w-24">ID</th>
-            <th className="w-26">{messages.issue.type}</th>
+            <th className="w-26 @max-[34rem]:hidden">{messages.issue.type}</th>
             <th>{messages.issue.title}</th>
             <th className="w-32">{messages.issue.status}</th>
             <th className="w-32">{messages.issue.priority}</th>
@@ -156,11 +159,14 @@ function IssueRow({
           {shortIssueId(issue.id)}
         </button>
       </td>
-      <td className="text-sm">
+      <td className="text-sm @max-[34rem]:hidden">
         <IssueTypeTag issueType={issue.issueType} />
       </td>
       <td>
         <TitleOutline issueId={issue.id} outline={outline}>
+          <span className="mr-2 text-sm @min-[34rem]:hidden">
+            <IssueTypeTag issueType={issue.issueType} />
+          </span>
           <Link
             className="font-medium wrap-anywhere decoration-base-content/30 underline-offset-4 hover:underline"
             href={href}
