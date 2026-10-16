@@ -1,6 +1,6 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 그 에픽의 후손 이슈를 blocks 순서대로 왼쪽부터 그리며 닫힌 후손 이슈는 흐리게, blocks 관계가 없는 후손 이슈는 순서 미정에 보인다", async ({
+test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 그 에픽의 후손 이슈를 blocks 순서대로 왼쪽부터 그리며 닫힌 후손 이슈는 흐리게, blocks 관계가 없는 후손 이슈는 선후 관계 없음에 보인다", async ({
   page,
   workspace,
 }) => {
@@ -42,7 +42,7 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   await expect(node("순서 셋째")).toBeVisible();
   await expect(node("에픽 밖 후속")).toHaveCount(0);
   await expect(node("순서 관계 없음")).toHaveCount(0);
-  const unordered = page.getByRole("region", { name: "순서 미정" });
+  const unordered = page.getByRole("region", { name: "선후 관계 없음" });
   await expect(unordered.getByRole("link", { name: /순서 관계 없음/ })).toBeVisible();
   await expect(unordered.getByRole("link", { name: /순서 기능/ })).toBeVisible();
   await expect(unordered.getByRole("link", { name: /에픽 밖 후속/ })).toHaveCount(0);

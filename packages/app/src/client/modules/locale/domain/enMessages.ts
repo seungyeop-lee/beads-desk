@@ -374,7 +374,7 @@ export const enMessages: Messages = {
   graph: {
     scopes: { epic: "Order", center: "Blocks chain" },
     help: {
-      epic: "Issues in the epic that must finish first are in the stages on the left, following blocks dependencies. Issues in the same stage can proceed in parallel, and closed issues are dimmed. Issues outside the epic that block its issues are drawn with a dashed border, and issues with no blocks dependency are listed under Unordered.",
+      epic: "Issues in the epic that must finish first are in the stages on the left, following blocks dependencies. Issues in the same stage can proceed in parallel, and closed issues are dimmed. Issues outside the epic that block its issues are drawn with a dashed border, and issues with no blocks dependency are listed under No blocks dependency.",
       center:
         "Follows blocks dependencies all the way from this issue: the issues it waits for and the issues waiting for it. Issues that must finish first are on the left. Closed issues are not drawn.",
     },
@@ -393,9 +393,8 @@ export const enMessages: Messages = {
     allStagesDone: (total) => `All ${total} stages are done.`,
     outside: "Outside epic",
     outsideHint: "Not in this epic, but blocks an issue in it.",
-    unordered: "Unordered",
-    unorderedHint:
-      "Issues with no blocks dependency on other issues in the epic. Check whether a dependency is missing or the work can happen at any time.",
+    unordered: "No blocks dependency",
+    unorderedHint: "Issues with no blocks dependency on other issues in this epic.",
     cycle:
       "Blocks dependencies form a cycle, so the order cannot be decided. Issues in a cycle are placed in the same stage.",
     cyclePath: "Cycle",

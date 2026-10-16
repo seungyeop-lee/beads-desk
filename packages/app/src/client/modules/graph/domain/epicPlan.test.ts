@@ -66,7 +66,7 @@ test("모든 단계의 이슈가 닫혔으면 진행 중인 단계가 없고, �
   expect(empty.stages).toEqual({ total: 0, current: null });
 });
 
-test("에픽 안에서 blocks 관계가 없는 후손 이슈는 순서 미정으로 모으고, 닫히지 않은 이슈를 앞에 둔다", () => {
+test("에픽 안에서 blocks 관계가 없는 후손 이슈는 선후 관계 없음으로 모으고, 닫히지 않은 이슈를 앞에 둔다", () => {
   const plan = epicPlan(
     graph(
       [

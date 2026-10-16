@@ -57,7 +57,85 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
   await expect(node("계획 넷째")).not.toContainText("대기");
   await expect(canvas.locator("[aria-current]")).toHaveCount(0);
 
-  const unordered = page.getByRole("region", { name: "순서 미정" });
+  const unordered = page.getByRole("region", { name: "선후 관계 없음" });
   await expect(unordered.getByRole("link", { name: /계획 순서 없음/ })).toBeVisible();
   await expect(node("계획 순서 없음")).toHaveCount(0);
+});
+
+test("선후 관계 없음 목록은 긴 제목을 끝까지 보이고, 행을 누르면 상세를 열며, 그래프 노드는 원래 크기와 두 줄 제목을 유지한다", async ({
+  page,
+  workspace,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const longTitle =
+    "에픽 안의 다른 이슈와 선후 관계가 없는 긴 제목도 목록에서 마지막 글자까지 빠짐없이 확인하고 독립적으로 작업을 진행할 수 있도록 표시합니다";
+  const { epic, alone } = await workspace.createIssues(
+    {
+      epic: { title: "긴 제목 표시 확인", type: "epic" },
+      first: { title: longTitle, parent: "epic", status: "closed" },
+      second: { title: "연결된 다음 작업", parent: "epic" },
+      alone: { title: longTitle, parent: "epic" },
+      closed: { title: "완료한 독립 작업", parent: "epic", status: "closed" },
+      outside: { title: "에픽 밖에서 기다리는 작업" },
+    },
+    [
+      ["second", "first"],
+      ["outside", "alone"],
+    ],
+  );
+  await page.goto(`/graph?epic=${epic}`);
+  const panel = page.getByRole("region", { name: "선후 관계 없음" });
+  await expect(
+    panel.getByText("에픽 안의 다른 이슈와 blocks 관계가 없는 이슈입니다."),
+  ).toBeVisible();
+  await expect(panel).toHaveCSS("width", "320px");
+  const row = panel.getByRole("link", { name: new RegExp(longTitle) });
+  const title = row.getByText(longTitle, { exact: true });
+  await expect(title).toBeVisible();
+  const size = await title.evaluate((el) => ({
+    height: el.clientHeight,
+    contentHeight: el.scrollHeight,
+    width: el.clientWidth,
+    contentWidth: el.scrollWidth,
+    lineHeight: Number.parseFloat(getComputedStyle(el).lineHeight),
+  }));
+  expect(size.height).toBe(size.contentHeight);
+  expect(size.width).toBe(size.contentWidth);
+  expect(size.height).toBeGreaterThan(size.lineHeight * 2);
+  await expect(row).toContainText("1개 대기");
+  await expect(row).toContainText(alone.slice(alone.lastIndexOf("-") + 1));
+  await expect(panel.getByRole("link", { name: /완료한 독립 작업/ })).toHaveCSS("opacity", "0.5");
+
+  const node = page
+    .getByRole("region", { name: "의존 그래프" })
+    .getByRole("link", { name: new RegExp(longTitle) });
+  await expect(node).toHaveCSS("width", "232px");
+  await expect(node).toHaveCSS("height", "96px");
+  const nodeTitle = node.getByText(longTitle, { exact: true });
+  const nodeSize = await nodeTitle.evaluate((el) => ({
+    height: el.clientHeight,
+    contentHeight: el.scrollHeight,
+    lineHeight: Number.parseFloat(getComputedStyle(el).lineHeight),
+  }));
+  expect(nodeSize.height).toBeLessThanOrEqual(Math.ceil(nodeSize.lineHeight * 2));
+  expect(nodeSize.contentHeight).toBeGreaterThan(nodeSize.height);
+  await testInfo.attach("title-measurements", {
+    body: JSON.stringify({ panelTitle: size, nodeTitle: nodeSize }),
+    contentType: "application/json",
+  });
+  await page.screenshot({ path: testInfo.outputPath("long-title-ko.png") });
+
+  await row.click();
+  await expect(page.getByRole("dialog", { name: `${alone} 이슈` })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "설정" }).click();
+  await page.getByRole("combobox", { name: "언어" }).selectOption("en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.keyboard.press("Escape");
+  const englishPanel = page.getByRole("region", { name: "No blocks dependency" });
+  await expect(englishPanel.getByRole("heading", { name: /No blocks dependency/ })).toBeVisible();
+  await expect(
+    englishPanel.getByText("Issues with no blocks dependency on other issues in this epic."),
+  ).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("long-title-en.png") });
 });
