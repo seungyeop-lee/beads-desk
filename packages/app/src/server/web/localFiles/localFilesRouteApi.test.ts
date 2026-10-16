@@ -1,14 +1,15 @@
 import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterAll, beforeAll, expect, test, vi } from "vitest";
+import { delimiter, join } from "node:path";
+import { afterAll, afterEach, beforeAll, expect, test, vi } from "vitest";
 import { localFileUrl } from "@/shared/contract/localFiles";
 import { handleLocalFileRequest } from "./localFilesRouteApi";
 
 let root: string;
 let parent: string;
 let worktree: string;
+let worktreeParent: string;
 vi.mock("@/server/infra/runtime/serverRuntime", () => ({ currentWorkspaceRoot: () => root }));
 vi.mock("@/server/web/locale/requestLocale", () => ({ requestLocale: async () => "ko" }));
 
@@ -41,6 +42,15 @@ beforeAll(async () => {
   await symlink(join(parent, "repo-other"), join(root, "escape"));
   await symlink(join(parent, "repo-other", "secret.md"), join(root, "escape.md"));
   await symlink(join(worktree, "다른 결과.md"), join(root, "allowed.md"));
+  worktreeParent = join(parent, "repo-wt");
+  await mkdir(join(worktreeParent, "review-artifacts", "bd-x"), { recursive: true });
+  await writeFile(join(worktreeParent, "review-artifacts", "bd-x", "shot.png"), "png");
+  await symlink(join(parent, "repo-other", "secret.md"), join(worktreeParent, "escape.md"));
+  await mkdir(join(parent, "repo-wt-other"));
+  await writeFile(join(parent, "repo-wt-other", "secret.md"), "outside secret");
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 afterAll(async () => {
   await rm(parent, { recursive: true, force: true });
@@ -127,4 +137,43 @@ test("git 조회가 실패하면 workspace 파일만 허용한다", async () => 
   } finally {
     root = original;
   }
+});
+
+test("설정하지 않으면 worktree를 모아 둔 상위 디렉터리의 파일을 허용하지 않는다", async () => {
+  vi.stubEnv("BEADS_DESK_LOCAL_FILE_ROOTS", undefined);
+  const response = await get(join(worktreeParent, "review-artifacts", "bd-x", "shot.png"));
+  expect(response.status).toBe(403);
+});
+
+test("BEADS_DESK_LOCAL_FILE_ROOTS로 지정한 디렉터리 아래 파일을 제공한다", async () => {
+  vi.stubEnv("BEADS_DESK_LOCAL_FILE_ROOTS", ["relative", "", worktreeParent].join(delimiter));
+  const response = await get(join(worktreeParent, "review-artifacts", "bd-x", "shot.png"));
+  expect(response.status).toBe(200);
+  expect(response.headers.get("Content-Type")).toBe("image/png");
+  expect(await response.text()).toBe("png");
+});
+
+test("~로 시작하는 허용 루트를 홈 디렉터리 기준으로 푼다", async () => {
+  vi.stubEnv("HOME", parent);
+  vi.stubEnv("USERPROFILE", parent);
+  vi.stubEnv("BEADS_DESK_LOCAL_FILE_ROOTS", "~/repo-wt");
+  const response = await get(join(worktreeParent, "review-artifacts", "bd-x", "shot.png"));
+  expect(response.status).toBe(200);
+});
+
+test.each(["prefix", "symlink"])("지정한 허용 루트 밖 접근을 차단한다: %s", async (kind) => {
+  vi.stubEnv("BEADS_DESK_LOCAL_FILE_ROOTS", worktreeParent);
+  const path =
+    kind === "prefix"
+      ? join(parent, "repo-wt-other", "secret.md")
+      : join(worktreeParent, "escape.md");
+  const response = await get(path);
+  expect(response.status).toBe(403);
+  expect(await response.text()).toBe("허용 범위 밖의 파일입니다.");
+});
+
+test("지정한 허용 루트가 없어도 workspace와 worktree 파일은 제공한다", async () => {
+  vi.stubEnv("BEADS_DESK_LOCAL_FILE_ROOTS", join(parent, "missing-wt"));
+  expect((await get(join(root, "조사 결과.md"))).status).toBe(200);
+  expect((await get(join(worktree, "다른 결과.md"))).status).toBe(200);
 });

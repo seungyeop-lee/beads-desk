@@ -49,6 +49,21 @@ The server starts in the background, and the UI is available at the printed URL 
 
 If you add two or more workspaces, you can switch between them with the selector at the top right of the screen. Switching in one tab also switches every other open tab.
 
+## Local file links in issues
+
+Absolute-path file links and images in an issue body open only when the file is inside the current workspace directory or a worktree registered in its git repository (a directory listed by `git worktree list`). Other files show `허용 범위 밖의 파일입니다.` (the file is outside the allowed range).
+
+To open files in other directories, start the server with those directories in the `BEADS_DESK_LOCAL_FILE_ROOTS` environment variable.
+
+```sh
+BEADS_DESK_LOCAL_FILE_ROOTS="<directory>:<another directory>" bd-desk start
+```
+
+- Separate multiple directories with `:` (`;` on Windows), as in `PATH`.
+- Use absolute paths or paths starting with `~`. A leading `~` is expanded to your home directory even inside quotes. Relative paths are ignored.
+- Only files inside the listed directories open. Symlinks are judged by the real path they point to, so a symlink inside a listed directory does not open a file outside it. Directories that do not exist are skipped.
+- The value is fixed when the server starts. If a server is already running, `bd-desk start` only switches the workspace and does not apply this value. To change it, run `bd-desk restart` with the environment variable set. If you omit the variable on `restart`, the server restarts without the extra directories, so exporting it from your shell profile is convenient.
+
 ## File locations
 
 The server state file (`server.json`) and log (`server.log`) are stored in `$XDG_RUNTIME_DIR/beads-desk`. If `XDG_RUNTIME_DIR` is not set, they are stored in `beads-desk` under the OS temporary directory. If the server fails to start, check `server.log`.

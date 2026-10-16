@@ -1,7 +1,8 @@
 import { execFile } from "node:child_process";
 import { constants } from "node:fs";
 import { open, realpath } from "node:fs/promises";
-import { isAbsolute, relative, sep } from "node:path";
+import { homedir } from "node:os";
+import { delimiter, isAbsolute, join, relative, sep } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -35,6 +36,14 @@ export async function readLocalFile(workspace: string, path: string): Promise<Lo
 }
 
 async function allowedRoots(workspace: string): Promise<string[]> {
+  const [workspaceRoots, configured] = await Promise.all([
+    gitRoots(workspace),
+    resolveExisting(configuredRoots()),
+  ]);
+  return [...workspaceRoots, ...configured];
+}
+
+async function gitRoots(workspace: string): Promise<string[]> {
   const root = await realpath(workspace).catch(() => null);
   if (!root) return [];
   try {
@@ -49,12 +58,28 @@ async function allowedRoots(workspace: string): Promise<string[]> {
       .split("\0")
       .filter((field) => field.startsWith("worktree "))
       .map((field) => field.slice(9));
-    const resolved = await Promise.all(paths.map((path) => realpath(path).catch(() => null)));
-    return [root, ...resolved.filter((path): path is string => path !== null)];
+    return [root, ...(await resolveExisting(paths))];
   } catch {
     // git 조회가 실패하면 workspace 밖으로 허용 범위를 넓히지 않습니다.
     return [root];
   }
+}
+
+/**
+ * 사용자가 `BEADS_DESK_LOCAL_FILE_ROOTS`에 PATH처럼 구분자(`path.delimiter`)로 나열한 디렉터리입니다.
+ * 서버의 작업 디렉터리는 사용자가 명령을 실행한 곳이 아니므로, 상대 경로는 기준이 모호해 무시합니다.
+ */
+function configuredRoots(): string[] {
+  return (process.env.BEADS_DESK_LOCAL_FILE_ROOTS ?? "")
+    .split(delimiter)
+    .map((path) => (path === "~" || path.startsWith("~/") ? join(homedir(), path.slice(1)) : path))
+    .filter((path) => isAbsolute(path));
+}
+
+/** 없거나 realpath로 풀 수 없는 경로는 빼고, 나머지를 실제 경로로 돌려줍니다. */
+async function resolveExisting(paths: string[]): Promise<string[]> {
+  const resolved = await Promise.all(paths.map((path) => realpath(path).catch(() => null)));
+  return resolved.filter((path): path is string => path !== null);
 }
 
 function contains(root: string, target: string): boolean {
