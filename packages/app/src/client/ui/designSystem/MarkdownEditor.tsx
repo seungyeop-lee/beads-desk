@@ -14,6 +14,7 @@ import type { CmdKey } from "@milkdown/kit/core";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
+import { localMarkdownUrl } from "./localMarkdownUrl";
 import { createMermaidPreview } from "./mermaidPreview";
 
 type Controls = {
@@ -122,6 +123,23 @@ export function MarkdownEditor({
         });
       }
       crepe.editor.config((ctx) => {
+        ctx.update(commonmark.linkSchema.key, (previous) => (schemaCtx) => {
+          const schema = previous(schemaCtx);
+          return {
+            ...schema,
+            toDOM: (mark) => {
+              const dom = schema.toDOM!(mark, false) as [string, Record<string, unknown>];
+              return [dom[0], { ...dom[1], href: localMarkdownUrl(String(dom[1].href)) }];
+            },
+          };
+        });
+        ctx.update(commonmark.imageSchema.key, (previous) => (schemaCtx) => {
+          const schema = previous(schemaCtx);
+          return {
+            ...schema,
+            toDOM: (node) => ["img", { ...node.attrs, src: localMarkdownUrl(node.attrs.src) }],
+          };
+        });
         ctx.update(editorViewOptionsCtx, (options) => ({
           ...options,
           attributes: readOnly

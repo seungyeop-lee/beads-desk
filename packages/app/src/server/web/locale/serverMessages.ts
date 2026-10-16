@@ -2,6 +2,8 @@ import type { Locale } from "@/shared/contract/locale";
 import { requestLocale } from "./requestLocale";
 
 const ko = {
+  localFileForbidden: "허용 범위 밖의 파일입니다.",
+  localFileNotFound: "파일을 찾을 수 없습니다.",
   invalidRequest: "요청 형식이 올바르지 않습니다.",
   invalidIssueStatus: "조회할 이슈 상태가 올바르지 않습니다.",
   invalidStaleDays: "오래 방치된 이슈의 기준 일수가 올바르지 않습니다.",
@@ -13,6 +15,8 @@ const ko = {
 const MESSAGES: Record<Locale, typeof ko> = {
   ko,
   en: {
+    localFileForbidden: "This file is outside the allowed roots.",
+    localFileNotFound: "The file was not found.",
     invalidRequest: "The request is malformed.",
     invalidIssueStatus: "The requested issue status is not valid.",
     invalidStaleDays: "The stale threshold in days is not valid.",
