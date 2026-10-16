@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, realpath, rename, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
@@ -15,7 +15,7 @@ beforeEach(async () => {
   workDir = await realpath(await mkdtemp(join(tmpdir(), "beads-desk-feed-")));
   hashFile = join(workDir, "hash");
   callLog = join(workDir, "calls.log");
-  await writeFile(hashFile, "hash-1");
+  await writeHash("hash-1");
   // server mode workspace처럼 응답하고, DB hash는 파일 내용으로 돌려주는 가짜 bd입니다.
   const fakeBd = join(workDir, "fake-bd");
   await writeFile(
@@ -37,6 +37,16 @@ beforeEach(async () => {
 afterEach(() => {
   process.env.BD_BIN = originalBdBin;
 });
+
+/**
+ * writeFile은 파일을 비운 뒤 내용을 쓰므로, 그 사이에 가짜 bd가 읽으면 빈 hash를 변경으로 보고 한 번 더 알립니다.
+ * 실제 DB hash에는 이런 중간 값이 없으므로, 다른 파일에 쓴 뒤 이름을 바꿔 한 번에 교체합니다.
+ */
+async function writeHash(value: string): Promise<void> {
+  const staged = `${hashFile}.tmp`;
+  await writeFile(staged, value);
+  await rename(staged, hashFile);
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -76,7 +86,7 @@ test("DB 상태가 바뀌면 구독자에게 한 번 더 알린다", async () =>
 
   // 두 번째 조회가 시작됐다면 첫 조회로 기준값을 읽은 뒤입니다.
   await waitUntil(async () => (await hashQueryCount()) >= 2);
-  await writeFile(hashFile, "hash-2");
+  await writeHash("hash-2");
   await waitUntil(() => notified > 1);
   const afterChange = await hashQueryCount();
   await waitUntil(async () => (await hashQueryCount()) >= afterChange + 2);
@@ -110,7 +120,7 @@ test("쓰기 직후 확인을 요청하면 다음 주기를 기다리지 않고 
   });
   await waitUntil(() => notified === 1);
 
-  await writeFile(hashFile, "hash-2");
+  await writeHash("hash-2");
   await checkWorkspaceChangesNow(workDir);
   unsubscribe();
 
