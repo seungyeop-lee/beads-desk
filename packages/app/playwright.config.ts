@@ -1,13 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
+import { usesRamDisk } from "./e2e/support/ramDisk";
 
 export default defineConfig({
   testDir: "./e2e",
   // worker마다 서버를 따로 띄우므로(e2e/support/appServer.ts) 시나리오를 worker 사이에 나눠 실행할 수 있습니다.
   fullyParallel: true,
-  // worker마다 bd를 동시에 실행하면 디스크 I/O를 함께 쓰느라 bd 한 번이 느려집니다(CPU 사용량은 낮습니다).
+  // 다른 worktree의 e2e 실행이 끝나기를 기다린 뒤 시작합니다. teardown은 역순이라 RAM disk를 뗀 뒤 차례를 넘깁니다.
+  // worker마다 bd를 동시에 실행하면 디스크 I/O를 함께 쓰느라 bd 한 번이 느려집니다.
   // macOS에서는 시나리오 workspace를 RAM disk에 만들어 이 지연을 줄이고, 그만큼 worker를 늘립니다.
-  globalSetup: "./e2e/support/ramDisk.ts",
-  workers: 8,
+  // 디스크에서 worker 8개로 실행하면 저장 확인이 timeout을 넘기는 시나리오가 생깁니다.
+  globalSetup: ["./e2e/support/runQueue.ts", "./e2e/support/ramDisk.ts"],
+  workers: usesRamDisk() ? 8 : 4,
   // bd를 동시에 실행하면 시나리오가 혼자 돌 때보다 느려져, 저장을 여러 번 확인하는 시나리오가 기본 30초를 넘길 수 있습니다.
   timeout: 60_000,
   // 같은 이유로 서버에서 목록을 받아 와야 보이는 요소가 기본 5초 안에 나타나지 않을 때가 있습니다.
