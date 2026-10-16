@@ -345,3 +345,8 @@
 .react-flow__minimap-node {
   --xy-minimap-node-background-color: var(--tone, #d6d3d1);
 }
+
+.react-flow__minimap-node.minimap-center {
+  --xy-minimap-node-stroke-color: var(--color-primary);
+  vector-effect: non-scaling-stroke;
+}

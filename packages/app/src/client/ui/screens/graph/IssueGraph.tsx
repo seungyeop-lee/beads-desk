@@ -111,7 +111,7 @@ export function IssueGraph({ layout, issueHref, plan, centerId }: Props) {
       >
         {plan && <StageLabels stages={plan.stages} />}
         <Controls showInteractive={false} />
-        <MiniMap pannable zoomable maskStrokeWidth={2} nodeClassName={miniMapNodeTone} />
+        <MiniMap pannable zoomable maskStrokeWidth={2} nodeClassName={miniMapNodeClassName} />
       </ReactFlow>
     </section>
   );
@@ -193,6 +193,7 @@ function BlocksEdgeView({
 const EDGE_TYPES = { blocks: BlocksEdgeView };
 
 /** 미니맵 노드도 그래프 노드의 상태 점과 같은 tone class로 칠해, 상태별 이슈가 어디에 몰려 있는지 보이게 합니다. */
-function miniMapNodeTone(node: IssueNode): string {
-  return workStateTone(workState(node.data.issue));
+function miniMapNodeClassName(node: IssueNode): string {
+  const tone = workStateTone(workState(node.data.issue));
+  return node.data.center ? `${tone} minimap-center` : tone;
 }
