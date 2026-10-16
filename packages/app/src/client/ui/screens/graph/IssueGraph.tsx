@@ -4,6 +4,7 @@ import {
   Controls,
   type EdgeProps,
   getBezierPath,
+  getSmoothStepPath,
   Handle,
   MarkerType,
   MiniMap,
@@ -20,12 +21,12 @@ import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { COLUMN_STEP, type GraphLayout, NODE_WIDTH, type PassingSegment } from "./graphLayout";
+import { COLUMN_STEP, type GraphLayout, NODE_WIDTH, type PlacedEdge } from "./graphLayout";
 import { IssueCard, type PlanMarks } from "./IssueCard";
 
 type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
 type IssueNode = Node<IssueNodeData, "issue">;
-type BlocksEdge = Edge<{ passes: PassingSegment[] }, "blocks">;
+type BlocksEdge = Edge<Pick<PlacedEdge, "passes" | "bypassX">, "blocks">;
 
 /** 에픽 계획 보기가 단계 이름과 노드 표시를 그리는 데 쓰는 값입니다. 이슈 중심 보기는 넘기지 않습니다. */
 export type GraphPlan = {
@@ -66,12 +67,13 @@ export function IssueGraph({ layout, issueHref, plan, centerId }: Props) {
           }),
         },
       })),
-      edges: layout.edges.map(({ from, to, passes }): BlocksEdge => ({
+      edges: layout.edges.map(({ from, to, passes, bypassX }): BlocksEdge => ({
         id: `${from}->${to}`,
         type: "blocks",
         source: from,
         target: to,
-        data: { passes },
+        targetHandle: bypassX === undefined ? null : "same-column",
+        data: { passes, bypassX },
         markerEnd: { type: MarkerType.ArrowClosed },
         ariaLabel: messages.graph.edgeLabel(from, to),
       })),
@@ -151,6 +153,13 @@ function IssueNodeView({ data: { issue, href, plan, center } }: NodeProps<IssueN
   return (
     <>
       <Handle type="target" position={Position.Left} isConnectable={false} className="opacity-0" />
+      <Handle
+        id="same-column"
+        type="target"
+        position={Position.Right}
+        isConnectable={false}
+        className="top-1/4! opacity-0"
+      />
       <IssueCard issue={issue} href={href} plan={plan} center={center} />
       <Handle type="source" position={Position.Right} isConnectable={false} className="opacity-0" />
     </>
@@ -171,6 +180,18 @@ function BlocksEdgeView({
   data,
   markerEnd,
 }: EdgeProps<BlocksEdge>) {
+  if (data?.bypassX !== undefined) {
+    const [path] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourcePosition: Position.Right,
+      targetPosition: Position.Right,
+      offset: data.bypassX - sourceX,
+    });
+    return <BaseEdge path={path} markerEnd={markerEnd} />;
+  }
   const curve = (x1: number, y1: number, x2: number, y2: number) =>
     getBezierPath({
       sourceX: x1,

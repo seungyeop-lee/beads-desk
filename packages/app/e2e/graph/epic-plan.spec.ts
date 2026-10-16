@@ -1,6 +1,5 @@
 import { expect, test } from "../support/bdWorkspace";
 
-// bd는 blocks 순환을 만드는 의존 추가를 모두 거절하므로, 순환 경고는 화면에서 만들 수 없어 unit test(epicPlan, executionOrder)로 확인합니다.
 test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약을 보이고, 후손 이슈를 막는 에픽 밖 이슈를 점선 노드로, 노드마다 대기 수를 보이며, 이슈 중심 보기의 기준 노드 강조는 없다", async ({
   page,
   workspace,

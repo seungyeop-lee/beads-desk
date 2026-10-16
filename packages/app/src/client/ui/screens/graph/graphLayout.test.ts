@@ -64,3 +64,38 @@ test("간선이 지나가는 자리에는 노드를 두지 않고, 그 간선이
     },
   ]);
 });
+
+test.each([76, 96])(
+  "높이 %i인 같은 열 순환은 노드와 단계 좌표를 유지하고 간선마다 다음 열 앞의 빈 공간에 다른 우회 자리를 둔다",
+  (nodeHeight) => {
+    const cycle = [
+      { from: "a", to: "b" },
+      { from: "b", to: "c" },
+      { from: "c", to: "a" },
+    ];
+    const forward = { from: "c", to: "d" };
+    const layout = layeredLayout(
+      {
+        components: [
+          { layers: [[slot("a"), slot("b"), slot("c")], [slot("d")]], edges: [...cycle, forward] },
+        ],
+        unlinked: [],
+        cycles: [["a", "b", "c", "a"]],
+      },
+      nodeHeight,
+    );
+    expect(layout.nodes.map(({ issue, x, y }) => [issue.id, x, y])).toEqual([
+      ["a", 0, 0],
+      ["b", 0, nodeHeight + ROW_GAP],
+      ["c", 0, 2 * (nodeHeight + ROW_GAP)],
+      ["d", COLUMN_STEP, 0],
+    ]);
+    const bypasses = layout.edges.slice(0, 3).map(({ bypassX }) => bypassX!);
+    expect(new Set(bypasses).size).toBe(cycle.length);
+    for (const x of bypasses) {
+      expect(x).toBeGreaterThan(NODE_WIDTH);
+      expect(x).toBeLessThan(COLUMN_STEP);
+    }
+    expect(layout.edges.at(-1)).toEqual({ ...forward, passes: [] });
+  },
+);

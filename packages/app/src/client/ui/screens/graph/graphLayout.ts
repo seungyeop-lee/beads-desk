@@ -10,14 +10,15 @@ export const COLUMN_STEP = NODE_WIDTH + 72;
 export const ROW_GAP = 16;
 /** 이어지지 않은 묶음 사이의 빈 높이입니다. */
 export const COMPONENT_GAP = 56;
+const BYPASS_MARGIN = 12;
 
 export type PlacedIssue = { issue: Issue; x: number; y: number };
 
 /** 간선이 사이 layer를 left에서 right까지 y 높이로 가로지르는 구간입니다. 그 자리에는 노드를 두지 않습니다. */
 export type PassingSegment = { left: number; right: number; y: number };
 
-/** passes는 간선이 지나가는 사이 layer의 구간을 왼쪽부터 담습니다. 이웃한 layer를 잇는 간선은 비어 있습니다. */
-export type PlacedEdge = OrderEdge & { passes: PassingSegment[] };
+/** passes는 사이 layer를 지나는 구간이고, bypassX는 같은 열 간선이 노드 오른쪽으로 돌아가는 세로 구간의 x 좌표입니다. */
+export type PlacedEdge = OrderEdge & { passes: PassingSegment[]; bypassX?: number };
 
 /** 화면 좌표에 놓은 노드와, 노드 사이에 그릴 간선입니다. 노드는 모두 NODE_WIDTH × nodeHeight 크기입니다. */
 export type GraphLayout = { nodes: PlacedIssue[]; edges: PlacedEdge[]; nodeHeight: number };
@@ -44,11 +45,31 @@ export function layeredLayout(graph: ExecutionOrder, nodeHeight = NODE_HEIGHT): 
     );
     top += Math.max(...layers.map((layer) => layer.length)) * rowStep + COMPONENT_GAP;
   }
+  const edges = graph.components.flatMap(({ edges }) => edges);
+  const byId = new Map(nodes.map((node) => [node.issue.id, node]));
+  const sameColumn = new Map<number, OrderEdge[]>();
+  for (const edge of edges) {
+    const from = byId.get(edge.from)!;
+    if (from.x === byId.get(edge.to)!.x) {
+      sameColumn.set(from.x, [...(sameColumn.get(from.x) ?? []), edge]);
+    }
+  }
+  const bypasses = new Map<OrderEdge, number>();
+  for (const [x, columnEdges] of sameColumn) {
+    columnEdges.forEach((edge, index) => {
+      const gutter = COLUMN_STEP - NODE_WIDTH;
+      const offset =
+        BYPASS_MARGIN + ((gutter - 2 * BYPASS_MARGIN) * (index + 1)) / (columnEdges.length + 1);
+      bypasses.set(edge, x + NODE_WIDTH + offset);
+    });
+  }
   return {
     nodes,
-    edges: graph.components.flatMap(({ edges }) =>
-      edges.map((edge) => ({ ...edge, passes: passes.get(edge) ?? [] })),
-    ),
+    edges: edges.map((edge) => ({
+      ...edge,
+      passes: passes.get(edge) ?? [],
+      ...(bypasses.has(edge) && { bypassX: bypasses.get(edge)! }),
+    })),
     nodeHeight,
   };
 }
