@@ -54,32 +54,51 @@ test("이슈 중심 보기는 중심 이슈에서 blocks를 따라 앞뒤로 끝
   ]);
 });
 
-test("이슈 중심 보기는 blocks가 아닌 관계를 따르지 않고, 닫힌 이슈는 빼서 그 뒤로도 따라가지 않는다", () => {
+test("이슈 중심 보기는 닫힌 선행·후속 이슈 너머까지 담고, 옆 갈래와 blocks가 아닌 관계는 빼낸다", () => {
   const data = {
     issues: [
       issue("before-closed"),
-      issue("closed", { status: "closed" }),
+      issue("closed-before", { status: "closed" }),
       issue("center"),
+      issue("closed-after", { status: "closed" }),
+      issue("after-closed"),
+      issue("closed-side", { status: "closed" }),
       issue("related"),
     ],
     dependencies: [
-      ...blocks(["center", "closed"], ["closed", "before-closed"]),
+      ...blocks(
+        ["center", "closed-before"],
+        ["closed-before", "before-closed"],
+        ["closed-after", "center"],
+        ["after-closed", "closed-after"],
+        ["closed-side", "closed-before"],
+      ),
       { issueId: "related", dependsOnId: "center", type: "related" },
     ],
     ancestorEpics: {},
   };
 
-  expect(ids(scopedIssues(data, { kind: "center", id: "center" }))).toEqual(["center"]);
+  expect(ids(scopedIssues(data, { kind: "center", id: "center" }))).toEqual([
+    "before-closed",
+    "closed-before",
+    "center",
+    "closed-after",
+    "after-closed",
+  ]);
 });
 
-test("중심 이슈가 닫혔어도 기준점으로 담고, 닫히지 않은 앞뒤 이슈를 따라간다", () => {
+test("중심 이슈와 앞뒤 이슈가 모두 닫혔어도 사슬 전체를 담는다", () => {
   const data = {
-    issues: [issue("center", { status: "closed" }), issue("next")],
-    dependencies: blocks(["next", "center"]),
+    issues: ["before", "center", "next"].map((id) => issue(id, { status: "closed" })),
+    dependencies: blocks(["center", "before"], ["next", "center"]),
     ancestorEpics: {},
   };
 
-  expect(ids(scopedIssues(data, { kind: "center", id: "center" }))).toEqual(["center", "next"]);
+  expect(ids(scopedIssues(data, { kind: "center", id: "center" }))).toEqual([
+    "before",
+    "center",
+    "next",
+  ]);
 });
 
 test("blocks가 순환해도 끝난다", () => {
