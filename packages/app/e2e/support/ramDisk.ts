@@ -49,7 +49,7 @@ export function usesRamDisk(): boolean {
 
 /**
  * RAM disk를 뗍니다. volume 경로로 eject하면 RAM 장치까지 떼어집니다.
- * 열린 파일이 없는데도 eject가 거부될 때가 있어(원인 미확인, bd-desk-dzt), 그러면 강제로 unmount한 뒤 RAM 장치를 뗍니다.
+ * 열린 파일이 없는데도 eject가 거부될 때가 있어(원인 미확인), 그러면 강제로 unmount한 뒤 RAM 장치를 뗍니다.
  * 그래도 떼지 못하면 경고만 남겨 시나리오 결과가 실행 결과로 그대로 남게 하고, 남은 volume은 다음 실행이 다시 정리합니다.
  */
 async function eject(mountPoint: string): Promise<void> {
