@@ -1,5 +1,44 @@
 import { expect, test } from "../support/bdWorkspace";
 
+test("작업 상태 묶음은 클릭 영역에만 pointer를 보이고 마우스와 키보드로 접고 펼친다", async ({
+  page,
+  workspace,
+}) => {
+  await workspace.createIssues({
+    doing: { title: "진행하는 작업", type: "task", status: "in_progress" },
+    ready: { title: "시작할 작업", type: "task" },
+    closed: { title: "끝난 작업", type: "task", status: "closed" },
+  });
+  await page.goto("/issues");
+
+  for (const label of ["진행 중", "바로 작업 가능", "닫힘"]) {
+    const group = page.getByRole("region", { name: label, exact: true });
+    const toggle = group.getByRole("button", { name: new RegExp(`${label} 묶음`) });
+    await toggle.hover();
+    await expect(toggle).toHaveCSS("cursor", "pointer");
+    for (const child of await toggle.locator("svg, span").all()) {
+      await child.hover();
+      await expect(child).toHaveCSS("cursor", "pointer");
+    }
+    await expect(group.locator("h2 > span")).not.toHaveCSS("cursor", "pointer");
+  }
+
+  const doing = page.getByRole("button", { name: /진행 중 묶음/ });
+  await doing.click();
+  await expect(doing).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("link", { name: "진행하는 작업" })).toHaveCount(0);
+  await doing.press("Enter");
+  await expect(doing).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("link", { name: "진행하는 작업" })).toBeVisible();
+
+  const closed = page.getByRole("button", { name: /닫힘 묶음/ });
+  await expect(closed).toHaveAttribute("aria-expanded", "false");
+  await closed.focus();
+  await page.keyboard.press("Space");
+  await expect(closed).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("link", { name: "끝난 작업" })).toBeVisible();
+});
+
 test("보기 탭으로 작업 상태 하나를 골라 보고, 고른 탭은 주소에 남아 새로고침, 뒤로 가기, 상세 열고 닫기에도 유지된다", async ({
   page,
   workspace,

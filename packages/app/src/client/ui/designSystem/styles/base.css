@@ -1,7 +1,14 @@
 /*
- * 포커스 표시처럼 앱 전체에 적용되는 기본 동작입니다.
- * daisyUI 규칙은 layer 안에 있으므로, layer 밖에 둔 이 규칙들이 우선합니다.
+ * 포커스 표시와 커서처럼 앱 전체에 적용되는 기본 동작입니다.
+ * 기본 커서는 base layer에 두어 컴포넌트와 utility의 특수 커서를 유지합니다.
+ * 나머지 규칙은 layer 밖에 두어 daisyUI보다 우선합니다.
  */
+
+@layer base {
+  :where(button, a[href], summary, select, [role="button"]):not(:disabled, [aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
 
 /*
  * 단추와 링크의 포커스 외곽선은 Tab으로 포커스를 옮겼을 때만 보입니다.
