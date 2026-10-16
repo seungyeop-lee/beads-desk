@@ -12,6 +12,7 @@ import {
   deferIssue,
   dependencyGraph,
   duplicateCandidates,
+  humanDecisionIssues,
   humanGates,
   issueEvents,
   lintFindings,
@@ -186,6 +187,25 @@ test("bd gate create로 만든 human gate와 막고 있는 이슈를 읽고, 응
   });
   expect(value(await showIssue(cwd, work)).status).toBe("open");
   expect(value(await humanGates(cwd)).map((found) => found.gate.id)).not.toContain(gateId);
+});
+
+test("판단을 셀 때 열린 human gate와 human 라벨이 붙은 닫히지 않은 이슈만 읽는다", async () => {
+  const work = value(await createIssue(cwd, { title: "판단 개수용 작업" }));
+  const question = value(await createIssue(cwd, { title: "열린 질문", labels: ["human"] }));
+  const answered = value(await createIssue(cwd, { title: "답한 질문", labels: ["human"] }));
+  value(await respondToHuman(cwd, answered, "됐습니다"));
+  const deferred = value(await createIssue(cwd, { title: "미룬 질문", labels: ["human"] }));
+  value(await deferIssue(cwd, deferred, { until: "tomorrow", reason: "" }));
+  const gateId: string = JSON.parse(
+    await run("bd", "gate", "create", "--blocks", work, "--title", `Review: ${work}`, "--json"),
+  ).id;
+
+  const { gates, labeled } = value(await humanDecisionIssues(cwd));
+
+  expect(gates.map(({ id }) => id)).toContain(gateId);
+  expect(labeled.map(({ id }) => id)).toEqual(expect.arrayContaining([question, deferred]));
+  expect(labeled.map(({ id }) => id)).not.toContain(answered);
+  expect(labeled.map(({ id }) => id)).not.toContain(work);
 });
 
 function value<T>(outcome: BdOutcome<T>): T {

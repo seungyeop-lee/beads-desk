@@ -92,7 +92,7 @@ export function FocusScreen() {
               href="/human"
               tone={HUMAN_DECISION_TONE}
               label={messages.humanDecisions.title}
-              count={view.awaitingHuman.length}
+              count={view.awaitingHumanCount}
             />
           </div>
 

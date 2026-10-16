@@ -19,6 +19,8 @@ export {
   type ChangeFingerprint,
   type DecisionRecord,
   type EpicStatus,
+  humanDecisionIssues,
+  type HumanDecisionIssues,
   humanGates,
   type HumanGate,
   type IssueRef,

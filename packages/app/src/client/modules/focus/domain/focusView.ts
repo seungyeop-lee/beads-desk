@@ -1,4 +1,4 @@
-import { awaitsHumanDecision, type Issue } from "@beads-desk/bd/issue";
+import { awaitingHuman, type Issue } from "@beads-desk/bd/issue";
 import type { EpicSummary } from "@/shared/contract/epics";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { sortEpics } from "@/client/modules/epics/domain/epicsView";
@@ -9,8 +9,8 @@ import { groupByWorkState, type WorkState } from "@/client/modules/issues/domain
 export const NEXT_UP_LIMIT = 5;
 
 export type FocusView = {
-  /** 열린 human gate와, 유형과 작업 상태에 상관없이 사람 판단을 기다리는 이슈를 모두 모읍니다. */
-  awaitingHuman: Issue[];
+  /** 사람 판단을 기다리는 일의 개수입니다. 상단 탭과 판단 기다림 화면의 개수와 같습니다. */
+  awaitingHumanCount: number;
   inProgress: Issue[];
   /** 우선순위, 대기 수가 많은 순, 만든 시각 순입니다. 다음에 할 일은 앞에서 NEXT_UP_LIMIT개만 보입니다. */
   ready: Issue[];
@@ -37,7 +37,7 @@ export function focusView(
   );
   const of = (state: WorkState) => groups.find((group) => group.state === state)?.issues ?? [];
   return {
-    awaitingHuman: [...humanGates.map(({ gate }) => gate), ...issues.filter(awaitsHumanDecision)],
+    awaitingHumanCount: awaitingHuman(humanGates, issues).count,
     inProgress: of("in_progress"),
     ready: of("ready"),
     blocked: of("blocked"),

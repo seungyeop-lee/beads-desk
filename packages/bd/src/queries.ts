@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   awaitsHumanDecision,
+  HUMAN_LABEL,
   humanGateReason,
   isOpenHumanGate,
   isRecord,
@@ -36,6 +37,13 @@ export type HumanGate = {
   reason: string;
   /** 이 gate가 막고 있는 닫히지 않은 이슈입니다. */
   blocks: Issue[];
+};
+
+export type HumanDecisionIssues = {
+  /** 열린 human gate입니다. 막고 있는 이슈는 찾지 않습니다. */
+  gates: Issue[];
+  /** human 라벨이 붙은 닫히지 않은 이슈입니다. */
+  labeled: Issue[];
 };
 
 export type BoardColumn = "ready" | "in_progress" | "blocked" | "closed";
@@ -295,6 +303,36 @@ export async function humanGates(cwd: string): Promise<BdOutcome<HumanGate[]>> {
           .flatMap(({ issueId }) => openById.get(issueId) ?? []);
         return [{ gate, reason: humanGateReason(textOf(record.description)), blocks }];
       }),
+  };
+}
+
+/**
+ * 사람 판단을 기다리는 일을 셀 때 필요한 이슈만 읽습니다. 열린 human gate와, human 라벨이 붙은 닫히지 않은 이슈입니다.
+ * humanGates와 달리 전체 목록을 읽지 않고 gate가 막고 있는 이슈도 찾지 않아, 개수만 필요한 곳의 bd 실행 비용을 줄입니다.
+ */
+export async function humanDecisionIssues(cwd: string): Promise<BdOutcome<HumanDecisionIssues>> {
+  const [gates, labeled] = await Promise.all([
+    runBdJson(cwd, ["list", "--json", "--tree=false", "--type=gate", "--limit", LIST_LIMIT]),
+    queryIssues(cwd, [
+      "list",
+      "--json",
+      "--tree=false",
+      "--label",
+      HUMAN_LABEL,
+      "--limit",
+      LIST_LIMIT,
+    ]),
+  ]);
+  if (!gates.ok) return gates;
+  if (!labeled.ok) return labeled;
+  return {
+    ok: true,
+    value: {
+      gates: recordsOf(gates.value)
+        .filter(isOpenHumanGate)
+        .flatMap((record) => parseIssue(record) ?? []),
+      labeled: labeled.value,
+    },
   };
 }
 

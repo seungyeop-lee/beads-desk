@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
 import { PlusIcon, SettingsIcon } from "@/client/ui/designSystem/icons";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
@@ -18,6 +19,9 @@ export function AppHeader() {
   const router = useRouter();
   const issueHref = useIssueHref();
   const messages = useMessages();
+  const humanDecisions = useHumanDecisionCount();
+  // 탭의 숫자는 판단할 일이 있다는 신호이므로, 0이거나 아직 읽지 못했거나 다시 읽다 실패하면 보이지 않습니다.
+  const humanDecisionCount = humanDecisions.error ? 0 : (humanDecisions.data ?? 0);
   const [creating, setCreating] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -37,6 +41,15 @@ export function AppHeader() {
               className={`nav-tab ${tab.tone}`}
             >
               {messages[tab.screen].title}
+              {tab.href === "/human" && humanDecisionCount > 0 && (
+                <span className="nav-tab-count">
+                  <span aria-hidden="true">{humanDecisionCount}</span>
+                  <span className="sr-only">
+                    {" "}
+                    {messages.shell.awaitingCount(humanDecisionCount)}
+                  </span>
+                </span>
+              )}
             </Link>
           ))}
         </nav>

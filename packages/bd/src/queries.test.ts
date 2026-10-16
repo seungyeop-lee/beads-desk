@@ -10,6 +10,7 @@ import {
   duplicateCandidates,
   epicDescendants,
   epicStatuses,
+  humanDecisionIssues,
   humanGates,
   issueEvents,
   issueIdsByDescription,
@@ -363,6 +364,40 @@ describe("humanGates", () => {
     await useFakeBd({ [listGates]: { stdout: "[]" }, [listOpen]: { stderr: "boom", code: 1 } });
 
     expect(await humanGates(workDir)).toEqual({
+      ok: false,
+      error: { message: "boom\n", exitCode: 1 },
+    });
+  });
+});
+
+describe("humanDecisionIssues", () => {
+  const listGates = "list --json --tree=false --type=gate --limit 0";
+  const listLabeled = "list --json --tree=false --label human --limit 0";
+
+  test("열린 human gate와 human 라벨이 붙은 이슈만 읽는다", async () => {
+    await useFakeBd({
+      [listGates]: {
+        stdout: JSON.stringify([
+          { id: "g-1", issue_type: "gate", await_type: "human", status: "open" },
+          { id: "g-2", issue_type: "gate", await_type: "timer", status: "open" },
+          { id: "g-3", issue_type: "gate", await_type: "human", status: "closed" },
+        ]),
+      },
+      [listLabeled]: {
+        stdout: JSON.stringify([{ id: "q-1", status: "open", labels: ["human"] }]),
+      },
+    });
+
+    const result = await humanDecisionIssues(workDir);
+
+    expect(result.ok && result.value.gates.map(({ id }) => id)).toEqual(["g-1"]);
+    expect(result.ok && result.value.labeled.map(({ id }) => id)).toEqual(["q-1"]);
+  });
+
+  test("조회가 하나라도 실패하면 오류를 돌려준다", async () => {
+    await useFakeBd({ [listGates]: { stdout: "[]" }, [listLabeled]: { stderr: "boom", code: 1 } });
+
+    expect(await humanDecisionIssues(workDir)).toEqual({
       ok: false,
       error: { message: "boom\n", exitCode: 1 },
     });

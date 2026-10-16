@@ -1,6 +1,6 @@
 "use client";
 
-import { awaitsHumanDecision, type Issue } from "@beads-desk/bd/issue";
+import { awaitingHuman, type Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
@@ -38,14 +38,13 @@ export function HumanDecisionsScreen() {
   const messages = useMessages();
   // 한쪽만 먼저 보이면 고른 항목이 다른 쪽이 도착할 때 바뀌므로, gate 조회가 끝난 뒤(실패 포함) 함께 보입니다.
   const loaded = issues !== null && (gates !== null || gatesError !== null);
+  const awaiting = useMemo(() => awaitingHuman(gates ?? [], issues ?? []), [gates, issues]);
   const pending = useMemo(
     (): PendingItem[] => [
-      ...(gates ?? []).map((summary) => ({ kind: "gate" as const, id: summary.gate.id, summary })),
-      ...(issues ?? [])
-        .filter(awaitsHumanDecision)
-        .map((issue) => ({ kind: "question" as const, id: issue.id, issue })),
+      ...awaiting.gates.map((summary) => ({ kind: "gate" as const, id: summary.gate.id, summary })),
+      ...awaiting.questions.map((issue) => ({ kind: "question" as const, id: issue.id, issue })),
     ],
-    [gates, issues],
+    [awaiting],
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 처리해 닫힌 항목은 목록에서 빠지므로, 고른 항목이 없어지면 맨 위 항목을 이어서 보여 줍니다.
@@ -66,7 +65,7 @@ export function HumanDecisionsScreen() {
       <ScreenHeader
         title={messages.humanDecisions.title}
         tone={screenTone("/human")}
-        count={loaded ? pending.length : undefined}
+        count={loaded ? awaiting.count : undefined}
         loading={loading || gatesLoading}
         description={messages.humanDecisions.description}
       />

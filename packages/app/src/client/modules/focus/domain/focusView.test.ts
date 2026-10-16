@@ -61,7 +61,7 @@ test("에픽 진행률에는 닫히지 않은 epic만 진행 중인 것부터 �
   expect(view.openEpics.map(({ epic }) => epic.id)).toEqual(["doing", "open"]);
 });
 
-test("판단 기다림에는 열린 human gate와, 유형과 작업 상태에 상관없이 human 라벨이 붙은 닫히지 않은 이슈를 모은다", () => {
+test("판단 기다림은 열린 human gate와, 유형과 작업 상태에 상관없이 human 라벨이 붙은 닫히지 않은 이슈를 센다", () => {
   const view = focusView(
     [
       issue("question", { labels: ["human"], ready: true }),
@@ -73,5 +73,5 @@ test("판단 기다림에는 열린 human gate와, 유형과 작업 상태에 �
     [{ gate: issue("gate", { issueType: "gate" }), reason: "", blocks: [] }],
   );
 
-  expect(ids(view.awaitingHuman)).toEqual(["gate", "question", "decision"]);
+  expect(view.awaitingHumanCount).toBe(3);
 });

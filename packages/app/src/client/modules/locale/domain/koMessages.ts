@@ -28,6 +28,8 @@ export const koMessages = {
   shell: {
     screens: "화면",
     newIssue: "새 이슈",
+    /** 스크린 리더가 상단 탭 이름 뒤에 이어 읽는 개수입니다. 화면에는 숫자만 보입니다. */
+    awaitingCount: (count: number) => `${count}개`,
   },
   settings: {
     title: "설정",

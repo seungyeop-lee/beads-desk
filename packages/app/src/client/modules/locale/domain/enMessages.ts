@@ -17,6 +17,7 @@ export const enMessages: Messages = {
   shell: {
     screens: "Screens",
     newIssue: "New issue",
+    awaitingCount: (count) => `${count} waiting`,
   },
   settings: {
     title: "Settings",
