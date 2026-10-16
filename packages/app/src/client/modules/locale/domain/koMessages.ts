@@ -412,6 +412,10 @@ export const koMessages = {
     outside: "에픽 밖",
     outsideHint: "이 에픽에 속하지 않지만 에픽의 이슈를 막고 있는 이슈입니다.",
     unordered: "선후 관계 없음",
+    collapse: "접기",
+    expand: "펼치기",
+    collapseUnordered: "선후 관계 없는 이슈 목록 접기",
+    expandUnordered: "선후 관계 없는 이슈 목록 펼치기",
     unorderedHint: "에픽 안의 다른 이슈와 blocks 관계가 없는 이슈입니다.",
     cycle:
       "blocks 관계가 순환해 순서를 정할 수 없습니다. 순환하는 이슈는 같은 단계에 함께 두었습니다.",

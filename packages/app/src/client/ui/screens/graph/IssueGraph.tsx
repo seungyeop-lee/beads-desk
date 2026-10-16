@@ -45,7 +45,7 @@ type Props = {
 
 /** 노드 위에 단계 이름을 두는 높이입니다. 처음 보이는 위치를 이만큼 내려 단계 이름이 잘리지 않게 합니다. */
 const STAGE_LABEL_HEIGHT = 32;
-const VIEWPORT_MARGIN = 24;
+export const VIEWPORT_MARGIN = 24;
 
 /** blocks 실행 순서로 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
 export function IssueGraph({ layout, issueHref, plan, centerId }: Props) {

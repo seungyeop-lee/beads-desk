@@ -57,6 +57,7 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
   await expect(canvas.locator("[aria-current]")).toHaveCount(0);
 
   const unordered = page.getByRole("region", { name: "선후 관계 없음" });
+  await unordered.getByRole("button", { name: "선후 관계 없는 이슈 목록 펼치기" }).click();
   await expect(unordered.getByRole("link", { name: /계획 순서 없음/ })).toBeVisible();
   await expect(node("계획 순서 없음")).toHaveCount(0);
 });

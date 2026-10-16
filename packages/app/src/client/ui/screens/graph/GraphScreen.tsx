@@ -78,7 +78,7 @@ function ScopedGraph({ scope }: { scope: GraphScope }) {
 
       {data &&
         (scope.kind === "epic" ? (
-          <EpicPlanGraph data={data} epicId={scope.id} issueHref={issueHref} />
+          <EpicPlanGraph key={scope.id} data={data} epicId={scope.id} issueHref={issueHref} />
         ) : (
           <BlockingChainGraph data={data} scope={scope} issueHref={issueHref} />
         ))}

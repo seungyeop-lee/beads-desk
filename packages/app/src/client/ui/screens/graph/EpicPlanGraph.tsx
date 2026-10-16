@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { Fragment, useMemo } from "react";
+import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { epicPlan } from "@/client/modules/graph/domain/epicPlan";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { workState } from "@/client/modules/issues/domain/workState";
@@ -10,8 +10,8 @@ import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
-import { layeredLayout, PLAN_NODE_HEIGHT } from "./graphLayout";
-import { IssueGraph } from "./IssueGraph";
+import { layeredLayout, NODE_WIDTH, PLAN_NODE_HEIGHT } from "./graphLayout";
+import { IssueGraph, VIEWPORT_MARGIN } from "./IssueGraph";
 
 type Props = {
   data: GraphData;
@@ -31,6 +31,16 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
     [plan, waiters],
   );
   const { total, current } = plan.stages;
+  const graphContainerRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState<boolean | null>(null);
+  const panelExpanded = expanded ?? true;
+
+  useLayoutEffect(() => {
+    if (expanded !== null || plan.unordered.length === 0 || !graphContainerRef.current) return;
+    const rightmost = Math.max(0, ...layout.nodes.map(({ x }) => x + NODE_WIDTH));
+    const requiredWidth = rightmost + VIEWPORT_MARGIN * 2 + 2;
+    setExpanded(requiredWidth <= graphContainerRef.current.clientWidth);
+  }, [expanded, layout, plan.unordered.length]);
 
   return (
     <>
@@ -62,16 +72,24 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 gap-4">
-        {layout.nodes.length > 0 ? (
-          <IssueGraph layout={layout} issueHref={issueHref} plan={graphPlan} />
-        ) : (
-          <p className="flex-1 self-start rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
-            {messages.graph.empty.epic}
-          </p>
-        )}
+      <div className={`flex min-h-0 flex-1 gap-4 ${panelExpanded ? "" : "flex-col"}`}>
+        <div ref={graphContainerRef} className="flex min-h-0 min-w-0 flex-1">
+          {layout.nodes.length > 0 ? (
+            <IssueGraph layout={layout} issueHref={issueHref} plan={graphPlan} />
+          ) : (
+            <p className="flex-1 self-start rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
+              {messages.graph.empty.epic}
+            </p>
+          )}
+        </div>
         {plan.unordered.length > 0 && (
-          <UnorderedIssues issues={plan.unordered} issueHref={issueHref} waiters={waiters} />
+          <UnorderedIssues
+            issues={plan.unordered}
+            issueHref={issueHref}
+            waiters={waiters}
+            expanded={panelExpanded}
+            onToggle={() => setExpanded(!panelExpanded)}
+          />
         )}
       </div>
     </>
@@ -83,35 +101,54 @@ function UnorderedIssues({
   issues,
   issueHref,
   waiters,
+  expanded,
+  onToggle,
 }: {
   issues: Issue[];
   issueHref: (issueId: string) => string;
   waiters: ReadonlyMap<string, number>;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const messages = useMessages();
   return (
     <section
       aria-label={messages.graph.unordered}
-      className="flex w-80 shrink-0 flex-col overflow-hidden rounded-box border border-base-300 bg-base-200/40"
+      className={`flex shrink-0 flex-col overflow-hidden rounded-box border border-base-300 bg-base-200/40 ${expanded ? "w-80" : "order-first max-w-full self-end"}`}
     >
-      <header className="flex flex-col gap-1 px-3 pt-3 pb-2">
-        <h2 className="text-sm font-semibold">
-          {messages.graph.unordered}{" "}
-          <span className="font-normal text-base-content/45 tabular-nums">{issues.length}</span>
-        </h2>
-        <p className="text-xs text-base-content/55">{messages.graph.unorderedHint}</p>
+      <header className="flex flex-col gap-1 px-3 py-2">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold">
+            {messages.graph.unordered}{" "}
+            <span className="font-normal text-base-content/45 tabular-nums">{issues.length}</span>
+          </h2>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs shrink-0"
+            aria-expanded={expanded}
+            aria-label={
+              expanded ? messages.graph.collapseUnordered : messages.graph.expandUnordered
+            }
+            onClick={onToggle}
+          >
+            {expanded ? messages.graph.collapse : messages.graph.expand}
+          </button>
+        </div>
+        {expanded && <p className="text-xs text-base-content/55">{messages.graph.unorderedHint}</p>}
       </header>
-      <ul className="flex flex-col divide-y divide-base-300 overflow-y-auto px-3 pb-3">
-        {issues.map((issue) => (
-          <li key={issue.id} className="shrink-0">
-            <UnorderedIssueRow
-              issue={issue}
-              href={issueHref(issue.id)}
-              waiters={waiters.get(issue.id) ?? 0}
-            />
-          </li>
-        ))}
-      </ul>
+      {expanded && (
+        <ul className="flex flex-col divide-y divide-base-300 overflow-y-auto px-3 pb-3">
+          {issues.map((issue) => (
+            <li key={issue.id} className="shrink-0">
+              <UnorderedIssueRow
+                issue={issue}
+                href={issueHref(issue.id)}
+                waiters={waiters.get(issue.id) ?? 0}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

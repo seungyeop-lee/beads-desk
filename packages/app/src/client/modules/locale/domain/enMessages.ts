@@ -400,6 +400,10 @@ export const enMessages: Messages = {
     outside: "Outside epic",
     outsideHint: "Not in this epic, but blocks an issue in it.",
     unordered: "No blocks dependency",
+    collapse: "Collapse",
+    expand: "Expand",
+    collapseUnordered: "Collapse issues with no blocks dependency",
+    expandUnordered: "Expand issues with no blocks dependency",
     unorderedHint: "Issues with no blocks dependency on other issues in this epic.",
     cycle:
       "Blocks dependencies form a cycle, so the order cannot be decided. Issues in a cycle are placed in the same stage.",
