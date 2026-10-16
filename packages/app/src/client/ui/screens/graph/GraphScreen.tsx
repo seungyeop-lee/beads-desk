@@ -9,6 +9,8 @@ import { type GraphScope, scopedIssues } from "@/client/modules/graph/domain/gra
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import type { GraphData } from "@/shared/contract/graph";
+import { EpicPlanGraph } from "./EpicPlanGraph";
 import { readGraphScope } from "./graphAddress";
 import { layeredLayout } from "./graphLayout";
 import { IssueGraph } from "./IssueGraph";
@@ -36,11 +38,6 @@ function ScopedGraph({ scope }: { scope: GraphScope }) {
   const issueHref = useIssueHref();
   const messages = useMessages();
 
-  const order = useMemo(
-    () => (data ? executionOrder(scopedIssues(data, scope), data.dependencies) : null),
-    [data, scope],
-  );
-  const layout = useMemo(() => order && layeredLayout(order), [order]);
   const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
 
   return (
@@ -69,17 +66,35 @@ function ScopedGraph({ scope }: { scope: GraphScope }) {
         </div>
       )}
 
-      {scope.kind === "epic" && order && order.unrelated > 0 && (
-        <p className="text-sm text-base-content/55">{messages.graph.unrelated(order.unrelated)}</p>
-      )}
-      {layout &&
-        (layout.nodes.length > 0 ? (
-          <IssueGraph layout={layout} issueHref={issueHref} />
+      {data &&
+        (scope.kind === "epic" ? (
+          <EpicPlanGraph data={data} epicId={scope.id} issueHref={issueHref} />
         ) : (
-          <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
-            {messages.graph.empty[scope.kind]}
-          </p>
+          <BlockingChainGraph data={data} scope={scope} issueHref={issueHref} />
         ))}
     </>
+  );
+}
+
+function BlockingChainGraph({
+  data,
+  scope,
+  issueHref,
+}: {
+  data: GraphData;
+  scope: GraphScope;
+  issueHref: (issueId: string) => string;
+}) {
+  const messages = useMessages();
+  const layout = useMemo(
+    () => layeredLayout(executionOrder(scopedIssues(data, scope), data.dependencies)),
+    [data, scope],
+  );
+  return layout.nodes.length > 0 ? (
+    <IssueGraph layout={layout} issueHref={issueHref} />
+  ) : (
+    <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
+      {messages.graph.empty.center}
+    </p>
   );
 }

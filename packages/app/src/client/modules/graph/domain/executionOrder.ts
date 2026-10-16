@@ -7,7 +7,7 @@ export type OrderEdge = { from: string; to: string };
 /** blocks 관계로 이어진 이슈 묶음입니다. layers[0]은 묶음 안에서 바로 시작할 수 있는 이슈입니다. */
 export type OrderComponent = LayeredComponent<OrderEdge>;
 
-/** 이슈가 많은 묶음부터 둡니다. unrelated는 blocks 관계가 없어 그리지 않는 이슈의 수입니다. */
+/** 이슈가 많은 묶음부터 둡니다. unlinked는 주어진 이슈 사이에 blocks 관계가 없는 이슈이고, cycles는 서로 기다리는 순환의 경로입니다. */
 export type ExecutionOrder = LayeredGraph<OrderEdge>;
 
 /**

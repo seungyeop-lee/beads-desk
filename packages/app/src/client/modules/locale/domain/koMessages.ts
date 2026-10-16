@@ -384,7 +384,7 @@ export const koMessages = {
   graph: {
     scopes: { epic: "순서", center: "선행·후속" },
     help: {
-      epic: "에픽에 속한 이슈를 blocks 관계를 따라 먼저 끝내야 하는 이슈부터 왼쪽에 둡니다. 같은 열의 이슈는 함께 진행할 수 있고, 닫힌 이슈는 흐리게 보입니다.",
+      epic: "에픽에 속한 이슈를 blocks 관계를 따라 먼저 끝내야 하는 이슈부터 왼쪽 단계에 둡니다. 같은 단계의 이슈는 함께 진행할 수 있고, 닫힌 이슈는 흐리게 보입니다. 에픽의 이슈를 막는 에픽 밖 이슈는 점선으로 함께 그리고, blocks 관계가 없는 이슈는 순서 미정에 모읍니다.",
       center:
         "이 이슈가 기다리는 이슈와 이 이슈를 기다리는 이슈를 blocks 관계를 따라 끝까지 그리고, 먼저 끝내야 하는 이슈를 왼쪽에 둡니다. 닫힌 이슈는 그리지 않습니다.",
     },
@@ -396,7 +396,19 @@ export const koMessages = {
     zoomOut: "축소",
     fitView: "전체 보기",
     minimap: "그래프 미니맵",
-    unrelated: (count: number) => `blocks 관계가 없는 이슈 ${count}개는 그리지 않았습니다.`,
+    stage: (stage: number) => `${stage}단계`,
+    stageDone: "완료",
+    stageCurrent: "진행 중",
+    progress: (current: number, total: number) => `전체 ${total}단계 중 ${current}단계 진행 중`,
+    allStagesDone: (total: number) => `전체 ${total}단계를 모두 마쳤습니다.`,
+    outside: "에픽 밖",
+    outsideHint: "이 에픽에 속하지 않지만 에픽의 이슈를 막고 있는 이슈입니다.",
+    unordered: "순서 미정",
+    unorderedHint:
+      "에픽 안의 다른 이슈와 blocks 관계가 없는 이슈입니다. 순서를 빠뜨렸는지, 언제 해도 되는 일인지 확인하세요.",
+    cycle:
+      "blocks 관계가 순환해 순서를 정할 수 없습니다. 순환하는 이슈는 같은 단계에 함께 두었습니다.",
+    cyclePath: "순환 경로",
     empty: {
       epic: "에픽에 속한 이슈 사이에 blocks 관계가 없습니다.",
       center: "이 이슈와 blocks 관계로 이어진, 닫히지 않은 이슈가 없습니다.",

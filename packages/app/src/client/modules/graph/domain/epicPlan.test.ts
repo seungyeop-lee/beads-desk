@@ -1,0 +1,106 @@
+import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
+import { expect, test } from "vitest";
+import type { GraphData } from "@/shared/contract/graph";
+import { epicPlan } from "./epicPlan";
+
+function issue(id: string, fields: Partial<Issue> = {}): Issue {
+  return { id, status: "open", issueType: "task", priority: 2, createdAt: 0, ...fields } as Issue;
+}
+
+/** [먼저 끝나야 하는 이슈, 기다리는 이슈]를 bd의 blocks 의존으로 바꿉니다. */
+function blocks(...pairs: [string, string][]): IssueDependency[] {
+  return pairs.map(([before, after]) => ({ issueId: after, dependsOnId: before, type: "blocks" }));
+}
+
+/** epic의 후손 이슈(children)와 에픽 밖 이슈(others)로 그래프 데이터를 만듭니다. */
+function graph(children: Issue[], others: Issue[], dependencies: IssueDependency[]): GraphData {
+  return {
+    issues: [issue("epic", { issueType: "epic" }), ...children, ...others],
+    dependencies,
+    ancestorEpics: Object.fromEntries(children.map((child) => [child.id, ["epic"]])),
+  };
+}
+
+const layerIds = (plan: ReturnType<typeof epicPlan>) =>
+  plan.order.components.map((component) =>
+    component.layers.map((layer) => layer.map((it) => it.id)),
+  );
+
+test("닫힌 이슈도 단계에 넣고, 닫히지 않은 이슈가 남은 가장 왼쪽 단계를 진행 중으로 본다", () => {
+  const plan = epicPlan(
+    graph(
+      [
+        issue("a", { status: "closed" }),
+        issue("b", { status: "closed" }),
+        issue("c"),
+        issue("d"),
+        issue("x", { status: "closed" }),
+        issue("y"),
+      ],
+      [],
+      blocks(["a", "b"], ["b", "c"], ["c", "d"], ["x", "y"]),
+    ),
+    "epic",
+  );
+
+  expect(layerIds(plan)).toEqual([
+    [["a"], ["b"], ["c"], ["d"]],
+    [["x"], ["y"]],
+  ]);
+  expect(plan.stages).toEqual({ total: 4, current: 1 });
+});
+
+test("모든 단계의 이슈가 닫혔으면 진행 중인 단계가 없고, 그린 이슈가 없으면 단계도 없다", () => {
+  const done = epicPlan(
+    graph(
+      [issue("a", { status: "closed" }), issue("b", { status: "closed" })],
+      [],
+      blocks(["a", "b"]),
+    ),
+    "epic",
+  );
+  const empty = epicPlan(graph([issue("a")], [], []), "epic");
+
+  expect(done.stages).toEqual({ total: 2, current: null });
+  expect(empty.stages).toEqual({ total: 0, current: null });
+});
+
+test("에픽 안에서 blocks 관계가 없는 후손 이슈는 순서 미정으로 모으고, 닫히지 않은 이슈를 앞에 둔다", () => {
+  const plan = epicPlan(
+    graph(
+      [
+        issue("a"),
+        issue("b"),
+        issue("done", { status: "closed", priority: 0 }),
+        issue("low", { priority: 3 }),
+        issue("high", { priority: 1 }),
+        issue("before-other"),
+      ],
+      [issue("other")],
+      blocks(["a", "b"], ["before-other", "other"]),
+    ),
+    "epic",
+  );
+
+  expect(plan.unordered.map((it) => it.id)).toEqual(["high", "before-other", "low", "done"]);
+  expect(layerIds(plan)).toEqual([[["a"], ["b"]]]);
+});
+
+test("후손 이슈를 직접 막는 에픽 밖 이슈를 outside로 담아 단계에 넣고, 그 이슈를 막는 이슈는 따라가지 않는다", () => {
+  const plan = epicPlan(
+    graph(
+      [issue("a"), issue("b")],
+      [issue("ext"), issue("ext-before"), issue("ext-after")],
+      blocks(["ext-before", "ext"], ["ext", "a"], ["a", "b"], ["b", "ext-after"]),
+    ),
+    "epic",
+  );
+
+  expect([...plan.outside]).toEqual(["ext"]);
+  expect(layerIds(plan)).toEqual([[["ext"], ["a"], ["b"]]]);
+  expect(plan.order.components[0]?.edges).toEqual([
+    { from: "ext", to: "a" },
+    { from: "a", to: "b" },
+  ]);
+  expect(plan.stages).toEqual({ total: 3, current: 0 });
+});

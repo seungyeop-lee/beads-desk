@@ -9,27 +9,39 @@ import {
   type Edge,
   type Node,
   type NodeProps,
+  ViewportPortal,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import Link from "next/link";
 import { useMemo } from "react";
-import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
-import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { type GraphLayout, NODE_HEIGHT, NODE_WIDTH } from "./graphLayout";
+import { COLUMN_STEP, type GraphLayout, NODE_WIDTH } from "./graphLayout";
+import { IssueCard, type PlanMarks } from "./IssueCard";
 
-type IssueNodeData = { issue: Issue; href: string };
+type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks };
 type IssueNode = Node<IssueNodeData, "issue">;
+
+/** 에픽 계획 보기가 단계 이름과 노드 표시를 그리는 데 쓰는 값입니다. 이슈 중심 보기는 넘기지 않습니다. */
+export type GraphPlan = {
+  stages: StageProgress;
+  outside: ReadonlySet<string>;
+  waiters: ReadonlyMap<string, number>;
+};
 
 type Props = {
   layout: GraphLayout;
   issueHref: (issueId: string) => string;
+  plan?: GraphPlan;
 };
 
+/** 노드 위에 단계 이름을 두는 높이입니다. 처음 보이는 위치를 이만큼 내려 단계 이름이 잘리지 않게 합니다. */
+const STAGE_LABEL_HEIGHT = 32;
+const VIEWPORT_MARGIN = 24;
+
 /** blocks 실행 순서로 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
-export function IssueGraph({ layout, issueHref }: Props) {
+export function IssueGraph({ layout, issueHref, plan }: Props) {
   const messages = useMessages();
   const { nodes, edges } = useMemo(
     () => ({
@@ -38,8 +50,14 @@ export function IssueGraph({ layout, issueHref }: Props) {
         type: "issue",
         position: { x, y },
         width: NODE_WIDTH,
-        height: NODE_HEIGHT,
-        data: { issue, href: issueHref(issue.id) },
+        height: layout.nodeHeight,
+        data: {
+          issue,
+          href: issueHref(issue.id),
+          ...(plan && {
+            plan: { outside: plan.outside.has(issue.id), waiters: plan.waiters.get(issue.id) ?? 0 },
+          }),
+        },
       })),
       edges: layout.edges.map(({ from, to }): Edge => ({
         id: `${from}->${to}`,
@@ -49,7 +67,7 @@ export function IssueGraph({ layout, issueHref }: Props) {
         ariaLabel: messages.graph.edgeLabel(from, to),
       })),
     }),
-    [layout, issueHref, messages],
+    [layout, issueHref, plan, messages],
   );
 
   return (
@@ -62,7 +80,11 @@ export function IssueGraph({ layout, issueHref }: Props) {
         edges={edges}
         nodeTypes={NODE_TYPES}
         // 묶음이 많을 때 전체를 한 화면에 맞추면 글자를 읽을 수 없을 만큼 작아지므로, 왼쪽 위부터 원래 크기로 보입니다.
-        defaultViewport={{ x: 24, y: 24, zoom: 1 }}
+        defaultViewport={{
+          x: VIEWPORT_MARGIN,
+          y: VIEWPORT_MARGIN + (plan ? STAGE_LABEL_HEIGHT : 0),
+          zoom: 1,
+        }}
         minZoom={0.2}
         nodesDraggable={false}
         nodesConnectable={false}
@@ -77,6 +99,7 @@ export function IssueGraph({ layout, issueHref }: Props) {
           "minimap.ariaLabel": messages.graph.minimap,
         }}
       >
+        {plan && <StageLabels stages={plan.stages} />}
         <Controls showInteractive={false} />
         <MiniMap pannable zoomable maskStrokeWidth={2} nodeClassName={miniMapNodeTone} />
       </ReactFlow>
@@ -84,37 +107,41 @@ export function IssueGraph({ layout, issueHref }: Props) {
   );
 }
 
-/**
- * 노드 전체가 상세 dialog를 여는 링크입니다. 유형과 작업 상태의 색과 이름은 다른 화면과 같은 기준을 따릅니다.
- * 닫힌 이슈는 어디까지 진행했는지만 알리면 되므로 흐리게 그립니다.
- */
-function IssueNodeView({ data: { issue, href } }: NodeProps<IssueNode>) {
+/** 열마다 위에 단계 이름을 둡니다. 끝난 단계는 흐리게, 진행 중인 단계는 강조해 보입니다. 노드와 함께 끌리고 확대됩니다. */
+function StageLabels({ stages: { total, current } }: { stages: StageProgress }) {
   const messages = useMessages();
-  const state = workState(issue);
+  return (
+    <ViewportPortal>
+      {Array.from({ length: total }, (_, stage) => {
+        const name = messages.graph.stage(stage + 1);
+        const [tone, label] =
+          current === null || stage < current
+            ? ["text-base-content/40", `${name} · ${messages.graph.stageDone}`]
+            : stage === current
+              ? ["text-primary", `${name} · ${messages.graph.stageCurrent}`]
+              : ["text-base-content/65", name];
+        return (
+          <div
+            key={stage}
+            className={`absolute text-xs font-medium ${tone}`}
+            style={{
+              width: NODE_WIDTH,
+              transform: `translate(${stage * COLUMN_STEP}px, -${STAGE_LABEL_HEIGHT}px)`,
+            }}
+          >
+            {label}
+          </div>
+        );
+      })}
+    </ViewportPortal>
+  );
+}
+
+function IssueNodeView({ data: { issue, href, plan } }: NodeProps<IssueNode>) {
   return (
     <>
       <Handle type="target" position={Position.Left} isConnectable={false} className="opacity-0" />
-      {/*
-       * React Flow는 끌기, 선택, 클릭 handler가 없는 노드에 pointer-events: none을 걸므로 링크에서 다시 켭니다.
-       * nopan은 링크를 누를 때 그래프가 함께 끌려 움직이지 않게 하는 React Flow의 class입니다.
-       */}
-      <Link
-        href={href}
-        scroll={false}
-        title={issue.id}
-        className={`nopan pointer-events-auto flex size-full flex-col gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-xs transition hover:border-base-content/30 hover:shadow-sm ${state === "closed" ? "opacity-50" : ""}`}
-      >
-        <span className="flex items-center gap-1.5 text-base-content/55">
-          <IssueTypeTag issueType={issue.issueType} />
-          <span aria-hidden>·</span>
-          <span className={`tone-dot ${workStateTone(state)}`} />
-          <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
-          <span className="ml-auto shrink-0 font-mono">{shortIssueId(issue.id)}</span>
-        </span>
-        <span className="line-clamp-2 text-sm leading-snug font-medium text-base-content">
-          {issue.title}
-        </span>
-      </Link>
+      <IssueCard issue={issue} href={href} plan={plan} />
       <Handle type="source" position={Position.Right} isConnectable={false} className="opacity-0" />
     </>
   );

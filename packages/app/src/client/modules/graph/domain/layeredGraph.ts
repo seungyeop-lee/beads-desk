@@ -10,8 +10,10 @@ export type LayeredComponent<E extends LayerEdge> = { layers: Issue[][]; edges: 
 export type LayeredGraph<E extends LayerEdge> = {
   /** 이슈가 많은 묶음부터 둡니다. */
   components: LayeredComponent<E>[];
-  /** 주어진 이슈 가운데 간선이 없어 그리지 않는 이슈의 수입니다. */
-  unrelated: number;
+  /** 주어진 이슈 가운데 간선이 없어 어느 묶음에도 들지 않은 이슈입니다. 주어진 순서를 따릅니다. */
+  unlinked: Issue[];
+  /** 간선을 따라 돌아오는 순환마다 한 경로입니다. 경로는 출발한 이슈로 끝납니다(예: [a, b, a]). */
+  cycles: string[][];
 };
 
 /**
@@ -20,13 +22,17 @@ export type LayeredGraph<E extends LayerEdge> = {
  */
 export function layeredGraph<E extends LayerEdge>(issues: Issue[], edges: E[]): LayeredGraph<E> {
   const linked = new Set(edges.flatMap((edge) => [edge.from, edge.to]));
-  const components = connectedGroups(
+  const laid = connectedGroups(
     issues.filter((issue) => linked.has(issue.id)),
     edges,
   )
     .map((group) => layeredComponent(group, edges))
-    .sort((a, b) => issueCount(b) - issueCount(a));
-  return { components, unrelated: issues.length - linked.size };
+    .sort((a, b) => issueCount(b.component) - issueCount(a.component));
+  return {
+    components: laid.map(({ component }) => component),
+    unlinked: issues.filter((issue) => !linked.has(issue.id)),
+    cycles: laid.flatMap(({ cycles }) => cycles),
+  };
 }
 
 function connectedGroups(issues: Issue[], edges: LayerEdge[]): Issue[][] {
@@ -48,10 +54,16 @@ function connectedGroups(issues: Issue[], edges: LayerEdge[]): Issue[][] {
   return [...groups.values()];
 }
 
-function layeredComponent<E extends LayerEdge>(group: Issue[], allEdges: E[]): LayeredComponent<E> {
+function layeredComponent<E extends LayerEdge>(
+  group: Issue[],
+  allEdges: E[],
+): { component: LayeredComponent<E>; cycles: string[][] } {
   const ids = new Set(group.map((issue) => issue.id));
   const edges = allEdges.filter((edge) => ids.has(edge.from));
-  const layerOf = longestPathLayers(group, edges);
+  const next = new Map<string, string[]>();
+  for (const { from, to } of edges) next.set(from, [...(next.get(from) ?? []), to]);
+  const sccs = stronglyConnected(group, next);
+  const layerOf = longestPathLayers(sccs, next);
 
   const layers: Issue[][] = [];
   for (const issue of group) (layers[layerOf.get(issue.id)!] ??= []).push(issue);
@@ -68,20 +80,20 @@ function layeredComponent<E extends LayerEdge>(group: Issue[], allEdges: E[]): L
     layer.sort((a, b) => anchor(a) - anchor(b) || byPriorityThenCreated(a, b));
     layer.forEach((issue, at) => position.set(issue.id, at));
   });
-  return { layers, edges };
+  const cycles = sccs.filter((scc) => scc.length > 1).map((scc) => cyclePath(scc, next));
+  return { component: { layers, edges }, cycles };
 }
 
-/** 강하게 연결된 묶음(순환)을 한 단위로 보고, 순환이 없는 그래프에서 가장 긴 경로로 layer를 정합니다. */
-function longestPathLayers(group: Issue[], edges: LayerEdge[]): Map<string, number> {
-  const next = new Map<string, string[]>();
-  for (const { from, to } of edges) next.set(from, [...(next.get(from) ?? []), to]);
-
-  // Tarjan 알고리즘은 다른 묶음에서 이어지는 묶음을 먼저 내보내므로, 내보낸 순서를 뒤집으면 위상 순서입니다.
+/**
+ * 강하게 연결된 묶음(순환)을 Tarjan 알고리즘으로 찾습니다. 순환하지 않는 이슈는 혼자 한 묶음입니다.
+ * Tarjan 알고리즘은 다른 묶음에서 이어지는 묶음을 먼저 내보내므로, 돌려준 순서를 뒤집으면 위상 순서입니다.
+ * 묶음의 마지막 이슈는 그 묶음에서 처음 방문한 이슈입니다.
+ */
+function stronglyConnected(group: Issue[], next: ReadonlyMap<string, string[]>): string[][] {
   const index = new Map<string, number>();
   const low = new Map<string, number>();
   const stack: string[] = [];
   const onStack = new Set<string>();
-  const sccOf = new Map<string, number>();
   const sccs: string[][] = [];
   const visit = (id: string) => {
     index.set(id, index.size);
@@ -102,14 +114,21 @@ function longestPathLayers(group: Issue[], edges: LayerEdge[]): Map<string, numb
       do {
         member = stack.pop()!;
         onStack.delete(member);
-        sccOf.set(member, sccs.length);
         scc.push(member);
       } while (member !== id);
       sccs.push(scc);
     }
   };
   for (const issue of group) if (!index.has(issue.id)) visit(issue.id);
+  return sccs;
+}
 
+/** 강하게 연결된 묶음(순환)을 한 단위로 보고, 순환이 없는 그래프에서 가장 긴 경로로 layer를 정합니다. */
+function longestPathLayers(
+  sccs: string[][],
+  next: ReadonlyMap<string, string[]>,
+): Map<string, number> {
+  const sccOf = new Map(sccs.flatMap((scc, at) => scc.map((id) => [id, at] as const)));
   const sccLayer = sccs.map(() => 0);
   for (let scc = sccs.length - 1; scc >= 0; scc--) {
     for (const id of sccs[scc]!) {
@@ -119,7 +138,29 @@ function longestPathLayers(group: Issue[], edges: LayerEdge[]): Map<string, numb
       }
     }
   }
-  return new Map(group.map((issue) => [issue.id, sccLayer[sccOf.get(issue.id)!]!]));
+  return new Map([...sccOf].map(([id, scc]) => [id, sccLayer[scc]!]));
+}
+
+/** 순환 묶음 안에서 처음 방문한 이슈를 떠나 다시 돌아오는 가장 짧은 경로를 너비 우선으로 찾습니다. */
+function cyclePath(scc: string[], next: ReadonlyMap<string, string[]>): string[] {
+  const members = new Set(scc);
+  const start = scc.at(-1)!;
+  const cameFrom = new Map<string, string>();
+  const pending = [start];
+  for (let at = 0; at < pending.length; at++) {
+    const id = pending[at]!;
+    for (const to of next.get(id) ?? []) {
+      if (to === start) {
+        const path = [start];
+        for (let back = id; back !== start; back = cameFrom.get(back)!) path.splice(1, 0, back);
+        return [...path, start];
+      }
+      if (!members.has(to) || cameFrom.has(to)) continue;
+      cameFrom.set(to, id);
+      pending.push(to);
+    }
+  }
+  return [start, start];
 }
 
 function issueCount(component: LayeredComponent<LayerEdge>): number {

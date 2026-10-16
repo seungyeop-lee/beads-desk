@@ -21,7 +21,7 @@ function blocks(...pairs: [string, string][]): IssueDependency[] {
 
 const layerIds = (layers: Issue[][]) => layers.map((layer) => layer.map((it) => it.id));
 
-test("blocks로 이어진 이슈를 먼저 할 것부터 layer에 두고, blocks 관계가 없는 이슈는 개수만 센다", () => {
+test("blocks로 이어진 이슈를 먼저 할 것부터 layer에 두고, blocks 관계가 없는 이슈는 unlinked로 따로 모은다", () => {
   const order = executionOrder(
     [issue("c"), issue("a"), issue("b"), issue("alone")],
     blocks(["a", "b"], ["b", "c"]),
@@ -34,7 +34,8 @@ test("blocks로 이어진 이슈를 먼저 할 것부터 layer에 두고, blocks
     { from: "a", to: "b" },
     { from: "b", to: "c" },
   ]);
-  expect(order.unrelated).toBe(1);
+  expect(order.unlinked.map((it) => it.id)).toEqual(["alone"]);
+  expect(order.cycles).toEqual([]);
 });
 
 test("여러 이슈를 기다리는 이슈는 가장 늦게 끝나는 이슈 다음 layer에 둔다", () => {
@@ -53,6 +54,19 @@ test("서로 기다리는 순환은 한 layer에 함께 두고, 순환을 기다
   );
 
   expect(layerIds(order.components[0]!.layers)).toEqual([["a"], ["b", "c"], ["d"]]);
+  expect(order.cycles).toEqual([["b", "c", "b"]]);
+});
+
+test("순환마다 처음 만난 이슈에서 출발해 돌아오는 가장 짧은 경로를 하나씩 돌려준다", () => {
+  const order = executionOrder(
+    [issue("a"), issue("b"), issue("c"), issue("x"), issue("y")],
+    blocks(["a", "b"], ["b", "c"], ["c", "a"], ["b", "a"], ["x", "y"], ["y", "x"]),
+  );
+
+  expect(order.cycles).toEqual([
+    ["a", "b", "a"],
+    ["x", "y", "x"],
+  ]);
 });
 
 test("blocks가 아닌 관계와 목록 밖 이슈와의 관계는 그리지 않는다", () => {
@@ -64,7 +78,7 @@ test("blocks가 아닌 관계와 목록 밖 이슈와의 관계는 그리지 않
     ],
   );
 
-  expect(order).toEqual({ components: [], unrelated: 2 });
+  expect(order).toEqual({ components: [], unlinked: [issue("a"), issue("b")], cycles: [] });
 });
 
 test("이어지지 않은 묶음은 이슈가 많은 것부터 둔다", () => {
