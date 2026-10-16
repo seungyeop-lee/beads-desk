@@ -147,6 +147,11 @@ export const enMessages: Messages = {
     edit: "Edit",
   },
   markdownEditor: {
+    preview: "Preview",
+    previewLoading: "Rendering diagram",
+    showCode: "Show code",
+    hideCode: "Hide code",
+
     toolbar: (label) => `${label} formatting`,
     blockType: "Text style",
     paragraph: "Paragraph",

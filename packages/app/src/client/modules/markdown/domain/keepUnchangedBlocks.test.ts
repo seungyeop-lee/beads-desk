@@ -103,3 +103,11 @@ test("<br>만 있는 줄은 편집기가 <br />로 바꿔 써도 원문을 그�
 
   expect(keepUnchangedBlocks(original, edited)).toBe(original);
 });
+
+test("다른 문단만 고치면 mermaid 블록의 fence·들여쓰기·줄바꿈을 원문대로 남긴다", () => {
+  const original =
+    "앞 문단\n\n  ~~~~mermaid\n  flowchart LR\n    A[시작] -->|처리| B[끝]\n  ~~~~\n\n고칠 문단\n";
+  const edited =
+    "앞 문단\n\n```mermaid\nflowchart LR\n  A[시작] -->|처리| B[끝]\n```\n\n고친 문단\n";
+  expect(keepUnchangedBlocks(original, edited)).toBe(original.replace("고칠 문단", "고친 문단"));
+});

@@ -14,6 +14,7 @@ import type { CmdKey } from "@milkdown/kit/core";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
+import { createMermaidPreview } from "./mermaidPreview";
 
 type Controls = {
   crepe: CrepeBuilder;
@@ -64,6 +65,7 @@ export function MarkdownEditor({
     if (!root) return;
     let destroy: (() => Promise<unknown>) | undefined;
     let disposed = false;
+    const preview = createMermaidPreview(root, labels.previewLoading);
     void (async () => {
       const [
         { CrepeBuilder },
@@ -103,7 +105,13 @@ export function MarkdownEditor({
         .addFeature(listItem)
         .addFeature(table)
         .addFeature(placeholderFeature, { text: placeholder ?? "" })
-        .addFeature(codeMirror, { languages });
+        .addFeature(codeMirror, {
+          languages,
+          renderPreview: preview.renderPreview,
+          previewLabel: labels.preview,
+          previewLoading: labels.previewLoading,
+          previewToggleText: (previewOnly) => (previewOnly ? labels.showCode : labels.hideCode),
+        });
       if (!readOnly) {
         crepe.addFeature(linkTooltip).addFeature(toolbar, {
           boldLabel: labels.bold,
@@ -184,6 +192,7 @@ export function MarkdownEditor({
     })();
     return () => {
       disposed = true;
+      preview.dispose();
       setControls(null);
       void destroy?.();
     };

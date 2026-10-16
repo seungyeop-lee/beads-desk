@@ -113,3 +113,11 @@
   color: var(--color-base-content);
   fill: var(--color-base-content);
 }
+
+.markdown-editor .milkdown .milkdown-code-block .preview {
+  overflow-x: auto;
+}
+.markdown-editor .milkdown .milkdown-code-block .preview svg {
+  max-width: 100%;
+  height: auto;
+}
