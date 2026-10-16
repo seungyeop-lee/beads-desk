@@ -214,9 +214,16 @@ for (const locale of ["ko", "en"] as const) {
         });
         await body.hover();
         await body.getByRole("button", { name: messages.editable.edit, exact: true }).click();
-        await body
-          .getByRole("textbox", { name: messages.issue.bodyFields.description, exact: true })
-          .fill("좁은 창에서 고친 본문");
+        const editor = body.getByRole("textbox", {
+          name: messages.issue.bodyFields.description,
+          exact: true,
+        });
+        // fill은 DOM 선택만 바꾸고, 편집기는 selectionchange를 받은 뒤에야 그 선택을 읽습니다. 편집기가 focus를 받고 20ms 안에는
+        // ProseMirror가 그 전에 선택을 편집기 상태(본문 맨 앞)로 되돌릴 수 있어, 부하가 크면 새 내용이 기존 본문 앞에 붙습니다.
+        // 편집기 단축키로 전체를 선택하면 선택이 편집기 상태에 바로 반영되어 되돌려지지 않습니다.
+        await editor.press("ControlOrMeta+a");
+        await page.keyboard.insertText("좁은 창에서 고친 본문");
+        await expect(editor).toHaveText("좁은 창에서 고친 본문");
         await body.getByRole("button", { name: messages.common.save, exact: true }).click();
         await expect
           .poll(() => workspace.showIssue(ids.second).then((issue) => issue.description), {
