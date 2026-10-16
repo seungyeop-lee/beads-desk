@@ -1,7 +1,7 @@
 import { expect, test } from "../support/bdWorkspace";
 
 // bd는 blocks 순환을 만드는 의존 추가를 모두 거절하므로, 순환 경고는 화면에서 만들 수 없어 unit test(epicPlan, executionOrder)로 확인합니다.
-test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약을 보이고, 후손 이슈를 막는 에픽 밖 이슈를 점선 노드로, 노드마다 대기 수를 보인다", async ({
+test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약을 보이고, 후손 이슈를 막는 에픽 밖 이슈를 점선 노드로, 노드마다 대기 수를 보이며, 이슈 중심 보기의 기준 노드 강조는 없다", async ({
   page,
   workspace,
 }) => {
@@ -55,6 +55,7 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
   await expect(node("계획 둘째")).toContainText("2개 대기");
   await expect(outside).toContainText("2개 대기");
   await expect(node("계획 넷째")).not.toContainText("대기");
+  await expect(canvas.locator("[aria-current]")).toHaveCount(0);
 
   const unordered = page.getByRole("region", { name: "순서 미정" });
   await expect(unordered.getByRole("link", { name: /계획 순서 없음/ })).toBeVisible();

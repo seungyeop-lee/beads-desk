@@ -14,8 +14,19 @@ export type PlanMarks = { outside: boolean; waiters: number };
  * 그래프의 이슈 카드입니다. 카드 전체가 상세 dialog를 여는 링크이고, 감싸는 요소의 크기를 채웁니다.
  * 유형과 작업 상태의 색과 이름은 다른 화면과 같은 기준을 따릅니다.
  * 닫힌 이슈는 어디까지 진행했는지만 알리면 되므로 흐리게 그립니다. 에픽 밖 이슈는 점선 테두리로 흐리게 그립니다.
+ * 이슈 중심 보기의 기준 이슈(center)는 잉크 색 테두리로 둘러 표시합니다. 파스텔은 작업 상태와 유형이 쓰므로 강조에 쓰지 않습니다.
  */
-export function IssueCard({ issue, href, plan }: { issue: Issue; href: string; plan?: PlanMarks }) {
+export function IssueCard({
+  issue,
+  href,
+  plan,
+  center = false,
+}: {
+  issue: Issue;
+  href: string;
+  plan?: PlanMarks;
+  center?: boolean;
+}) {
   const messages = useMessages();
   const state = workState(issue);
   const dim = state === "closed" ? "opacity-50" : plan?.outside ? "opacity-70" : "";
@@ -26,7 +37,8 @@ export function IssueCard({ issue, href, plan }: { issue: Issue; href: string; p
       href={href}
       scroll={false}
       title={issue.id}
-      className={`nopan pointer-events-auto flex size-full flex-col gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-xs transition hover:border-base-content/30 hover:shadow-sm ${plan?.outside ? "border-dashed" : ""} ${dim}`}
+      aria-current={center ? "true" : undefined}
+      className={`nopan pointer-events-auto flex size-full flex-col gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-xs transition hover:border-base-content/30 hover:shadow-sm aria-[current=true]:shadow-md aria-[current=true]:ring-2 aria-[current=true]:ring-primary ${plan?.outside ? "border-dashed" : ""} ${dim}`}
     >
       <span className="flex items-center gap-1.5 text-base-content/55">
         <IssueTypeTag issueType={issue.issueType} />

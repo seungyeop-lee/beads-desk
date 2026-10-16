@@ -1,6 +1,6 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("상세의 선행·후속 그래프는 blocks 관계가 있는 이슈에만 보이고, 누르면 그 이슈의 앞뒤 blocks 사슬만 닫힌 이슈 없이 그린다", async ({
+test("상세의 선행·후속 그래프는 blocks 관계가 있는 이슈에만 보이고, 누르면 그 이슈의 앞뒤 blocks 사슬만 닫힌 이슈 없이 그리며 기준 이슈 노드만 강조한다", async ({
   page,
   workspace,
 }) => {
@@ -54,6 +54,11 @@ test("상세의 선행·후속 그래프는 blocks 관계가 있는 이슈에만
   await expect(node("닫힌 선행")).toHaveCount(0);
   await expect(node("related 이슈")).toHaveCount(0);
   await expect(node("관계 없는 이슈")).toHaveCount(0);
+
+  await expect(canvas.locator("[aria-current]")).toHaveCount(1);
+  await expect(node("사슬 가운데")).toHaveAttribute("aria-current", "true");
+  await expect(node("사슬 가운데")).not.toHaveCSS("box-shadow", "none");
+  await expect(node("사슬 앞")).toHaveCSS("box-shadow", "none");
 
   await node("사슬 앞").click();
   await expect(page.getByRole("dialog", { name: `${before} 이슈` })).toBeVisible();

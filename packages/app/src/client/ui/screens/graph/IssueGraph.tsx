@@ -20,7 +20,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { COLUMN_STEP, type GraphLayout, NODE_WIDTH } from "./graphLayout";
 import { IssueCard, type PlanMarks } from "./IssueCard";
 
-type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks };
+type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
 type IssueNode = Node<IssueNodeData, "issue">;
 
 /** 에픽 계획 보기가 단계 이름과 노드 표시를 그리는 데 쓰는 값입니다. 이슈 중심 보기는 넘기지 않습니다. */
@@ -34,6 +34,8 @@ type Props = {
   layout: GraphLayout;
   issueHref: (issueId: string) => string;
   plan?: GraphPlan;
+  /** 이슈 중심 보기의 기준 이슈입니다. 이 노드만 다른 노드와 구분되게 그립니다. */
+  centerId?: string;
 };
 
 /** 노드 위에 단계 이름을 두는 높이입니다. 처음 보이는 위치를 이만큼 내려 단계 이름이 잘리지 않게 합니다. */
@@ -41,7 +43,7 @@ const STAGE_LABEL_HEIGHT = 32;
 const VIEWPORT_MARGIN = 24;
 
 /** blocks 실행 순서로 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
-export function IssueGraph({ layout, issueHref, plan }: Props) {
+export function IssueGraph({ layout, issueHref, plan, centerId }: Props) {
   const messages = useMessages();
   const { nodes, edges } = useMemo(
     () => ({
@@ -54,6 +56,7 @@ export function IssueGraph({ layout, issueHref, plan }: Props) {
         data: {
           issue,
           href: issueHref(issue.id),
+          center: issue.id === centerId,
           ...(plan && {
             plan: { outside: plan.outside.has(issue.id), waiters: plan.waiters.get(issue.id) ?? 0 },
           }),
@@ -67,7 +70,7 @@ export function IssueGraph({ layout, issueHref, plan }: Props) {
         ariaLabel: messages.graph.edgeLabel(from, to),
       })),
     }),
-    [layout, issueHref, plan, messages],
+    [layout, issueHref, plan, centerId, messages],
   );
 
   return (
@@ -137,11 +140,11 @@ function StageLabels({ stages: { total, current } }: { stages: StageProgress }) 
   );
 }
 
-function IssueNodeView({ data: { issue, href, plan } }: NodeProps<IssueNode>) {
+function IssueNodeView({ data: { issue, href, plan, center } }: NodeProps<IssueNode>) {
   return (
     <>
       <Handle type="target" position={Position.Left} isConnectable={false} className="opacity-0" />
-      <IssueCard issue={issue} href={href} plan={plan} />
+      <IssueCard issue={issue} href={href} plan={plan} center={center} />
       <Handle type="source" position={Position.Right} isConnectable={false} className="opacity-0" />
     </>
   );
