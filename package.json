@@ -16,22 +16,26 @@
     "format:check": "oxfmt --check .",
     "test": "vitest run",
     "test:bd": "vitest run --config packages/bd/vitest.real-bd.config.ts",
+    "test:components": "vitest run --config packages/app/vitest.browser.config.ts",
     "test:e2e": "pnpm --filter @seungyeop-lee/beads-desk run test:e2e",
     "test:e2e:install": "pnpm --filter @seungyeop-lee/beads-desk run test:e2e:install",
-    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test"
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run test:components"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.5",
+    "@vitest/browser-playwright": "^5.0.4",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
     "lefthook": "^2.2.1",
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
+    "playwright": "^1.64.0",
     "typescript": "npm:@typescript/typescript6@~6.0.2",
     "typescript-eslint": "^8.71.1",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.4",
+    "vitest-browser-react": "^2.3.0"
   },
   "engines": {
     "node": ">=22"

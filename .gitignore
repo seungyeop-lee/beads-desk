@@ -32,3 +32,6 @@ tmp/
 # Playwright output
 test-results/
 playwright-report/
+
+# Vitest Browser Mode 실패 screenshot
+.vitest/
