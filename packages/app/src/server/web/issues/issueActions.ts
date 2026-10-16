@@ -4,6 +4,7 @@ import {
   addComment,
   addDependency,
   addLabel,
+  approveHumanGate,
   claimIssue,
   closeAsReplaced,
   closeIssue,
@@ -176,6 +177,12 @@ export async function respondToHumanAction(issueId: string, response: string) {
 export async function dismissHumanAction(issueId: string, reason: string) {
   if (!isString(issueId) || !isString(reason)) return invalidRequest();
   return write((cwd) => dismissHuman(cwd, issueId, reason));
+}
+
+/** human gate를 닫아 막고 있던 이슈를 풉니다. 막고 있던 이슈는 닫지 않습니다. 메모는 비워 둘 수 있습니다. */
+export async function approveHumanGateAction(gateId: string, memo: string) {
+  if (!isString(gateId) || !isString(memo)) return invalidRequest();
+  return write((cwd) => approveHumanGate(cwd, gateId, memo));
 }
 
 async function write<T>(run: (cwd: string) => Promise<BdOutcome<T>>): Promise<ApiResponse<T>> {

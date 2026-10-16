@@ -6,10 +6,12 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import {
   addDependency,
+  approveHumanGate,
   claimIssue,
   createIssue,
   deferIssue,
   duplicateCandidates,
+  humanGates,
   issueEvents,
   lintFindings,
   orphanIssues,
@@ -135,11 +137,42 @@ test("bd history 이벤트에서 상태 변경과 관계 추가를 읽는다", a
   });
 });
 
+test("bd gate create로 만든 human gate와 막고 있는 이슈를 읽고, 승인하면 gate만 닫힌다", async () => {
+  const work = value(await createIssue(cwd, { title: "리뷰 받을 작업" }));
+  const gate = await run(
+    "bd",
+    "gate",
+    "create",
+    "--blocks",
+    work,
+    "--title",
+    `Review: ${work}`,
+    "--reason",
+    "로그인 화면 수정",
+    "--json",
+  );
+  const gateId: string = JSON.parse(gate).id;
+
+  expect(value(await humanGates(cwd)).find((found) => found.gate.id === gateId)).toMatchObject({
+    gate: { title: `Review: ${work}` },
+    reason: "로그인 화면 수정",
+    blocks: [{ id: work, title: "리뷰 받을 작업" }],
+  });
+
+  value(await approveHumanGate(cwd, gateId, "배포해도 됩니다"));
+  expect(value(await showIssue(cwd, gateId))).toMatchObject({
+    status: "closed",
+    closeReason: "Approved: 배포해도 됩니다",
+  });
+  expect(value(await showIssue(cwd, work)).status).toBe("open");
+  expect(value(await humanGates(cwd)).map((found) => found.gate.id)).not.toContain(gateId);
+});
+
 function value<T>(outcome: BdOutcome<T>): T {
   if (!outcome.ok) throw new Error(outcome.error.message);
   return outcome.value;
 }
 
-async function run(command: string, ...args: string[]): Promise<void> {
-  await execFileAsync(command, args, { cwd });
+async function run(command: string, ...args: string[]): Promise<string> {
+  return (await execFileAsync(command, args, { cwd })).stdout;
 }

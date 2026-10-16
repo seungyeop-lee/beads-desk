@@ -47,6 +47,7 @@ export const enMessages: Messages = {
       spike: "Spike",
       story: "Story",
       milestone: "Milestone",
+      gate: "Gate",
     },
     priorities: ["Critical", "High", "Medium", "Low", "Backlog"],
     dependencyTypes: {
@@ -112,6 +113,26 @@ export const enMessages: Messages = {
     confirmDismiss: "Dismiss and close",
     responded: (id) => `Responded to ${id} and closed it`,
     dismissed: (id) => `Dismissed ${id} and closed it`,
+  },
+  humanGate: {
+    reason: "Reason",
+    blocks: "Blocks",
+    noBlocks: "This gate blocks no issue. Approving closes only the gate.",
+    manyBlocks: (count) => `Blocks ${count} issues. Approving unblocks all of them.`,
+    feedbackTitle: "Feedback",
+    feedbackBody:
+      "Feedback is saved as a comment on the gate. The gate stays open, so the blocked issue still cannot be closed.",
+    feedback: "Feedback",
+    feedbackPlaceholder: "Write what to change",
+    sendFeedback: "Send feedback",
+    feedbackSent: (id) => `Sent feedback on ${id}`,
+    approveTitle: "Approve",
+    approveBody:
+      "Approving closes the gate so the blocked issue can be closed. The blocked issue itself stays open.",
+    memo: "Approval note",
+    memoPlaceholder: "Optional",
+    approve: "Approve and unblock",
+    approved: (id) => `Approved ${id} and unblocked its issues`,
   },
   copyId: {
     copied: (id) => `Copied ID: ${id}`,
@@ -417,7 +438,8 @@ export const enMessages: Messages = {
   },
   humanDecisions: {
     title: "Needs human",
-    description: "Questions agents handed to a human. Responding or dismissing closes the issue.",
+    description:
+      "Questions and review gates (human gates) agents handed to a human. Responding to or dismissing a question closes it; approving a gate unblocks its issues.",
     empty: "No issues are waiting for a human decision.",
     openDetail: "Open details",
     noDescription: "No description.",

@@ -58,6 +58,7 @@ export const koMessages = {
       spike: "스파이크",
       story: "스토리",
       milestone: "마일스톤",
+      gate: "게이트",
     },
     priorities: ["긴급", "높음", "보통", "낮음", "백로그"],
     /** 의존 관계 유형을 보는 쪽에 맞춰 부릅니다. */
@@ -125,6 +126,26 @@ export const koMessages = {
     confirmDismiss: "넘기고 닫기",
     responded: (id: string) => `${id}에 응답하고 닫았습니다`,
     dismissed: (id: string) => `${id}을(를) 넘기고 닫았습니다`,
+  },
+  humanGate: {
+    reason: "사유",
+    blocks: "막고 있는 작업",
+    noBlocks: "이 gate가 막고 있는 작업 이슈가 없습니다. 승인하면 gate만 닫힙니다.",
+    manyBlocks: (count: number) => `작업 ${count}개를 막고 있습니다. 승인하면 모두 풀립니다.`,
+    feedbackTitle: "피드백",
+    feedbackBody:
+      "피드백은 gate에 댓글로 남습니다. gate가 열린 채로 남으므로 작업 이슈는 계속 닫을 수 없습니다.",
+    feedback: "피드백",
+    feedbackPlaceholder: "고칠 점을 적으세요",
+    sendFeedback: "피드백 남기기",
+    feedbackSent: (id: string) => `${id}에 피드백을 남겼습니다`,
+    approveTitle: "승인",
+    approveBody:
+      "승인하면 gate가 닫히고, 막고 있던 작업 이슈를 닫을 수 있게 됩니다. 작업 이슈는 닫히지 않습니다.",
+    memo: "승인 메모",
+    memoPlaceholder: "적지 않아도 됩니다",
+    approve: "승인하고 막힘 풀기",
+    approved: (id: string) => `${id}을(를) 승인해 막힘을 풀었습니다`,
   },
   copyId: {
     copied: (id: string) => `ID를 복사했습니다: ${id}`,
@@ -428,7 +449,8 @@ export const koMessages = {
   },
   humanDecisions: {
     title: "판단 기다림",
-    description: "agent가 사람에게 넘긴 질문입니다. 응답하거나 넘기면 이슈가 닫힙니다.",
+    description:
+      "agent가 사람에게 넘긴 질문과 확인 요청(human gate)입니다. 질문은 응답하거나 넘기면 닫히고, 확인 요청은 승인하면 막고 있던 작업이 풀립니다.",
     empty: "판단을 기다리는 이슈가 없습니다.",
     openDetail: "상세 열기",
     noDescription: "설명이 없습니다.",

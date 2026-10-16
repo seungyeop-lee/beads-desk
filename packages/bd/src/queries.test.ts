@@ -10,6 +10,7 @@ import {
   duplicateCandidates,
   epicDescendants,
   epicStatuses,
+  humanGates,
   issueEvents,
   issueIdsByDescription,
   lintFindings,
@@ -271,6 +272,100 @@ describe("decisionRecords", () => {
     const result = await decisionRecords(workDir);
 
     expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
+  });
+});
+
+describe("humanGates", () => {
+  const listGates = "list --json --tree=false --type=gate --limit 0";
+  const listOpen = "list --json --tree=false --limit 0";
+
+  test("열린 human gate만 읽고, 닫히지 않은 이슈의 blocks 의존 관계에서 gate가 막고 있는 이슈를 찾는다", async () => {
+    await useFakeBd({
+      [listGates]: {
+        stdout: JSON.stringify([
+          {
+            id: "g-1",
+            title: "Review: t-1",
+            issue_type: "gate",
+            await_type: "human",
+            status: "open",
+            description: "Ad-hoc gate blocking t-1\n\nReason: 로그인 화면 수정\n\n두 번째 줄",
+          },
+          {
+            id: "g-2",
+            issue_type: "gate",
+            await_type: "human",
+            status: "open",
+            description: "Ad-hoc gate blocking t-9",
+          },
+          { id: "g-3", issue_type: "gate", await_type: "timer", status: "open" },
+          { id: "g-4", issue_type: "gate", await_type: "human", status: "closed" },
+        ]),
+      },
+      [listOpen]: {
+        stdout: JSON.stringify([
+          {
+            id: "t-1",
+            title: "로그인 화면",
+            status: "in_progress",
+            dependencies: [
+              { issue_id: "t-1", depends_on_id: "g-1", type: "blocks" },
+              { issue_id: "t-1", depends_on_id: "g-2", type: "related" },
+            ],
+          },
+          {
+            id: "t-2",
+            title: "회원 가입 화면",
+            status: "open",
+            dependencies: [{ issue_id: "t-2", depends_on_id: "g-1", type: "blocks" }],
+          },
+        ]),
+      },
+    });
+
+    const result = await humanGates(workDir);
+
+    expect(
+      result.ok &&
+        result.value.map(({ gate, reason, blocks }) => [
+          gate.id,
+          reason,
+          blocks.map(({ id }) => id),
+        ]),
+    ).toEqual([
+      ["g-1", "로그인 화면 수정\n\n두 번째 줄", ["t-1", "t-2"]],
+      ["g-2", "", []],
+    ]);
+  });
+
+  test("bd gate create가 만든 설명 형식이 아니면 설명 전체를 사유로 읽는다", async () => {
+    await useFakeBd({
+      [listGates]: {
+        stdout: JSON.stringify([
+          {
+            id: "g-1",
+            issue_type: "gate",
+            await_type: "human",
+            status: "open",
+            description: "배포 전에 확인해 주세요",
+          },
+        ]),
+      },
+      [listOpen]: { stdout: "[]" },
+    });
+
+    const result = await humanGates(workDir);
+
+    expect(result.ok && result.value[0]?.reason).toBe("배포 전에 확인해 주세요");
+  });
+
+  test("조회가 하나라도 실패하면 오류를 돌려준다", async () => {
+    await useFakeBd({ [listGates]: { stdout: "[]" }, [listOpen]: { stderr: "boom", code: 1 } });
+
+    expect(await humanGates(workDir)).toEqual({
+      ok: false,
+      error: { message: "boom\n", exitCode: 1 },
+    });
   });
 });
 

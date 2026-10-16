@@ -6,6 +6,7 @@ import { useMemo, type ReactNode } from "react";
 import { useEpics } from "@/client/modules/epics/application/useEpics";
 import { focusStats } from "@/client/modules/focus/domain/focusStats";
 import { focusView, NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
+import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
@@ -38,9 +39,13 @@ const CARD_STATES = ["in_progress", "ready", "blocked"] as const satisfies WorkS
 export function FocusScreen() {
   const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
   const { data: epics } = useEpics();
+  const { data: humanGates } = useHumanGates();
   const issueHref = useIssueHref();
   const messages = useMessages();
-  const view = useMemo(() => (issues ? focusView(issues, epics ?? []) : null), [issues, epics]);
+  const view = useMemo(
+    () => (issues ? focusView(issues, epics ?? [], humanGates ?? []) : null),
+    [issues, epics, humanGates],
+  );
   const now = useMinuteClock();
   const stats = useMemo(
     () => (issues ? focusStats(issues, epics ?? [], now) : null),

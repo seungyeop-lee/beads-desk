@@ -1,4 +1,11 @@
-import { awaitsHumanDecision, isRecord, parseIssues, type Issue, type IssueStatus } from "./issue";
+import {
+  awaitsHumanDecision,
+  isOpenHumanGate,
+  isRecord,
+  parseIssues,
+  type Issue,
+  type IssueStatus,
+} from "./issue";
 import { showIssue } from "./queries";
 import { inputError, runBdChecked, runBdJson, type BdError, type BdOutcome } from "./runBd";
 
@@ -244,6 +251,30 @@ export function respondToHuman(
 export function dismissHuman(cwd: string, issueId: string, reason: string) {
   const trimmed = reason.trim();
   return runHumanCommand(cwd, "dismiss", issueId, trimmed ? [trimmed] : []);
+}
+
+/**
+ * human gate를 닫아, 막고 있던 이슈를 닫을 수 있게 합니다. 막고 있던 이슈 자체는 닫지 않습니다.
+ * close reason은 `Approved` 또는 `Approved: <메모>`입니다. timer처럼 사람이 닫지 않는 gate를 닫지 않도록 먼저 확인합니다.
+ */
+export async function approveHumanGate(
+  cwd: string,
+  gateId: string,
+  memo: string,
+): Promise<BdOutcome<null>> {
+  const id = gateId.trim();
+  if (id.length === 0) {
+    return inputError("gate id가 비어 있습니다.");
+  }
+  const shown = await runBdJson(cwd, ["show", "--json", "--", id]);
+  if (!shown.ok) {
+    return shown;
+  }
+  if (!isOpenHumanGate(Array.isArray(shown.value) ? shown.value[0] : shown.value)) {
+    return inputError("사람 확인을 기다리는 gate가 아닙니다.");
+  }
+  const trimmed = memo.trim();
+  return write(cwd, ["gate", "resolve", `--reason=Approved${trimmed ? `: ${trimmed}` : ""}`], [id]);
 }
 
 /** 이 이슈에 의존하던 이슈는 남기고 의존 관계만 지웁니다. */

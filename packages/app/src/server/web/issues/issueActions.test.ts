@@ -11,6 +11,7 @@ import {
   addCommentAction,
   addDependencyAction,
   addLabelAction,
+  approveHumanGateAction,
   claimIssueAction,
   closeAsReplacedAction,
   closeIssueAction,
@@ -27,6 +28,7 @@ vi.mock("@beads-desk/bd", () => ({
   addComment: vi.fn<typeof bd.addComment>(),
   addDependency: vi.fn<typeof bd.addDependency>(),
   addLabel: vi.fn<typeof bd.addLabel>(),
+  approveHumanGate: vi.fn<typeof bd.approveHumanGate>(),
   claimIssue: vi.fn<typeof bd.claimIssue>(),
   closeAsReplaced: vi.fn<typeof bd.closeAsReplaced>(),
   closeIssue: vi.fn<typeof bd.closeIssue>(),
@@ -283,6 +285,25 @@ describe("createIssueAction", () => {
     });
 
     expect(bd.createIssue).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
+  });
+});
+
+describe("approveHumanGateAction", () => {
+  test("메모와 함께 gate를 닫고 다른 화면에 알린다", async () => {
+    vi.mocked(bd.approveHumanGate).mockResolvedValue(written);
+
+    const result = await approveHumanGateAction("g-1", "배포해도 됩니다");
+
+    expect(bd.approveHumanGate).toHaveBeenCalledWith("/workspace", "g-1", "배포해도 됩니다");
+    expect(checkWorkspaceChangesNow).toHaveBeenCalledWith("/workspace");
+    expect(result).toEqual({ ok: true, data: null });
+  });
+
+  test("문자열이 아닌 메모는 거부한다", async () => {
+    const result = await approveHumanGateAction("g-1", null as unknown as string);
+
+    expect(bd.approveHumanGate).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
   });
 });

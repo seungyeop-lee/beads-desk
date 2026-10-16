@@ -36,6 +36,19 @@ export function awaitsHumanDecision(issue: Pick<Issue, "status" | "labels">): bo
   return issue.status !== "closed" && issue.labels.includes(HUMAN_LABEL);
 }
 
+/**
+ * 사람이 닫아야 풀리는 열린 gate인지 bd JSON 레코드로 확인합니다. human 라벨과 관계없습니다.
+ * gate는 bd gate create가 만드는 별도 이슈로, 닫힐 때까지 막고 있는 이슈를 bd ready에서 빼고 bd close도 거부하게 합니다.
+ */
+export function isOpenHumanGate(record: unknown): boolean {
+  return (
+    isRecord(record) &&
+    record.issue_type === "gate" &&
+    record.await_type === "human" &&
+    record.status !== "closed"
+  );
+}
+
 /** 상세 화면에서 다른 이슈와의 의존 관계 한 건입니다. */
 export type IssueLink = {
   id: string;

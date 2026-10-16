@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
+  isOpenHumanGate,
   isRecord,
   parseIssue,
   parseIssueDependencies,
@@ -25,6 +26,14 @@ export type DecisionRecord = {
   decision: Issue;
   /** `bd supersede`로 이 decision을 대체한 이슈입니다. 대체되지 않았으면 null입니다. */
   supersededBy: string | null;
+};
+
+export type HumanGate = {
+  gate: Issue;
+  /** bd gate create --reason으로 남긴 사유입니다. 사유가 없으면 빈 문자열입니다. */
+  reason: string;
+  /** 이 gate가 막고 있는 닫히지 않은 이슈입니다. */
+  blocks: Issue[];
 };
 
 export type BoardColumn = "ready" | "in_progress" | "blocked" | "closed";
@@ -251,6 +260,45 @@ export async function decisionRecords(cwd: string): Promise<BdOutcome<DecisionRe
       return decision ? [{ decision, supersededBy: supersedingIssue(record) }] : [];
     }),
   };
+}
+
+/**
+ * 열린 human gate와 각 gate가 막고 있는 닫히지 않은 이슈를 읽습니다.
+ * bd list는 --all을 주어도 gate를 돌려주지 않아 --type=gate로 따로 읽습니다.
+ * gate 출력에는 막고 있는 이슈 id가 없으므로, 닫히지 않은 이슈의 blocks 의존 관계에서 찾습니다.
+ */
+export async function humanGates(cwd: string): Promise<BdOutcome<HumanGate[]>> {
+  const [gates, open] = await Promise.all([
+    runBdJson(cwd, ["list", "--json", "--tree=false", "--type=gate", "--limit", LIST_LIMIT]),
+    runBdJson(cwd, ["list", "--json", "--tree=false", "--limit", LIST_LIMIT]),
+  ]);
+  if (!gates.ok) return gates;
+  if (!open.ok) return open;
+
+  const openById = new Map(parseIssues(open.value).map((issue) => [issue.id, issue]));
+  const blockers = parseIssueDependencies(open.value).filter(({ type }) => type === "blocks");
+  return {
+    ok: true,
+    value: recordsOf(gates.value)
+      .filter(isOpenHumanGate)
+      .flatMap((record) => {
+        const gate = parseIssue(record);
+        if (!gate) return [];
+        const blocks = blockers
+          .filter(({ dependsOnId }) => dependsOnId === gate.id)
+          .flatMap(({ issueId }) => openById.get(issueId) ?? []);
+        return [{ gate, reason: gateReason(textOf(record.description)), blocks }];
+      }),
+  };
+}
+
+// bd 1.3.1의 bd gate create는 설명을 `Ad-hoc gate blocking <id>`와 `Reason: <사유>` 두 문단으로 만듭니다.
+// 이 형식이 아니면 사유를 따로 적지 않은 것으로 보고 설명 전체를 사유로 보입니다.
+const AD_HOC_GATE = /^Ad-hoc gate blocking \S+(?:\n\nReason: ([\s\S]*))?$/;
+
+function gateReason(description: string): string {
+  const adHoc = AD_HOC_GATE.exec(description);
+  return adHoc ? (adHoc[1] ?? "") : description;
 }
 
 /**
