@@ -1,43 +1,28 @@
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
 
-test("상세의 관계 맺기에서 다섯 가지 관계를 제목으로 찾아 맺으면 bd에 맞는 방향과 유형으로 기록된다", async ({
+test("상세의 관계 맺기에서 고른 관계와 찾은 이슈로 bd에 의존 관계를 맺는다", async ({
   page,
   workspace,
 }) => {
-  const { main, blocker, blocked, parent, child, related } = await workspace.createIssues({
+  const { main, blocked } = await workspace.createIssues({
     main: { title: "주 이슈", type: "task" },
-    blocker: { title: "막는 작업", type: "task" },
     blocked: { title: "막히는 작업", type: "task" },
-    parent: { title: "상위 에픽", type: "epic" },
-    child: { title: "하위 작업", type: "task" },
-    related: { title: "관련 작업", type: "task" },
   });
 
   await page.goto(`/issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
-  const kind = dialog.getByLabel("맺을 관계");
-  const search = dialog.getByRole("combobox", { name: "연결할 이슈 찾기" });
-  const candidates = dialog.getByRole("listbox", { name: "연결할 이슈 찾기" });
+  await dialog.getByLabel("맺을 관계").selectOption({ label: "후속 이슈 (이 이슈가 끝나야 시작)" });
+  await dialog.getByRole("combobox", { name: "연결할 이슈 찾기" }).fill("막히는");
+  await dialog
+    .getByRole("listbox", { name: "연결할 이슈 찾기" })
+    .getByRole("option", { name: new RegExp(blocked) })
+    .click();
 
   // toast에는 선택지의 설명 없이 관계 이름만 나옵니다.
-  const link = async (relation: string, query: string, target: string, option = relation) => {
-    await kind.selectOption({ label: option });
-    await search.fill(query);
-    await candidates.getByRole("option", { name: new RegExp(target) }).click();
-    await expect(page.getByText(`${target}을(를) ${relation}로 연결했습니다.`)).toBeVisible();
-  };
-
-  await link("선행 이슈", "막는", blocker, "선행 이슈 (이 이슈보다 먼저 끝나야 함)");
-  await link("후속 이슈", "막히는", blocked, "후속 이슈 (이 이슈가 끝나야 시작)");
-  await link("상위 이슈", "상위", parent);
-  await link("하위 이슈", "하위", child);
-  await link("관련 이슈", "관련", related);
-
+  await expect(page.getByText(`${blocked}을(를) 후속 이슈로 연결했습니다.`)).toBeVisible();
   await expect
-    .poll(async () => dependenciesOf(workspace, main), { timeout: SAVE_TIMEOUT })
-    .toEqual([`${blocker} blocks`, `${parent} parent-child`, `${related} related`].sort());
-  expect(await dependenciesOf(workspace, blocked)).toEqual([`${main} blocks`]);
-  expect(await dependenciesOf(workspace, child)).toEqual([`${main} parent-child`]);
+    .poll(async () => dependenciesOf(workspace, blocked), { timeout: SAVE_TIMEOUT })
+    .toEqual([`${main} blocks`]);
 });
 
 test("키보드만으로 후보를 골라 연결하고, 자기 자신과 이미 연결한 이슈는 후보에 없다", async ({

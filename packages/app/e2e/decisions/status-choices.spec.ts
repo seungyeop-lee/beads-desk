@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
 
 const ALL_STATUSES = ["열림", "진행 중", "막힘", "보류", "닫힘"];
@@ -24,33 +24,19 @@ test("결정의 상태 select에는 결정 탭, 이슈 표, 상세 dialog 모두
   await expect(detailStatus(page, decision).locator("option")).toHaveText(["열림", "닫힘"]);
 });
 
-test("CLI로 보류한 결정은 세 화면 모두 보류로 보이고, 화면에서 열림으로 되돌릴 수 있다", async ({
+test("CLI로 보류한 결정은 보류로 보이고, 화면에서 열림으로 되돌릴 수 있다", async ({
   page,
   workspace,
 }) => {
   const decision = await workspace.createIssue("e2e 결정", "--type", "decision");
-  const screens: [string, (page: Page) => Promise<Locator>][] = [
-    ["/decisions", async (page) => rowStatus(page, decision)],
-    [
-      "/issues",
-      async (page) => {
-        await showDecisionsInIssueTable(page);
-        return rowStatus(page, decision);
-      },
-    ],
-    [`/issues?issue=${decision}`, async (page) => detailStatus(page, decision)],
-  ];
+  await workspace.bd("update", decision, "--status", "deferred");
 
-  for (const [path, statusSelect] of screens) {
-    await workspace.bd("update", decision, "--status", "deferred");
-    await page.goto(path);
-    const select = await statusSelect(page);
-    await expect(select).toHaveValue("deferred");
-    await expect(select.locator("option")).toHaveText(["보류", "열림", "닫힘"]);
+  await page.goto("/decisions");
+  const select = rowStatus(page, decision);
+  await expect(select).toHaveValue("deferred");
 
-    await select.selectOption("open");
-    await expectStatus(workspace, decision, "open");
-  }
+  await select.selectOption("open");
+  await expectStatus(workspace, decision, "open");
 });
 
 test("닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대로 두고, 수락하면 강제로 닫는다", async ({

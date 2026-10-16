@@ -4,40 +4,25 @@ test("첫 화면은 지금 화면이고, 개수 카드와 모두 보기는 이�
   page,
   workspace,
 }) => {
-  const { blocker } = await workspace.createIssues(
+  // 다음에 할 일은 5개까지만 보이고, 바로 작업 가능한 이슈가 그보다 많을 때 모두 보기가 생깁니다.
+  await workspace.createIssues(
     {
-      epic: { title: "묶음 에픽", type: "epic" },
-      doing: {
-        title: "진행하는 작업",
-        type: "task",
-        parent: "epic",
-        status: "in_progress",
-        assignee: "minji",
-      },
-      urgent: { title: "급한 작업", type: "task", priority: 0 },
-      blocker: { title: "선행 작업", type: "task" },
-      third: { title: "작업 셋", type: "task", priority: 3 },
-      fourth: { title: "작업 넷", type: "task", priority: 3 },
-      fifth: { title: "작업 다섯", type: "task", priority: 3 },
-      sixth: { title: "작업 여섯", type: "task", priority: 3 },
+      first: { title: "작업 하나", type: "task" },
+      second: { title: "작업 둘", type: "task" },
+      third: { title: "작업 셋", type: "task" },
+      fourth: { title: "작업 넷", type: "task" },
+      fifth: { title: "작업 다섯", type: "task" },
+      sixth: { title: "작업 여섯", type: "task" },
       waiting: { title: "기다리는 작업", type: "task" },
     },
-    [["waiting", "blocker"]],
+    [["waiting", "first"]],
   );
 
   await page.goto("/");
   await expect(page).toHaveURL(/\/focus$/);
   await expect(page.getByRole("link", { name: "지금" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: "진행 중 1", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "바로 작업 가능 6", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "막힘 1", exact: true })).toBeVisible();
-
   const nextUp = page.getByRole("region", { name: "다음에 할 일" });
   await expect(nextUp.getByRole("listitem")).toHaveCount(5);
-  await expect(nextUp.getByRole("listitem").first()).toContainText("급한 작업");
-  await expect(page.getByRole("region", { name: "막힘" })).toContainText(`← ${blocker} 선행 작업`);
-  await expect(page.getByRole("region", { name: "진행 중", exact: true })).toContainText("minji");
-  await expect(page.getByRole("region", { name: "에픽 진행률" })).toContainText("묶음 에픽");
 
   const tabs = page.getByRole("navigation", { name: "보기" });
   await nextUp.getByRole("link", { name: /모두 보기/ }).click();

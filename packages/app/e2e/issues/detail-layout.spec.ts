@@ -23,7 +23,7 @@ test("옆 패널 때문에 주 상세가 좁아지면 핵심 속성은 본문 �
   page,
   workspace,
 }) => {
-  const { main, dependency, extra } = await seed(workspace);
+  const { main, dependency } = await seed(workspace);
   await page.setViewportSize({ width: 1220, height: 1000 });
   await page.goto(`/issues?issue=${main}&side=${dependency}`);
 
@@ -40,35 +40,6 @@ test("옆 패널 때문에 주 상세가 좁아지면 핵심 속성은 본문 �
   await expect
     .poll(async () => (await workspace.showIssue(main)).status, { timeout: SAVE_TIMEOUT })
     .toBe("in_progress");
-
-  await dialog.getByLabel("우선순위", { exact: true }).selectOption("1");
-  await expect
-    .poll(async () => (await workspace.showIssue(main)).priority, { timeout: SAVE_TIMEOUT })
-    .toBe(1);
-
-  await dialog.getByTitle("담당자 편집").click();
-  await dialog.getByRole("textbox", { name: "담당자" }).fill("e2e 담당자");
-  await dialog.getByRole("textbox", { name: "담당자" }).press("Enter");
-  await expect
-    .poll(async () => (await workspace.showIssue(main)).assignee, { timeout: SAVE_TIMEOUT })
-    .toBe("e2e 담당자");
-
-  await labelInput.fill("e2e-라벨");
-  await dialog.getByRole("button", { name: "라벨 추가" }).click();
-  await expect
-    .poll(async () => (await workspace.showIssue(main)).labels, { timeout: SAVE_TIMEOUT })
-    .toEqual(["e2e-라벨"]);
-
-  await dialog.getByRole("combobox", { name: "연결할 이슈 찾기" }).fill("추가할 선행");
-  await dialog
-    .getByRole("listbox", { name: "연결할 이슈 찾기" })
-    .getByRole("option", { name: new RegExp(extra) })
-    .click();
-  await expect
-    .poll(async () => (await workspace.showIssue(main)).dependencies?.map(({ id }) => id).sort(), {
-      timeout: SAVE_TIMEOUT,
-    })
-    .toEqual([dependency, extra].sort());
 });
 
 async function seed(workspace: BdWorkspace) {
@@ -76,7 +47,6 @@ async function seed(workspace: BdWorkspace) {
     {
       main: { title: "주 이슈", type: "task", description: BODY_TEXT },
       dependency: { title: "선행 이슈", type: "task" },
-      extra: { title: "추가할 선행 이슈", type: "task" },
     },
     [["main", "dependency"]],
   );

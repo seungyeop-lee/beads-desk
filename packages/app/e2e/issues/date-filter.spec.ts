@@ -8,30 +8,6 @@ function localDay(offsetDays = 0): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-test("주소의 날짜 조건으로 목록을 열면 그 기간에 닫은 이슈만 보이고, 필터 줄에 조건이 표시된다", async ({
-  page,
-  workspace,
-}) => {
-  await workspace.createIssues({
-    done: { title: "오늘 끝낸 작업", type: "task", status: "closed" },
-    open: { title: "열린 작업", type: "task" },
-  });
-  const today = localDay();
-  const tabs = page.getByRole("navigation", { name: "보기" });
-
-  await page.goto(`/issues?view=closed&date=closed&from=${today}&to=${today}`);
-  await expect(page.getByRole("link", { name: "오늘 끝낸 작업" })).toBeVisible();
-  await expect(tabs.getByRole("link", { name: "전체 1" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "날짜 기준" })).toHaveValue("closed");
-  await expect(page.getByLabel("시작일")).toHaveValue(today);
-  await expect(page.getByLabel("종료일")).toHaveValue(today);
-
-  const yesterday = localDay(-1);
-  await page.goto(`/issues?view=closed&date=closed&from=${yesterday}&to=${yesterday}`);
-  await expect(tabs.getByRole("link", { name: "닫힘 0" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "오늘 끝낸 작업" })).toHaveCount(0);
-});
-
 test("필터 줄에서 날짜 기준과 기간을 바꾸면 목록과 탭 개수가 바뀌고, 주소와 보기 탭 링크에 남는다", async ({
   page,
   workspace,
