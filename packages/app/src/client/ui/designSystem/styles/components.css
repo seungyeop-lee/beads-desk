@@ -167,6 +167,8 @@
   /* 상단 화면 이동 탭입니다. 지금 화면의 탭은 그 화면의 tone으로 칠합니다. */
   .nav-tab {
     display: inline-flex;
+    flex-shrink: 0;
+    white-space: nowrap;
     align-items: center;
     gap: 0.5rem;
     height: 2rem;

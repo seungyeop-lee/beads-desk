@@ -76,7 +76,7 @@ export function FocusScreen() {
 
       {view && (
         <>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {CARD_STATES.map((state) => (
               <CountCard
                 key={state}
@@ -96,7 +96,7 @@ export function FocusScreen() {
 
           {stats && <FocusStatsSection stats={stats} />}
 
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <div className="flex flex-col gap-6">
               <FocusSection
                 tone={workStateTone("in_progress")}
@@ -267,11 +267,11 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
         scroll={false}
         className="flex flex-col gap-1 px-4 py-3 text-sm hover:bg-base-200/60"
       >
-        <span className="flex items-center gap-3">
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:flex-nowrap">
           <span className="w-16 shrink-0 text-xs">
             <IssueTypeTag issueType={issue.issueType} />
           </span>
-          <span className="min-w-0 grow truncate font-medium">
+          <span className="min-w-0 grow basis-[calc(100%-5rem)] truncate font-medium sm:basis-0">
             {issue.title || messages.common.untitled}
           </span>
           <HumanDecisionChip issue={issue} />
@@ -280,7 +280,7 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
               칸 폭을 고정하면 우선순위와 멀어지고 제목이 쓸 폭이 줄어들므로, 글자와 아이콘만큼만 차지하게 둡니다. */}
           {showAssignee && (
             <span
-              className="flex shrink-0 items-center gap-0.5 text-xs text-base-content/60"
+              className="flex max-w-36 shrink-0 items-center gap-0.5 text-xs text-base-content/60"
               title={`${messages.issue.assignee}: ${issue.assignee ?? messages.common.none}`}
             >
               <UserIcon className="size-3 shrink-0" />
@@ -294,7 +294,7 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
             </span>
           )}
           <span
-            className="min-w-8 shrink-0 text-right font-mono text-xs whitespace-nowrap text-base-content/45"
+            className="ml-auto min-w-8 shrink-0 text-right font-mono text-xs whitespace-nowrap text-base-content/45"
             title={issue.id}
           >
             {shortIssueId(issue.id)}

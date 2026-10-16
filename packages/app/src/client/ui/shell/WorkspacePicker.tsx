@@ -13,17 +13,20 @@ export function WorkspacePicker() {
   if (!data) return null;
   if (data.workspaces.length <= 1) {
     return (
-      <span className="flex items-center gap-1.5 text-sm text-base-content/60" title={data.current}>
-        <FolderIcon width={15} height={15} />
-        {directoryName(data.current)}
+      <span
+        className="flex min-w-0 max-w-48 items-center gap-1.5 text-sm text-base-content/60"
+        title={data.current}
+      >
+        <FolderIcon width={15} height={15} className="shrink-0" />
+        <span className="truncate">{directoryName(data.current)}</span>
       </span>
     );
   }
   return (
-    <label className="relative flex items-center text-base-content/70">
+    <label className="relative flex min-w-0 max-w-48 items-center text-base-content/70">
       <FolderIcon width={15} height={15} className="pointer-events-none absolute left-2.5" />
       <select
-        className="ghost-select pl-8"
+        className="ghost-select min-w-0 max-w-full pl-8"
         aria-label="workspace"
         title={current}
         value={current}

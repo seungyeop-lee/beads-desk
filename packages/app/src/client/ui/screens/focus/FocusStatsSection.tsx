@@ -60,7 +60,7 @@ export function FocusStatsSection({ stats }: { stats: FocusStats }) {
           />
         </span>
       </h2>
-      <div className="grid min-h-44 grid-cols-4 gap-3">
+      <div className="grid min-h-44 grid-cols-2 gap-3 lg:grid-cols-4">
         <ThroughputChart daily={stats.daily} />
         <div className="surface flex flex-col justify-center gap-4 px-4 py-3">
           <Duration label={text.cycleTime} stat={stats.cycleTime} />
@@ -133,7 +133,7 @@ function ThroughputChart({ daily }: { daily: DailyFlow[] }) {
     };
 
   return (
-    <div className="surface col-span-2 flex flex-col gap-1 px-4 pt-3 pb-1">
+    <div className="surface col-span-2 flex min-h-44 flex-col gap-1 px-4 pt-3 pb-1">
       <h3 className="flex items-center gap-3 text-sm font-semibold">
         {text.throughput}
         <span className="ml-auto flex gap-3 text-xs font-normal text-base-content/60">

@@ -27,12 +27,15 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-base-300 bg-base-100/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[96rem] items-center gap-6 px-8">
-        <Link href="/" className="flex items-center gap-2.5">
+      <div className="mx-auto flex max-w-[96rem] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-8 xl:h-14 xl:flex-nowrap xl:gap-6 xl:py-0">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
           <BeadsMark />
           <span className="text-[15px] font-bold tracking-tight">beads-desk</span>
         </Link>
-        <nav className="flex items-center gap-1" aria-label={messages.shell.screens}>
+        <nav
+          className="order-last flex w-full min-w-0 items-center gap-1 overflow-x-auto xl:order-none xl:w-auto"
+          aria-label={messages.shell.screens}
+        >
           {SCREEN_TABS.map((tab) => (
             <Link
               key={tab.href}
@@ -53,11 +56,11 @@ export function AppHeader() {
             </Link>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3 xl:flex-none">
           <WorkspacePicker />
           <button
             type="button"
-            className="btn btn-ghost btn-sm btn-square text-base-content/70"
+            className="btn btn-ghost btn-sm btn-square shrink-0 text-base-content/70"
             aria-label={messages.settings.title}
             onClick={() => setSettingsOpen(true)}
           >
@@ -65,7 +68,7 @@ export function AppHeader() {
           </button>
           <button
             type="button"
-            className="btn btn-primary btn-sm gap-1.5 rounded-full pr-4 pl-3"
+            className="btn btn-primary btn-sm shrink-0 gap-1.5 rounded-full pr-4 pl-3"
             onClick={() => setCreating(true)}
           >
             <PlusIcon width={15} height={15} />
