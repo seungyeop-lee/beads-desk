@@ -23,7 +23,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const [locale, theme] = await Promise.all([requestLocale(), requestTheme()]);
   return (
     <html lang={locale} data-theme={themeAttribute(theme)}>
-      <body className="flex h-dvh min-h-screen flex-col bg-base-200 [&>main]:w-full font-sans text-base-content antialiased">
+      <body className="flex h-dvh min-h-screen flex-col [&>main]:w-full font-sans text-base-content antialiased">
         <LocaleProvider locale={locale}>
           <ThemeProvider theme={theme}>
             <KeyboardFocusMode />
