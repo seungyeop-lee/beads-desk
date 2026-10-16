@@ -1,6 +1,9 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import {
+  BaseEdge,
   Controls,
+  type EdgeProps,
+  getBezierPath,
   Handle,
   MarkerType,
   MiniMap,
@@ -17,11 +20,12 @@ import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { COLUMN_STEP, type GraphLayout, NODE_WIDTH } from "./graphLayout";
+import { COLUMN_STEP, type GraphLayout, NODE_WIDTH, type PassingSegment } from "./graphLayout";
 import { IssueCard, type PlanMarks } from "./IssueCard";
 
 type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
 type IssueNode = Node<IssueNodeData, "issue">;
+type BlocksEdge = Edge<{ passes: PassingSegment[] }, "blocks">;
 
 /** 에픽 계획 보기가 단계 이름과 노드 표시를 그리는 데 쓰는 값입니다. 이슈 중심 보기는 넘기지 않습니다. */
 export type GraphPlan = {
@@ -62,10 +66,12 @@ export function IssueGraph({ layout, issueHref, plan, centerId }: Props) {
           }),
         },
       })),
-      edges: layout.edges.map(({ from, to }): Edge => ({
+      edges: layout.edges.map(({ from, to, passes }): BlocksEdge => ({
         id: `${from}->${to}`,
+        type: "blocks",
         source: from,
         target: to,
+        data: { passes },
         markerEnd: { type: MarkerType.ArrowClosed },
         ariaLabel: messages.graph.edgeLabel(from, to),
       })),
@@ -82,6 +88,7 @@ export function IssueGraph({ layout, issueHref, plan, centerId }: Props) {
         nodes={nodes}
         edges={edges}
         nodeTypes={NODE_TYPES}
+        edgeTypes={EDGE_TYPES}
         // 묶음이 많을 때 전체를 한 화면에 맞추면 글자를 읽을 수 없을 만큼 작아지므로, 왼쪽 위부터 원래 크기로 보입니다.
         defaultViewport={{
           x: VIEWPORT_MARGIN,
@@ -151,6 +158,39 @@ function IssueNodeView({ data: { issue, href, plan, center } }: NodeProps<IssueN
 }
 
 const NODE_TYPES = { issue: IssueNodeView };
+
+/**
+ * 이웃한 layer 사이의 빈 칸은 React Flow 기본 간선과 같은 곡선으로 잇고,
+ * 사이 layer에서는 배치가 비워 둔 자리를 곧은 선으로 가로질러 노드 밑으로 지나가지 않게 합니다.
+ */
+function BlocksEdgeView({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  data,
+  markerEnd,
+}: EdgeProps<BlocksEdge>) {
+  const curve = (x1: number, y1: number, x2: number, y2: number) =>
+    getBezierPath({
+      sourceX: x1,
+      sourceY: y1,
+      sourcePosition: Position.Right,
+      targetX: x2,
+      targetY: y2,
+      targetPosition: Position.Left,
+    })[0];
+  let path = "";
+  let [x, y] = [sourceX, sourceY];
+  for (const pass of data?.passes ?? []) {
+    path += `${curve(x, y, pass.left, pass.y)} L${pass.right},${pass.y} `;
+    [x, y] = [pass.right, pass.y];
+  }
+  path += curve(x, y, targetX, targetY);
+  return <BaseEdge path={path} markerEnd={markerEnd} />;
+}
+
+const EDGE_TYPES = { blocks: BlocksEdgeView };
 
 /** 미니맵 노드도 그래프 노드의 상태 점과 같은 tone class로 칠해, 상태별 이슈가 어디에 몰려 있는지 보이게 합니다. */
 function miniMapNodeTone(node: IssueNode): string {

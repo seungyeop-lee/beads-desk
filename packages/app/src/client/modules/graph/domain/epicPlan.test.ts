@@ -2,6 +2,7 @@ import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { GraphData } from "@/shared/contract/graph";
 import { epicPlan } from "./epicPlan";
+import { layerIssues } from "./layeredGraph";
 
 function issue(id: string, fields: Partial<Issue> = {}): Issue {
   return { id, status: "open", issueType: "task", priority: 2, createdAt: 0, ...fields } as Issue;
@@ -23,7 +24,7 @@ function graph(children: Issue[], others: Issue[], dependencies: IssueDependency
 
 const layerIds = (plan: ReturnType<typeof epicPlan>) =>
   plan.order.components.map((component) =>
-    component.layers.map((layer) => layer.map((it) => it.id)),
+    component.layers.map((layer) => layerIssues(layer).map((it) => it.id)),
   );
 
 test("닫힌 이슈도 단계에 넣고, 닫히지 않은 이슈가 남은 가장 왼쪽 단계를 진행 중으로 본다", () => {

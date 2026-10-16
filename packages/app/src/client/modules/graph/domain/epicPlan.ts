@@ -3,6 +3,7 @@ import { byPriorityThenCreated } from "@/client/modules/issues/domain/issueListV
 import type { GraphData } from "@/shared/contract/graph";
 import { type ExecutionOrder, executionOrder } from "./executionOrder";
 import { scopedIssues } from "./graphScope";
+import { layerIssues } from "./layeredGraph";
 
 /**
  * 단계는 실행 순서의 열입니다. 묶음이 여러 개여도 같은 열의 이슈는 같은 단계입니다.
@@ -58,7 +59,7 @@ function stageProgress({ components }: ExecutionOrder): StageProgress {
   const stages = Array.from({ length: total }, (_, stage) => stage);
   const current = stages.find((stage) =>
     components.some((component) =>
-      component.layers[stage]?.some((issue) => issue.status !== "closed"),
+      layerIssues(component.layers[stage] ?? []).some((issue) => issue.status !== "closed"),
     ),
   );
   return { total, current: current ?? null };
