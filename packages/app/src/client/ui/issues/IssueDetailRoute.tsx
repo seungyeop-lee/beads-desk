@@ -5,6 +5,7 @@ import {
   type IssueDetailLocation,
 } from "@/client/modules/issues/domain/issueDetailTrail";
 import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspaces";
+import { readGraphScope } from "@/client/ui/screens/graph/graphAddress";
 import { IssueDetailDialog } from "./detail/IssueDetailDialog";
 
 /** 상세 dialog로 연 이슈 id를 담는 query 이름입니다. 주소를 공유하거나 새로고침해도 같은 이슈가 열립니다. */
@@ -35,7 +36,7 @@ export function useIssueHref(): (issueId: string) => string {
 }
 
 /** 주소에 이슈 id가 있으면 상세 dialog를 엽니다. useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다. */
-export function IssueDetailRoute() {
+export function IssueDetailRoute({ embedded = false }: { embedded?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const detailHref = useIssueDetailHref();
@@ -65,9 +66,10 @@ export function IssueDetailRoute() {
     if (switched && issueId) close();
   }, [currentWorkspace, issueId, close]);
 
-  if (!location) return null;
+  if (!location || (!embedded && readGraphScope(new URLSearchParams(searchParams)))) return null;
   return (
     <IssueDetailDialog
+      embedded={embedded}
       location={location}
       previous={trail.at(-2) ?? null}
       detailHref={detailHref}

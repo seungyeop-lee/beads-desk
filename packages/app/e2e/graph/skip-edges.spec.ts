@@ -29,8 +29,16 @@ test("에픽 순서 보기와 선행·후속 그래프에서 한 열 이상을 �
     {
       epic: { title: "건너뛰기 에픽", type: "epic" },
       a: { title: "건너뛰기 처음", parent: "epic" },
-      b: { title: "건너뛰기 가운데", parent: "epic" },
-      c: { title: "건너뛰기 마지막", parent: "epic" },
+      b: {
+        title:
+          "건너뛰기 가운데 A long English title changes this node height without hiding the dependency edges that skip it and connect to later stages",
+        parent: "epic",
+      },
+      c: {
+        title:
+          "건너뛰기 마지막 긴 한국어 제목이 여러 줄로 늘어나도 다른 노드와 간선이 겹치지 않고 모든 글자를 끝까지 표시합니다",
+        parent: "epic",
+      },
       d: { title: "건너뛰기 다음", parent: "epic" },
     },
     [

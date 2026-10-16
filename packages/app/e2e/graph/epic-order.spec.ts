@@ -41,8 +41,10 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
     .filter({ hasText: "순서 에픽" })
     .getByRole("link", { name: "순서 보기" })
     .click();
-  await expect(page).toHaveURL(new RegExp(`/graph\\?epic=${epic}(?:&returnTo=[^&]+)?$`));
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("순서 에픽 · 순서");
+  await expect(page).toHaveURL(new RegExp(`/epics\\?epic=${epic}(?:&returnTo=[^&]+)?$`));
+  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
+    "순서 에픽 · 순서",
+  );
 
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
@@ -69,10 +71,10 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   await page.screenshot({ path: testInfo.outputPath("unordered-execution-issues.png") });
 
   await node("순서 셋째").click();
-  await expect(page.getByRole("dialog", { name: `${third} 이슈` })).toBeVisible();
+  await expect(page.getByRole("region", { name: `${third} 이슈` })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`epic=${epic}(?:&returnTo=[^&]+)?&issue=${third}$`));
   await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(new RegExp(`/graph\\?epic=${epic}(?:&returnTo=[^&]+)?$`));
+  await expect(page).toHaveURL(new RegExp(`/epics\\?epic=${epic}(?:&returnTo=[^&]+)?$`));
   await expect(node("순서 셋째")).toBeVisible();
 });
 
@@ -90,8 +92,12 @@ test("그래프 머리글의 에픽 제목은 에픽 상세를 열고, 에픽 �
   );
 
   await page.goto(`/graph?epic=${epic}`);
-  await page.getByRole("heading", { level: 1 }).getByRole("link", { name: "머리글 에픽" }).click();
-  const dialog = page.getByRole("dialog", { name: `${epic} 이슈` });
+  await page
+    .getByRole("dialog")
+    .getByRole("heading", { level: 1 })
+    .getByRole("link", { name: "머리글 에픽" })
+    .click();
+  const dialog = page.getByRole("region", { name: `${epic} 이슈` });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("link", { name: "선행·후속 그래프" })).toHaveCount(0);
 

@@ -10,8 +10,9 @@ import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
-import { layeredLayout, NODE_WIDTH, PLAN_NODE_HEIGHT } from "./graphLayout";
-import { IssueGraph, VIEWPORT_MARGIN } from "./IssueGraph";
+import { graphBounds, INITIAL_MIN_ZOOM, VIEWPORT_MARGIN } from "./graphViewport";
+import { IssueGraph } from "./IssueGraph";
+import { useGraphLayout } from "./useGraphLayout";
 
 type Props = {
   data: GraphData;
@@ -25,7 +26,7 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
   const plan = useMemo(() => epicPlan(data, epicId), [data, epicId]);
   // 대기 수는 다른 화면과 같은 값을 보이도록 에픽 밖 이슈까지 담은 전체 목록으로 셉니다.
   const waiters = useMemo(() => waiterCounts(data.issues), [data]);
-  const layout = useMemo(() => layeredLayout(plan.order, PLAN_NODE_HEIGHT), [plan]);
+  const { layout, measurement, ready } = useGraphLayout(plan.order, true);
   const graphPlan = useMemo(
     () => ({ stages: plan.stages, outside: plan.outside, waiters }),
     [plan, waiters],
@@ -36,14 +37,22 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
   const panelExpanded = expanded ?? true;
 
   useLayoutEffect(() => {
-    if (expanded !== null || plan.unordered.length === 0 || !graphContainerRef.current) return;
-    const rightmost = Math.max(0, ...layout.nodes.map(({ x }) => x + NODE_WIDTH));
-    const requiredWidth = rightmost + VIEWPORT_MARGIN * 2 + 2;
-    setExpanded(requiredWidth <= graphContainerRef.current.clientWidth);
-  }, [expanded, layout, plan.unordered.length]);
+    const container = graphContainerRef.current;
+    if (expanded !== null || !ready || plan.unordered.length === 0 || !container) return;
+    const decide = () => {
+      if (container.clientWidth === 0) return;
+      const requiredWidth =
+        graphBounds(layout, true).width * INITIAL_MIN_ZOOM + VIEWPORT_MARGIN * 2 + 2;
+      setExpanded(requiredWidth <= container.clientWidth);
+    };
+    const observer = new ResizeObserver(decide);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [expanded, layout, ready, plan.unordered.length]);
 
   return (
     <>
+      {measurement}
       {total > 0 && (
         <p className="text-sm text-base-content/70">
           {current === null
@@ -75,7 +84,7 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
       <div className={`flex min-h-0 flex-1 gap-4 ${panelExpanded ? "" : "flex-col"}`}>
         <div ref={graphContainerRef} className="flex min-h-0 min-w-0 flex-1">
           {layout.nodes.length > 0 ? (
-            <IssueGraph layout={layout} issueHref={issueHref} plan={graphPlan} />
+            <IssueGraph ready={ready} layout={layout} issueHref={issueHref} plan={graphPlan} />
           ) : (
             <p className="flex-1 self-start rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
               {messages.graph.empty.epic}

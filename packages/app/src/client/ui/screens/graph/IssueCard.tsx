@@ -47,7 +47,7 @@ export function IssueCard({
         <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
         <span className="ml-auto shrink-0 font-mono">{shortIssueId(issue.id)}</span>
       </span>
-      <span className="line-clamp-2 text-sm leading-snug font-medium text-base-content">
+      <span className="text-sm leading-snug wrap-anywhere whitespace-pre-wrap font-medium text-base-content">
         {issue.title}
       </span>
       {plan && (

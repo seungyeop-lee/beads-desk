@@ -13,15 +13,17 @@ import {
   type Edge,
   type Node,
   type NodeProps,
+  type ReactFlowInstance,
   ViewportPortal,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { COLUMN_STEP, type GraphLayout, NODE_WIDTH, type PlacedEdge } from "./graphLayout";
+import { initialGraphViewport, STAGE_LABEL_HEIGHT } from "./graphViewport";
 import { IssueCard, type PlanMarks } from "./IssueCard";
 
 type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
@@ -37,27 +39,55 @@ export type GraphPlan = {
 
 type Props = {
   layout: GraphLayout;
+  ready?: boolean;
   issueHref: (issueId: string) => string;
   plan?: GraphPlan;
   /** 이슈 중심 보기의 기준 이슈입니다. 이 노드만 다른 노드와 구분되게 그립니다. */
   centerId?: string;
 };
 
-/** 노드 위에 단계 이름을 두는 높이입니다. 처음 보이는 위치를 이만큼 내려 단계 이름이 잘리지 않게 합니다. */
-const STAGE_LABEL_HEIGHT = 32;
-export const VIEWPORT_MARGIN = 24;
-
 /** blocks 실행 순서로 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
-export function IssueGraph({ layout, issueHref, plan, centerId }: Props) {
+export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: Props) {
+  const containerRef = useRef<HTMLElement>(null);
+  const flowRef = useRef<ReactFlowInstance<IssueNode, BlocksEdge> | null>(null);
+  const layoutRef = useRef(layout);
+  const viewportChosen = useRef(false);
+  const preserveViewport = () => {
+    viewportChosen.current = true;
+  };
+  useLayoutEffect(() => {
+    layoutRef.current = layout;
+  }, [layout]);
+  const [initialized, setInitialized] = useState(false);
+  if (ready && !initialized) setInitialized(true);
+  const planned = !!plan;
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container || !initialized) return;
+    const center = () => {
+      if (viewportChosen.current) return;
+      void flowRef.current?.setViewport(
+        initialGraphViewport(
+          layoutRef.current,
+          container.clientWidth,
+          container.clientHeight,
+          planned,
+        ),
+      );
+    };
+    const observer = new ResizeObserver(center);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [initialized, planned]);
   const messages = useMessages();
   const { nodes, edges } = useMemo(
     () => ({
-      nodes: layout.nodes.map(({ issue, x, y }): IssueNode => ({
+      nodes: layout.nodes.map(({ issue, x, y, height }): IssueNode => ({
         id: issue.id,
         type: "issue",
         position: { x, y },
         width: NODE_WIDTH,
-        height: layout.nodeHeight,
+        height,
         data: {
           issue,
           href: issueHref(issue.id),
@@ -83,38 +113,54 @@ export function IssueGraph({ layout, issueHref, plan, centerId }: Props) {
 
   return (
     <section
+      ref={containerRef}
+      onWheelCapture={preserveViewport}
+      onPointerDownCapture={(event) => {
+        if ((event.target as Element).closest(".react-flow__minimap")) preserveViewport();
+      }}
       aria-label={messages.graph.canvas}
       className="min-h-64 flex-1 overflow-hidden rounded-box border border-base-300 bg-base-100"
     >
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={NODE_TYPES}
-        edgeTypes={EDGE_TYPES}
-        // 묶음이 많을 때 전체를 한 화면에 맞추면 글자를 읽을 수 없을 만큼 작아지므로, 왼쪽 위부터 원래 크기로 보입니다.
-        defaultViewport={{
-          x: VIEWPORT_MARGIN,
-          y: VIEWPORT_MARGIN + (plan ? STAGE_LABEL_HEIGHT : 0),
-          zoom: 1,
-        }}
-        minZoom={0.2}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        nodesFocusable={false}
-        edgesFocusable={false}
-        elementsSelectable={false}
-        ariaLabelConfig={{
-          "controls.ariaLabel": messages.graph.controls,
-          "controls.zoomIn.ariaLabel": messages.graph.zoomIn,
-          "controls.zoomOut.ariaLabel": messages.graph.zoomOut,
-          "controls.fitView.ariaLabel": messages.graph.fitView,
-          "minimap.ariaLabel": messages.graph.minimap,
-        }}
-      >
-        {plan && <StageLabels stages={plan.stages} />}
-        <Controls showInteractive={false} />
-        <MiniMap pannable zoomable maskStrokeWidth={2} nodeClassName={miniMapNodeClassName} />
-      </ReactFlow>
+      {initialized && (
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={NODE_TYPES}
+          edgeTypes={EDGE_TYPES}
+          onInit={(instance) => {
+            flowRef.current = instance;
+            const container = containerRef.current!;
+            void instance.setViewport(
+              initialGraphViewport(layout, container.clientWidth, container.clientHeight, planned),
+            );
+          }}
+          onMoveStart={(event) => {
+            if (event) preserveViewport();
+          }}
+          minZoom={0.2}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          nodesFocusable={false}
+          edgesFocusable={false}
+          elementsSelectable={false}
+          ariaLabelConfig={{
+            "controls.ariaLabel": messages.graph.controls,
+            "controls.zoomIn.ariaLabel": messages.graph.zoomIn,
+            "controls.zoomOut.ariaLabel": messages.graph.zoomOut,
+            "controls.fitView.ariaLabel": messages.graph.fitView,
+            "minimap.ariaLabel": messages.graph.minimap,
+          }}
+        >
+          {plan && <StageLabels stages={plan.stages} />}
+          <Controls
+            showInteractive={false}
+            onZoomIn={preserveViewport}
+            onZoomOut={preserveViewport}
+            onFitView={preserveViewport}
+          />
+          <MiniMap pannable zoomable maskStrokeWidth={2} nodeClassName={miniMapNodeClassName} />
+        </ReactFlow>
+      )}
     </section>
   );
 }

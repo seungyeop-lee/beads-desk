@@ -37,8 +37,10 @@ test("상세의 선행·후속 그래프는 blocks 관계가 있는 이슈에만
     .getByRole("dialog", { name: `${center} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
     .click();
-  await expect(page).toHaveURL(new RegExp(`/graph\\?center=${center}(?:&returnTo=[^&]+)?$`));
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("사슬 가운데 · 선행·후속");
+  await expect(page).toHaveURL(new RegExp(`/issues\\?center=${center}(?:&returnTo=[^&]+)?$`));
+  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
+    "사슬 가운데 · 선행·후속",
+  );
 
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
@@ -65,10 +67,10 @@ test("상세의 선행·후속 그래프는 blocks 관계가 있는 이슈에만
   await page.screenshot({ path: testInfo.outputPath("open-center-closed-blocker.png") });
 
   await node("사슬 앞").click();
-  await expect(page.getByRole("dialog", { name: `${before} 이슈` })).toBeVisible();
+  await expect(page.getByRole("region", { name: `${before} 이슈` })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`center=${center}(?:&returnTo=[^&]+)?&issue=${before}$`));
   await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(new RegExp(`/graph\\?center=${center}(?:&returnTo=[^&]+)?$`));
+  await expect(page).toHaveURL(new RegExp(`/issues\\?center=${center}(?:&returnTo=[^&]+)?$`));
   await expect(node("사슬 맨 뒤")).toBeVisible();
 });
 
@@ -93,8 +95,10 @@ test("닫힌 이슈의 상세에서 선행·후속 그래프를 열면 닫힌 �
     .getByRole("dialog", { name: `${center} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
     .click();
-  await expect(page).toHaveURL(new RegExp(`/graph\\?center=${center}(?:&returnTo=[^&]+)?$`));
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("완료한 기준 작업 · 선행·후속");
+  await expect(page).toHaveURL(new RegExp(`/issues\\?center=${center}(?:&returnTo=[^&]+)?$`));
+  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
+    "완료한 기준 작업 · 선행·후속",
+  );
 
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });

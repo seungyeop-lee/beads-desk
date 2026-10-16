@@ -99,3 +99,30 @@ test.each([76, 96])(
     expect(layout.edges.at(-1)).toEqual({ ...forward, passes: [] });
   },
 );
+
+test("긴 제목의 실제 높이를 같은 행과 다음 묶음에 반영하고 간선 통과 자리도 비운다", () => {
+  const skip = { from: "a", to: "d" };
+  const layout = layeredLayout(
+    {
+      components: [
+        {
+          layers: [[slot("a"), slot("b")], [slot("c"), { passing: skip }], [slot("d")]],
+          edges: [skip],
+        },
+        { layers: [[slot("e")]], edges: [] },
+      ],
+      unlinked: [],
+      cycles: [],
+    },
+    76,
+    new Map([
+      ["a", 180],
+      ["c", 220],
+    ]),
+  );
+  const nodes = new Map(layout.nodes.map((node) => [node.issue.id, node]));
+  expect(nodes.get("a")!.height).toBe(180);
+  expect(nodes.get("b")!.y).toBe(220 + ROW_GAP);
+  expect(layout.edges[0]!.passes[0]!.y).toBe(220 + ROW_GAP + 38);
+  expect(nodes.get("e")!.y).toBe(220 + 76 + ROW_GAP * 2 + COMPONENT_GAP);
+});

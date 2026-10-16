@@ -20,12 +20,14 @@ export function graphHref(scope: GraphScope, from?: string): string {
   if (!source) return `/graph?${params}`;
   const trail = readReturnTrail(source.searchParams) ?? [];
   source.searchParams.delete(RETURN_PARAM);
-  const sourceScope = source.pathname === "/graph" ? readGraphScope(source.searchParams) : null;
+  const sourceScope = readGraphScope(source.searchParams);
   if (sourceScope?.kind !== scope.kind || sourceScope.id !== scope.id) {
     trail.push(`${source.pathname}${source.search}`);
   }
+  for (const key of ["epic", "center", "issue", "side"]) source.searchParams.delete(key);
+  for (const [key, value] of source.searchParams) params.append(key, value);
   for (const address of trail) params.append(RETURN_PARAM, address);
-  return `/graph?${params}`;
+  return `${source.pathname}?${params}`;
 }
 
 export function graphBackHref(scope: GraphScope, params: URLSearchParams): string {
@@ -35,7 +37,7 @@ export function graphBackHref(scope: GraphScope, params: URLSearchParams): strin
     return scope.kind === "epic" ? "/epics" : `/issues?${new URLSearchParams({ issue: scope.id })}`;
   }
   const target = readScreenAddress(previous)!;
-  if (target.pathname === "/graph") {
+  if (readGraphScope(target.searchParams)) {
     for (const address of trail!) target.searchParams.append(RETURN_PARAM, address);
   }
   return `${target.pathname}${target.search}`;

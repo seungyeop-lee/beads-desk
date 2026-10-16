@@ -38,7 +38,7 @@ test("그래프를 이어 열면 복귀 주소를 중첩 인코딩하지 않고 
   const second = graphHref(center, detail);
   expect(params(second).getAll("returnTo")).toEqual([
     "/epics",
-    "/graph?epic=demo-1&issue=demo-2&side=demo-3",
+    "/epics?epic=demo-1&issue=demo-2&side=demo-3",
   ]);
   expect([...params(graphBackHref(center, params(second)))].sort()).toEqual(
     [...params(detail)].sort(),

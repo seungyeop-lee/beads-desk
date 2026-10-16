@@ -1,52 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef } from "react";
 import { useGraph } from "@/client/modules/graph/application/useGraph";
 import { executionOrder } from "@/client/modules/graph/domain/executionOrder";
 import { type GraphScope, scopedIssues } from "@/client/modules/graph/domain/graphScope";
-import { ChevronLeftIcon } from "@/client/ui/designSystem/icons";
-import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
+import { CloseIcon, HelpIcon } from "@/client/ui/designSystem/icons";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { EpicPlanGraph } from "./EpicPlanGraph";
 import { graphBackHref, readGraphScope } from "./graphAddress";
-import { layeredLayout } from "./graphLayout";
 import { IssueGraph } from "./IssueGraph";
+import { useGraphLayout } from "./useGraphLayout";
 
-/**
- * 주소의 범위(에픽의 후손 이슈, 한 이슈의 앞뒤 blocks 사슬)를 blocks 실행 순서로 그립니다.
- * 그래프는 에픽 화면과 상세 dialog의 링크로만 열므로, 범위가 없는 주소는 따로 안내하지 않습니다.
- * 이슈 상세 dialog와 범위가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
- */
 export function GraphScreen() {
-  const searchParams = useSearchParams();
-  const scope = useMemo(() => readGraphScope(new URLSearchParams(searchParams)), [searchParams]);
-
-  return (
-    // 그래프는 안에서 끌고 확대해 보므로, AppHeader(h-14와 아래 border 1px)를 뺀 화면 높이 안에 페이지를 맞춰 세로 스크롤이 생기지 않게 합니다.
-    <main className="mx-auto flex h-[calc(100dvh-3.5rem-1px)] max-w-[96rem] flex-col gap-4 px-8 pb-6">
-      {scope && <ScopedGraph scope={scope} />}
-      <IssueDetailRoute />
-    </main>
-  );
+  const params = useSearchParams();
+  const scope = useMemo(() => readGraphScope(new URLSearchParams(params)), [params]);
+  return scope && <GraphDialog scope={scope} />;
 }
 
-function ScopedGraph({ scope }: { scope: GraphScope }) {
+function GraphDialog({ scope }: { scope: GraphScope }) {
   const { data, error, loading } = useGraph();
   const issueHref = useIssueHref();
   const messages = useMessages();
   const params = useSearchParams();
-
+  const router = useRouter();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const backHref = graphBackHref(scope, new URLSearchParams(params));
   const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
+  const title = `${scopeTitle} · ${messages.graph.scopes[scope.kind]}`;
+
+  useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
 
   return (
-    <>
-      <ScreenHeader
-        title={
-          <>
+    <dialog
+      ref={dialogRef}
+      className="modal"
+      aria-label={title}
+      onClose={() => router.replace(backHref, { scroll: false })}
+      onCancel={(event) => {
+        event.preventDefault();
+        const active = document.activeElement;
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+        if (params.has("issue")) {
+          const next = new URLSearchParams(params);
+          next.delete("issue");
+          next.delete("side");
+          router.replace(`?${next}`, { scroll: false });
+        } else router.replace(backHref, { scroll: false });
+      }}
+    >
+      <div className="modal-box flex h-[94dvh] max-h-none w-[96vw] max-w-none flex-col overflow-hidden p-0">
+        <header className="flex shrink-0 items-start gap-3 border-b border-base-300 px-5 py-3">
+          <h1 className="min-w-0 flex-1 text-base leading-snug font-semibold wrap-anywhere">
             <Link
               href={issueHref(scope.id)}
               scroll={false}
@@ -54,35 +64,77 @@ function ScopedGraph({ scope }: { scope: GraphScope }) {
             >
               {scopeTitle}
             </Link>
-            <span className="text-base-content/45"> · {messages.graph.scopes[scope.kind]}</span>
-          </>
-        }
-        help={messages.graph.help[scope.kind]}
-        compact
-        loading={loading}
-      >
-        <Link
-          href={graphBackHref(scope, new URLSearchParams(params))}
-          className="btn btn-ghost btn-sm gap-1.5 rounded-full"
-        >
-          <ChevronLeftIcon />
-          {messages.graph.back}
-        </Link>
-      </ScreenHeader>
-
-      {error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.graph.loadFailed(error)}</span>
+            <span className="text-base-content/50"> · {messages.graph.scopes[scope.kind]}</span>
+          </h1>
+          {loading && (
+            <span
+              className="loading loading-spinner loading-xs"
+              aria-label={messages.common.loading}
+            />
+          )}
+          <span className="group/help shrink-0">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm btn-square"
+              aria-label={messages.graph.help[scope.kind]}
+            >
+              <HelpIcon />
+            </button>
+            <span
+              aria-hidden
+              className="pointer-events-none invisible absolute top-16 right-5 z-10 w-max max-w-[min(32rem,calc(96vw-2.5rem))] rounded-field bg-neutral px-3 py-2 text-sm leading-snug text-neutral-content shadow-lg group-hover/help:visible group-has-focus-visible/help:visible"
+            >
+              {messages.graph.help[scope.kind]}
+            </span>
+          </span>
+          <Link
+            href={backHref}
+            scroll={false}
+            className="btn btn-ghost btn-sm shrink-0"
+            aria-label={messages.graph.back}
+          >
+            {messages.graph.back}
+          </Link>
+          <Link
+            href={backHref}
+            scroll={false}
+            className="btn btn-ghost btn-sm btn-square shrink-0"
+            aria-label={messages.common.close}
+          >
+            <CloseIcon />
+          </Link>
+        </header>
+        <div className="flex min-h-0 flex-1">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-4">
+            {error && (
+              <div role="alert" className="alert alert-error alert-soft">
+                <span>{messages.graph.loadFailed(error)}</span>
+              </div>
+            )}
+            {data &&
+              (scope.kind === "epic" ? (
+                <EpicPlanGraph
+                  key={`epic:${scope.id}`}
+                  data={data}
+                  epicId={scope.id}
+                  issueHref={issueHref}
+                />
+              ) : (
+                <BlockingChainGraph
+                  key={`center:${scope.id}`}
+                  data={data}
+                  scope={scope}
+                  issueHref={issueHref}
+                />
+              ))}
+          </div>
+          <IssueDetailRoute embedded />
         </div>
-      )}
-
-      {data &&
-        (scope.kind === "epic" ? (
-          <EpicPlanGraph key={scope.id} data={data} epicId={scope.id} issueHref={issueHref} />
-        ) : (
-          <BlockingChainGraph data={data} scope={scope} issueHref={issueHref} />
-        ))}
-    </>
+      </div>
+      <form method="dialog" className="modal-backdrop">
+        <button type="submit">{messages.common.close}</button>
+      </form>
+    </dialog>
   );
 }
 
@@ -96,15 +148,21 @@ function BlockingChainGraph({
   issueHref: (issueId: string) => string;
 }) {
   const messages = useMessages();
-  const layout = useMemo(
-    () => layeredLayout(executionOrder(scopedIssues(data, scope), data.dependencies)),
+  const order = useMemo(
+    () => executionOrder(scopedIssues(data, scope), data.dependencies),
     [data, scope],
   );
-  return layout.nodes.length > 0 ? (
-    <IssueGraph layout={layout} issueHref={issueHref} centerId={scope.id} />
-  ) : (
-    <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
-      {messages.graph.empty.center}
-    </p>
+  const { layout, measurement, ready } = useGraphLayout(order);
+  return (
+    <>
+      {measurement}
+      {layout.nodes.length > 0 ? (
+        <IssueGraph layout={layout} ready={ready} issueHref={issueHref} centerId={scope.id} />
+      ) : (
+        <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
+          {messages.graph.empty.center}
+        </p>
+      )}
+    </>
   );
 }

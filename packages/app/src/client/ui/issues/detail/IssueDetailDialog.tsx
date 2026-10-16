@@ -12,6 +12,7 @@ import { WriteErrorAlert } from "../WriteErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
+  embedded?: boolean;
   location: IssueDetailLocation;
   /** 이 dialog에서 지금 주 상세로 넘어오기 전에 보던 상세입니다. 없으면 null입니다. */
   previous: IssueDetailLocation | null;
@@ -25,7 +26,13 @@ type Props = {
  * 열린 dialog에서 다른 이슈로 옮기면 새 이슈를 받을 때까지 이전 이슈를 그대로 보여 줍니다.
  * 주 상세에서 의존 이슈를 누르면 옆 패널에 그 이슈를 읽기 전용으로 엽니다.
  */
-export function IssueDetailDialog({ location, previous, detailHref, onClose }: Props) {
+export function IssueDetailDialog({
+  location,
+  previous,
+  detailHref,
+  onClose,
+  embedded = false,
+}: Props) {
   const { issue: issueId, side } = location;
   const sideHref = (sideId: string) => detailHref({ issue: issueId, side: sideId });
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -47,8 +54,48 @@ export function IssueDetailDialog({ location, previous, detailHref, onClose }: P
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!loading && dialog && !dialog.open) dialog.showModal();
-  }, [loading]);
+    if (!embedded && !loading && dialog && !dialog.open) dialog.showModal();
+  }, [loading, embedded]);
+
+  const close = () => {
+    if (embedded) onClose();
+    else dialogRef.current?.close();
+  };
+  const content = (
+    <>
+      <IssueDetailPanel
+        key={`main:${issue?.id ?? issueId}`}
+        issueId={issue?.id ?? issueId}
+        issue={issue}
+        error={issue ? null : error}
+        loading={loading}
+        previous={previous}
+        detailHref={detailHref}
+        sideHref={sideHref}
+        onDeleted={close}
+        onClose={close}
+      />
+      {side && (
+        <IssueSidePanel
+          key={`side:${side}`}
+          issueId={side}
+          closeHref={detailHref({ issue: issueId, side: null })}
+          openHref={detailHref({ issue: side, side: null })}
+          sideHref={sideHref}
+        />
+      )}
+    </>
+  );
+
+  if (embedded)
+    return (
+      <section
+        aria-label={messages.issueDetail.dialog(issueId)}
+        className="flex min-h-0 w-[min(48rem,55%)] shrink-0 border-l border-base-300 bg-base-100"
+      >
+        {content}
+      </section>
+    );
 
   return (
     <>
@@ -69,30 +116,7 @@ export function IssueDetailDialog({ location, previous, detailHref, onClose }: P
         <div
           className={`modal-box flex max-h-[90vh] w-11/12 overflow-hidden p-0 ${side ? "max-w-[110rem]" : "max-w-6xl"}`}
         >
-          {/*
-           * 보이는 이슈가 바뀌면 새로 그려, 이전 이슈의 쓰기 오류와 진행 표시와 스크롤 위치가 남지 않게 합니다.
-           * 주 상세가 새 이슈를 받기 전에는 옆 패널과 같은 이슈를 보일 수 있어, 두 패널의 key에 접두어를 달리 붙입니다.
-           */}
-          <IssueDetailPanel
-            key={`main:${issue?.id ?? issueId}`}
-            issueId={issue?.id ?? issueId}
-            issue={issue}
-            error={issue ? null : error}
-            loading={loading}
-            previous={previous}
-            detailHref={detailHref}
-            sideHref={sideHref}
-            onDeleted={() => dialogRef.current?.close()}
-          />
-          {side && (
-            <IssueSidePanel
-              key={`side:${side}`}
-              issueId={side}
-              closeHref={detailHref({ issue: issueId, side: null })}
-              openHref={detailHref({ issue: side, side: null })}
-              sideHref={sideHref}
-            />
-          )}
+          {content}
         </div>
         <form method="dialog" className="modal-backdrop">
           <button type="submit">{messages.common.close}</button>
@@ -112,6 +136,7 @@ type PanelProps = {
   /** 의존 이슈를 옆 패널에 여는 주소입니다. */
   sideHref: (issueId: string) => string;
   onDeleted: () => void;
+  onClose: () => void;
 };
 
 function IssueDetailPanel({
@@ -123,6 +148,7 @@ function IssueDetailPanel({
   detailHref,
   sideHref,
   onDeleted,
+  onClose,
 }: PanelProps) {
   const writes = useIssueWrites();
   const messages = useMessages();
@@ -154,15 +180,16 @@ function IssueDetailPanel({
             aria-label={messages.issueDetail.working}
           />
         )}
-        <form method="dialog" className="ml-auto">
+        <div className="ml-auto">
           <button
-            type="submit"
+            type="button"
+            onClick={onClose}
             className="btn btn-ghost btn-sm btn-square text-base-content/60"
             aria-label={messages.common.close}
           >
             <CloseIcon />
           </button>
-        </form>
+        </div>
       </header>
 
       <div className="flex min-h-0 grow flex-col overflow-y-auto">

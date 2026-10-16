@@ -34,7 +34,9 @@ test("좁은 화면에서 제목이 길어도 그래프 화면의 도움말은 �
     for (const [url, help] of screens) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto(url);
-      await expect(page.getByRole("heading", { level: 1 })).toContainText(LONG_TITLE);
+      await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toContainText(
+        LONG_TITLE,
+      );
       const button = page.getByRole("button", { name: help });
       const tooltip = page.getByText(help);
       await expect(tooltip).toBeHidden();
@@ -44,7 +46,7 @@ test("좁은 화면에서 제목이 길어도 그래프 화면의 도움말은 �
 
       await page.mouse.move(0, 0);
       await expect(tooltip).toBeHidden();
-      await page.getByRole("heading", { level: 1 }).getByRole("link").focus();
+      await page.getByRole("dialog").getByRole("heading", { level: 1 }).getByRole("link").focus();
       await page.keyboard.press("Tab");
       await expect(button).toBeFocused();
       await expectInsideViewport(page, tooltip);

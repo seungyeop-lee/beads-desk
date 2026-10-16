@@ -62,7 +62,7 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
   await expect(node("계획 순서 없음")).toHaveCount(0);
 });
 
-test("선후 관계 없음 목록은 긴 제목을 끝까지 보이고, 행을 누르면 상세를 열며, 그래프 노드는 원래 크기와 두 줄 제목을 유지한다", async ({
+test("선후 관계 없음 목록은 긴 제목을 끝까지 보이고, 행을 누르면 상세를 열며, 그래프 노드도 제목을 끝까지 보인다", async ({
   page,
   workspace,
 }, testInfo) => {
@@ -109,16 +109,15 @@ test("선후 관계 없음 목록은 긴 제목을 끝까지 보이고, 행을 �
   const node = page
     .getByRole("region", { name: "의존 그래프" })
     .getByRole("link", { name: new RegExp(longTitle) });
-  await expect(node).toHaveCSS("width", "232px");
-  await expect(node).toHaveCSS("height", "96px");
+  await expect(node).toHaveCSS("width", "280px");
   const nodeTitle = node.getByText(longTitle, { exact: true });
   const nodeSize = await nodeTitle.evaluate((el) => ({
     height: el.clientHeight,
     contentHeight: el.scrollHeight,
     lineHeight: Number.parseFloat(getComputedStyle(el).lineHeight),
   }));
-  expect(nodeSize.height).toBeLessThanOrEqual(Math.ceil(nodeSize.lineHeight * 2));
-  expect(nodeSize.contentHeight).toBeGreaterThan(nodeSize.height);
+  expect(nodeSize.height).toBeGreaterThan(nodeSize.lineHeight * 2);
+  expect(nodeSize.contentHeight).toBe(nodeSize.height);
   await testInfo.attach("title-measurements", {
     body: JSON.stringify({ panelTitle: size, nodeTitle: nodeSize }),
     contentType: "application/json",
@@ -126,12 +125,14 @@ test("선후 관계 없음 목록은 긴 제목을 끝까지 보이고, 행을 �
   await page.screenshot({ path: testInfo.outputPath("long-title-ko.png") });
 
   await row.click();
-  await expect(page.getByRole("dialog", { name: `${alone} 이슈` })).toBeVisible();
+  await expect(page.getByRole("region", { name: `${alone} 이슈` })).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "설정" }).click();
-  await page.getByRole("combobox", { name: "언어" }).selectOption("en");
+  await expect(page).toHaveURL((url) => !url.searchParams.has("issue"));
+  await page
+    .context()
+    .addCookies([{ name: "beads-desk-locale", value: "en", url: new URL(page.url()).origin }]);
+  await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await page.keyboard.press("Escape");
   const englishPanel = page.getByRole("region", { name: "No blocks dependency" });
   await expect(englishPanel.getByRole("heading", { name: /No blocks dependency/ })).toBeVisible();
   await expect(

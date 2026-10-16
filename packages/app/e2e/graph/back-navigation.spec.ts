@@ -17,13 +17,13 @@ test("에픽 순서 보기의 뒤로가기는 에픽 화면으로 돌아가며 �
     .filter({ hasText: "돌아갈 에픽" })
     .getByRole("link", { name: "순서 보기" })
     .click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("돌아갈 에픽 · 순서");
+  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
+    "돌아갈 에픽 · 순서",
+  );
   const back = page.getByRole("link", { name: "뒤로가기", exact: true });
   await expect(back).toHaveAttribute("href", "/epics");
   await capture(page, testInfo, "epic-back-ko");
-  await page.getByRole("button", { name: "설정" }).click();
-  await page.getByRole("combobox", { name: "언어" }).selectOption("en");
-  await page.keyboard.press("Escape");
+  await changeLocale(page, "en");
   const englishBack = page.getByRole("link", { name: "Back", exact: true });
   await expect(englishBack).toBeVisible();
   await capture(page, testInfo, "epic-back-en");
@@ -52,7 +52,9 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
   const originalDialog = page.getByRole("dialog", { name: `${second} 이슈` });
   await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
   await originalDialog.getByRole("link", { name: "선행·후속 그래프" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("복귀 둘째 · 선행·후속");
+  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
+    "복귀 둘째 · 선행·후속",
+  );
   await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveAttribute(
     "href",
     origin,
@@ -61,20 +63,16 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
     page.getByRole("region", { name: "의존 그래프" }).getByRole("link", { name: /복귀 마지막/ }),
   ).toBeVisible();
   await capture(page, testInfo, "chain-back-ko");
-  await page.getByRole("button", { name: "설정" }).click();
-  await page.getByRole("combobox", { name: "언어" }).selectOption("en");
-  await page.keyboard.press("Escape");
+  await changeLocale(page, "en");
   await expect(page.getByRole("link", { name: "Back", exact: true })).toBeVisible();
   await capture(page, testInfo, "chain-back-en");
-  await page.getByRole("button", { name: "Settings" }).click();
-  await page.getByRole("combobox", { name: "Language" }).selectOption("ko");
-  await page.keyboard.press("Escape");
+  await changeLocale(page, "ko");
 
   await page
     .getByRole("region", { name: "의존 그래프" })
     .getByRole("link", { name: /복귀 마지막/ })
     .click();
-  await expect(page.getByRole("dialog", { name: `${last} 이슈` })).toBeVisible();
+  await expect(page.getByRole("region", { name: `${last} 이슈` })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL((url) => !url.searchParams.has("issue"));
   await page.reload();
@@ -88,16 +86,20 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
     .getByRole("link", { name: /복귀 마지막/ })
     .click();
   await page
-    .getByRole("dialog", { name: `${last} 이슈` })
+    .getByRole("region", { name: `${last} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
     .click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("복귀 마지막 · 선행·후속");
+  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
+    "복귀 마지막 · 선행·후속",
+  );
   await page.reload();
   await page.getByRole("link", { name: "뒤로가기", exact: true }).click();
   await expect(page).toHaveURL((url) => url.searchParams.get("center") === second);
-  await expect(page.getByRole("dialog", { name: `${last} 이슈` })).toBeVisible();
+  await expect(page.getByRole("region", { name: `${last} 이슈` })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("복귀 둘째 · 선행·후속");
+  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
+    "복귀 둘째 · 선행·후속",
+  );
   await page.getByRole("link", { name: "뒤로가기", exact: true }).click();
   await expect(page).toHaveURL(origin);
   await expect(originalDialog).toBeVisible();
@@ -118,11 +120,12 @@ test("같은 그래프를 다시 열어도 자기 자신을 복귀 순서에 넣
     .getByRole("link", { name: "선행·후속 그래프" })
     .click();
   await page
+    .getByRole("dialog")
     .getByRole("heading", { level: 1 })
     .getByRole("link", { name: "같은 그래프 기준" })
     .click();
   await page
-    .getByRole("dialog", { name: `${second} 이슈` })
+    .getByRole("region", { name: `${second} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
     .click();
   const back = page.getByRole("link", { name: "뒤로가기", exact: true });
@@ -172,4 +175,11 @@ async function capture(page: Page, testInfo: TestInfo, name: string) {
   const directory = resolve(process.cwd(), "../../tmp/837-evidence");
   await mkdir(directory, { recursive: true });
   await page.screenshot({ path: resolve(directory, `${name}.png`) });
+}
+
+async function changeLocale(page: Page, locale: string) {
+  await page
+    .context()
+    .addCookies([{ name: "beads-desk-locale", value: locale, url: new URL(page.url()).origin }]);
+  await page.reload();
 }

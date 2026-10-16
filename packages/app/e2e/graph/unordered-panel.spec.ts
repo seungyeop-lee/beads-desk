@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "../support/bdWorkspace";
 
-test("4단계 에픽은 선후 관계 없음 목록을 접어 원래 크기의 노드를 모두 보이고, 사용자가 고른 펼침 상태를 갱신 뒤에도 유지한다", async ({
+test("4단계 에픽은 선후 관계 없음 목록을 접어 읽을 수 있는 크기의 노드를 중앙에 보이고, 사용자가 고른 펼침 상태를 갱신 뒤에도 유지한다", async ({
   page,
   workspace,
 }, testInfo) => {
@@ -35,15 +35,18 @@ test("4단계 에픽은 선후 관계 없음 목록을 접어 원래 크기의 �
   for (const box of nodeBoxes) {
     expect(box!.x).toBeGreaterThanOrEqual(canvasBox.x);
     expect(box!.x + box!.width).toBeLessThanOrEqual(canvasBox.x + canvasBox.width);
-    expect(box!.width).toBe(232);
-    expect(box!.height).toBe(96);
+    expect(box!.width).toBeGreaterThanOrEqual(280 * 0.75);
+    expect(box!.width).toBeLessThanOrEqual(280 * 1.25);
   }
-  await expect(canvas.locator(".react-flow__viewport")).toHaveCSS(
-    "transform",
-    "matrix(1, 0, 0, 1, 24, 56)",
-  );
+  const left = Math.min(...nodeBoxes.map((box) => box!.x));
+  const right = Math.max(...nodeBoxes.map((box) => box!.x + box!.width));
+  expect((left + right) / 2).toBeCloseTo(canvasBox.x + canvasBox.width / 2, 0);
+  const transform = await canvas
+    .locator(".react-flow__viewport")
+    .evaluate((element) => getComputedStyle(element).transform);
+  const zoom = Number(transform.match(/matrix\(([^,]+)/)![1]);
   const boundsPath = testInfo.outputPath("initial-bounds.json");
-  await writeFile(boundsPath, JSON.stringify({ canvas: canvasBox, nodes: nodeBoxes, zoom: 1 }));
+  await writeFile(boundsPath, JSON.stringify({ canvas: canvasBox, nodes: nodeBoxes, zoom }));
   await testInfo.attach("initial-bounds", { path: boundsPath, contentType: "application/json" });
   await page.screenshot({ path: testInfo.outputPath("four-stage-after.png") });
 
@@ -63,9 +66,10 @@ test("4단계 에픽은 선후 관계 없음 목록을 접어 원래 크기의 �
   await expect(canvas.getByRole("link", { name: /갱신한 넷째 단계/ })).toBeVisible();
   await expect(expand).toHaveAttribute("aria-expanded", "false");
 
-  await page.getByRole("button", { name: "설정" }).click();
-  await page.getByRole("combobox", { name: "언어" }).selectOption("en");
-  await page.keyboard.press("Escape");
+  await page
+    .context()
+    .addCookies([{ name: "beads-desk-locale", value: "en", url: new URL(page.url()).origin }]);
+  await page.reload();
   const englishPanel = page.getByRole("region", { name: "No blocks dependency" });
   await expect(englishPanel.getByRole("heading", { name: "No blocks dependency 1" })).toBeVisible();
   await englishPanel

@@ -237,7 +237,11 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
 function GraphLink({ scope, label }: { scope: GraphScope; label: string }) {
   const graphHref = useGraphHref();
   return (
-    <Link className="link text-xs text-base-content/60 link-hover" href={graphHref(scope)}>
+    <Link
+      className="link text-xs text-base-content/60 link-hover"
+      href={graphHref(scope)}
+      scroll={false}
+    >
       {label}
     </Link>
   );

@@ -7,7 +7,7 @@ const graph: GraphData = {
   issues: ["epic", "a", "b", "c"].map((id) =>
     parseIssue({
       id: `cycle-${id}`,
-      title: `합성 순환 ${id.toUpperCase()}`,
+      title: `합성 순환 ${id.toUpperCase()}${id === "a" ? " 높이가 달라지는 긴 한국어 제목도 다른 노드와 간선을 가리지 않고 마지막 글자까지 끝까지 표시하는지 확인합니다" : id === "b" ? " A long English title should wrap onto more than two lines while all cycle edges remain visible and avoid the neighboring nodes" : ""}`,
       status: "open",
       issue_type: id === "epic" ? "epic" : "task",
       priority: 2,
