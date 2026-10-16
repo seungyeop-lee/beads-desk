@@ -414,6 +414,7 @@ export const koMessages = {
     zoomIn: "확대",
     zoomOut: "축소",
     fitView: "전체 보기",
+    minimap: "그래프 미니맵",
     unrelated: {
       order: (count: number) => `blocks 관계가 없는 이슈 ${count}개는 그리지 않았습니다.`,
       hierarchy: (count: number) => `상하위 관계가 없는 이슈 ${count}개는 그리지 않았습니다.`,

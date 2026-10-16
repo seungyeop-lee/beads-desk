@@ -3,6 +3,7 @@ import {
   Controls,
   Handle,
   MarkerType,
+  MiniMap,
   Position,
   ReactFlow,
   type Edge,
@@ -82,9 +83,11 @@ export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref 
           "controls.zoomIn.ariaLabel": messages.graph.zoomIn,
           "controls.zoomOut.ariaLabel": messages.graph.zoomOut,
           "controls.fitView.ariaLabel": messages.graph.fitView,
+          "minimap.ariaLabel": messages.graph.minimap,
         }}
       >
         <Controls showInteractive={false} />
+        <MiniMap pannable zoomable maskStrokeWidth={2} nodeClassName={miniMapNodeTone} />
       </ReactFlow>
     </section>
   );
@@ -124,3 +127,8 @@ function IssueNodeView({ data: { issue, href } }: NodeProps<IssueNode>) {
 }
 
 const NODE_TYPES = { issue: IssueNodeView };
+
+/** 미니맵 노드도 그래프 노드의 상태 점과 같은 tone class로 칠해, 상태별 이슈가 어디에 몰려 있는지 보이게 합니다. */
+function miniMapNodeTone(node: IssueNode): string {
+  return workStateTone(workState(node.data.issue));
+}

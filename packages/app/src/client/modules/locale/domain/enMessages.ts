@@ -403,6 +403,7 @@ export const enMessages: Messages = {
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
     fitView: "Fit view",
+    minimap: "Graph minimap",
     unrelated: {
       order: (count) => `Not drawn: ${count} issues with no blocks dependency.`,
       hierarchy: (count) => `Not drawn: ${count} issues with no parent-child dependency.`,
