@@ -1,4 +1,5 @@
 import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
+import { SCREEN_TABS } from "@/client/ui/shell/screenTabs";
 
 /**
  * 범위마다 이슈 id를 담는 query 이름입니다.
@@ -9,8 +10,65 @@ const SCOPE_PARAMS = { epic: "epic", center: "center" } as const satisfies Recor
   string
 >;
 
-export function graphHref({ kind, id }: GraphScope): string {
-  return `/graph?${new URLSearchParams({ [SCOPE_PARAMS[kind]]: id })}`;
+const RETURN_PARAM = "returnTo";
+
+export function graphHref(scope: GraphScope, from?: string): string {
+  const params = new URLSearchParams({ [SCOPE_PARAMS[scope.kind]]: scope.id });
+  if (!from) return `/graph?${params}`;
+
+  const source = readScreenAddress(from);
+  if (!source) return `/graph?${params}`;
+  const trail = readReturnTrail(source.searchParams) ?? [];
+  source.searchParams.delete(RETURN_PARAM);
+  const sourceScope = source.pathname === "/graph" ? readGraphScope(source.searchParams) : null;
+  if (sourceScope?.kind !== scope.kind || sourceScope.id !== scope.id) {
+    trail.push(`${source.pathname}${source.search}`);
+  }
+  for (const address of trail) params.append(RETURN_PARAM, address);
+  return `/graph?${params}`;
+}
+
+export function graphBackHref(scope: GraphScope, params: URLSearchParams): string {
+  const trail = readReturnTrail(params);
+  const previous = trail?.pop();
+  if (!previous) {
+    return scope.kind === "epic" ? "/epics" : `/issues?${new URLSearchParams({ issue: scope.id })}`;
+  }
+  const target = readScreenAddress(previous)!;
+  if (target.pathname === "/graph") {
+    for (const address of trail!) target.searchParams.append(RETURN_PARAM, address);
+  }
+  return `${target.pathname}${target.search}`;
+}
+
+function readReturnTrail(params: URLSearchParams): string[] | null {
+  const trail = params.getAll(RETURN_PARAM);
+  return trail.every((address) => {
+    const screen = readScreenAddress(address);
+    return screen && !screen.searchParams.has(RETURN_PARAM);
+  })
+    ? trail
+    : null;
+}
+
+function readScreenAddress(address: string): URL | null {
+  if (
+    !address.startsWith("/") ||
+    address.startsWith("//") ||
+    /[\\#]/.test(address) ||
+    [...address].some((character) => character <= " ")
+  ) {
+    return null;
+  }
+  try {
+    decodeURIComponent(address);
+    const url = new URL(address, "http://localhost");
+    if (url.pathname !== address.split("?")[0]) return null;
+    if (url.pathname === "/graph") return readGraphScope(url.searchParams) ? url : null;
+    return SCREEN_TABS.some((tab) => tab.href === url.pathname) ? url : null;
+  } catch {
+    return null;
+  }
 }
 
 /** 범위가 없으면 null입니다. 그래프는 화면 안의 링크로만 열므로, 둘 다 있는 주소는 에픽 보기로 읽습니다. */

@@ -20,7 +20,7 @@ import { EditableText } from "../fields/EditableText";
 import { PrioritySelect } from "../fields/PrioritySelect";
 import { StatusSelect } from "../fields/StatusSelect";
 import { TrashIcon } from "@/client/ui/designSystem/icons";
-import { graphHref } from "@/client/ui/screens/graph/graphAddress";
+import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
 import { ClaimButton } from "../ClaimButton";
 import { deferUntilLabel, formatTime } from "../issueLabels";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -235,6 +235,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
 }
 
 function GraphLink({ scope, label }: { scope: GraphScope; label: string }) {
+  const graphHref = useGraphHref();
   return (
     <Link className="link text-xs text-base-content/60 link-hover" href={graphHref(scope)}>
       {label}

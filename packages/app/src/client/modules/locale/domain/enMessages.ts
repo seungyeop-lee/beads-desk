@@ -372,6 +372,7 @@ export const enMessages: Messages = {
     childAdded: (id, epicId) => `Added ${id} as a child of ${epicId}`,
   },
   graph: {
+    back: "Back",
     scopes: { epic: "Order", center: "Blocks chain" },
     help: {
       epic: "Issues in the epic that must finish first are in the stages on the left, following blocks dependencies. Issues in the same stage can proceed in parallel, and closed issues are dimmed. Issues outside the epic that block its issues are drawn with a dashed border, and issues with no blocks dependency are listed under No blocks dependency.",

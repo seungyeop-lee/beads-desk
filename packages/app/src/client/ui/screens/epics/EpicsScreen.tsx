@@ -29,7 +29,7 @@ import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ChevronRightIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { showToast } from "@/client/ui/designSystem/Toast";
-import { graphHref } from "@/client/ui/screens/graph/graphAddress";
+import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -107,6 +107,7 @@ function EpicSection({
   writes,
 }: SectionProps) {
   const { epic, totalChildren, closedChildren } = summary;
+  const graphHref = useGraphHref();
   const percent = totalChildren === 0 ? 0 : Math.round((closedChildren / totalChildren) * 100);
   const messages = useMessages();
   return (

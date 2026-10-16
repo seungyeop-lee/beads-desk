@@ -6,12 +6,13 @@ import { useMemo } from "react";
 import { useGraph } from "@/client/modules/graph/application/useGraph";
 import { executionOrder } from "@/client/modules/graph/domain/executionOrder";
 import { type GraphScope, scopedIssues } from "@/client/modules/graph/domain/graphScope";
+import { ChevronLeftIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { EpicPlanGraph } from "./EpicPlanGraph";
-import { readGraphScope } from "./graphAddress";
+import { graphBackHref, readGraphScope } from "./graphAddress";
 import { layeredLayout } from "./graphLayout";
 import { IssueGraph } from "./IssueGraph";
 
@@ -37,6 +38,7 @@ function ScopedGraph({ scope }: { scope: GraphScope }) {
   const { data, error, loading } = useGraph();
   const issueHref = useIssueHref();
   const messages = useMessages();
+  const params = useSearchParams();
 
   const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
 
@@ -58,7 +60,15 @@ function ScopedGraph({ scope }: { scope: GraphScope }) {
         help={messages.graph.help[scope.kind]}
         compact
         loading={loading}
-      />
+      >
+        <Link
+          href={graphBackHref(scope, new URLSearchParams(params))}
+          className="btn btn-ghost btn-sm gap-1.5 rounded-full"
+        >
+          <ChevronLeftIcon />
+          {messages.graph.back}
+        </Link>
+      </ScreenHeader>
 
       {error && (
         <div role="alert" className="alert alert-error alert-soft">
