@@ -131,25 +131,16 @@ export const koMessages = {
     waiting: "사람 확인 기다림",
     waitingOn: (title: string) => `사람 확인 기다림: ${title}`,
     panelTitle: "사람의 확인을 기다리는 작업입니다",
-    panelBody: "아래 gate를 승인해야 막힘이 풀립니다. 승인해도 이 이슈는 닫히지 않습니다.",
+    panelBody:
+      "아래 gate에 응답하거나 응답 없이 닫으면 막힘이 풀립니다. 이 이슈는 닫히지 않습니다.",
     reason: "사유",
     blocks: "막고 있는 작업",
-    noBlocks: "이 gate가 막고 있는 작업 이슈가 없습니다. 승인하면 gate만 닫힙니다.",
-    manyBlocks: (count: number) => `작업 ${count}개를 막고 있습니다. 승인하면 모두 풀립니다.`,
-    feedbackTitle: "피드백",
-    feedbackBody:
-      "피드백은 gate에 댓글로 남습니다. gate가 열린 채로 남으므로 작업 이슈는 계속 닫을 수 없습니다.",
-    feedback: "피드백",
-    feedbackPlaceholder: "고칠 점을 적으세요",
-    sendFeedback: "피드백 남기기",
-    feedbackSent: (id: string) => `${id}에 피드백을 남겼습니다`,
-    approveTitle: "승인",
-    approveBody:
-      "승인하면 gate가 닫히고, 막고 있던 작업 이슈를 닫을 수 있게 됩니다. 작업 이슈는 닫히지 않습니다.",
-    memo: "승인 메모",
-    memoPlaceholder: "적지 않아도 됩니다",
-    approve: "승인하고 막힘 풀기",
-    approved: (id: string) => `${id}을(를) 승인해 막힘을 풀었습니다`,
+    noBlocks: "이 gate가 막고 있는 작업 이슈가 없습니다. 응답하거나 닫으면 gate만 닫힙니다.",
+    manyBlocks: (count: number) => `작업 ${count}개를 막고 있습니다. gate가 닫히면 모두 풀립니다.`,
+    responseTitle: "응답",
+    responseBody:
+      "응답은 gate에 댓글로 남고, 응답하거나 응답 없이 닫으면 gate가 닫힙니다. 막혀 있던 작업 이슈는 닫히지 않습니다.",
+    responsePlaceholder: "확인한 결과나 고칠 점을 적으세요",
   },
   copyId: {
     copied: (id: string) => `ID를 복사했습니다: ${id}`,
@@ -454,9 +445,9 @@ export const koMessages = {
   humanDecisions: {
     title: "판단 기다림",
     description:
-      "agent가 사람에게 넘긴 질문과 확인 요청(human gate)입니다. 질문은 응답하거나 응답 없이 닫으면 닫히고, 확인 요청은 승인하면 막고 있던 작업이 풀립니다.",
+      "agent가 사람에게 넘긴 질문과 확인 요청(human gate)입니다. 응답하거나 응답 없이 닫으면 닫히고, 확인 요청이 닫히면 막고 있던 작업이 풀립니다.",
     empty: "판단을 기다리는 이슈가 없습니다.",
-    approvalRequests: "승인 요청",
+    gates: "확인 요청",
     questions: "질문",
     openDetail: "상세 열기",
     noDescription: "설명이 없습니다.",

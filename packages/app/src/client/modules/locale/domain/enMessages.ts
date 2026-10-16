@@ -117,27 +117,17 @@ export const enMessages: Messages = {
   humanGate: {
     waiting: "Awaiting human",
     waitingOn: (title) => `Awaiting human: ${title}`,
-    panelTitle: "Waiting on human approval",
+    panelTitle: "Waiting on a human gate",
     panelBody:
-      "This issue is unblocked when the gates below are approved. Approving does not close this issue.",
+      "This issue is unblocked when the gates below are responded to or dismissed. This issue itself stays open.",
     reason: "Reason",
     blocks: "Blocks",
-    noBlocks: "This gate blocks no issue. Approving closes only the gate.",
-    manyBlocks: (count) => `Blocks ${count} issues. Approving unblocks all of them.`,
-    feedbackTitle: "Feedback",
-    feedbackBody:
-      "Feedback is saved as a comment on the gate. The gate stays open, so the blocked issue still cannot be closed.",
-    feedback: "Feedback",
-    feedbackPlaceholder: "Write what to change",
-    sendFeedback: "Send feedback",
-    feedbackSent: (id) => `Sent feedback on ${id}`,
-    approveTitle: "Approve",
-    approveBody:
-      "Approving closes the gate so the blocked issue can be closed. The blocked issue itself stays open.",
-    memo: "Approval note",
-    memoPlaceholder: "Optional",
-    approve: "Approve and unblock",
-    approved: (id) => `Approved ${id} and unblocked its issues`,
+    noBlocks: "This gate blocks no issue. Responding or dismissing closes only the gate.",
+    manyBlocks: (count) => `Blocks ${count} issues. Closing the gate unblocks all of them.`,
+    responseTitle: "Response",
+    responseBody:
+      "Your response is saved as a comment on the gate. Responding or dismissing closes the gate. The blocked issues stay open.",
+    responsePlaceholder: "Write what you checked or what to change",
   },
   copyId: {
     copied: (id) => `Copied ID: ${id}`,
@@ -444,9 +434,9 @@ export const enMessages: Messages = {
   humanDecisions: {
     title: "Needs human",
     description:
-      "Questions and review gates (human gates) agents handed to a human. Responding to or dismissing a question closes it; approving a gate unblocks its issues.",
+      "Questions and human gates agents handed to a human. Responding or dismissing closes them; closing a gate unblocks its issues.",
     empty: "No issues are waiting for a human decision.",
-    approvalRequests: "Approval requests",
+    gates: "Human gates",
     questions: "Questions",
     openDetail: "Open details",
     noDescription: "No description.",

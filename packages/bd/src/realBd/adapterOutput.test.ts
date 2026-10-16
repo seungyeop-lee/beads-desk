@@ -6,7 +6,6 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import {
   addDependency,
-  approveHumanGate,
   claimIssue,
   createIssue,
   deferIssue,
@@ -16,6 +15,7 @@ import {
   lintFindings,
   orphanIssues,
   readyIssues,
+  respondToHuman,
   showIssue,
 } from "..";
 import type { BdOutcome } from "../runBd";
@@ -137,7 +137,7 @@ test("bd history 이벤트에서 상태 변경과 관계 추가를 읽는다", a
   });
 });
 
-test("bd gate create로 만든 human gate와 막고 있는 이슈를 읽고, 승인하면 gate만 닫힌다", async () => {
+test("bd gate create로 만든 human gate와 막고 있는 이슈를 읽고, 응답하면 human 라벨이 없어도 gate만 닫힌다", async () => {
   const work = value(await createIssue(cwd, { title: "리뷰 받을 작업" }));
   const gate = await run(
     "bd",
@@ -162,10 +162,11 @@ test("bd gate create로 만든 human gate와 막고 있는 이슈를 읽고, 승
     expect.objectContaining({ id: gateId, issueType: "gate", awaitType: "human" }),
   );
 
-  value(await approveHumanGate(cwd, gateId, "배포해도 됩니다"));
+  value(await respondToHuman(cwd, gateId, "배포해도 됩니다"));
   expect(value(await showIssue(cwd, gateId))).toMatchObject({
     status: "closed",
-    closeReason: "Approved: 배포해도 됩니다",
+    closeReason: "Responded",
+    comments: [expect.objectContaining({ text: "Response: 배포해도 됩니다" })],
   });
   expect(value(await showIssue(cwd, work)).status).toBe("open");
   expect(value(await humanGates(cwd)).map((found) => found.gate.id)).not.toContain(gateId);

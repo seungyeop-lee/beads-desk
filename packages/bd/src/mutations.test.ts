@@ -6,7 +6,6 @@ import {
   addComment,
   addDependency,
   addLabel,
-  approveHumanGate,
   claimIssue,
   closeAsReplaced,
   closeIssue,
@@ -352,14 +351,14 @@ describe("댓글, 라벨, 의존 관계, 삭제", () => {
 });
 
 describe("respondToHuman, dismissHuman", () => {
-  const showArgs = (id: string) => `show --json --include-comments --include-dependents -- ${id}`;
-  const shown = (id: string, status: string, labels: string[]) => ({
-    stdout: JSON.stringify([{ id, status, labels }]),
+  const showArgs = (id: string) => `show --json -- ${id}`;
+  const shown = (id: string, fields: Record<string, unknown>) => ({
+    stdout: JSON.stringify([{ id, status: "open", labels: [], ...fields }]),
   });
 
   test("판단을 기다리는 이슈면 bd human respond와 dismiss를 실행한다", async () => {
     await useFakeBd({
-      [showArgs("demo-1")]: shown("demo-1", "open", ["human"]),
+      [showArgs("demo-1")]: shown("demo-1", { labels: ["human"] }),
       "human respond -- demo-1 Use OAuth2": {},
       "human dismiss -- demo-1 No longer applicable": {},
       "human dismiss -- demo-1": {},
@@ -370,10 +369,27 @@ describe("respondToHuman, dismissHuman", () => {
     expect(await dismissHuman(workDir, "demo-1", " ")).toEqual(succeeded);
   });
 
-  test("human 라벨이 없거나 닫힌 이슈에는 bd human 명령을 실행하지 않는다", async () => {
+  test("열린 human gate는 human 라벨이 없어도 bd human 명령으로 닫는다", async () => {
     await useFakeBd({
-      [showArgs("demo-2")]: shown("demo-2", "open", []),
-      [showArgs("demo-3")]: shown("demo-3", "closed", ["human"]),
+      [showArgs("g-1")]: shown("g-1", { issue_type: "gate", await_type: "human" }),
+      "human respond -- g-1 done": {},
+      "human dismiss -- g-1": {},
+    });
+
+    expect(await respondToHuman(workDir, "g-1", "done")).toEqual(succeeded);
+    expect(await dismissHuman(workDir, "g-1", "")).toEqual(succeeded);
+  });
+
+  test("human 라벨이 없거나 닫힌 이슈, 사람이 닫지 않는 gate에는 bd human 명령을 실행하지 않는다", async () => {
+    await useFakeBd({
+      [showArgs("demo-2")]: shown("demo-2", {}),
+      [showArgs("demo-3")]: shown("demo-3", { status: "closed", labels: ["human"] }),
+      [showArgs("g-2")]: shown("g-2", { issue_type: "gate", await_type: "timer" }),
+      [showArgs("g-3")]: shown("g-3", {
+        issue_type: "gate",
+        await_type: "human",
+        status: "closed",
+      }),
     });
     const rejected = {
       ok: false,
@@ -382,59 +398,20 @@ describe("respondToHuman, dismissHuman", () => {
 
     expect(await respondToHuman(workDir, "demo-2", "Use OAuth2")).toEqual(rejected);
     expect(await dismissHuman(workDir, "demo-3", "")).toEqual(rejected);
+    expect(await respondToHuman(workDir, "g-2", "done")).toEqual(rejected);
+    expect(await dismissHuman(workDir, "g-3", "")).toEqual(rejected);
   });
 
-  test("빈 응답은 bd를 실행하지 않는다", async () => {
+  test("빈 응답과 빈 id는 bd를 실행하지 않는다", async () => {
     await useFakeBd({});
 
     expect(await respondToHuman(workDir, "demo-1", " \n")).toEqual({
       ok: false,
       error: { message: "응답이 비어 있습니다.", exitCode: null },
     });
-  });
-});
-
-describe("approveHumanGate", () => {
-  const showArgs = (id: string) => `show --json -- ${id}`;
-  const shown = (id: string, fields: Record<string, string>) => ({
-    stdout: JSON.stringify([
-      { id, issue_type: "gate", await_type: "human", status: "open", ...fields },
-    ]),
-  });
-
-  test("열린 human gate면 승인 메모를 close reason에 담아 bd gate resolve를 실행한다", async () => {
-    await useFakeBd({
-      [showArgs("g-1")]: shown("g-1", {}),
-      "gate resolve --reason=Approved: 배포해도 됩니다 -- g-1": {},
-      "gate resolve --reason=Approved -- g-1": {},
-    });
-
-    expect(await approveHumanGate(workDir, "g-1", " 배포해도 됩니다 ")).toEqual(succeeded);
-    expect(await approveHumanGate(workDir, "g-1", " \n")).toEqual(succeeded);
-  });
-
-  test("human이 아니거나 닫힌 gate, gate가 아닌 이슈에는 bd gate resolve를 실행하지 않는다", async () => {
-    await useFakeBd({
-      [showArgs("g-2")]: shown("g-2", { await_type: "timer" }),
-      [showArgs("g-3")]: shown("g-3", { status: "closed" }),
-      [showArgs("t-1")]: shown("t-1", { issue_type: "task" }),
-    });
-    const rejected = {
+    expect(await dismissHuman(workDir, " ", "")).toEqual({
       ok: false,
-      error: { message: "사람 확인을 기다리는 gate가 아닙니다.", exitCode: null },
-    };
-
-    expect(await approveHumanGate(workDir, "g-2", "")).toEqual(rejected);
-    expect(await approveHumanGate(workDir, "g-3", "")).toEqual(rejected);
-    expect(await approveHumanGate(workDir, "t-1", "")).toEqual(rejected);
-  });
-
-  test("gate id가 비어 있으면 bd를 실행하지 않는다", async () => {
-    await useFakeBd({});
-
-    expect(await approveHumanGate(workDir, " ", "")).toEqual({
-      ok: false,
-      error: { message: "gate id가 비어 있습니다.", exitCode: null },
+      error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
     });
   });
 });

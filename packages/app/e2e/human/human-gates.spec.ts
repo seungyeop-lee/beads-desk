@@ -1,7 +1,7 @@
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { commentTexts, createHumanGate } from "../support/humanGates";
 
-test("human gate는 막고 있는 작업과 함께 판단 기다림 화면에 나오고, 피드백을 남겨도 열린 채로 남는다", async ({
+test("human gate는 막고 있는 작업과 함께 판단 기다림 화면에 나오고, 응답하면 gate만 닫히고 응답이 gate 댓글로 남는다", async ({
   page,
   workspace,
 }) => {
@@ -23,37 +23,38 @@ test("human gate는 막고 있는 작업과 함께 판단 기다림 화면에 �
   await expect(blocks.getByRole("link", { name: "로그인 화면 다시 그리기" })).toBeVisible();
   await expect(blocks).toContainText("입력란 배치를 바꿉니다.");
 
-  await decision.getByRole("textbox", { name: "피드백", exact: true }).click();
+  await decision.getByRole("textbox", { name: "응답", exact: true }).click();
   await page.keyboard.type("버튼 색을 바꿔 주세요");
-  await decision.getByRole("button", { name: "피드백 남기기" }).click();
-
-  await expect
-    .poll(() => commentTexts(workspace, gate), { timeout: SAVE_TIMEOUT })
-    .toEqual(["버튼 색을 바꿔 주세요"]);
-  await expect(
-    decision.getByRole("region", { name: "피드백" }).getByText("버튼 색을 바꿔 주세요"),
-  ).toBeVisible();
-  expect((await workspace.showIssue(gate)).status).toBe("open");
-  await expect(page.getByRole("button", { name: /Review:/ })).toHaveCount(1);
-});
-
-test("human gate를 승인하면 gate만 닫히고 막고 있던 작업은 열린 채로 남는다", async ({
-  page,
-  workspace,
-}) => {
-  const work = await workspace.createIssue("회원 가입 화면");
-  const gate = await createHumanGate(workspace, work, "회원 가입 화면 결과");
-
-  await page.goto("/human");
-  const decision = page.getByRole("region", { name: `Review: ${work}` });
-  await decision.getByRole("textbox", { name: "승인 메모" }).fill("배포해도 됩니다");
-  await decision.getByRole("button", { name: "승인하고 막힘 풀기" }).click();
+  await decision.getByRole("button", { name: "응답하고 닫기" }).click();
 
   await expect
     .poll(() => workspace.showIssue(gate).then((issue) => issue.close_reason), {
       timeout: SAVE_TIMEOUT,
     })
-    .toBe("Approved: 배포해도 됩니다");
+    .toBe("Responded");
+  expect(await commentTexts(workspace, gate)).toEqual(["Response: 버튼 색을 바꿔 주세요"]);
+  expect((await workspace.showIssue(work)).status).toBe("open");
+  await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
+});
+
+test("human 라벨이 붙은 human gate를 응답 없이 닫으면 적은 사유가 닫은 사유로 남고 막고 있던 작업은 열린 채로 남는다", async ({
+  page,
+  workspace,
+}) => {
+  const work = await workspace.createIssue("회원 가입 화면");
+  const gate = await createHumanGate(workspace, work, "회원 가입 화면 결과", { humanLabel: true });
+
+  await page.goto("/human");
+  const decision = page.getByRole("region", { name: `Review: ${work}` });
+  await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
+  await decision.getByRole("textbox", { name: "닫는 사유" }).fill("작업을 그만둠");
+  await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
+
+  await expect
+    .poll(() => workspace.showIssue(gate).then((issue) => issue.close_reason), {
+      timeout: SAVE_TIMEOUT,
+    })
+    .toBe("Dismissed: 작업을 그만둠");
   expect((await workspace.showIssue(work)).status).toBe("open");
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
 });

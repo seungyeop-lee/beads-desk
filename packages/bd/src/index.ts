@@ -30,7 +30,6 @@ export {
   addComment,
   addDependency,
   addLabel,
-  approveHumanGate,
   claimIssue,
   closeAsReplaced,
   closeIssue,

@@ -29,7 +29,7 @@ type PendingItem =
   | { kind: "question"; id: string; issue: Issue };
 
 /**
- * 판단을 기다리는 human gate와 질문을 왼쪽에 승인 요청과 질문 묶음으로 나눠 보이고, 고른 항목의 내용을 읽으며 오른쪽에서 바로 처리합니다.
+ * 판단을 기다리는 human gate와 질문을 왼쪽에 확인 요청과 질문 묶음으로 나눠 보이고, 고른 항목의 내용을 읽으며 오른쪽에서 바로 처리합니다.
  * 비어 있는 묶음은 숨깁니다.
  */
 export function HumanDecisionsScreen() {
@@ -52,7 +52,7 @@ export function HumanDecisionsScreen() {
   const selected = pending.find((item) => item.id === selectedId) ?? pending[0];
   const groups = [
     {
-      label: messages.humanDecisions.approvalRequests,
+      label: messages.humanDecisions.gates,
       items: pending.filter((item) => item.kind === "gate"),
     },
     {

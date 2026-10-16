@@ -1,10 +1,14 @@
 import type { BdWorkspace } from "./bdWorkspace";
 
-/** bds-multi가 리뷰를 요청할 때처럼 human gate를 만듭니다. human 라벨은 붙이지 않습니다. */
+/**
+ * blocks를 막는 human gate를 만듭니다. 제목은 `Review: <blocks>`입니다.
+ * humanLabel이면 beads-starter가 리뷰를 요청할 때처럼 gate에 human 라벨도 붙입니다.
+ */
 export async function createHumanGate(
   workspace: BdWorkspace,
   blocks: string,
   reason: string,
+  { humanLabel = false }: { humanLabel?: boolean } = {},
 ): Promise<string> {
   const created: { id: string } = JSON.parse(
     await workspace.bd(
@@ -20,6 +24,7 @@ export async function createHumanGate(
       "--json",
     ),
   );
+  if (humanLabel) await workspace.bd("label", "add", created.id, "human");
   return created.id;
 }
 

@@ -10,10 +10,9 @@ import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
-/** 고른 human gate의 사유와 막고 있는 작업을 보이고, 피드백을 남기거나 승인합니다. */
+/** 고른 human gate의 사유와 막고 있는 작업을 보이고, 응답하거나 응답 없이 닫습니다. */
 export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
   const { gate, reason, blocks } = summary;
-  const { data: detail, error } = useIssueDetail(gate.id);
   const issueHref = useIssueHref();
   const messages = useMessages();
 
@@ -46,7 +45,7 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
         <BlockedIssues blocks={blocks} />
       </section>
 
-      <HumanGateResponse gateId={gate.id} gate={detail} error={error} />
+      <HumanGateResponse gateId={gate.id} />
     </section>
   );
 }

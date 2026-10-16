@@ -17,7 +17,7 @@ type Props = {
   issueHref: (issueId: string) => string;
 };
 
-/** 열린 human gate가 막고 있는 작업 이슈에서, gate마다 사유와 피드백 기록을 보이고 피드백을 남기거나 승인하게 합니다. */
+/** 열린 human gate가 막고 있는 작업 이슈에서, gate마다 사유를 보이고 응답하거나 응답 없이 닫게 합니다. */
 export function HumanGatePanel({ issue, issueHref }: Props) {
   const messages = useMessages();
   const headingId = useId();
@@ -64,13 +64,18 @@ function HumanGateItem({
         <span className="font-mono text-xs font-normal text-base-content/55">{link.id}</span>
         {link.title || messages.common.untitled}
       </Link>
+      {error && (
+        <div role="alert" className="alert alert-error alert-soft">
+          <span>{messages.issueDetail.loadFailed(error)}</span>
+        </div>
+      )}
       {reason && (
         <section className="flex flex-col gap-1 text-sm" aria-label={messages.humanGate.reason}>
           <h4 className="font-semibold">{messages.humanGate.reason}</h4>
           <MarkdownEditor readOnly value={reason} />
         </section>
       )}
-      <HumanGateResponse gateId={link.id} gate={gate} error={error} />
+      <HumanGateResponse gateId={link.id} />
     </section>
   );
 }

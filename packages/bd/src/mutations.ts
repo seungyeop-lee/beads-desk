@@ -2,11 +2,11 @@ import {
   awaitsHumanDecision,
   isOpenHumanGate,
   isRecord,
+  parseIssue,
   parseIssues,
   type Issue,
   type IssueStatus,
 } from "./issue";
-import { showIssue } from "./queries";
 import { inputError, runBdChecked, runBdJson, type BdError, type BdOutcome } from "./runBd";
 
 // 모든 쓰기 명령은 값을 `--flag=값`으로, id와 본문은 `--` 뒤에 넘깁니다.
@@ -253,30 +253,6 @@ export function dismissHuman(cwd: string, issueId: string, reason: string) {
   return runHumanCommand(cwd, "dismiss", issueId, trimmed ? [trimmed] : []);
 }
 
-/**
- * human gate를 닫아, 막고 있던 이슈를 닫을 수 있게 합니다. 막고 있던 이슈 자체는 닫지 않습니다.
- * close reason은 `Approved` 또는 `Approved: <메모>`입니다. timer처럼 사람이 닫지 않는 gate를 닫지 않도록 먼저 확인합니다.
- */
-export async function approveHumanGate(
-  cwd: string,
-  gateId: string,
-  memo: string,
-): Promise<BdOutcome<null>> {
-  const id = gateId.trim();
-  if (id.length === 0) {
-    return inputError("gate id가 비어 있습니다.");
-  }
-  const shown = await runBdJson(cwd, ["show", "--json", "--", id]);
-  if (!shown.ok) {
-    return shown;
-  }
-  if (!isOpenHumanGate(Array.isArray(shown.value) ? shown.value[0] : shown.value)) {
-    return inputError("사람 확인을 기다리는 gate가 아닙니다.");
-  }
-  const trimmed = memo.trim();
-  return write(cwd, ["gate", "resolve", `--reason=Approved${trimmed ? `: ${trimmed}` : ""}`], [id]);
-}
-
 /** 이 이슈에 의존하던 이슈는 남기고 의존 관계만 지웁니다. */
 export function deleteIssue(cwd: string, issueId: string) {
   return write(cwd, ["delete", "--force"], [issueId]);
@@ -296,20 +272,28 @@ function changeLabel(
 }
 
 // bd human respond와 dismiss는 human 라벨이 없는 이슈도 경고만 남기고 닫으므로, 판단을 기다리는 이슈인지 먼저 확인합니다.
+// 열린 human gate는 라벨이 없어도 사람이 닫아야 풀리므로 판단을 기다리는 이슈로 봅니다. timer처럼 사람이 닫지 않는 gate는 받지 않습니다.
 async function runHumanCommand(
   cwd: string,
   action: "respond" | "dismiss",
   issueId: string,
   values: string[],
 ): Promise<BdOutcome<null>> {
-  const shown = await showIssue(cwd, issueId);
+  const id = issueId.trim();
+  // bd show는 id가 없으면 마지막으로 다룬 이슈를 보여 줍니다.
+  if (id.length === 0) {
+    return inputError("이슈 id가 비어 있습니다.");
+  }
+  const shown = await runBdJson(cwd, ["show", "--json", "--", id]);
   if (!shown.ok) {
     return shown;
   }
-  if (!awaitsHumanDecision(shown.value)) {
+  const record: unknown = Array.isArray(shown.value) ? shown.value[0] : shown.value;
+  const issue = parseIssue(record);
+  if (!issue || !(awaitsHumanDecision(issue) || isOpenHumanGate(record))) {
     return inputError("사람 판단을 기다리는 이슈가 아닙니다.");
   }
-  return write(cwd, ["human", action], [issueId], values);
+  return write(cwd, ["human", action], [id], values);
 }
 
 /** 빈 id가 있으면 bd를 실행하지 않습니다. values는 id 뒤에 그대로 넘깁니다. */

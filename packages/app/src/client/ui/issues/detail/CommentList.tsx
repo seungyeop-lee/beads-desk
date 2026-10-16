@@ -9,25 +9,14 @@ type Props = {
   disabled: boolean;
   /** 성공하면 true를 돌려줍니다. */
   onAdd: (text: string) => Promise<boolean>;
-  /** 입력란 이름, 안내 문구, 버튼 문구입니다. 없으면 댓글 문구를 씁니다. */
-  inputText?: { label: string; placeholder: string; submit: string };
 };
 
 /** 댓글 본문은 이슈 본문 필드처럼 markdown으로 보여 줍니다. Ctrl/Cmd+Enter로 남깁니다. 제목과 개수는 DiscussionTabs의 탭이 보입니다. */
-export function CommentList({ comments, disabled, onAdd, inputText }: Props) {
+export function CommentList({ comments, disabled, onAdd }: Props) {
   const [draft, setDraft] = useState("");
   // 남긴 뒤 입력란을 비우려면 편집기를 새로 만듭니다. 편집기는 처음 값만 받습니다.
   const [inputKey, setInputKey] = useState(0);
   const messages = useMessages();
-  const {
-    label,
-    placeholder,
-    submit: submitLabel,
-  } = inputText ?? {
-    label: messages.comments.newComment,
-    placeholder: messages.comments.placeholder,
-    submit: messages.comments.submit,
-  };
   // Ctrl/Cmd+Enter는 비활성화된 버튼을 거치지 않으므로 여기서도 처리 중인지 확인합니다.
   const submit = async () => {
     if (disabled || !draft.trim()) return;
@@ -55,8 +44,8 @@ export function CommentList({ comments, disabled, onAdd, inputText }: Props) {
           <MarkdownEditor
             key={inputKey}
             value=""
-            label={label}
-            placeholder={placeholder}
+            label={messages.comments.newComment}
+            placeholder={messages.comments.placeholder}
             onChange={setDraft}
             onSubmit={() => void submit()}
           />
@@ -68,7 +57,7 @@ export function CommentList({ comments, disabled, onAdd, inputText }: Props) {
             className="btn btn-sm btn-primary"
             disabled={disabled || !draft.trim()}
           >
-            {submitLabel}
+            {messages.comments.submit}
           </button>
         </div>
       </form>
