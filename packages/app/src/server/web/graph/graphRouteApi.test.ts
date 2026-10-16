@@ -21,7 +21,7 @@ test("닫힌 이슈까지 읽은 그래프 데이터를 돌려준다", async () 
 
   const response = await handleGraphRequest();
 
-  expect(vi.mocked(dependencyGraph).mock.calls).toEqual([["/workspace", true]]);
+  expect(vi.mocked(dependencyGraph).mock.calls).toEqual([["/workspace"]]);
   expect(await response.json()).toEqual({ ok: true, data: graph });
 });
 

@@ -122,7 +122,7 @@ test("기한이 지난 보류 이슈는 bd ready로 읽을 때 bd가 다시 연�
   expect(value(await showIssue(cwd, id)).status).toBe("open");
 });
 
-test("닫힌 이슈를 그리지 않아도, 닫힌 기능 아래의 열린 작업이 그 위 에픽에 속한다고 읽는다", async () => {
+test("닫힌 기능도 그래프에 담고, 그 아래의 열린 작업이 그 위 에픽에 속한다고 읽는다", async () => {
   const epic = value(await createIssue(cwd, { title: "소속 에픽", issueType: "epic" }));
   const feature = value(
     await createIssue(cwd, { title: "닫힌 소속 기능", issueType: "feature", parent: epic }),
@@ -131,8 +131,8 @@ test("닫힌 이슈를 그리지 않아도, 닫힌 기능 아래의 열린 작�
   // bd는 열린 하위 이슈가 있는 이슈를 force 없이 닫지 않습니다.
   expect((await closeIssue(cwd, feature, { reason: "", force: true })).ok).toBe(true);
 
-  const graph = value(await dependencyGraph(cwd, false));
-  expect(graph.issues.map(({ id }) => id)).not.toContain(feature);
+  const graph = value(await dependencyGraph(cwd));
+  expect(graph.issues.map(({ id }) => id)).toContain(feature);
   expect(graph.ancestorEpics[task]).toEqual([epic]);
 });
 

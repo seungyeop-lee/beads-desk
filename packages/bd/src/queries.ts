@@ -69,29 +69,10 @@ export type DependencyGraph = {
   ancestorEpics: Record<string, string[]>;
 };
 
-/**
- * 의존 그래프를 그릴 이슈와 그 이슈들의 의존 관계(모든 유형)를 bd list 한 번으로 읽고, 작업 상태를 정하는 값을 채웁니다.
- * 닫힌 이슈를 빼면 bd list의 기본 필터(closed 제외)를 써서 pinned, hooked, 사용자 정의 상태는 남깁니다.
- * 이때도 열린 이슈가 닫힌 상위 이슈를 거쳐 어느 에픽에 속하는지 알아야 하므로, 닫힌 이슈는 소속을 정하는 데에만 따로 읽습니다.
- */
-export async function dependencyGraph(
-  cwd: string,
-  includeClosed: boolean,
-): Promise<BdOutcome<DependencyGraph>> {
-  const status = includeClosed ? ["--all"] : [];
-  const result = await runBdJson(cwd, [
-    "list",
-    "--json",
-    "--tree=false",
-    ...status,
-    "--limit",
-    LIST_LIMIT,
-  ]);
+/** 모든 상태의 이슈와 그 이슈들의 의존 관계(모든 유형)를 bd list 한 번으로 읽고, 작업 상태를 정하는 값을 채웁니다. */
+export async function dependencyGraph(cwd: string): Promise<BdOutcome<DependencyGraph>> {
+  const result = await runBdJson(cwd, listArgs([]));
   if (!result.ok) return result;
-  const closed: BdOutcome<Issue[]> = includeClosed
-    ? { ok: true, value: [] }
-    : await queryIssues(cwd, listArgs(["closed"]));
-  if (!closed.ok) return closed;
   const issues = await withWorkSignals(
     cwd,
     Promise.resolve({ ok: true, value: parseIssues(result.value) }),
@@ -102,13 +83,13 @@ export async function dependencyGraph(
     value: {
       issues: issues.value,
       dependencies: parseIssueDependencies(result.value),
-      ancestorEpics: ancestorEpicsOf(issues.value, [...issues.value, ...closed.value]),
+      ancestorEpics: ancestorEpicsOf(issues.value),
     },
   };
 }
 
-function ancestorEpicsOf(issues: Issue[], known: Issue[]): Record<string, string[]> {
-  const byId = new Map(known.map((issue) => [issue.id, issue]));
+function ancestorEpicsOf(issues: Issue[]): Record<string, string[]> {
+  const byId = new Map(issues.map((issue) => [issue.id, issue]));
   const ancestorEpics: Record<string, string[]> = {};
   for (const issue of issues) {
     const epics: string[] = [];

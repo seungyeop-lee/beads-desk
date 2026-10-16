@@ -693,14 +693,10 @@ describe("dependencyGraph", () => {
     },
   ]);
 
-  test("닫히지 않은 이슈와 그 의존 관계를 모든 유형으로 읽고, 작업 상태를 정하는 값을 채운다", async () => {
-    await useFakeBd({
-      "list --json --tree=false --limit 0": { stdout: listed },
-      "list --json --tree=false --status closed --limit 0": { stdout: "[]" },
-      ...signals,
-    });
+  test("모든 상태의 이슈와 그 의존 관계를 모든 유형으로 한 번에 읽고, 작업 상태를 정하는 값을 채운다", async () => {
+    await useFakeBd({ "list --json --tree=false --all --limit 0": { stdout: listed }, ...signals });
 
-    const result = await dependencyGraph(workDir, false);
+    const result = await dependencyGraph(workDir);
 
     expect(result.ok && result.value.dependencies).toEqual([
       { issueId: "b", dependsOnId: "a", type: "blocks" },
@@ -712,34 +708,25 @@ describe("dependencyGraph", () => {
     ]);
   });
 
-  test("닫힌 이슈를 그리지 않아도, 닫힌 상위 이슈를 거쳐 닿는 에픽을 가까운 것부터 소속으로 담는다", async () => {
+  test("닫힌 상위 이슈를 거쳐 닿는 에픽까지 가까운 것부터 소속으로 담는다", async () => {
     await useFakeBd({
-      "list --json --tree=false --limit 0": {
+      "list --json --tree=false --all --limit 0": {
         stdout: JSON.stringify([
           { id: "outer", status: "open", issue_type: "epic" },
           { id: "inner", status: "open", issue_type: "epic", parent: "outer" },
+          { id: "feature", status: "closed", issue_type: "feature", parent: "inner" },
           { id: "task", status: "open", issue_type: "task", parent: "feature" },
           { id: "alone", status: "open", issue_type: "task" },
-        ]),
-      },
-      "list --json --tree=false --status closed --limit 0": {
-        stdout: JSON.stringify([
-          { id: "feature", status: "closed", issue_type: "feature", parent: "inner" },
         ]),
       },
       ...signals,
     });
 
-    const result = await dependencyGraph(workDir, false);
+    const result = await dependencyGraph(workDir);
 
-    expect(result.ok && result.value.issues.map((issue) => issue.id)).toEqual([
-      "outer",
-      "inner",
-      "task",
-      "alone",
-    ]);
     expect(result.ok && result.value.ancestorEpics).toEqual({
       inner: ["outer"],
+      feature: ["inner", "outer"],
       task: ["inner", "outer"],
     });
   });
@@ -755,18 +742,9 @@ describe("dependencyGraph", () => {
       ...signals,
     });
 
-    const result = await dependencyGraph(workDir, true);
+    const result = await dependencyGraph(workDir);
 
     expect(result.ok && result.value.ancestorEpics).toEqual({ x: ["y"], y: ["x"] });
-  });
-
-  test("닫힌 이슈를 포함하면 모든 상태의 이슈를 한 번에 읽고, 닫힌 이슈를 따로 읽지 않는다", async () => {
-    await useFakeBd({ "list --json --tree=false --all --limit 0": { stdout: "[]" }, ...signals });
-
-    expect(await dependencyGraph(workDir, true)).toEqual({
-      ok: true,
-      value: { issues: [], dependencies: [], ancestorEpics: {} },
-    });
   });
 });
 
