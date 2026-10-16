@@ -70,6 +70,8 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 `pnpm run check`가 typecheck, lint, format 검사, unit test를 차례로 실행합니다. lefthook이 pre-commit에서 staged 파일의 format과 lint를, pre-push에서 `pnpm run check`를 실행합니다. hook은 `pnpm install` 때 설치됩니다.
 
+`packages/bd`의 unit test는 저장해 둔 bd 출력으로 해석을 확인하므로, 설치된 bd의 출력 형식이 바뀌어도 통과합니다. bd를 업데이트했거나 `packages/bd`의 출력 해석을 고쳤다면 `pnpm run test:bd`를 실행합니다. 이 명령은 임시 디렉터리에 bd workspace를 만들고 설치된 bd로 adapter를 실행합니다(`packages/bd/src/realBd`, 약 15초). bd가 설치되어 있어야 하며, `pnpm run check`와 hook에서는 실행되지 않습니다.
+
 화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 끝내기 전에 `pnpm run test:e2e`를 실행합니다. 바뀐 동작을 다루는 시나리오가 없으면 함께 추가합니다. 시나리오 작성 규칙은 `packages/app/e2e/AGENTS.md`에 있습니다.
 
 - 처음 한 번 `pnpm run test:e2e:install`로 chromium을 설치합니다.

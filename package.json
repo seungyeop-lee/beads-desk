@@ -15,6 +15,7 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test": "vitest run",
+    "test:bd": "vitest run --config packages/bd/vitest.real-bd.config.ts",
     "test:e2e": "pnpm --filter @seungyeop-lee/beads-desk run test:e2e",
     "test:e2e:install": "pnpm --filter @seungyeop-lee/beads-desk run test:e2e:install",
     "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test"

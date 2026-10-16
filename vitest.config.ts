@@ -8,6 +8,7 @@ export default defineConfig({
     environment: "node",
     globals: false,
     include: ["**/*.test.ts"],
-    exclude: [...configDefaults.exclude, "**/.next/**", "**/dist/**"],
+    // packages/bd/src/realBd는 설치된 실제 bd를 실행하므로 `pnpm run test:bd`로 따로 실행합니다.
+    exclude: [...configDefaults.exclude, "**/.next/**", "**/dist/**", "packages/bd/src/realBd/**"],
   },
 });
