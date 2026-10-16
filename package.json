@@ -38,7 +38,7 @@
     "vitest-browser-react": "^2.3.0"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "packageManager": "pnpm@12.8.1"
 }

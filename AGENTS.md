@@ -15,6 +15,8 @@
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 
+저장소에서 개발할 때는 Node 24 이상을 씁니다. nvm을 쓰면 저장소 루트에서 `nvm use`로 `.nvmrc`의 버전을 고릅니다. `packages/app`의 `engines`(Node 22 이상)는 사용자가 배포 패키지를 설치할 때의 조건이므로 함께 올리지 않습니다.
+
 ## 실행 구조
 
 `bd-desk start`(`packages/app/bin/bd-desk.js`, 명령을 생략해도 같음)는 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 background process group으로 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
