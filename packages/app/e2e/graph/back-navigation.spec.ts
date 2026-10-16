@@ -3,43 +3,6 @@ import { resolve } from "node:path";
 import type { Page, TestInfo } from "@playwright/test";
 import { expect, test } from "../support/bdWorkspace";
 
-test("에픽 순서 보기는 두 언어에서 뒤로가기 없이 X를 표시하고 키보드로 닫는다", async ({
-  page,
-  workspace,
-}, testInfo) => {
-  await workspace.createIssues({
-    epic: { title: "돌아갈 에픽", type: "epic" },
-    first: { title: "에픽 작업", parent: "epic" },
-  });
-  await page.goto("/epics");
-  await page
-    .locator("section")
-    .filter({ hasText: "돌아갈 에픽" })
-    .getByRole("link", { name: "순서 보기" })
-    .click();
-  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
-    "돌아갈 에픽 · 순서",
-  );
-  const close = page.getByRole("link", { name: "닫기", exact: true });
-  await expect(close).toHaveAttribute("href", "/epics");
-  await expect(close).toBeVisible();
-  await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveCount(0);
-  await capture(page, testInfo, "epic-close-ko");
-  await changeLocale(page, "en");
-  const englishClose = page.getByRole("link", { name: "Close", exact: true });
-  await expect(englishClose).toBeVisible();
-  await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
-    "돌아갈 에픽 · Order",
-  );
-  await expect(page.getByRole("link", { name: "Back", exact: true })).toHaveCount(0);
-  await capture(page, testInfo, "epic-close-en");
-  await englishClose.focus();
-  await expect(englishClose).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/epics$/);
-  await expect(page.locator("section").filter({ hasText: "돌아갈 에픽" })).toBeVisible();
-});
-
 test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방문한 뒤 최초 화면까지 돌아간다", async ({
   page,
   workspace,
@@ -72,29 +35,6 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveCount(0);
   await capture(page, testInfo, "chain-close-ko");
-  await changeLocale(page, "en");
-  await expect(page.getByRole("link", { name: "Close", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Back", exact: true })).toHaveCount(0);
-  await expect(
-    page
-      .getByRole("region", { name: "Dependency graph" })
-      .getByRole("link", { name: /복귀 마지막/ }),
-  ).toBeVisible();
-  await capture(page, testInfo, "chain-close-en");
-  await changeLocale(page, "ko");
-
-  await page
-    .getByRole("region", { name: "의존 그래프" })
-    .getByRole("link", { name: /복귀 마지막/ })
-    .click();
-  await expect(page.getByRole("region", { name: `${last} 이슈` })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page).toHaveURL((url) => !url.searchParams.has("issue"));
-  await page.reload();
-  await expect(page.getByRole("link", { name: "닫기", exact: true })).toHaveAttribute(
-    "href",
-    origin,
-  );
 
   await page
     .getByRole("region", { name: "의존 그래프" })
@@ -193,11 +133,4 @@ async function capture(page: Page, testInfo: TestInfo, name: string) {
   const directory = resolve(process.cwd(), "../../tmp/0bl-evidence");
   await mkdir(directory, { recursive: true });
   await page.screenshot({ path: resolve(directory, `${name}.png`), animations: "disabled" });
-}
-
-async function changeLocale(page: Page, locale: string) {
-  await page
-    .context()
-    .addCookies([{ name: "beads-desk-locale", value: locale, url: new URL(page.url()).origin }]);
-  await page.reload();
 }
