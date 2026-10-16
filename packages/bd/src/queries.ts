@@ -62,11 +62,17 @@ export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutc
   return queryIssues(cwd, listArgs(statuses));
 }
 
-export type DependencyGraph = { issues: Issue[]; dependencies: IssueDependency[] };
+export type DependencyGraph = {
+  issues: Issue[];
+  dependencies: IssueDependency[];
+  /** issues의 이슈마다 parent를 따라 올라가며 만나는 에픽 id를 가까운 것부터 담습니다. 에픽에 속하지 않은 이슈는 담지 않습니다. */
+  ancestorEpics: Record<string, string[]>;
+};
 
 /**
  * 의존 그래프를 그릴 이슈와 그 이슈들의 의존 관계(모든 유형)를 bd list 한 번으로 읽고, 작업 상태를 정하는 값을 채웁니다.
  * 닫힌 이슈를 빼면 bd list의 기본 필터(closed 제외)를 써서 pinned, hooked, 사용자 정의 상태는 남깁니다.
+ * 이때도 열린 이슈가 닫힌 상위 이슈를 거쳐 어느 에픽에 속하는지 알아야 하므로, 닫힌 이슈는 소속을 정하는 데에만 따로 읽습니다.
  */
 export async function dependencyGraph(
   cwd: string,
@@ -82,16 +88,41 @@ export async function dependencyGraph(
     LIST_LIMIT,
   ]);
   if (!result.ok) return result;
+  const closed: BdOutcome<Issue[]> = includeClosed
+    ? { ok: true, value: [] }
+    : await queryIssues(cwd, listArgs(["closed"]));
+  if (!closed.ok) return closed;
   const issues = await withWorkSignals(
     cwd,
     Promise.resolve({ ok: true, value: parseIssues(result.value) }),
   );
-  return issues.ok
-    ? {
-        ok: true,
-        value: { issues: issues.value, dependencies: parseIssueDependencies(result.value) },
-      }
-    : issues;
+  if (!issues.ok) return issues;
+  return {
+    ok: true,
+    value: {
+      issues: issues.value,
+      dependencies: parseIssueDependencies(result.value),
+      ancestorEpics: ancestorEpicsOf(issues.value, [...issues.value, ...closed.value]),
+    },
+  };
+}
+
+function ancestorEpicsOf(issues: Issue[], known: Issue[]): Record<string, string[]> {
+  const byId = new Map(known.map((issue) => [issue.id, issue]));
+  const ancestorEpics: Record<string, string[]> = {};
+  for (const issue of issues) {
+    const epics: string[] = [];
+    const reached = new Set([issue.id]);
+    let ancestor = issue.parent ? byId.get(issue.parent) : undefined;
+    // 상위 관계가 순환해도 같은 이슈를 다시 따라가지 않습니다.
+    while (ancestor && !reached.has(ancestor.id)) {
+      reached.add(ancestor.id);
+      if (ancestor.issueType === "epic") epics.push(ancestor.id);
+      ancestor = ancestor.parent ? byId.get(ancestor.parent) : undefined;
+    }
+    if (epics.length > 0) ancestorEpics[issue.id] = epics;
+  }
+  return ancestorEpics;
 }
 
 /** 이슈의 변경 이벤트를 읽습니다. 댓글은 이벤트로 남지 않으므로 showIssue의 comments로 읽습니다. */

@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 test("query에 따라 닫힌 이슈를 포함하거나 빼고 그래프 데이터를 읽어 돌려준다", async () => {
-  const graph = { issues: [], dependencies: [] };
+  const graph = { issues: [], dependencies: [], ancestorEpics: {} };
   vi.mocked(dependencyGraph).mockResolvedValue({ ok: true, value: graph });
 
   const response = await handleGraphRequest(new Request("http://localhost/api/graph?closed=1"));

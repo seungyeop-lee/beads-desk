@@ -61,15 +61,62 @@ test("상위 에픽 필터는 그 에픽의 후손만 그리고, 고른 필터�
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   await expect(canvas.getByRole("link", { name: /에픽 밖 나중/ })).toBeVisible();
 
-  await page.getByRole("combobox", { name: "상위 에픽" }).selectOption(epic);
+  // 개별 에픽 항목은 짧은 ID와 제목으로 보입니다.
+  const epicOption = `${epic.slice(epic.lastIndexOf("-") + 1)} 필터 에픽`;
+  await page.getByRole("combobox", { name: "상위 에픽" }).selectOption({ label: epicOption });
   await expect(page).toHaveURL(new RegExp(`epic=${epic}`));
   await expect(canvas.getByRole("link", { name: /에픽 밖 나중/ })).toHaveCount(0);
   await expect(canvas.getByRole("link", { name: /에픽 안 나중/ })).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole("combobox", { name: "상위 에픽" })).toHaveValue(epic);
+  await expect(
+    page.getByRole("combobox", { name: "상위 에픽" }).locator("option:checked"),
+  ).toHaveText(epicOption);
   await expect(canvas.getByRole("link", { name: /에픽 안 나중/ })).toBeVisible();
   await expect(canvas.getByRole("link", { name: /에픽 밖 나중/ })).toHaveCount(0);
+});
+
+test("에픽에 속한 이슈와 속하지 않은 이슈를 고르면 닫힌 상위 기능을 거친 소속까지 따져 거르고, 고른 항목은 새로고침 뒤에도 남는다", async ({
+  page,
+  workspace,
+}) => {
+  await workspace.createIssues(
+    {
+      epic: { title: "소속 에픽", type: "epic" },
+      feature: { title: "닫힌 소속 기능", type: "feature", parent: "epic", status: "closed" },
+      inside1: { title: "소속 안 먼저", parent: "feature" },
+      inside2: { title: "소속 안 나중", parent: "feature" },
+      outside1: { title: "소속 밖 먼저" },
+      outside2: { title: "소속 밖 나중" },
+    },
+    [
+      ["inside2", "inside1"],
+      ["outside2", "outside1"],
+    ],
+  );
+
+  await page.goto("/graph");
+  const canvas = page.getByRole("region", { name: "의존 그래프" });
+  const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
+  const epicSelect = page.getByRole("combobox", { name: "상위 에픽" });
+  await expect(node("소속 밖 나중")).toBeVisible();
+  await expect(node("소속 안 나중")).toBeVisible();
+  await expect(epicSelect.locator("option:checked")).toHaveText("전체");
+
+  await epicSelect.selectOption({ label: "에픽에 속한 이슈" });
+  await expect(page).toHaveURL(/in-epic=1/);
+  await expect(node("소속 안 나중")).toBeVisible();
+  await expect(node("소속 밖 나중")).toHaveCount(0);
+
+  await epicSelect.selectOption({ label: "에픽에 속하지 않은 이슈" });
+  await expect(page).toHaveURL(/in-epic=0/);
+  await expect(node("소속 밖 나중")).toBeVisible();
+  await expect(node("소속 안 나중")).toHaveCount(0);
+
+  await page.reload();
+  await expect(epicSelect.locator("option:checked")).toHaveText("에픽에 속하지 않은 이슈");
+  await expect(node("소속 밖 나중")).toBeVisible();
+  await expect(node("소속 안 나중")).toHaveCount(0);
 });
 
 test("그래프 영역은 화면 높이 안에 들어가 페이지가 세로로 스크롤되지 않는다", async ({

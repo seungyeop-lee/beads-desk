@@ -1,4 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
+import type { EpicFilter } from "@/client/modules/graph/domain/graphFilter";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { WORK_STATE_ORDER } from "@/client/modules/issues/domain/workState";
 import { CheckboxMenu } from "@/client/ui/designSystem/CheckboxMenu";
@@ -18,20 +19,27 @@ export function GraphFilterBar({ address, epics, onChange }: Props) {
   const messages = useMessages();
   const { epic, types, states, includeClosed } = address;
   // 주소로 연 에픽이 지금 읽은 이슈에 없어도(닫혀서 빠졌을 때 등) 고른 값이 사라지지 않게 남깁니다.
-  const missingEpic = epic !== null && !epics.some((candidate) => candidate.id === epic);
+  const missingEpic =
+    epic.kind === "epic" && !epics.some((candidate) => candidate.id === epic.id) ? epic.id : null;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
       <select
         className="select select-sm w-72 rounded-full"
         aria-label={messages.graph.epic}
-        value={epic ?? ""}
-        onChange={(event) => onChange({ epic: event.target.value || null })}
+        value={epicOptionValue(epic)}
+        onChange={(event) => onChange({ epic: readEpicOption(event.target.value) })}
       >
-        <option value="">{messages.graph.allEpics}</option>
-        {missingEpic && <option value={epic}>{epic}</option>}
+        {EPIC_SCOPES.map((scope) => (
+          <option key={scope} value={scope}>
+            {messages.graph.epicScopes[scope]}
+          </option>
+        ))}
+        {missingEpic && (
+          <option value={epicOptionValue({ kind: "epic", id: missingEpic })}>{missingEpic}</option>
+        )}
         {epics.map((candidate) => (
-          <option key={candidate.id} value={candidate.id}>
+          <option key={candidate.id} value={epicOptionValue({ kind: "epic", id: candidate.id })}>
             {shortIssueId(candidate.id)} {candidate.title}
           </option>
         ))}
@@ -76,4 +84,20 @@ export function GraphFilterBar({ address, epics, onChange }: Props) {
       </label>
     </div>
   );
+}
+
+const EPIC_SCOPES = ["all", "inEpic", "noEpic"] as const;
+
+/** 에픽 id가 소속 조건의 이름과 겹쳐도 구별되도록, 개별 에픽의 option 값에는 앞에 표시를 붙입니다. */
+const EPIC_OPTION_PREFIX = "epic:";
+
+function epicOptionValue(epic: EpicFilter): string {
+  return epic.kind === "epic" ? `${EPIC_OPTION_PREFIX}${epic.id}` : epic.kind;
+}
+
+function readEpicOption(value: string): EpicFilter {
+  if (value.startsWith(EPIC_OPTION_PREFIX)) {
+    return { kind: "epic", id: value.slice(EPIC_OPTION_PREFIX.length) };
+  }
+  return { kind: EPIC_SCOPES.find((scope) => scope === value) ?? "all" };
 }

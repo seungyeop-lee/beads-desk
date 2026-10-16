@@ -392,7 +392,7 @@ export const koMessages = {
     tabList: "그래프 관점",
     tabs: { order: "실행 순서", hierarchy: "계층", relations: "전체 관계" },
     epic: "상위 에픽",
-    allEpics: "모든 에픽",
+    epicScopes: { all: "전체", inEpic: "에픽에 속한 이슈", noEpic: "에픽에 속하지 않은 이슈" },
     states: "작업 상태",
     allStates: "전체",
     stateCount: (count: number) => `${count}개`,

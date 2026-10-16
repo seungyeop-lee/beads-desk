@@ -76,7 +76,10 @@ export function GraphScreen() {
   const view = useMemo(
     () =>
       data
-        ? TAB_VIEWS[address.tab].view(filterGraphIssues(data.issues, address), data.dependencies)
+        ? TAB_VIEWS[address.tab].view(
+            filterGraphIssues(data.issues, data.ancestorEpics, address),
+            data.dependencies,
+          )
         : null,
     [data, address],
   );

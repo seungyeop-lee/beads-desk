@@ -381,7 +381,7 @@ export const enMessages: Messages = {
     tabList: "Graph views",
     tabs: { order: "Execution order", hierarchy: "Hierarchy", relations: "All relations" },
     epic: "Parent epic",
-    allEpics: "All epics",
+    epicScopes: { all: "All issues", inEpic: "In an epic", noEpic: "Not in an epic" },
     states: "Work state",
     allStates: "All",
     stateCount: (count) => `${count}`,

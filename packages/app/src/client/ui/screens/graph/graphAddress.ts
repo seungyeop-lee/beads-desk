@@ -1,4 +1,4 @@
-import type { GraphFilter } from "@/client/modules/graph/domain/graphFilter";
+import type { EpicFilter, GraphFilter } from "@/client/modules/graph/domain/graphFilter";
 import { WORK_STATE_ORDER, type WorkState } from "@/client/modules/issues/domain/workState";
 
 /** 의존 그래프의 관점별 탭입니다. */
@@ -7,6 +7,8 @@ export type GraphTab = (typeof GRAPH_TABS)[number];
 
 const TAB_PARAM = "tab";
 const EPIC_PARAM = "epic";
+/** 에픽에 속한 이슈(1)와 속하지 않은 이슈(0)는 이슈 id와 겹치지 않도록 EPIC_PARAM과 다른 이름으로 담습니다. */
+const IN_EPIC_PARAM = "in-epic";
 const TYPE_PARAM = "type";
 const STATE_PARAM = "state";
 const CLOSED_PARAM = "closed";
@@ -14,11 +16,13 @@ const CLOSED_PARAM = "closed";
 /** 의존 그래프 주소에 담는 조건입니다. 새로고침과 링크로도 같은 그래프를 엽니다. */
 export type GraphAddress = GraphFilter & { tab: GraphTab; includeClosed: boolean };
 
-/** 기본값인 조건(첫 탭, 모든 에픽, 모든 유형, 모든 작업 상태, 닫힌 이슈 제외)은 주소에 넣지 않습니다. */
+/** 기본값인 조건(첫 탭, 에픽 소속 전체, 모든 유형, 모든 작업 상태, 닫힌 이슈 제외)은 주소에 넣지 않습니다. */
 export function graphHref({ tab, epic, types, states, includeClosed }: GraphAddress): string {
   const params = new URLSearchParams();
   if (tab !== GRAPH_TABS[0]) params.set(TAB_PARAM, tab);
-  if (epic) params.set(EPIC_PARAM, epic);
+  if (epic.kind === "epic") params.set(EPIC_PARAM, epic.id);
+  if (epic.kind === "inEpic") params.set(IN_EPIC_PARAM, "1");
+  if (epic.kind === "noEpic") params.set(IN_EPIC_PARAM, "0");
   for (const type of types) params.append(TYPE_PARAM, type);
   for (const state of states) params.append(STATE_PARAM, state);
   if (includeClosed) params.set(CLOSED_PARAM, "1");
@@ -28,11 +32,20 @@ export function graphHref({ tab, epic, types, states, includeClosed }: GraphAddr
 export function readGraphAddress(params: URLSearchParams): GraphAddress {
   return {
     tab: GRAPH_TABS.find((tab) => tab === params.get(TAB_PARAM)) ?? GRAPH_TABS[0],
-    epic: params.get(EPIC_PARAM) || null,
+    epic: readEpicFilter(params),
     types: params.getAll(TYPE_PARAM).filter((type) => type !== ""),
     states: params
       .getAll(STATE_PARAM)
       .filter((state): state is WorkState => (WORK_STATE_ORDER as string[]).includes(state)),
     includeClosed: params.get(CLOSED_PARAM) === "1",
   };
+}
+
+function readEpicFilter(params: URLSearchParams): EpicFilter {
+  const id = params.get(EPIC_PARAM);
+  if (id) return { kind: "epic", id };
+  const inEpic = params.get(IN_EPIC_PARAM);
+  if (inEpic === "1") return { kind: "inEpic" };
+  if (inEpic === "0") return { kind: "noEpic" };
+  return { kind: "all" };
 }
