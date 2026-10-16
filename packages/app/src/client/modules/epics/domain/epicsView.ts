@@ -27,8 +27,8 @@ function statusRank(status: string): number {
 
 /**
  * 펼쳐 둘 epic을 정합니다. 바꿀 필요가 없으면 expanded를 그대로 돌려줍니다.
- * 처음 받았거나 펼쳐 둔 epic이 모두 목록에서 사라졌으면(다른 workspace로 바꾼 경우) 정렬한 목록의 맨 위 epic만 펼칩니다.
- * 사용자가 모두 접었으면 그대로 둡니다.
+ * 처음 받았거나 펼쳐 둔 epic이 모두 목록에서 사라졌으면(다른 workspace로 바꾼 경우) 정렬한 목록에서 닫히지 않은 맨 위 epic만 펼칩니다.
+ * 닫힌 epic의 하위 이슈는 이미 끝난 작업이라 처음부터 펼치지 않습니다. 사용자가 모두 접었으면 그대로 둡니다.
  *
  * @param expanded 아직 정하지 않았으면 null입니다.
  */
@@ -38,8 +38,9 @@ export function settleExpandedEpics(
 ): ReadonlySet<string> | null {
   const stale =
     expanded === null || (expanded.size > 0 && !sorted.some(({ epic }) => expanded.has(epic.id)));
-  if (!stale || sorted.length === 0) return expanded;
-  return new Set([sorted[0]!.epic.id]);
+  const first = sorted.find(({ epic }) => epic.status !== "closed");
+  if (!stale || !first) return expanded;
+  return new Set([first.epic.id]);
 }
 
 /** 에픽에 기존 이슈를 하위로 넣을 때 후보에서 뺄 이슈를 고릅니다. 에픽 자신과 다른 에픽, 결정, 이미 그 에픽에 속한 후손 이슈입니다. */

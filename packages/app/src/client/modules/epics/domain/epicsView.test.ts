@@ -37,6 +37,16 @@ describe("settleExpandedEpics", () => {
     expect(settleExpandedEpics([], null)).toBeNull();
   });
 
+  test("닫힌 epic은 펼치지 않고, 닫히지 않은 epic 가운데 맨 위 epic만 펼친다", () => {
+    const closed = [summary("done-a", "closed"), summary("done-b", "closed")];
+
+    expect(settleExpandedEpics([...closed, summary("deferred", "deferred")], null)).toEqual(
+      new Set(["deferred"]),
+    );
+    expect(settleExpandedEpics(closed, null)).toBeNull();
+    expect(settleExpandedEpics(closed, new Set(["other-workspace"]))?.has("done-a")).toBe(false);
+  });
+
   test("순서가 바뀌어도 사용자가 펼치거나 모두 접은 상태를 그대로 둔다", () => {
     const expanded = new Set(["a"]);
     const collapsed = new Set<string>();
