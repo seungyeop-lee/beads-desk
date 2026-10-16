@@ -11,7 +11,7 @@
   - 댓글처럼 `createIssues`로 표현할 수 없는 준비와, 서버 알림을 확인하려고 시나리오 도중에 CLI로 바꾸는 동작은 `workspace.bd(...인자)`로 실행합니다.
 - 이 저장소나 다른 실제 workspace의 `.beads`를 쓰지 않습니다. 시나리오에서 `POST /api/workspaces`로 workspace를 직접 바꾸지 않습니다.
 - 서버의 현재 workspace는 서버 전체에서 하나라서, worker마다 서버를 따로 띄우고(`support/appServer.ts`) 한 worker 안의 시나리오는 순서대로 실행합니다. 시나리오에서 `page.goto`와 `request`는 상대 경로로 써서 자기 worker의 서버로 보냅니다.
-- worker들이 bd를 동시에 실행하면 시나리오가 혼자 돌 때보다 두 배쯤 느려집니다. 그래서 `playwright.config.ts`의 test timeout은 60초, expect timeout은 10초입니다.
+- worker들이 bd를 동시에 실행하면 디스크 I/O를 함께 쓰느라 시나리오가 혼자 돌 때보다 느려집니다. 그래서 macOS에서는 시나리오 workspace를 RAM disk에 만들고(`support/ramDisk.ts`), `playwright.config.ts`의 test timeout은 60초, expect timeout은 10초로 둡니다. 시나리오와 지원 코드에서 임시 디렉터리는 `os.tmpdir()`로 얻습니다. `/tmp` 같은 경로를 직접 쓰면 RAM disk 밖에 만들어집니다.
 
 ## 시나리오 범위
 

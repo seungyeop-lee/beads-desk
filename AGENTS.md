@@ -73,7 +73,8 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 끝내기 전에 `pnpm run test:e2e`를 실행합니다. 바뀐 동작을 다루는 시나리오가 없으면 함께 추가합니다. 시나리오 작성 규칙은 `packages/app/e2e/AGENTS.md`에 있습니다.
 
 - 처음 한 번 `pnpm run test:e2e:install`로 chromium을 설치합니다.
-- `pnpm run test:e2e`는 app을 production build로 빌드한 뒤 시나리오를 worker 4개로 나눠 실행합니다. worker마다 3900번부터 3903번 포트 가운데 하나에서 `next start`를 띄우고, 실행이 끝나면 서버를 종료합니다. `next dev`가 떠 있어도 됩니다. 이 포트를 다른 프로세스가 쓰고 있으면 그 worker의 시나리오는 실행하지 않고 실패합니다.
+- `pnpm run test:e2e`는 app을 production build로 빌드한 뒤 시나리오를 worker 8개로 나눠 실행합니다. worker마다 3900번부터 3907번 포트 가운데 하나에서 `next start`를 띄우고, 실행이 끝나면 서버를 종료합니다. `next dev`가 떠 있어도 됩니다. 이 포트를 다른 프로세스가 쓰고 있으면 그 worker의 시나리오는 실행하지 않고 실패합니다.
+- macOS에서는 실행하는 동안 `/Volumes/beads-desk-e2e`에 512MB RAM disk를 붙이고, 시나리오 workspace를 그 아래에 만듭니다. 실행이 끝나면 성공·실패와 관계없이 떼어 냅니다. 앞 실행이 비정상으로 끝나 volume이 남아 있으면 다음 실행이 떼고 새로 만듭니다. RAM disk 없이 실행하려면 `BEADS_DESK_E2E_RAMDISK=0`을 줍니다. 디스크에서는 worker들의 bd 실행이 디스크 I/O를 함께 쓰느라 느려져, 저장 확인이 timeout을 넘길 수 있습니다.
 - 시나리오 일부만 다시 실행하려면 `packages/app`에서 `pnpm exec playwright test <spec 경로>`를 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고친 뒤에는 `pnpm run test:e2e`나 `pnpm run build`로 다시 빌드합니다.
 - 시나리오가 실패하면 `packages/app/test-results`에 screenshot과 trace가 남습니다. trace는 `pnpm exec playwright show-trace <trace.zip 경로>`로 엽니다.
 
