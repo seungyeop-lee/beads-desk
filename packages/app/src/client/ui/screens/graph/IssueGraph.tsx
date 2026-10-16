@@ -15,6 +15,7 @@ import { useMemo } from "react";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
+import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { type GraphLayout, NODE_HEIGHT, NODE_WIDTH } from "./graphLayout";
 
@@ -89,7 +90,7 @@ export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref 
   );
 }
 
-/** 노드 전체가 상세 dialog를 여는 링크입니다. 작업 상태 색과 이름은 다른 화면과 같은 workState 기준을 따릅니다. */
+/** 노드 전체가 상세 dialog를 여는 링크입니다. 유형과 작업 상태의 색과 이름은 다른 화면과 같은 기준을 따릅니다. */
 function IssueNodeView({ data: { issue, href } }: NodeProps<IssueNode>) {
   const messages = useMessages();
   const state = workState(issue);
@@ -107,9 +108,11 @@ function IssueNodeView({ data: { issue, href } }: NodeProps<IssueNode>) {
         className="nopan pointer-events-auto flex size-full flex-col gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-xs transition hover:border-base-content/30 hover:shadow-sm"
       >
         <span className="flex items-center gap-1.5 text-base-content/55">
+          <IssueTypeTag issueType={issue.issueType} />
+          <span aria-hidden>·</span>
           <span className={`tone-dot ${workStateTone(state)}`} />
-          {messages.workStates.labels[state]}
-          <span className="ml-auto font-mono">{shortIssueId(issue.id)}</span>
+          <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
+          <span className="ml-auto shrink-0 font-mono">{shortIssueId(issue.id)}</span>
         </span>
         <span className="line-clamp-2 text-sm leading-snug font-medium text-base-content">
           {issue.title}

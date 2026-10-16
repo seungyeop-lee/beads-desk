@@ -21,6 +21,7 @@ test("전체 관계 탭은 blocks, parent-child, related로 이어진 이슈를 
   const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
   await expect(node("관계 참고")).toBeVisible();
   await expect(node("관계 에픽")).toBeVisible();
+  await expect(node("관계 에픽").getByText("에픽", { exact: true })).toBeVisible();
   await expect(node("관계 없음")).toHaveCount(0);
   await expect(page.getByText("관계가 없는 이슈 1개는 그리지 않았습니다.")).toBeVisible();
 

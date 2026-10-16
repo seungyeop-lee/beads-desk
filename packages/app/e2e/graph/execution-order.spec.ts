@@ -21,6 +21,7 @@ test("blocks로 이어진 이슈는 실행 순서 탭에서 먼저 할 것부터
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
   await expect(node("그래프 셋째")).toBeVisible();
+  await expect(node("그래프 셋째").getByText("작업", { exact: true })).toBeVisible();
   await expect(node("그래프 관계 없음")).toHaveCount(0);
   await expect(page.getByText("blocks 관계가 없는 이슈 1개는 그리지 않았습니다.")).toBeVisible();
   await expect(page.getByRole("button", { name: /먼저 끝내야 하는 이슈를 왼쪽에/ })).toBeVisible();
