@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { expect, test, type BdWorkspace } from "../support/bdWorkspace";
+import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
 
 test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열리고, 주소로 새로고침과 뒤로·앞으로 가기를 따른다", async ({
   page,
@@ -135,3 +135,30 @@ function detailUrl(issue: string, side: string | null): RegExp {
   const query = side ? `issue=${issue}&side=${side}` : `issue=${issue}`;
   return new RegExp(`/issues\\?${query}$`);
 }
+
+test("옆 패널을 연 상세에서도 상태와 우선순위 입력이 하나씩만 있고, 상태를 바꾸면 저장된다", async ({
+  page,
+  workspace,
+}) => {
+  const { main, dependency } = await workspace.createIssues(
+    {
+      main: { title: "주 이슈", type: "task", description: "주 이슈 본문" },
+      dependency: { title: "선행 이슈", type: "task" },
+    },
+    [["main", "dependency"]],
+  );
+  // 옆 패널 때문에 주 상세가 좁아지면 속성 입력이 본문 위로 옮겨 그려집니다.
+  await page.setViewportSize({ width: 1220, height: 1000 });
+  await page.goto(`/issues?issue=${main}&side=${dependency}`);
+
+  const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
+  await expect(dialog.getByRole("region", { name: `${dependency} 이슈 옆 패널` })).toBeVisible();
+  // 배치를 바꿔도 입력이 하나씩만 그려져야 label이 가리키는 대상이 하나로 정해집니다.
+  await expect(page.locator("#issue-status")).toHaveCount(1);
+  await expect(page.locator("#issue-priority")).toHaveCount(1);
+
+  await dialog.getByLabel("상태", { exact: true }).selectOption("in_progress");
+  await expect
+    .poll(async () => (await workspace.showIssue(main)).status, { timeout: SAVE_TIMEOUT })
+    .toBe("in_progress");
+});

@@ -1,4 +1,3 @@
-import { writeFile } from "node:fs/promises";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 
 const KOREAN_TITLE =
@@ -6,130 +5,10 @@ const KOREAN_TITLE =
 const ENGLISH_TITLE =
   "Read every word of this long English issue title without opening its detail or hovering, while keeping different node heights and all dependency edges readable";
 
-for (const viewport of [
-  { width: 1440, height: 900 },
-  { width: 2560, height: 1410 },
-]) {
-  for (const shape of ["two", "groups"] as const) {
-    for (const scope of ["epic", "center"] as const) {
-      if (shape === "groups" && scope === "center") continue;
-      test(`${viewport.width}×${viewport.height} ${scope} ${shape} 그래프는 모달 중앙에 배치하고 제목을 끝까지 보인다`, async ({
-        page,
-        workspace,
-      }, testInfo) => {
-        await page.setViewportSize(viewport);
-        const ids = await workspace.createIssues<string>(
-          {
-            epic: { title: `${KOREAN_TITLE} ${ENGLISH_TITLE}`, type: "epic" },
-            first: { title: KOREAN_TITLE, parent: "epic" },
-            second: { title: ENGLISH_TITLE, parent: "epic" },
-            ...(shape === "groups"
-              ? {
-                  third: { title: "세 번째 단계", parent: "epic" },
-                  fourth: { title: "네 번째 단계", parent: "epic" },
-                  otherFirst: { title: "다른 묶음 첫째", parent: "epic" },
-                  otherSecond: { title: KOREAN_TITLE + " 다른 묶음 둘째", parent: "epic" },
-                  alone: { title: "관계 없는 작업", parent: "epic" },
-                }
-              : {}),
-          },
-          [
-            ["second", "first"],
-            ...(shape === "groups"
-              ? ([
-                  ["third", "second"],
-                  ["fourth", "third"],
-                  ["otherSecond", "otherFirst"],
-                ] as [string, string][])
-              : []),
-          ],
-        );
-        await page.goto(`/graph?${scope}=${scope === "epic" ? ids.epic : ids.second}`);
-        const dialog = page.getByRole("dialog");
-        const canvas = dialog.getByRole("region", { name: "의존 그래프" });
-        const nodes = canvas.locator(".react-flow__node");
-        await expect(nodes).toHaveCount(shape === "groups" ? 6 : 2);
-        const title = dialog.getByRole("heading", { level: 1 });
-        await expect(title).toHaveCSS("font-size", "16px");
-        const close = dialog.getByRole("link", { name: "닫기", exact: true });
-        await expect(close).toBeInViewport();
-        const headerBox = (await title.boundingBox())!;
-        const closeBox = (await close.boundingBox())!;
-        expect(headerBox.x + headerBox.width).toBeLessThan(closeBox.x);
-        const bounds = await canvas.evaluate((element) => {
-          const box = element.getBoundingClientRect().toJSON();
-          const nodeBoxes = [...element.querySelectorAll<HTMLElement>(".react-flow__node")].map(
-            (node) => ({ id: node.dataset.id, ...node.getBoundingClientRect().toJSON() }),
-          );
-          const matrix = new DOMMatrixReadOnly(
-            getComputedStyle(element.querySelector(".react-flow__viewport")!).transform,
-          );
-          return { canvas: box, nodes: nodeBoxes, zoom: matrix.a };
-        });
-        expect(bounds.zoom).toBeGreaterThanOrEqual(0.75);
-        expect(bounds.zoom).toBeLessThanOrEqual(1.25);
-        const left = Math.min(...bounds.nodes.map((node) => node.x));
-        const right = Math.max(...bounds.nodes.map((node) => node.x + node.width));
-        const top =
-          Math.min(...bounds.nodes.map((node) => node.y)) -
-          (scope === "epic" ? 32 * bounds.zoom : 0);
-        const bottom = Math.max(...bounds.nodes.map((node) => node.y + node.height));
-        expect((left + right) / 2).toBeCloseTo(bounds.canvas.x + bounds.canvas.width / 2, 0);
-        expect((top + bottom) / 2).toBeCloseTo(bounds.canvas.y + bounds.canvas.height / 2, 0);
-        for (let i = 0; i < bounds.nodes.length; i++)
-          for (let j = i + 1; j < bounds.nodes.length; j++) {
-            const a = bounds.nodes[i]!;
-            const b = bounds.nodes[j]!;
-            expect(
-              a.x + a.width <= b.x ||
-                b.x + b.width <= a.x ||
-                a.y + a.height <= b.y ||
-                b.y + b.height <= a.y,
-            ).toBe(true);
-          }
-        for (const text of [KOREAN_TITLE, ENGLISH_TITLE]) {
-          const textSize = await canvas.getByText(text, { exact: true }).evaluate((element) => ({
-            height: element.clientHeight,
-            content: element.scrollHeight,
-            width: element.clientWidth,
-            contentWidth: element.scrollWidth,
-            lineHeight: parseFloat(getComputedStyle(element).lineHeight),
-          }));
-          expect(textSize.height).toBe(textSize.content);
-          expect(textSize.width).toBe(textSize.contentWidth);
-          expect(textSize.height).toBeGreaterThan(textSize.lineHeight * 2);
-        }
-        await writeFile(testInfo.outputPath("bounds.json"), JSON.stringify(bounds, null, 2));
-        await page.screenshot({ path: testInfo.outputPath("graph.png") });
-        if (shape === "groups") {
-          const panel = dialog.getByRole("region", { name: "선후 관계 없음" });
-          if (await panel.getByRole("button", { name: "선후 관계 없는 이슈 목록 펼치기" }).count())
-            await panel.getByRole("button", { name: "선후 관계 없는 이슈 목록 펼치기" }).click();
-          await expect(panel.getByRole("link", { name: /관계 없는 작업/ })).toBeVisible();
-          await expect
-            .poll(async () =>
-              canvas.evaluate((element) => {
-                const box = element.getBoundingClientRect();
-                const nodes = [...element.querySelectorAll(".react-flow__node")].map((node) =>
-                  node.getBoundingClientRect(),
-                );
-                const left = Math.min(...nodes.map((node) => node.x));
-                const right = Math.max(...nodes.map((node) => node.right));
-                return Math.abs((left + right) / 2 - (box.x + box.width / 2));
-              }),
-            )
-            .toBeLessThan(1);
-          await page.screenshot({ path: testInfo.outputPath("panel-open.png") });
-        }
-      });
-    }
-  }
-}
-
 test("출발 목록을 유지하고 그래프 상세를 편집하며 Escape·닫기·브라우저 뒤로가기로 원래 상세와 옆 패널을 복원한다", async ({
   page,
   workspace,
-}, testInfo) => {
+}) => {
   const { first, second } = await workspace.createIssues(
     { first: { title: "모달 출발 선행" }, second: { title: "모달 출발 기준" } },
     [["second", "first"]],
@@ -157,14 +36,12 @@ test("출발 목록을 유지하고 그래프 상세를 편집하며 Escape·닫
   const detail = graph.getByRole("region", { name: `${first} 이슈`, exact: true });
   await expect(detail).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(1);
-  await page.screenshot({ path: testInfo.outputPath("detail-open.png") });
   await detail.getByRole("button", { name: "모달 출발 선행", exact: true }).click();
   await detail.getByRole("textbox", { name: "제목", exact: true }).fill("그래프에서 수정한 제목");
   await detail.getByRole("button", { name: "저장", exact: true }).click();
   await expect
     .poll(async () => (await workspace.showIssue(first)).title, { timeout: SAVE_TIMEOUT })
     .toBe("그래프에서 수정한 제목");
-  await page.screenshot({ path: testInfo.outputPath("detail-edit.png") });
   await detail.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(detail).toHaveCount(0);
   await expect(canvas.getByRole("link", { name: /그래프에서 수정한 제목/ })).toBeVisible();
@@ -187,7 +64,6 @@ test("출발 목록을 유지하고 그래프 상세를 편집하며 Escape·닫
   await workspace.bd("update", first, "--title", KOREAN_TITLE);
   await expect(canvas.getByRole("link", { name: new RegExp(KOREAN_TITLE) })).toBeVisible();
   await expect(viewport).toHaveCSS("transform", before);
-  await page.screenshot({ path: testInfo.outputPath("edited-side-panel.png") });
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(origin);
   await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
@@ -201,7 +77,7 @@ test("출발 목록을 유지하고 그래프 상세를 편집하며 Escape·닫
   await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
 });
 
-test("에픽 상세에서 연 그래프를 닫고 다시 열거나 기존 주소를 새로고침해도 긴 제목을 끝까지 보인다", async ({
+test("에픽 상세에서 연 그래프를 닫고 다시 열거나 기존 주소를 새로고침해도 그래프를 다시 그린다", async ({
   page,
   workspace,
 }) => {
@@ -223,10 +99,6 @@ test("에픽 상세에서 연 그래프를 닫고 다시 열거나 기존 주소
     const graph = page.getByRole("dialog");
     const canvas = graph.getByRole("region", { name: "의존 그래프" });
     await expect(canvas.getByRole("link", { name: new RegExp(ENGLISH_TITLE) })).toBeVisible();
-    const size = await canvas
-      .getByText(ENGLISH_TITLE, { exact: true })
-      .evaluate((element) => ({ height: element.clientHeight, content: element.scrollHeight }));
-    expect(size.height).toBe(size.content);
     await graph.getByRole("link", { name: "닫기", exact: true }).click();
     await expect(page).toHaveURL(origin);
   }

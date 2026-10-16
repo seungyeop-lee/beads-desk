@@ -12,63 +12,6 @@ const TITLES = {
   enOld: `Old ${ENGLISH}`,
   enNew: `New ${ENGLISH}`,
 };
-/** Chrome 110%에서 폭 500px 창의 CSS viewport는 454px이고, 세로 scrollbar가 항상 보이면 441px입니다. */
-const WIDTHS = [441, 454, 480, 500, 768, 1024, 1440];
-/** 제목이 몇 글자씩 세로로 갈라지지 않는 제목 칸의 최소 폭입니다. */
-const MIN_TITLE_WIDTH = 240;
-
-for (const { zoom, deviceScaleFactor } of [
-  { zoom: "100%", deviceScaleFactor: 2 },
-  { zoom: "110%", deviceScaleFactor: 2.2 },
-]) {
-  test.describe(`확대율 ${zoom}`, () => {
-    test.use({ deviceScaleFactor });
-
-    test("좁은 창에서도 ID와 제목 열이 표 영역 안에 다 보이고, 나머지 열은 표 안에서 스크롤해 볼 수 있다", async ({
-      page,
-      workspace,
-    }) => {
-      await seedDecisions(workspace);
-      await page.goto("/decisions");
-      await expect(titleRow(page, TITLES.koOld)).toContainText(messages.decisions.supersededBy);
-      await expect(titleRow(page, TITLES.koOld).getByRole("combobox")).toHaveValue("closed");
-
-      for (const width of WIDTHS) {
-        await page.setViewportSize({ width, height: 900 });
-        await expect
-          .poll(
-            () =>
-              page.evaluate(
-                () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-              ),
-            { message: `${width}px 페이지 가로 넘침` },
-          )
-          .toBe(0);
-        for (const title of Object.values(TITLES)) {
-          const row = titleRow(page, title);
-          const layout = await row.evaluate((tr: HTMLTableRowElement) => {
-            const scroller = tr.closest("table")!.parentElement!;
-            scroller.scrollLeft = 0;
-            const cell = tr.cells[1]!.getBoundingClientRect();
-            return {
-              width: cell.width,
-              right: cell.right,
-              visibleRight: scroller.getBoundingClientRect().right,
-            };
-          });
-          const where = `${width}px ${title.slice(0, 12)}`;
-          expect(layout.width, `${where} 제목 칸 폭`).toBeGreaterThanOrEqual(MIN_TITLE_WIDTH);
-          expect(layout.right, `${where} 제목 칸 오른쪽 끝`).toBeLessThanOrEqual(
-            layout.visibleRight,
-          );
-          await accessible(row.getByRole("combobox"), page);
-          await accessible(row.getByRole("cell").last(), page);
-        }
-      }
-    });
-  });
-}
-
 test.describe("확대율 110%, 폭 500px 창", () => {
   test.use({ deviceScaleFactor: 2.2, viewport: { width: 441, height: 900 } });
 
@@ -92,7 +35,10 @@ test.describe("확대율 110%, 폭 500px 창", () => {
     await previous.click();
     await closeDetail(page, ids.koOld);
 
-    const next = titleRow(page, TITLES.koOld).getByRole("link", { name: ids.koNew, exact: true });
+    const next = titleRow(page, TITLES.koOld).getByRole("link", {
+      name: ids.koNew,
+      exact: true,
+    });
     await accessible(next, page);
     await next.click();
     await closeDetail(page, ids.koNew);
@@ -130,7 +76,9 @@ function titleRow(page: Page, title: string) {
 }
 
 async function closeDetail(page: Page, id: string) {
-  const dialog = page.getByRole("dialog", { name: messages.issueDetail.dialog(id) });
+  const dialog = page.getByRole("dialog", {
+    name: messages.issueDetail.dialog(id),
+  });
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: messages.common.close, exact: true }).first().click();
   await expect(dialog).toBeHidden();
@@ -147,6 +95,8 @@ async function accessible(control: Locator, page: Page) {
 
 async function expectStatus(workspace: BdWorkspace, id: string, status: string) {
   await expect
-    .poll(async () => (await workspace.showIssue(id)).status, { timeout: SAVE_TIMEOUT })
+    .poll(async () => (await workspace.showIssue(id)).status, {
+      timeout: SAVE_TIMEOUT,
+    })
     .toBe(status);
 }

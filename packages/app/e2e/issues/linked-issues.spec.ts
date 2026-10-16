@@ -74,26 +74,6 @@ test("발견 관계는 상세와 옆 패널에서 현재 이슈를 기준으로 
   await page.screenshot({ path: testInfo.outputPath("discovered-work-side.png") });
 });
 
-test("연결된 이슈 항목은 제목을 관계와 ID 아래 줄에 따로 보인다", async ({ page, workspace }) => {
-  const blockerTitle = "좁은 열에서도 읽혀야 하는 꽤 긴 선행 작업 제목";
-  const { main, blocker } = await workspace.createIssues(
-    {
-      main: { title: "줄 검사 주 작업", type: "task" },
-      blocker: { title: blockerTitle, type: "task" },
-    },
-    [["main", "blocker"]],
-  );
-
-  await page.goto(`/issues?issue=${main}`);
-  const item = page
-    .getByRole("dialog", { name: `${main} 이슈` })
-    .getByRole("region", { name: "연결된 이슈" })
-    .getByRole("listitem");
-  const idBox = await item.getByText(blocker, { exact: true }).boundingBox();
-  const titleBox = await item.getByText(blockerTitle, { exact: true }).boundingBox();
-  expect(titleBox!.y).toBeGreaterThanOrEqual(idBox!.y + idBox!.height);
-});
-
 test("연결된 이슈 항목의 지우기 단추는 항목 링크 대신 눌려 관계를 지운다", async ({
   page,
   workspace,

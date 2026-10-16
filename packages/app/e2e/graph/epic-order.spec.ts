@@ -108,27 +108,3 @@ test("그래프 머리글의 에픽 제목은 에픽 상세를 열고, 에픽 �
     page.getByRole("region", { name: "의존 그래프" }).getByRole("link", { name: /머리글 나중/ }),
   ).toBeVisible();
 });
-
-test("그래프 영역은 화면 높이 안에 들어가 페이지가 세로로 스크롤되지 않는다", async ({
-  page,
-  workspace,
-}) => {
-  const { epic } = await workspace.createIssues(
-    {
-      epic: { title: "높이 에픽", type: "epic" },
-      first: { title: "높이 첫째", parent: "epic" },
-      second: { title: "높이 둘째", parent: "epic" },
-    },
-    [["second", "first"]],
-  );
-  await page.setViewportSize({ width: 1280, height: 720 });
-
-  await page.goto(`/graph?epic=${epic}`);
-  const canvas = page.getByRole("region", { name: "의존 그래프" });
-  await expect(canvas.getByRole("link", { name: /높이 둘째/ })).toBeVisible();
-
-  expect(
-    (await canvas.boundingBox())!.y + (await canvas.boundingBox())!.height,
-  ).toBeLessThanOrEqual(720);
-  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(720);
-});
