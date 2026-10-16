@@ -50,6 +50,13 @@ export function dependencyToAdd(kind: RelationKind, self: string, other: string)
   }
 }
 
+/** 이 이슈를 기다리거나 이 이슈가 기다리는 blocks 관계가 있으면, 선행·후속 그래프로 그릴 사슬이 있습니다. */
+export function hasBlocksLink(issue: Pick<IssueDetail, "dependencies" | "dependents">): boolean {
+  return [...issue.dependencies, ...issue.dependents].some(
+    (link) => link.dependencyType === "blocks",
+  );
+}
+
 /** 상세의 연결된 이슈 한 줄입니다. side는 bd 상세의 어느 목록에서 왔는지를 뜻하며, 줄 라벨과 관계를 지우는 방향을 정합니다. */
 export type LinkedIssue = { side: "dependencies" | "dependents"; link: IssueLink };
 

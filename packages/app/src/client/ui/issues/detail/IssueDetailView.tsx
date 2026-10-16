@@ -1,7 +1,13 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
+import Link from "next/link";
+import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { linkedIssues, type LinkedIssue } from "@/client/modules/issues/domain/issueRelations";
+import {
+  hasBlocksLink,
+  linkedIssues,
+  type LinkedIssue,
+} from "@/client/modules/issues/domain/issueRelations";
 import {
   addCommentAction,
   addLabelAction,
@@ -14,6 +20,7 @@ import { EditableText } from "../fields/EditableText";
 import { PrioritySelect } from "../fields/PrioritySelect";
 import { StatusSelect } from "../fields/StatusSelect";
 import { TrashIcon } from "@/client/ui/designSystem/icons";
+import { graphHref } from "@/client/ui/screens/graph/graphAddress";
 import { ClaimButton } from "../ClaimButton";
 import { deferUntilLabel, formatTime } from "../issueLabels";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -181,6 +188,19 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
               links={linkedIssues(issue)}
               issueHref={issueHref}
               edit={{ disabled: pending, onRemove: removeDependency }}
+              actions={
+                <span className="flex items-center gap-3">
+                  {issue.issueType === "epic" && (
+                    <GraphLink scope={{ kind: "epic", id }} label={messages.graph.epicOrder} />
+                  )}
+                  {hasBlocksLink(issue) && (
+                    <GraphLink
+                      scope={{ kind: "center", id }}
+                      label={messages.graph.blockingChain}
+                    />
+                  )}
+                </span>
+              }
             />
             <RelationAddForm issue={issue} writes={writes} />
             <CloseAsReplacedForm issue={issue} writes={writes} />
@@ -211,5 +231,13 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
         </aside>
       </div>
     </div>
+  );
+}
+
+function GraphLink({ scope, label }: { scope: GraphScope; label: string }) {
+  return (
+    <Link className="link text-xs text-base-content/60 link-hover" href={graphHref(scope)}>
+      {label}
+    </Link>
   );
 }

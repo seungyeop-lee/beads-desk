@@ -3,9 +3,9 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HelpIcon } from "./icons";
 
 type Props = {
-  title: string;
-  /** 상단 탭과 같은 화면 색입니다. tone-* class를 넘깁니다. */
-  tone: string;
+  title: ReactNode;
+  /** 상단 탭과 같은 화면 색입니다. tone-* class를 넘깁니다. 상단 탭에 없는 화면은 넘기지 않습니다. */
+  tone?: string;
   count?: number;
   loading?: boolean;
   description?: string;
@@ -35,7 +35,7 @@ export function ScreenHeader({
     >
       <div className="flex min-w-0 flex-col gap-2">
         <div className="flex items-center gap-3">
-          <span className={`tone-dot ${tone} size-3`} />
+          {tone && <span className={`tone-dot ${tone} size-3`} />}
           <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
           {help && (
             <span className="tooltip tooltip-right" data-tip={help}>

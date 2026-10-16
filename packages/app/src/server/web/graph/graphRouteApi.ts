@@ -1,11 +1,11 @@
 import { dependencyGraph } from "@beads-desk/bd";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
-import { parseIncludeClosed, type GraphData } from "@/shared/contract/graph";
+import type { GraphData } from "@/shared/contract/graph";
 
-export async function handleGraphRequest(request: Request): Promise<Response> {
-  const includeClosed = parseIncludeClosed(new URL(request.url).searchParams);
-  const result = await dependencyGraph(currentWorkspaceRoot(), includeClosed);
+/** 에픽 보기는 닫힌 후손 이슈도 그리므로 닫힌 이슈까지 읽습니다. 이슈 중심 보기는 받은 뒤 닫힌 이슈를 뺍니다. */
+export async function handleGraphRequest(): Promise<Response> {
+  const result = await dependencyGraph(currentWorkspaceRoot(), true);
   return result.ok
     ? respond({ ok: true, data: result.value }, 200)
     : respond({ ok: false, error: result.error.message.trim() }, 500);

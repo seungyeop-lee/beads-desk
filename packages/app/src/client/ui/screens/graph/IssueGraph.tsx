@@ -25,18 +25,11 @@ type IssueNode = Node<IssueNodeData, "issue">;
 
 type Props = {
   layout: GraphLayout;
-  /** 화면 낭독기가 간선마다 읽을 관계 설명입니다. */
-  edgeLabel: (from: string, to: string, type?: string) => string;
-  /** smoothstep은 간선을 꺾은 선으로 그립니다. 기본값은 곡선입니다. */
-  edgeType?: "default" | "smoothstep";
   issueHref: (issueId: string) => string;
 };
 
-/**
- * 탭마다 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다.
- * 간선에 선 모양(kind)이 있으면 모양마다 class를 붙입니다. 방향이 없는 related에는 화살표를 그리지 않습니다.
- */
-export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref }: Props) {
+/** blocks 실행 순서로 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
+export function IssueGraph({ layout, issueHref }: Props) {
   const messages = useMessages();
   const { nodes, edges } = useMemo(
     () => ({
@@ -48,17 +41,15 @@ export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref 
         height: NODE_HEIGHT,
         data: { issue, href: issueHref(issue.id) },
       })),
-      edges: layout.edges.map(({ from, to, type, kind }): Edge => ({
-        id: `${type ?? ""}:${from}->${to}`,
+      edges: layout.edges.map(({ from, to }): Edge => ({
+        id: `${from}->${to}`,
         source: from,
         target: to,
-        type: edgeType,
-        className: kind && `relation relation-${kind}`,
-        markerEnd: kind === "related" ? undefined : { type: MarkerType.ArrowClosed },
-        ariaLabel: edgeLabel(from, to, type),
+        markerEnd: { type: MarkerType.ArrowClosed },
+        ariaLabel: messages.graph.edgeLabel(from, to),
       })),
     }),
-    [layout, issueHref, edgeLabel, edgeType],
+    [layout, issueHref, messages],
   );
 
   return (
@@ -93,7 +84,10 @@ export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref 
   );
 }
 
-/** 노드 전체가 상세 dialog를 여는 링크입니다. 유형과 작업 상태의 색과 이름은 다른 화면과 같은 기준을 따릅니다. */
+/**
+ * 노드 전체가 상세 dialog를 여는 링크입니다. 유형과 작업 상태의 색과 이름은 다른 화면과 같은 기준을 따릅니다.
+ * 닫힌 이슈는 어디까지 진행했는지만 알리면 되므로 흐리게 그립니다.
+ */
 function IssueNodeView({ data: { issue, href } }: NodeProps<IssueNode>) {
   const messages = useMessages();
   const state = workState(issue);
@@ -108,7 +102,7 @@ function IssueNodeView({ data: { issue, href } }: NodeProps<IssueNode>) {
         href={href}
         scroll={false}
         title={issue.id}
-        className="nopan pointer-events-auto flex size-full flex-col gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-xs transition hover:border-base-content/30 hover:shadow-sm"
+        className={`nopan pointer-events-auto flex size-full flex-col gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-xs transition hover:border-base-content/30 hover:shadow-sm ${state === "closed" ? "opacity-50" : ""}`}
       >
         <span className="flex items-center gap-1.5 text-base-content/55">
           <IssueTypeTag issueType={issue.issueType} />

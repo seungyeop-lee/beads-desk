@@ -4,12 +4,12 @@ test("그래프 캔버스에는 미니맵이 있고, 캔버스를 끌어 옮기�
   page,
   workspace,
 }) => {
-  await workspace.createIssues(
+  const { second } = await workspace.createIssues(
     { first: { title: "미니맵 먼저" }, second: { title: "미니맵 나중" } },
     [["second", "first"]],
   );
 
-  await page.goto("/graph");
+  await page.goto(`/graph?center=${second}`);
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   await expect(canvas.getByRole("link", { name: /미니맵 나중/ })).toBeVisible();
   const minimap = canvas.getByRole("img", { name: "그래프 미니맵" });

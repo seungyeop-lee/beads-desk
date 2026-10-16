@@ -1,0 +1,64 @@
+import { expect, test } from "../support/bdWorkspace";
+
+test("상세의 선행·후속 그래프는 blocks 관계가 있는 이슈에만 보이고, 누르면 그 이슈의 앞뒤 blocks 사슬만 닫힌 이슈 없이 그린다", async ({
+  page,
+  workspace,
+}) => {
+  const { center, alone, before, note } = await workspace.createIssues(
+    {
+      root: { title: "사슬 맨 앞" },
+      before: { title: "사슬 앞" },
+      center: { title: "사슬 가운데" },
+      after: { title: "사슬 뒤" },
+      last: { title: "사슬 맨 뒤" },
+      side: { title: "사슬 옆 갈래" },
+      done: { title: "닫힌 선행", status: "closed" },
+      note: { title: "related 이슈" },
+      alone: { title: "관계 없는 이슈" },
+    },
+    [
+      ["before", "root"],
+      ["center", "before"],
+      ["after", "center"],
+      ["last", "after"],
+      ["side", "before"],
+      ["center", "done"],
+    ],
+  );
+  await workspace.bd("dep", "add", note, center, "--type", "related");
+
+  await page.goto(`/issues?issue=${alone}`);
+  const aloneDialog = page.getByRole("dialog", { name: `${alone} 이슈` });
+  await expect(aloneDialog.getByText("연결된 이슈")).toBeVisible();
+  await expect(aloneDialog.getByRole("link", { name: "선행·후속 그래프" })).toHaveCount(0);
+
+  await page.goto(`/issues?issue=${center}`);
+  await page
+    .getByRole("dialog", { name: `${center} 이슈` })
+    .getByRole("link", { name: "선행·후속 그래프" })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/graph\\?center=${center}$`));
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("사슬 가운데 · 선행·후속");
+
+  const canvas = page.getByRole("region", { name: "의존 그래프" });
+  const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
+  await expect(node("사슬 맨 뒤")).toBeVisible();
+  const left = async (title: string) => (await node(title).boundingBox())!.x;
+  const xs: number[] = [];
+  for (const title of ["사슬 맨 앞", "사슬 앞", "사슬 가운데", "사슬 뒤", "사슬 맨 뒤"]) {
+    xs.push(await left(title));
+  }
+  expect(xs).toEqual([...xs].sort((a, b) => a - b));
+  expect(new Set(xs).size).toBe(xs.length);
+  await expect(node("사슬 옆 갈래")).toHaveCount(0);
+  await expect(node("닫힌 선행")).toHaveCount(0);
+  await expect(node("related 이슈")).toHaveCount(0);
+  await expect(node("관계 없는 이슈")).toHaveCount(0);
+
+  await node("사슬 앞").click();
+  await expect(page.getByRole("dialog", { name: `${before} 이슈` })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`center=${center}&issue=${before}$`));
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(new RegExp(`/graph\\?center=${center}$`));
+  await expect(node("사슬 맨 뒤")).toBeVisible();
+});

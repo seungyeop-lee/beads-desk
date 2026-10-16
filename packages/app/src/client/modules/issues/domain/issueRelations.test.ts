@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import {
   canJoinHierarchy,
   dependencyToAdd,
+  hasBlocksLink,
   linkedIssues,
   notRelationCandidate,
   notReplacementTarget,
@@ -134,4 +135,15 @@ test("대체·중복 닫기 후보에서 자기 자신과 이미 의존하는 �
   expect(excluded(candidate("self"))).toBe(true);
   expect(excluded(candidate("blocker"))).toBe(true);
   expect(excluded(candidate("dependent"))).toBe(false);
+});
+
+test("선행·후속 그래프는 어느 방향이든 blocks 관계가 있을 때만 그릴 사슬이 있다", () => {
+  expect(hasBlocksLink({ dependencies: [link("blocker", "blocks")], dependents: [] })).toBe(true);
+  expect(hasBlocksLink({ dependencies: [], dependents: [link("waiter", "blocks")] })).toBe(true);
+  expect(
+    hasBlocksLink({
+      dependencies: [link("epic", "parent-child")],
+      dependents: [link("peer", "related")],
+    }),
+  ).toBe(false);
 });

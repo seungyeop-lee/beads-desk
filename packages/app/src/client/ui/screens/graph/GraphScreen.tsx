@@ -1,155 +1,85 @@
 "use client";
 
-import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
-import { useId, useMemo } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 import { useGraph } from "@/client/modules/graph/application/useGraph";
 import { executionOrder } from "@/client/modules/graph/domain/executionOrder";
-import { filterGraphIssues } from "@/client/modules/graph/domain/graphFilter";
-import { issueHierarchy } from "@/client/modules/graph/domain/issueHierarchy";
-import { relationGraph } from "@/client/modules/graph/domain/relationGraph";
+import { type GraphScope, scopedIssues } from "@/client/modules/graph/domain/graphScope";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { screenTone } from "@/client/ui/shell/screenTabs";
-import { GRAPH_TABS, type GraphTab } from "./graphAddress";
-import { GraphFilterBar } from "./GraphFilterBar";
-import { type GraphLayout, hierarchyLayout, layeredLayout } from "./graphLayout";
+import { readGraphScope } from "./graphAddress";
+import { layeredLayout } from "./graphLayout";
 import { IssueGraph } from "./IssueGraph";
-import { RelationLegend } from "./RelationLegend";
-import { useGraphAddress } from "./useGraphAddress";
-
-type TabView = {
-  layout: GraphLayout;
-  /** 탭이 따르는 관계가 없어 그리지 않은 이슈의 수입니다. */
-  unrelated: number;
-};
-
-/** 탭마다 필터를 거친 이슈를 배치하는 방법과 간선 모양입니다. */
-const TAB_VIEWS: Record<
-  GraphTab,
-  {
-    view: (issues: Issue[], dependencies: IssueDependency[]) => TabView;
-    edgeType: "default" | "smoothstep";
-  }
-> = {
-  order: {
-    view: (issues, dependencies) => {
-      const order = executionOrder(issues, dependencies);
-      return { layout: layeredLayout(order), unrelated: order.unrelated };
-    },
-    edgeType: "default",
-  },
-  hierarchy: {
-    view: (issues) => {
-      const hierarchy = issueHierarchy(issues);
-      return { layout: hierarchyLayout(hierarchy), unrelated: hierarchy.unrelated };
-    },
-    edgeType: "smoothstep",
-  },
-  relations: {
-    view: (issues, dependencies) => {
-      const graph = relationGraph(issues, dependencies);
-      return { layout: layeredLayout(graph), unrelated: graph.unrelated };
-    },
-    edgeType: "default",
-  },
-};
 
 /**
- * 이슈 사이의 관계를 관점별 탭으로 그립니다. 탭과 필터는 주소에 둡니다.
- * 이슈 상세 dialog와 주소 조건이 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
+ * 주소의 범위(에픽의 후손 이슈, 한 이슈의 앞뒤 blocks 사슬)를 blocks 실행 순서로 그립니다.
+ * 그래프는 에픽 화면과 상세 dialog의 링크로만 열므로, 범위가 없는 주소는 따로 안내하지 않습니다.
+ * 이슈 상세 dialog와 범위가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function GraphScreen() {
-  const { address, changeAddress } = useGraphAddress();
-  const { data, error, loading } = useGraph(address.includeClosed);
+  const searchParams = useSearchParams();
+  const scope = useMemo(() => readGraphScope(new URLSearchParams(searchParams)), [searchParams]);
+
+  return (
+    // 그래프는 안에서 끌고 확대해 보므로, AppHeader(h-14와 아래 border 1px)를 뺀 화면 높이 안에 페이지를 맞춰 세로 스크롤이 생기지 않게 합니다.
+    <main className="mx-auto flex h-[calc(100dvh-3.5rem-1px)] max-w-[96rem] flex-col gap-4 px-8 pb-6">
+      {scope && <ScopedGraph scope={scope} />}
+      <IssueDetailRoute />
+    </main>
+  );
+}
+
+function ScopedGraph({ scope }: { scope: GraphScope }) {
+  const { data, error, loading } = useGraph();
   const issueHref = useIssueHref();
   const messages = useMessages();
-  const tabsId = useId();
 
-  const epics = useMemo(
-    () =>
-      (data?.issues ?? [])
-        .filter((issue) => issue.issueType === "epic")
-        .sort((a, b) => a.title.localeCompare(b.title)),
-    [data],
+  const order = useMemo(
+    () => (data ? executionOrder(scopedIssues(data, scope), data.dependencies) : null),
+    [data, scope],
   );
-  const view = useMemo(
-    () =>
-      data
-        ? TAB_VIEWS[address.tab].view(
-            filterGraphIssues(data.issues, data.ancestorEpics, address),
-            data.dependencies,
-          )
-        : null,
-    [data, address],
-  );
+  const layout = useMemo(() => order && layeredLayout(order), [order]);
+  const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
 
-  // 그래프는 안에서 끌고 확대해 보므로, AppHeader(h-14와 아래 border 1px)를 뺀 화면 높이 안에 페이지를 맞춰 세로 스크롤이 생기지 않게 합니다.
   return (
-    <main className="mx-auto flex h-[calc(100dvh-3.5rem-1px)] max-w-[96rem] flex-col gap-4 px-8 pb-6">
+    <>
       <ScreenHeader
-        title={messages.graph.title}
-        tone={screenTone("/graph")}
-        help={messages.graph.help[address.tab]}
+        title={
+          <>
+            <Link
+              href={issueHref(scope.id)}
+              scroll={false}
+              className="decoration-base-content/30 underline-offset-4 hover:underline"
+            >
+              {scopeTitle}
+            </Link>
+            <span className="text-base-content/45"> · {messages.graph.scopes[scope.kind]}</span>
+          </>
+        }
+        help={messages.graph.help[scope.kind]}
         compact
         loading={loading}
       />
 
-      <div role="tablist" aria-label={messages.graph.tabList} className="tabs tabs-border">
-        {GRAPH_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            id={`${tabsId}-${tab}`}
-            aria-selected={address.tab === tab}
-            className={`tab ${address.tab === tab ? "tab-active" : ""}`}
-            onClick={() => changeAddress({ tab })}
-          >
-            {messages.graph.tabs[tab]}
-          </button>
+      {error && (
+        <div role="alert" className="alert alert-error alert-soft">
+          <span>{messages.graph.loadFailed(error)}</span>
+        </div>
+      )}
+
+      {scope.kind === "epic" && order && order.unrelated > 0 && (
+        <p className="text-sm text-base-content/55">{messages.graph.unrelated(order.unrelated)}</p>
+      )}
+      {layout &&
+        (layout.nodes.length > 0 ? (
+          <IssueGraph layout={layout} issueHref={issueHref} />
+        ) : (
+          <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
+            {messages.graph.empty[scope.kind]}
+          </p>
         ))}
-      </div>
-
-      <div
-        role="tabpanel"
-        aria-labelledby={`${tabsId}-${address.tab}`}
-        className="flex min-h-0 flex-1 flex-col gap-4"
-      >
-        <GraphFilterBar address={address} epics={epics} onChange={changeAddress} />
-
-        {error && (
-          <div role="alert" className="alert alert-error alert-soft">
-            <span>{messages.graph.loadFailed(error)}</span>
-          </div>
-        )}
-
-        {view && (
-          <div className="flex flex-wrap items-center gap-4 empty:hidden">
-            {view.unrelated > 0 && (
-              <p className="text-sm text-base-content/55">
-                {messages.graph.unrelated[address.tab](view.unrelated)}
-              </p>
-            )}
-            <RelationLegend edges={view.layout.edges} />
-          </div>
-        )}
-        {view &&
-          (view.layout.nodes.length > 0 ? (
-            <IssueGraph
-              layout={view.layout}
-              edgeLabel={messages.graph.edgeLabel[address.tab]}
-              edgeType={TAB_VIEWS[address.tab].edgeType}
-              issueHref={issueHref}
-            />
-          ) : (
-            <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
-              {messages.graph.empty[address.tab]}
-            </p>
-          ))}
-      </div>
-
-      <IssueDetailRoute />
-    </main>
+    </>
   );
 }

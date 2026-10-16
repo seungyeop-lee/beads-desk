@@ -29,6 +29,7 @@ import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ChevronRightIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { showToast } from "@/client/ui/designSystem/Toast";
+import { graphHref } from "@/client/ui/screens/graph/graphAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -142,6 +143,12 @@ function EpicSection({
         <span className="w-20 shrink-0 text-right font-mono text-xs text-base-content/55 tabular-nums">
           {closedChildren}/{totalChildren} · {percent}%
         </span>
+        <Link
+          className="btn btn-ghost btn-xs shrink-0 rounded-full"
+          href={graphHref({ kind: "epic", id: epic.id })}
+        >
+          {messages.graph.epicOrder}
+        </Link>
       </header>
       {expanded && (
         <EpicDescendants
