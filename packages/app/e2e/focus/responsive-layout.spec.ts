@@ -39,15 +39,33 @@ for (const singleWorkspace of [true, false]) {
         await route.fulfill({ response, json: body });
       });
     }
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.goto("/");
-    await expect(page).toHaveURL(/\/focus$/);
+    let releaseEpics = () => {};
+    const heldEpics = new Promise<void>((resolve) => {
+      releaseEpics = resolve;
+    });
+    await page.route("**/api/epics", async (route) => {
+      await heldEpics;
+      await route.continue();
+    });
     const next = page.getByRole("region", { name: "다음에 할 일" });
-    await expect(next.getByRole("listitem")).toHaveCount(1);
     const screens = page.getByRole("navigation", { name: "화면" });
-    await expect(screens.getByRole("link", { name: "판단 기다림 1개", exact: true })).toBeVisible();
     const picker = page.getByRole("combobox", { name: "workspace", exact: true });
-    await expect(picker).toHaveCount(singleWorkspace ? 0 : 1);
+    const epicProgress = page.getByRole("region", { name: "에픽 진행률", exact: true });
+    try {
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await page.goto("/");
+      await expect(page).toHaveURL(/\/focus$/);
+      await expect(next.getByRole("listitem")).toHaveCount(1);
+      await expect(
+        screens.getByRole("link", { name: "판단 기다림 1개", exact: true }),
+      ).toBeVisible();
+      await expect(picker).toHaveCount(singleWorkspace ? 0 : 1);
+      await expect(epicProgress).toHaveCount(0);
+    } finally {
+      releaseEpics();
+    }
+    await expect(epicProgress).toBeVisible();
+    await page.unroute("**/api/epics");
     const measurements = [];
     for (const width of [480, 500, 768, 1024, 1440, 480, 1440, 768, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
