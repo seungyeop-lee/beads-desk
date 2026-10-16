@@ -142,7 +142,7 @@ function EpicSection({
             max={Math.max(totalChildren, 1)}
             aria-label={messages.epics.progress(epic.id)}
           />
-          <span className="w-20 shrink-0 text-right font-mono text-xs text-base-content/55 tabular-nums">
+          <span className="min-w-20 shrink-0 text-right whitespace-nowrap font-mono text-xs text-base-content/55 tabular-nums">
             {closedChildren}/{totalChildren} · {percent}%
           </span>
           <Link
