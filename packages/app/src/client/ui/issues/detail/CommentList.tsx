@@ -28,11 +28,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      {comments.map((comment) => (
-        <TimelineItem key={comment.id} author={comment.author} at={comment.createdAt}>
-          <MarkdownEditor readOnly value={comment.text} />
-        </TimelineItem>
-      ))}
+      <CommentTimeline comments={comments} />
       <form
         className="flex flex-col gap-2"
         onSubmit={(event) => {
@@ -63,6 +59,15 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
       </form>
     </div>
   );
+}
+
+/** 댓글을 받은 순서대로 입력란 없이 보입니다. */
+export function CommentTimeline({ comments }: { comments: IssueComment[] }) {
+  return comments.map((comment) => (
+    <TimelineItem key={comment.id} author={comment.author} at={comment.createdAt}>
+      <MarkdownEditor readOnly value={comment.text} />
+    </TimelineItem>
+  ));
 }
 
 /** 댓글과 활동 기록에서 한 사람이 남긴 항목 하나를 이름 머리글자, 이름, 시각과 함께 보입니다. */

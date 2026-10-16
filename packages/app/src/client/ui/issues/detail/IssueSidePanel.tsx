@@ -8,6 +8,7 @@ import { statusLabel, statusTone } from "../issueLabels";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { DependencyList } from "./DependencyList";
 import { BODY_FIELDS } from "./bodyFields";
+import { CommentTimeline } from "./CommentList";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
@@ -95,6 +96,12 @@ function IssueSummary({
         </section>
       ))}
       {links.length > 0 && <DependencyList links={links} issueHref={sideHref} />}
+      {issue.comments.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h3 className="caption">{messages.comments.title}</h3>
+          <CommentTimeline comments={issue.comments} />
+        </section>
+      )}
     </div>
   );
 }
