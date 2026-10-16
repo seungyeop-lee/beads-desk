@@ -72,13 +72,15 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 `packages/bd`의 unit test는 저장해 둔 bd 출력으로 해석을 확인하므로, 설치된 bd의 출력 형식이 바뀌어도 통과합니다. bd를 업데이트했거나 `packages/bd`의 출력 해석을 고쳤다면 `pnpm run test:bd`를 실행합니다. 이 명령은 임시 디렉터리에 bd workspace를 만들고 설치된 bd로 adapter를 실행합니다(`packages/bd/src/realBd`, 약 15초). bd가 설치되어 있어야 하며, `pnpm run check`와 hook에서는 실행되지 않습니다.
 
-화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 끝내기 전에 `pnpm run test:e2e`를 실행합니다. 바뀐 동작을 다루는 시나리오가 없으면 함께 추가합니다. 시나리오 작성 규칙은 `packages/app/e2e/AGENTS.md`에 있습니다.
+화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면 함께 추가합니다. 시나리오 작성 규칙은 `packages/app/e2e/AGENTS.md`에 있습니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
 
-- 처음 한 번 `pnpm run test:e2e:install`로 chromium을 설치합니다.
+1. 작업하는 동안에는 `pnpm run build`로 빌드한 뒤, `packages/app`에서 `pnpm exec playwright test <spec 경로>`로 바꾼 동작을 다루는 spec만 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고칠 때마다 다시 빌드합니다.
+2. 화면을 바꿨으면 바뀐 화면을 스크린샷 등으로 직접 확인합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.
+3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다.
+
 - `pnpm run test:e2e`는 app을 production build로 빌드한 뒤 시나리오를 worker 8개(RAM disk를 쓰지 않으면 4개)로 나눠 실행합니다. worker마다 3900번부터 빈 포트를 찾아 `next start`를 띄우고, 실행이 끝나면 서버를 종료합니다. 다른 프로세스가 쓰는 포트는 건너뛰므로 `next dev`가 떠 있어도 됩니다.
 - 다른 worktree의 e2e가 실행 중이면 `다른 e2e 실행(pid <번호>)이 끝나기를 기다립니다.`를 출력하고, 그 실행이 끝난 뒤 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다. 먼저 시작한 실행이 비정상으로 끝나 차례를 돌려주지 못했으면, 다음 실행은 기다리지 않고 시작합니다.
 - macOS에서는 실행하는 동안 `/Volumes/beads-desk-e2e-<실행 pid>`에 512MB RAM disk를 붙이고, 시나리오 workspace를 그 아래에 만듭니다. 실행이 끝나면 성공·실패와 관계없이 떼어 냅니다. 실행이 비정상으로 끝나 volume이 남아 있으면 다음 실행이 뗍니다. RAM disk 없이 실행하려면 `BEADS_DESK_E2E_RAMDISK=0`을 줍니다. 디스크에서는 worker들의 bd 실행이 디스크 I/O를 함께 쓰느라 느려지므로 worker를 4개로 줄여 실행합니다.
-- 시나리오 일부만 다시 실행하려면 `packages/app`에서 `pnpm exec playwright test <spec 경로>`를 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고친 뒤에는 `pnpm run test:e2e`나 `pnpm run build`로 다시 빌드합니다.
 - 시나리오가 실패하면 `packages/app/test-results`에 screenshot과 trace가 남습니다. trace는 `pnpm exec playwright show-trace <trace.zip 경로>`로 엽니다.
 
 `next dev`가 실행 중일 때 `packages/bd`를 고치면, 서버를 다시 시작하기 전까지 API가 고치기 전의 코드로 bd를 실행합니다. bd 패키지를 고친 뒤 화면이나 API로 확인하려면 `next dev`를 다시 시작합니다.
