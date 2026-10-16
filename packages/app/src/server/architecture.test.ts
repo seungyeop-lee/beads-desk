@@ -134,6 +134,9 @@ function describeBoundaryViolation(): string | null {
     for (const { specifier, line } of importsOf(file)) {
       const outsidePath = outsideSrcTargetPath(specifier, file);
       if (outsidePath) {
+        if (outsidePath.startsWith("..")) {
+          return `${fromPath}:${line}이 app package 밖 module을 상대 경로로 import합니다. 다른 package는 package 이름으로 import합니다: ${specifier}`;
+        }
         if (LAUNCHER_MODULES[outsidePath] === from) continue;
         return `${fromPath}:${line}이 허용하지 않은 src 밖 module을 import합니다: ${specifier}`;
       }
@@ -239,13 +242,15 @@ function internalTargetPath(specifier: string, fromFile: string): string | null 
   return target.split(sep).join("/");
 }
 
-/** src 밖이면서 app package 안에 있는 상대 경로 import의 대상을 app package 기준 경로로 돌려줍니다. */
+/**
+ * src 밖을 가리키는 상대 경로 import의 대상을 app package 기준 경로로 돌려줍니다.
+ * 대상이 app package 밖이면 돌려준 경로가 `..`로 시작합니다.
+ */
 function outsideSrcTargetPath(specifier: string, fromFile: string): string | null {
   if (!specifier.startsWith(".")) return null;
   const target = resolve(dirname(fromFile), specifier);
   if (!relative(SRC_DIR, target).startsWith("..")) return null;
-  const appPath = relative(APP_DIR, target);
-  return appPath.startsWith("..") ? null : appPath.split(sep).join("/");
+  return relative(APP_DIR, target).split(sep).join("/");
 }
 
 function sourcePath(file: string): string {
