@@ -17,7 +17,7 @@ export function HumanDecisionPanel({ issue, writes }: Props) {
   const messages = useMessages();
   const headingId = useId();
   const [response, setResponse] = useState("");
-  // null이면 넘기는 사유 입력란을 닫아 둔 상태입니다.
+  // null이면 닫는 사유 입력란을 닫아 둔 상태입니다.
   const [dismissReason, setDismissReason] = useState<string | null>(null);
   if (!awaitsHumanDecision(issue)) return null;
 

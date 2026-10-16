@@ -33,7 +33,7 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
 });
 
-test("넘긴 이슈는 판단 기다림 화면에서 사라지고, 넘긴 사유가 닫은 사유로 남는다", async ({
+test("응답 없이 닫은 이슈는 판단 기다림 화면에서 사라지고, 적은 사유가 닫은 사유로 남는다", async ({
   page,
   workspace,
 }) => {
@@ -45,9 +45,9 @@ test("넘긴 이슈는 판단 기다림 화면에서 사라지고, 넘긴 사유
   await page.goto("/human");
   await page.getByRole("button", { name: /더는 필요 없는 질문/ }).click();
   const decision = page.getByRole("region", { name: "더는 필요 없는 질문" });
-  await decision.getByRole("button", { name: "넘기기" }).click();
-  await decision.getByRole("textbox", { name: "넘기는 사유" }).fill("요구 사항이 바뀜");
-  await decision.getByRole("button", { name: "넘기고 닫기" }).click();
+  await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
+  await decision.getByRole("textbox", { name: "닫는 사유" }).fill("요구 사항이 바뀜");
+  await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
 
   await expect
     .poll(() => workspace.showIssue(stale).then((issue) => issue.close_reason), {

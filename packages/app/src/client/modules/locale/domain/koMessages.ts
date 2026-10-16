@@ -116,16 +116,16 @@ export const koMessages = {
   humanDecision: {
     chip: "판단 기다림",
     panelTitle: "사람의 판단을 기다리는 이슈입니다",
-    panelBody: "응답은 댓글로 남고, 응답하거나 넘기면 이 이슈가 닫힙니다.",
+    panelBody: "응답은 댓글로 남고, 응답하거나 응답 없이 닫으면 이 이슈가 닫힙니다.",
     response: "응답",
     placeholder: "판단한 내용을 적으세요",
     respond: "응답하고 닫기",
-    dismiss: "넘기기",
-    dismissReason: "넘기는 사유",
-    dismissReasonPlaceholder: "적지 않아도 됩니다",
-    confirmDismiss: "넘기고 닫기",
+    dismiss: "응답 없이 닫기",
+    dismissReason: "닫는 사유",
+    dismissReasonPlaceholder: "닫는 사유 (적지 않아도 됩니다)",
+    confirmDismiss: "응답 없이 닫기",
     responded: (id: string) => `${id}에 응답하고 닫았습니다`,
-    dismissed: (id: string) => `${id}을(를) 넘기고 닫았습니다`,
+    dismissed: (id: string) => `${id}을(를) 응답 없이 닫았습니다`,
   },
   humanGate: {
     waiting: "사람 확인 기다림",
@@ -454,7 +454,7 @@ export const koMessages = {
   humanDecisions: {
     title: "판단 기다림",
     description:
-      "agent가 사람에게 넘긴 질문과 확인 요청(human gate)입니다. 질문은 응답하거나 넘기면 닫히고, 확인 요청은 승인하면 막고 있던 작업이 풀립니다.",
+      "agent가 사람에게 넘긴 질문과 확인 요청(human gate)입니다. 질문은 응답하거나 응답 없이 닫으면 닫히고, 확인 요청은 승인하면 막고 있던 작업이 풀립니다.",
     empty: "판단을 기다리는 이슈가 없습니다.",
     approvalRequests: "승인 요청",
     questions: "질문",
