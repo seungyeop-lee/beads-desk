@@ -88,8 +88,11 @@ function DecisionTable({ title, rows, emptyMessage, issueHref, writes }: TablePr
       {rows.length === 0 ? (
         <EmptyState message={emptyMessage} />
       ) : (
-        <div className="surface min-w-0 max-w-full overflow-x-auto">
-          <table className="table min-w-[64rem] table-fixed">
+        <div className="@container surface min-w-0 max-w-full overflow-x-auto">
+          {/* 제목 열은 표 폭에서 나머지 네 열의 폭(41rem)을 뺀 만큼 차지합니다. 표 영역이 64rem보다 좁으면 표를 64rem으로 넓히고
+              상태·대체 관계·날짜 열은 가로 스크롤로 봅니다. 표 영역이 29rem보다 좁으면 64rem 대신 영역 폭(100cqw)에 그 세 열의 폭(35rem)만 더해,
+              ID와 제목 열이 스크롤하지 않아도 영역 안에 다 보이게 합니다. */}
+          <table className="table w-[max(100cqw,min(100cqw_+_35rem,64rem))] table-fixed">
             <thead>
               <tr>
                 <th className="w-24">ID</th>
