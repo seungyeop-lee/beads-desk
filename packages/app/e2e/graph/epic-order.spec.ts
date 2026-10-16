@@ -1,13 +1,20 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 그 에픽의 후손 이슈를 blocks 순서대로 왼쪽부터 그리며 닫힌 후손 이슈는 흐리게, blocks 관계가 없는 후손 이슈는 선후 관계 없음에 보인다", async ({
+test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 후손 이슈를 blocks 순서대로 그리며, 선후 관계 없음에는 feature·epic을 빼고 보인다", async ({
   page,
   workspace,
-}) => {
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   const { epic, third } = await workspace.createIssues(
     {
       epic: { title: "순서 에픽", type: "epic" },
       feature: { title: "순서 기능", type: "feature", parent: "epic" },
+      emptyFeature: { title: "순서 빈 기능", type: "feature", parent: "epic" },
+      nestedEpic: { title: "순서 하위 에픽", type: "epic", parent: "epic" },
+      emptyEpic: { title: "순서 빈 에픽", type: "epic", parent: "epic" },
+      nestedTask: { title: "하위 에픽의 작업", parent: "nestedEpic" },
+      taskParent: { title: "자식이 있는 작업", parent: "epic" },
+      taskChild: { title: "작업의 자식", parent: "taskParent" },
       first: { title: "순서 첫째", parent: "epic", status: "closed" },
       second: { title: "순서 둘째", parent: "epic" },
       third: { title: "순서 셋째", parent: "feature" },
@@ -44,7 +51,13 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   await expect(node("순서 관계 없음")).toHaveCount(0);
   const unordered = page.getByRole("region", { name: "선후 관계 없음" });
   await expect(unordered.getByRole("link", { name: /순서 관계 없음/ })).toBeVisible();
-  await expect(unordered.getByRole("link", { name: /순서 기능/ })).toBeVisible();
+  await expect(unordered.getByRole("link", { name: /순서 기능/ })).toHaveCount(0);
+  await expect(unordered.getByRole("link", { name: /순서 빈 기능/ })).toHaveCount(0);
+  await expect(unordered.getByRole("link", { name: /순서 하위 에픽/ })).toHaveCount(0);
+  await expect(unordered.getByRole("link", { name: /순서 빈 에픽/ })).toHaveCount(0);
+  await expect(unordered.getByRole("link", { name: /하위 에픽의 작업/ })).toBeVisible();
+  await expect(unordered.getByRole("link", { name: /자식이 있는 작업/ })).toBeVisible();
+  await expect(unordered.getByRole("link", { name: /작업의 자식/ })).toBeVisible();
   await expect(unordered.getByRole("link", { name: /에픽 밖 후속/ })).toHaveCount(0);
 
   const left = async (title: string) => (await node(title).boundingBox())!.x;
@@ -53,6 +66,7 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   expect(x2).toBeLessThan(x3);
   await expect(node("순서 첫째")).toHaveCSS("opacity", "0.5");
   await expect(node("순서 둘째")).toHaveCSS("opacity", "1");
+  await page.screenshot({ path: testInfo.outputPath("unordered-execution-issues.png") });
 
   await node("순서 셋째").click();
   await expect(page.getByRole("dialog", { name: `${third} 이슈` })).toBeVisible();

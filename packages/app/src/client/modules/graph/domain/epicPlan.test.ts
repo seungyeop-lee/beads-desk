@@ -87,6 +87,66 @@ test("에픽 안에서 blocks 관계가 없는 후손 이슈는 선후 관계 �
   expect(layerIds(plan)).toEqual([[["a"], ["b"]]]);
 });
 
+test.each(["feature", "epic"])(
+  "선후 관계가 없는 %s 유형은 자식 유무와 관계없이 목록에서 빼고, 자식이 있는 task는 남긴다",
+  (issueType) => {
+    const plan = epicPlan(
+      graph(
+        [
+          issue("group", { issueType }),
+          issue("empty-group", { issueType }),
+          issue("group-child", { parent: "group" }),
+          issue("task-parent"),
+          issue("task-child", { parent: "task-parent" }),
+          issue("task"),
+        ],
+        [],
+        [
+          { issueId: "group-child", dependsOnId: "group", type: "parent-child" },
+          { issueId: "task-child", dependsOnId: "task-parent", type: "parent-child" },
+        ],
+      ),
+      "epic",
+    );
+
+    expect(plan.unordered.map((it) => it.id)).toEqual([
+      "group-child",
+      "task",
+      "task-child",
+      "task-parent",
+    ]);
+    expect(plan.stages).toEqual({ total: 0, current: null });
+  },
+);
+
+test("blocks로 연결된 feature·epic은 단계에 남고, 연결되지 않은 묶음을 빼도 단계와 진행 요약은 같다", () => {
+  const connected = [
+    issue("feature", { issueType: "feature", status: "closed" }),
+    issue("nested-epic", { issueType: "epic" }),
+    issue("task"),
+  ];
+  const dependencies = blocks(["feature", "nested-epic"], ["nested-epic", "task"]);
+  const before = epicPlan(graph(connected, [], dependencies), "epic");
+  const withUnlinkedGroups = epicPlan(
+    graph(
+      [
+        ...connected,
+        issue("unlinked-feature", { issueType: "feature" }),
+        issue("unlinked-epic", { issueType: "epic" }),
+      ],
+      [],
+      dependencies,
+    ),
+    "epic",
+  );
+
+  expect(layerIds(withUnlinkedGroups)).toEqual([[["feature"], ["nested-epic"], ["task"]]]);
+  expect(layerIds(withUnlinkedGroups)).toEqual(layerIds(before));
+  expect(withUnlinkedGroups.stages).toEqual({ total: 3, current: 1 });
+  expect(withUnlinkedGroups.stages).toEqual(before.stages);
+  expect(withUnlinkedGroups.unordered).toEqual([]);
+});
+
 test("후손 이슈를 직접 막는 에픽 밖 이슈를 outside로 담아 단계에 넣고, 그 이슈를 막는 이슈는 따라가지 않는다", () => {
   const plan = epicPlan(
     graph(
