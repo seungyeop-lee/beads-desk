@@ -37,7 +37,7 @@
     "pack:local": "pnpm run build && node scripts/run-npm-release.mjs pack",
     "install:global": "pnpm run pack:local && pnpm add -g \"$PWD\"/seungyeop-lee-beads-desk-*.tgz; EXIT=$?; rm -f seungyeop-lee-beads-desk-*.tgz; exit $EXIT",
     "uninstall:global": "pnpm remove -g @seungyeop-lee/beads-desk",
-    "test:e2e": "next build && playwright test",
+    "test:e2e": "node e2e/support/runE2e.ts",
     "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {

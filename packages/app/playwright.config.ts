@@ -10,7 +10,8 @@ export default defineConfig({
   testDir: "./e2e",
   // worker마다 서버를 따로 띄우므로(e2e/support/appServer.ts) 시나리오를 worker 사이에 나눠 실행할 수 있습니다.
   fullyParallel: true,
-  // 다른 worktree의 e2e 실행이 끝나기를 기다린 뒤 시작합니다. teardown은 역순이라 RAM disk를 뗀 뒤 차례를 넘깁니다.
+  // 다른 worktree의 e2e 실행이 끝나기를 기다린 뒤 시작합니다. `pnpm run test:e2e`로 실행하면 runE2e.ts가 빌드 전에 이미 기다렸으므로 다시 기다리지 않습니다.
+  // teardown은 역순이고 runE2e.ts는 Playwright가 끝난 뒤 lock을 놓으므로, 어느 쪽이든 RAM disk를 뗀 뒤 차례를 넘깁니다.
   // worker마다 bd를 동시에 실행하면 디스크 I/O를 함께 쓰느라 bd 한 번이 느려집니다.
   // macOS에서는 시나리오 workspace를 RAM disk에 만들어 이 지연을 줄이고, 그만큼 worker를 늘립니다.
   // 디스크에서 worker 8개로 실행하면 저장 확인이 timeout을 넘기는 시나리오가 생깁니다.

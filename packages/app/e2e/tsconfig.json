@@ -2,6 +2,7 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "incremental": true,
+    "allowImportingTsExtensions": true,
     "paths": { "@/*": ["../src/*"] }
   },
   "include": ["**/*.ts", "../playwright.config.ts"]

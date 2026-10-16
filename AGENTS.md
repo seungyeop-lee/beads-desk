@@ -82,7 +82,8 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다.
 
 - `pnpm run test:e2e`는 app을 production build로 빌드한 뒤 시나리오를 worker 8개(RAM disk를 쓰지 않으면 4개)로 나눠 실행합니다. worker마다 3900번부터 빈 포트를 찾아 `next start`를 띄우고, 실행이 끝나면 서버를 종료합니다. 다른 프로세스가 쓰는 포트는 건너뛰므로 `next dev`가 떠 있어도 됩니다.
-- 다른 worktree의 e2e가 실행 중이면 `다른 e2e 실행(pid <번호>)이 끝나기를 기다립니다.`를 출력하고, 그 실행이 끝난 뒤 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다. 먼저 시작한 실행이 비정상으로 끝나 차례를 돌려주지 못했으면, 다음 실행은 기다리지 않고 시작합니다.
+- 다른 worktree의 e2e가 실행 중이면 `다른 e2e 실행(pid <번호>)이 끝나기를 기다립니다.`를 출력하고, 그 실행이 끝난 뒤 시작합니다. `pnpm run test:e2e`는 기다리는 동안 빌드도 하지 않고, 차례를 받은 뒤에 빌드합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다. 먼저 시작한 실행이 비정상으로 끝나 차례를 돌려주지 못했으면, 다음 실행은 기다리지 않고 시작합니다.
+- Playwright가 마지막에 표시하는 시간에는 빌드 없이 실행했을 때 차례를 기다린 시간이 들어갑니다. 기다렸으면 `차례를 <초> 기다렸습니다.`가 따로 출력되고, `pnpm run test:e2e`는 끝에 `e2e 대기 <초>, 빌드 <초>, 시나리오 실행 <초>`를 출력합니다.
 - macOS에서는 실행하는 동안 `/Volumes/beads-desk-e2e-<실행 pid>`에 512MB RAM disk를 붙이고, 시나리오 workspace를 그 아래에 만듭니다. 실행이 끝나면 성공·실패와 관계없이 떼어 냅니다. 실행이 비정상으로 끝나 volume이 남아 있으면 다음 실행이 뗍니다. RAM disk 없이 실행하려면 `BEADS_DESK_E2E_RAMDISK=0`을 줍니다. 디스크에서는 worker들의 bd 실행이 디스크 I/O를 함께 쓰느라 느려지므로 worker를 4개로 줄여 실행합니다.
 - 시나리오가 실패하면 `packages/app/test-results`에 screenshot과 trace가 남습니다. trace는 `pnpm exec playwright show-trace <trace.zip 경로>`로 엽니다.
 
