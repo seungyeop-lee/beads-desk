@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import {
   canJoinHierarchy,
   dependencyToAdd,
-  hasBlocksLink,
+  hasGraphLink,
   linkedIssues,
   notRelationCandidate,
   notReplacementTarget,
@@ -137,13 +137,20 @@ test("대체·중복 닫기 후보에서 자기 자신과 이미 의존하는 �
   expect(excluded(candidate("dependent"))).toBe(false);
 });
 
-test("선행·후속 그래프는 어느 방향이든 blocks 관계가 있을 때만 그릴 사슬이 있다", () => {
-  expect(hasBlocksLink({ dependencies: [link("blocker", "blocks")], dependents: [] })).toBe(true);
-  expect(hasBlocksLink({ dependencies: [], dependents: [link("waiter", "blocks")] })).toBe(true);
+test("선행·후속 그래프는 양방향 blocks·related·discovered-from 관계에서 열 수 있다", () => {
+  expect(hasGraphLink({ dependencies: [link("blocker", "blocks")], dependents: [] })).toBe(true);
+  expect(hasGraphLink({ dependencies: [], dependents: [link("waiter", "blocks")] })).toBe(true);
   expect(
-    hasBlocksLink({
+    hasGraphLink({
       dependencies: [link("epic", "parent-child")],
-      dependents: [link("peer", "related")],
+      dependents: [],
     }),
   ).toBe(false);
 });
+
+for (const type of ["related", "discovered-from"]) {
+  test(`${type}만 있어도 양쪽 상세에서 그래프를 열 수 있다`, () => {
+    expect(hasGraphLink({ dependencies: [link("other", type)], dependents: [] })).toBe(true);
+    expect(hasGraphLink({ dependencies: [], dependents: [link("other", type)] })).toBe(true);
+  });
+}

@@ -54,7 +54,7 @@ test("이슈 중심 보기는 중심 이슈에서 blocks를 따라 앞뒤로 끝
   ]);
 });
 
-test("이슈 중심 보기는 닫힌 선행·후속 이슈 너머까지 담고, 옆 갈래와 blocks가 아닌 관계는 빼낸다", () => {
+test("이슈 중심 보기는 닫힌 선행·후속 이슈 너머까지 담고, 옆 갈래는 빼고 기준의 관련 이슈는 담는다", () => {
   const data = {
     issues: [
       issue("before-closed"),
@@ -84,6 +84,7 @@ test("이슈 중심 보기는 닫힌 선행·후속 이슈 너머까지 담고, 
     "center",
     "closed-after",
     "after-closed",
+    "related",
   ]);
 });
 

@@ -1,3 +1,4 @@
+import type { AuxiliaryEdge } from "@/client/modules/graph/domain/centerGraph";
 import type { Issue } from "@beads-desk/bd/issue";
 import type { ExecutionOrder, OrderEdge } from "@/client/modules/graph/domain/executionOrder";
 
@@ -94,4 +95,33 @@ export function layeredLayout(
     })),
     nodeHeight,
   };
+}
+
+/** blocks 사슬의 좌표를 유지하고, 보조 관계로만 연결된 이슈를 그 아래에 둡니다. */
+export function centerLayout(
+  layout: GraphLayout,
+  extra: Issue[],
+  auxiliary: AuxiliaryEdge[],
+  center: Issue | undefined,
+  heights: ReadonlyMap<string, number>,
+): GraphLayout {
+  if (auxiliary.length === 0) return layout;
+  const nodes = [...layout.nodes];
+  if (nodes.length === 0 && center) {
+    nodes.push({ issue: center, x: 0, y: 0, height: heights.get(center.id) ?? NODE_HEIGHT });
+  }
+  let top = Math.max(0, ...nodes.map(({ y, height }) => y + height)) + COMPONENT_GAP;
+  for (let start = 0; start < extra.length; start += 3) {
+    const row = extra.slice(start, start + 3);
+    row.forEach((issue, column) =>
+      nodes.push({
+        issue,
+        x: column * COLUMN_STEP,
+        y: top,
+        height: heights.get(issue.id) ?? NODE_HEIGHT,
+      }),
+    );
+    top += Math.max(...row.map(({ id }) => heights.get(id) ?? NODE_HEIGHT)) + ROW_GAP;
+  }
+  return { ...layout, nodes };
 }

@@ -3,7 +3,7 @@ import type { GraphData } from "@/shared/contract/graph";
 
 /**
  * 의존 그래프가 그리는 범위입니다.
- * epic은 그 에픽의 후손 이슈를, center는 그 이슈에서 blocks를 따라 앞(선행)과 뒤(후속)로 끝까지 이어진 이슈를 그립니다.
+ * epic은 그 에픽의 후손 이슈를, center는 앞뒤 blocks 사슬과 기준에 직접 연결된 related·discovered-from 이슈를 그립니다.
  */
 export type GraphScope = { kind: "epic" | "center"; id: string };
 
@@ -18,10 +18,16 @@ export function scopedIssues(
   if (scope.kind === "epic") {
     return issues.filter((issue) => ancestorEpics[issue.id]?.includes(scope.id));
   }
-  return blockingChain(issues, dependencies, scope.id);
+  const selected = new Set(blockingChainIssues(issues, dependencies, scope.id).map(({ id }) => id));
+  for (const { issueId, dependsOnId, type } of dependencies) {
+    if (type !== "related" && type !== "discovered-from") continue;
+    if (issueId === scope.id) selected.add(dependsOnId);
+    if (dependsOnId === scope.id) selected.add(issueId);
+  }
+  return issues.filter(({ id }) => selected.has(id));
 }
 
-function blockingChain(
+export function blockingChainIssues(
   issues: Issue[],
   dependencies: IssueDependency[],
   centerId: string,

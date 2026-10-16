@@ -1,6 +1,6 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("상세의 선행·후속 그래프는 blocks 관계가 있는 이슈에만 보이고, 누르면 그 이슈의 앞뒤 blocks 사슬을 닫힌 이슈까지 그리며 기준 이슈 노드만 강조한다", async ({
+test("상세의 선행·후속 그래프는 지원하는 관계가 있는 이슈에 보이고, 누르면 그 이슈의 앞뒤 blocks 사슬을 닫힌 이슈까지 그리며 기준 이슈 노드만 강조한다", async ({
   page,
   workspace,
 }, testInfo) => {
@@ -56,7 +56,7 @@ test("상세의 선행·후속 그래프는 blocks 관계가 있는 이슈에만
   await expect(node("닫힌 선행")).toBeVisible();
   await expect(node("닫힌 선행")).toHaveCSS("opacity", "0.5");
   await expect(node("사슬 가운데")).toHaveCSS("opacity", "1");
-  await expect(node("related 이슈")).toHaveCount(0);
+  await expect(node("related 이슈")).toBeVisible();
   await expect(node("관계 없는 이슈")).toHaveCount(0);
 
   await expect(canvas.locator("[aria-current]")).toHaveCount(1);
@@ -216,6 +216,114 @@ test("실제로 blocks 관계가 없는 이슈를 기준으로 직접 열면 빈
 }) => {
   const alone = await workspace.createIssue("선후행 없는 작업");
   await page.goto(`/issues?center=${alone}`);
-  await expect(page.getByText("이 이슈와 blocks 관계로 이어진 이슈가 없습니다.")).toBeVisible();
+  await expect(
+    page.getByText("이 이슈와 blocks·related·discovered-from 관계로 이어진 이슈가 없습니다."),
+  ).toBeVisible();
   await expect(page.getByRole("region", { name: "의존 그래프" })).toHaveCount(0);
+});
+
+test("관련·양방향 발견 관계를 사슬과 구분하고, 보조 관계만 있는 기준에서도 상세·확대·이동을 유지한다", async ({
+  page,
+  workspace,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const { before, center, after, related, origin, found } = await workspace.createIssues(
+    {
+      before: { title: "주 사슬 선행" },
+      center: { title: "보조 관계 기준" },
+      after: { title: "주 사슬 후속" },
+      related: { title: "직접 관련 이슈" },
+      origin: { title: "이슈를 발견한 작업", status: "closed" },
+      found: { title: "작업 중 발견한 이슈" },
+    },
+    [
+      ["center", "before"],
+      ["after", "center"],
+    ],
+  );
+  for (const [from, to, type] of [
+    [center, related, "related"],
+    [center, origin, "discovered-from"],
+    [found, center, "discovered-from"],
+  ]) {
+    await workspace.bd("dep", "add", from!, to!, "--type", type!);
+  }
+  await page.goto(`/issues?center=${center}`);
+  const canvas = page.getByRole("region", { name: "의존 그래프" });
+  const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
+  for (const title of [
+    "주 사슬 선행",
+    "보조 관계 기준",
+    "주 사슬 후속",
+    "직접 관련 이슈",
+    "이슈를 발견한 작업",
+    "작업 중 발견한 이슈",
+  ])
+    await expect(node(title)).toBeVisible();
+  await expect(node("이슈를 발견한 작업")).toHaveCSS("opacity", "0.5");
+  await expect(node("보조 관계 기준")).toHaveAttribute("aria-current", "true");
+  await expect(canvas.getByLabel(`${before} 다음에 ${center}`)).toHaveCount(1);
+  await expect(canvas.getByLabel(`${center} 다음에 ${after}`)).toHaveCount(1);
+  await expect(
+    canvas.getByLabel(
+      `${origin}: 이 작업 중 발견한 이슈 ${center} (${center}: 이 이슈를 발견한 작업 ${origin})`,
+    ),
+  ).toHaveCount(1);
+  await expect(
+    canvas.getByLabel(
+      `${center}: 이 작업 중 발견한 이슈 ${found} (${found}: 이 이슈를 발견한 작업 ${center})`,
+    ),
+  ).toHaveCount(1);
+  await expect(canvas.locator(".graph-blocks").first()).toHaveCSS("stroke-width", "2px");
+  await expect(canvas.locator(".graph-auxiliary-related")).toHaveCSS(
+    "stroke-dasharray",
+    "3px, 5px",
+  );
+  await expect(canvas.locator(".graph-auxiliary-discovered-from").first()).toHaveCSS(
+    "stroke-dasharray",
+    "8px, 4px, 2px, 4px",
+  );
+  await expect(page.getByLabel("관계 범례")).toContainText("발견한 작업 → 발견한 이슈");
+  await page.screenshot({
+    path: testInfo.outputPath("auxiliary-chain.png"),
+    animations: "disabled",
+  });
+  await node("직접 관련 이슈").click();
+  await expect(page.getByRole("region", { name: `${related} 이슈` })).toBeVisible();
+  await page.keyboard.press("Escape");
+  const mask = canvas
+    .getByRole("img", { name: "그래프 미니맵" })
+    .locator(".react-flow__minimap-mask");
+  const beforeZoom = await mask.getAttribute("d");
+  await canvas.getByRole("button", { name: "확대", exact: true }).click();
+  await expect(mask).not.toHaveAttribute("d", beforeZoom!);
+  const beforePan = await mask.getAttribute("d");
+  const box = (await canvas.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.8);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.45 - 100, box.y + box.height * 0.8 - 70, {
+    steps: 5,
+  });
+  await page.mouse.up();
+  await expect(mask).not.toHaveAttribute("d", beforePan!);
+  for (const id of [related, origin, found]) {
+    await page.goto(`/issues?issue=${id}`);
+    await page
+      .getByRole("dialog", { name: `${id} 이슈` })
+      .getByRole("link", { name: "선행·후속 그래프" })
+      .click();
+    await expect(node("보조 관계 기준")).toBeVisible();
+    await expect(canvas.locator(".react-flow__node")).toHaveCount(2);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await canvas.getByRole("button", { name: "전체 보기", exact: true }).click();
+  await expect(node("보조 관계 기준")).toBeVisible();
+  await node("보조 관계 기준").click();
+  const detail = page.getByRole("region", { name: `${center} 이슈` });
+  await expect(detail).toBeVisible();
+  expect((await detail.boundingBox())!.y).toBeGreaterThan((await canvas.boundingBox())!.y);
+  await page.screenshot({
+    path: testInfo.outputPath("auxiliary-narrow-detail.png"),
+    animations: "disabled",
+  });
 });

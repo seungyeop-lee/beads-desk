@@ -18,6 +18,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { AuxiliaryEdge } from "@/client/modules/graph/domain/centerGraph";
 import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
@@ -28,6 +29,11 @@ import { IssueCard, type PlanMarks } from "./IssueCard";
 
 type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
 type IssueNode = Node<IssueNodeData, "issue">;
+type AuxiliaryFlowEdge = Edge<
+  { relation: AuxiliaryEdge["type"]; sourcePosition: Position; targetPosition: Position },
+  "auxiliary"
+>;
+type GraphEdge = BlocksEdge | AuxiliaryFlowEdge;
 type BlocksEdge = Edge<Pick<PlacedEdge, "passes" | "bypassX">, "blocks">;
 
 /** 에픽 계획 보기가 단계 이름과 노드 표시를 그리는 데 쓰는 값입니다. 이슈 중심 보기는 넘기지 않습니다. */
@@ -44,12 +50,20 @@ type Props = {
   plan?: GraphPlan;
   /** 이슈 중심 보기의 기준 이슈입니다. 이 노드만 다른 노드와 구분되게 그립니다. */
   centerId?: string;
+  auxiliary?: AuxiliaryEdge[];
 };
 
 /** blocks 실행 순서로 배치한 이슈를 React Flow로 그립니다. 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다. */
-export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: Props) {
+export function IssueGraph({
+  layout,
+  issueHref,
+  plan,
+  centerId,
+  auxiliary = [],
+  ready = true,
+}: Props) {
   const containerRef = useRef<HTMLElement>(null);
-  const flowRef = useRef<ReactFlowInstance<IssueNode, BlocksEdge> | null>(null);
+  const flowRef = useRef<ReactFlowInstance<IssueNode, GraphEdge> | null>(null);
   const layoutRef = useRef(layout);
   const viewportChosen = useRef(false);
   const preserveViewport = () => {
@@ -97,18 +111,41 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
           }),
         },
       })),
-      edges: layout.edges.map(({ from, to, passes, bypassX }): BlocksEdge => ({
-        id: `${from}->${to}`,
-        type: "blocks",
-        source: from,
-        target: to,
-        targetHandle: bypassX === undefined ? null : "same-column",
-        data: { passes, bypassX },
-        markerEnd: { type: MarkerType.ArrowClosed },
-        ariaLabel: messages.graph.edgeLabel(from, to),
-      })),
+      edges: [
+        ...auxiliary.map(({ from, to, type }): AuxiliaryFlowEdge => {
+          const sourceY = layout.nodes.find(({ issue }) => issue.id === from)!.y;
+          const targetY = layout.nodes.find(({ issue }) => issue.id === to)!.y;
+          const sourcePosition = sourceY <= targetY ? Position.Bottom : Position.Top;
+          const targetPosition = sourceY < targetY ? Position.Top : Position.Bottom;
+          return {
+            id: `${type}:${from}->${to}`,
+            type: "auxiliary",
+            source: from,
+            target: to,
+            sourceHandle: `${type}-${sourcePosition}`,
+            targetHandle: `${type}-${targetPosition}`,
+            data: { relation: type, sourcePosition, targetPosition },
+            markerEnd: type === "discovered-from" ? { type: MarkerType.Arrow } : undefined,
+            ariaLabel:
+              type === "related"
+                ? messages.graph.relatedEdge(from, to)
+                : messages.graph.discoveredEdge(from, to),
+          };
+        }),
+        ...layout.edges.map(({ from, to, passes, bypassX }): BlocksEdge => ({
+          id: `${from}->${to}`,
+          type: "blocks",
+          source: from,
+          target: to,
+          sourceHandle: "blocks",
+          targetHandle: bypassX === undefined ? "blocks" : "same-column",
+          data: { passes, bypassX },
+          markerEnd: { type: MarkerType.ArrowClosed },
+          ariaLabel: messages.graph.edgeLabel(from, to),
+        })),
+      ],
     }),
-    [layout, issueHref, plan, centerId, messages],
+    [layout, issueHref, plan, centerId, messages, auxiliary],
   );
 
   return (
@@ -198,7 +235,13 @@ function StageLabels({ stages: { total, current } }: { stages: StageProgress }) 
 function IssueNodeView({ data: { issue, href, plan, center } }: NodeProps<IssueNode>) {
   return (
     <>
-      <Handle type="target" position={Position.Left} isConnectable={false} className="opacity-0" />
+      <Handle
+        id="blocks"
+        type="target"
+        position={Position.Left}
+        isConnectable={false}
+        className="opacity-0"
+      />
       <Handle
         id="same-column"
         type="target"
@@ -206,8 +249,28 @@ function IssueNodeView({ data: { issue, href, plan, center } }: NodeProps<IssueN
         isConnectable={false}
         className="top-1/4! opacity-0"
       />
+      {(["related", "discovered-from"] as const).flatMap((relation) =>
+        [Position.Top, Position.Bottom].flatMap((position) =>
+          (["source", "target"] as const).map((type) => (
+            <Handle
+              key={`${relation}-${position}-${type}`}
+              id={`${relation}-${position}`}
+              type={type}
+              position={position}
+              isConnectable={false}
+              className={`${relation === "related" ? "left-1/3!" : "left-2/3!"} opacity-0`}
+            />
+          )),
+        ),
+      )}
       <IssueCard issue={issue} href={href} plan={plan} center={center} />
-      <Handle type="source" position={Position.Right} isConnectable={false} className="opacity-0" />
+      <Handle
+        id="blocks"
+        type="source"
+        position={Position.Right}
+        isConnectable={false}
+        className="opacity-0"
+      />
     </>
   );
 }
@@ -236,7 +299,7 @@ function BlocksEdgeView({
       targetPosition: Position.Right,
       offset: data.bypassX - sourceX,
     });
-    return <BaseEdge path={path} markerEnd={markerEnd} />;
+    return <BaseEdge path={path} markerEnd={markerEnd} className="graph-blocks" />;
   }
   const curve = (x1: number, y1: number, x2: number, y2: number) =>
     getBezierPath({
@@ -254,10 +317,31 @@ function BlocksEdgeView({
     [x, y] = [pass.right, pass.y];
   }
   path += curve(x, y, targetX, targetY);
-  return <BaseEdge path={path} markerEnd={markerEnd} />;
+  return <BaseEdge path={path} markerEnd={markerEnd} className="graph-blocks" />;
 }
 
-const EDGE_TYPES = { blocks: BlocksEdgeView };
+function AuxiliaryEdgeView({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  data,
+  markerEnd,
+}: EdgeProps<AuxiliaryFlowEdge>) {
+  const [path] = getBezierPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition: data?.sourcePosition ?? Position.Bottom,
+    targetPosition: data?.targetPosition ?? Position.Top,
+  });
+  return (
+    <BaseEdge path={path} markerEnd={markerEnd} className={`graph-auxiliary-${data?.relation}`} />
+  );
+}
+
+const EDGE_TYPES = { blocks: BlocksEdgeView, auxiliary: AuxiliaryEdgeView };
 
 /** 미니맵 노드도 그래프 노드의 상태 점과 같은 tone class로 칠해, 상태별 이슈가 어디에 몰려 있는지 보이게 합니다. */
 function miniMapNodeClassName(node: IssueNode): string {

@@ -381,11 +381,20 @@ export const enMessages: Messages = {
     help: {
       epic: "Issues in the epic that must finish first are in the stages on the left, following blocks dependencies. Issues in the same stage can proceed in parallel, and closed issues are dimmed. Issues outside the epic that block its issues are drawn with a dashed border, and issues with no blocks dependency are listed under No blocks dependency.",
       center:
-        "Follows blocks dependencies all the way from this issue: the issues it waits for and the issues waiting for it. Issues that must finish first are on the left. Closed issues are dimmed.",
+        "Follows the blocks chain with prerequisites on the left and dependents on the right. Direct related and discovered-from links are also shown without affecting execution order. Discovery arrows point from the originating work to the discovered issue. Closed issues are dimmed.",
     },
     loadFailed: (error) => `Could not load the graph: ${error}`,
     canvas: "Dependency graph",
     edgeLabel: (from, to) => `${to} after ${from}`,
+    legend: "Relationship legend",
+    blockingLegend: "Solid arrow: DEPENDS ON → BLOCKS",
+    relatedLegend: "Dotted line: RELATED",
+    discoveredLegend: "Dash-dot arrow: discovered in → discovered issue",
+    auxiliaryHint:
+      "Only the center issue's direct related and discovered-from links are shown. Auxiliary links do not set execution order or block work.",
+    relatedEdge: (from, to) => `${from} and ${to}: RELATED`,
+    discoveredEdge: (from, to) =>
+      `${from} → ${to}: discovered-from (discovered in → discovered issue)`,
     controls: "Graph view controls",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
@@ -409,7 +418,7 @@ export const enMessages: Messages = {
     cyclePath: "Cycle",
     empty: {
       epic: "No blocks dependencies among the issues in this epic.",
-      center: "No issues are connected to this issue by blocks dependencies.",
+      center: "No issues are connected to this issue by blocks, related, or discovered-from links.",
     },
     epicOrder: "View order",
     blockingChain: "Blocks graph",

@@ -352,3 +352,28 @@
   --xy-minimap-node-stroke-color: var(--color-primary);
   vector-effect: non-scaling-stroke;
 }
+
+.graph-auxiliary-related,
+.graph-auxiliary-discovered-from {
+  stroke-width: 1;
+  opacity: 0.65;
+}
+.graph-auxiliary-related {
+  stroke-dasharray: 3 5;
+}
+.graph-auxiliary-discovered-from {
+  stroke-dasharray: 8 4 2 4;
+}
+.graph-legend-blocks {
+  border-top: 2px solid currentColor;
+}
+.graph-legend-related {
+  border-top: 1px dotted currentColor;
+}
+.graph-legend-discovered {
+  border-top: 1px dashed currentColor;
+}
+
+.graph-blocks {
+  stroke-width: 2;
+}

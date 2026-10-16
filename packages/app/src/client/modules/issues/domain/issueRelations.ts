@@ -50,10 +50,10 @@ export function dependencyToAdd(kind: RelationKind, self: string, other: string)
   }
 }
 
-/** 이 이슈를 기다리거나 이 이슈가 기다리는 blocks 관계가 있으면, 선행·후속 그래프로 그릴 사슬이 있습니다. */
-export function hasBlocksLink(issue: Pick<IssueDetail, "dependencies" | "dependents">): boolean {
-  return [...issue.dependencies, ...issue.dependents].some(
-    (link) => link.dependencyType === "blocks",
+/** 선행·후속 그래프가 지원하는 관계가 있으면 상세에서 그래프를 열 수 있습니다. */
+export function hasGraphLink(issue: Pick<IssueDetail, "dependencies" | "dependents">): boolean {
+  return [...issue.dependencies, ...issue.dependents].some((link) =>
+    ["blocks", "related", "discovered-from"].includes(link.dependencyType),
   );
 }
 

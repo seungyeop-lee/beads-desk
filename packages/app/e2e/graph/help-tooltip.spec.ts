@@ -26,7 +26,7 @@ test("좁은 화면에서 제목이 길어도 그래프 화면의 도움말은 �
   );
   const screens = [
     [`/graph?epic=${epic}`, /^에픽에 속한 이슈를 blocks 관계를 따라/],
-    [`/graph?center=${center}`, /^이 이슈가 기다리는 이슈와/],
+    [`/graph?center=${center}`, /^이 이슈의 앞뒤 blocks 사슬은/],
   ] as const;
 
   // 480px에서는 header가 설명의 최대 폭(32rem)보다 좁습니다.

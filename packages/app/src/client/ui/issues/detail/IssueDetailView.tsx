@@ -4,7 +4,7 @@ import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import {
-  hasBlocksLink,
+  hasGraphLink,
   linkedIssues,
   type LinkedIssue,
 } from "@/client/modules/issues/domain/issueRelations";
@@ -193,7 +193,7 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
                   {issue.issueType === "epic" && (
                     <GraphLink scope={{ kind: "epic", id }} label={messages.graph.epicOrder} />
                   )}
-                  {hasBlocksLink(issue) && (
+                  {hasGraphLink(issue) && (
                     <GraphLink
                       scope={{ kind: "center", id }}
                       label={messages.graph.blockingChain}

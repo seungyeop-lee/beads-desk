@@ -393,11 +393,20 @@ export const koMessages = {
     help: {
       epic: "에픽에 속한 이슈를 blocks 관계를 따라 먼저 끝내야 하는 이슈부터 왼쪽 단계에 둡니다. 같은 단계의 이슈는 함께 진행할 수 있고, 닫힌 이슈는 흐리게 보입니다. 에픽의 이슈를 막는 에픽 밖 이슈는 점선으로 함께 그리고, blocks 관계가 없는 이슈는 선후 관계 없음에 모읍니다.",
       center:
-        "이 이슈가 기다리는 이슈와 이 이슈를 기다리는 이슈를 blocks 관계를 따라 끝까지 그리고, 먼저 끝내야 하는 이슈를 왼쪽에 둡니다. 닫힌 이슈는 흐리게 보입니다.",
+        "이 이슈의 앞뒤 blocks 사슬은 먼저 끝내야 하는 이슈부터 왼쪽에 둡니다. 기준 이슈에 직접 연결된 관련·발견 관계도 함께 표시하며, 이 관계는 실행 순서를 정하지 않습니다. 발견 화살표는 발견한 작업에서 발견한 이슈를 향합니다. 닫힌 이슈는 흐리게 보입니다.",
     },
     loadFailed: (error: string) => `그래프를 불러오지 못했습니다: ${error}`,
     canvas: "의존 그래프",
     edgeLabel: (from: string, to: string) => `${from} 다음에 ${to}`,
+    legend: "관계 범례",
+    blockingLegend: "실선 화살표: 선행 → 후속",
+    relatedLegend: "점선: 관련",
+    discoveredLegend: "일점쇄선 화살표: 발견한 작업 → 발견한 이슈",
+    auxiliaryHint:
+      "기준 이슈에 직접 연결된 관련·발견 관계만 함께 표시합니다. 보조 관계는 실행 순서나 차단을 뜻하지 않습니다.",
+    relatedEdge: (from: string, to: string) => `${from}와 ${to}: 관련`,
+    discoveredEdge: (from: string, to: string) =>
+      `${from}: 이 작업 중 발견한 이슈 ${to} (${to}: 이 이슈를 발견한 작업 ${from})`,
     controls: "그래프 보기 조작",
     zoomIn: "확대",
     zoomOut: "축소",
@@ -421,7 +430,7 @@ export const koMessages = {
     cyclePath: "순환 경로",
     empty: {
       epic: "에픽에 속한 이슈 사이에 blocks 관계가 없습니다.",
-      center: "이 이슈와 blocks 관계로 이어진 이슈가 없습니다.",
+      center: "이 이슈와 blocks·related·discovered-from 관계로 이어진 이슈가 없습니다.",
     },
     epicOrder: "순서 보기",
     blockingChain: "선행·후속 그래프",

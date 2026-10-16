@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
 import { useGraph } from "@/client/modules/graph/application/useGraph";
-import { executionOrder } from "@/client/modules/graph/domain/executionOrder";
-import { type GraphScope, scopedIssues } from "@/client/modules/graph/domain/graphScope";
+import { centerGraph } from "@/client/modules/graph/domain/centerGraph";
+import { type GraphScope } from "@/client/modules/graph/domain/graphScope";
 import { CloseIcon, HelpIcon } from "@/client/ui/designSystem/icons";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -140,16 +140,42 @@ function BlockingChainGraph({
   issueHref: (issueId: string) => string;
 }) {
   const messages = useMessages();
-  const order = useMemo(
-    () => executionOrder(scopedIssues(data, scope), data.dependencies),
-    [data, scope],
-  );
-  const { layout, measurement, ready } = useGraphLayout(order);
+  const graph = useMemo(() => {
+    const result = centerGraph(data, scope.id);
+    return { ...result, issue: data.issues.find(({ id }) => id === scope.id) };
+  }, [data, scope]);
+  const { layout, measurement, ready } = useGraphLayout(graph.order, false, graph);
   return (
     <>
       {measurement}
       {layout.nodes.length > 0 ? (
-        <IssueGraph layout={layout} ready={ready} issueHref={issueHref} centerId={scope.id} />
+        <>
+          <div
+            className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-base-content/65"
+            aria-label={messages.graph.legend}
+          >
+            <span className="flex items-center gap-2">
+              <span className="graph-legend-blocks w-8" />
+              {messages.graph.blockingLegend}
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="graph-legend-related w-8" />
+              {messages.graph.relatedLegend}
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="graph-legend-discovered w-8" />
+              {messages.graph.discoveredLegend}
+            </span>
+          </div>
+          <p className="text-xs text-base-content/55">{messages.graph.auxiliaryHint}</p>
+          <IssueGraph
+            layout={layout}
+            ready={ready}
+            issueHref={issueHref}
+            centerId={scope.id}
+            auxiliary={graph.auxiliary}
+          />
+        </>
       ) : (
         <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
           {messages.graph.empty.center}

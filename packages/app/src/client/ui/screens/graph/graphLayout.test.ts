@@ -1,7 +1,14 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { ExecutionOrder } from "@/client/modules/graph/domain/executionOrder";
-import { COLUMN_STEP, COMPONENT_GAP, layeredLayout, NODE_WIDTH, ROW_GAP } from "./graphLayout";
+import {
+  centerLayout,
+  COLUMN_STEP,
+  COMPONENT_GAP,
+  layeredLayout,
+  NODE_WIDTH,
+  ROW_GAP,
+} from "./graphLayout";
 
 const slot = (id: string) => ({ issue: { id } as Issue });
 
@@ -125,4 +132,44 @@ test("긴 제목의 실제 높이를 같은 행과 다음 묶음에 반영하고
   expect(nodes.get("b")!.y).toBe(220 + ROW_GAP);
   expect(layout.edges[0]!.passes[0]!.y).toBe(220 + ROW_GAP + 38);
   expect(nodes.get("e")!.y).toBe(220 + 76 + ROW_GAP * 2 + COMPONENT_GAP);
+});
+
+test("보조 노드는 사슬 아래에 두고 기존 사슬 좌표와 blocks 간선을 보존한다", () => {
+  const center = { id: "center" } as Issue;
+  const next = { id: "next" } as Issue;
+  const base = {
+    nodes: [
+      { issue: center, x: 0, y: 0, height: 100 },
+      { issue: next, x: COLUMN_STEP, y: 0, height: 100 },
+    ],
+    edges: [{ from: "center", to: "next", passes: [] }],
+    nodeHeight: 76,
+  };
+  const auxiliary = [{ from: "center", to: "extra", type: "related" as const }];
+  const result = centerLayout(
+    base,
+    [{ id: "extra" } as Issue],
+    auxiliary,
+    center,
+    new Map([["extra", 120]]),
+  );
+  expect(result.nodes.slice(0, 2)).toEqual(base.nodes);
+  expect(result.edges).toBe(base.edges);
+  expect(result.nodes[2]).toMatchObject({ y: 100 + COMPONENT_GAP, height: 120 });
+  expect(centerLayout(base, [], [], center, new Map())).toBe(base);
+});
+
+test("보조 관계만 있으면 기준과 연결 이슈를 중복 없이 배치하고 아무 관계도 없으면 빈 상태를 유지한다", () => {
+  const center = { id: "center" } as Issue;
+  const base = { nodes: [], edges: [], nodeHeight: 76 };
+  expect(
+    centerLayout(
+      base,
+      [{ id: "extra" } as Issue],
+      [{ from: "center", to: "extra", type: "related" }],
+      center,
+      new Map(),
+    ).nodes.map(({ issue }) => issue.id),
+  ).toEqual(["center", "extra"]);
+  expect(centerLayout(base, [], [], center, new Map()).nodes).toEqual([]);
 });
