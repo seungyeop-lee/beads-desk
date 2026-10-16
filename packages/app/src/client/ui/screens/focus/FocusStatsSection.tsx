@@ -33,8 +33,9 @@ import { screenTone } from "@/client/ui/shell/screenTabs";
 import { FLOW_SERIES, flowBarHref, type FlowSeries } from "./flowBarAddress";
 
 /**
- * 개수 카드 아래에 두는 통계입니다. 지금 할 일을 보이는 개수 카드와 시선을 다투지 않도록 색 배경 없이 작게 보이고,
- * 차트가 브라우저에서 크기를 잰 뒤에 그려져도 아래 목록이 밀리지 않도록 높이를 고정합니다.
+ * 개수 카드 아래에 두는 통계입니다. 지금 할 일을 보이는 개수 카드와 시선을 다투지 않도록 색 배경 없이 작게 보입니다.
+ * 카드 높이는 차트와 관계없이 정해지므로, 차트가 브라우저에서 크기를 잰 뒤에 그려져도 아래 목록이 밀리지 않습니다.
+ * 창이 좁아 카드 글이 줄바꿈될 때만 카드가 최소 높이보다 커지고, 아래 목록도 그만큼 내려갑니다.
  */
 export function FocusStatsSection({ stats }: { stats: FocusStats }) {
   const messages = useMessages();
@@ -59,7 +60,7 @@ export function FocusStatsSection({ stats }: { stats: FocusStats }) {
           />
         </span>
       </h2>
-      <div className="grid h-44 grid-cols-4 gap-3">
+      <div className="grid min-h-44 grid-cols-4 gap-3">
         <ThroughputChart daily={stats.daily} />
         <div className="surface flex flex-col justify-center gap-4 px-4 py-3">
           <Duration label={text.cycleTime} stat={stats.cycleTime} />
@@ -144,40 +145,47 @@ function ThroughputChart({ daily }: { daily: DailyFlow[] }) {
           ))}
         </span>
       </h3>
-      <BarChart responsive className="min-h-0 w-full grow" data={data} barGap={2}>
-        <CartesianGrid vertical={false} stroke="var(--color-base-300)" />
-        <XAxis
-          dataKey="label"
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.6 }}
-        />
-        <YAxis
-          allowDecimals={false}
-          // 차트가 낮아 눈금이 다섯 개면 겹치는 눈금이 빠져 간격이 고르지 않게 보입니다.
-          tickCount={3}
-          width={28}
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.6 }}
-        />
-        <Tooltip
-          cursor={{ fill: "var(--color-base-200)" }}
-          isAnimationActive={false}
-          content={FlowTooltip}
-        />
-        {FLOW_SERIES.map((series) => (
-          <Bar
-            key={series}
-            dataKey={series}
-            name={text.series[series]}
-            className={`flow-${series}`}
-            maxBarSize={24}
-            isAnimationActive={false}
-            shape={barOf(series)}
+      {/*
+        recharts의 svg는 height: 100%와 viewBox로 그려서, 높이가 내용으로 정해지는 칸에 두면 100%가 풀리지 않고
+        viewBox 비율에 너비를 곱한 높이가 됩니다. 그러면 좁은 창에서 커진 카드 높이가 비율에 남아, 창을 넓히면 차트가
+        너비에 비례해 커지고 카드 밖으로 넘칩니다. 차트를 absolute로 띄워 칸 높이를 정하는 데 끼지 않게 합니다.
+      */}
+      <div className="relative min-h-0 grow">
+        <BarChart responsive style={{ position: "absolute", inset: 0 }} data={data} barGap={2}>
+          <CartesianGrid vertical={false} stroke="var(--color-base-300)" />
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 11, fill: "currentColor", opacity: 0.6 }}
           />
-        ))}
-      </BarChart>
+          <YAxis
+            allowDecimals={false}
+            // 차트가 낮아 눈금이 다섯 개면 겹치는 눈금이 빠져 간격이 고르지 않게 보입니다.
+            tickCount={3}
+            width={28}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 11, fill: "currentColor", opacity: 0.6 }}
+          />
+          <Tooltip
+            cursor={{ fill: "var(--color-base-200)" }}
+            isAnimationActive={false}
+            content={FlowTooltip}
+          />
+          {FLOW_SERIES.map((series) => (
+            <Bar
+              key={series}
+              dataKey={series}
+              name={text.series[series]}
+              className={`flow-${series}`}
+              maxBarSize={24}
+              isAnimationActive={false}
+              shape={barOf(series)}
+            />
+          ))}
+        </BarChart>
+      </div>
     </div>
   );
 }
