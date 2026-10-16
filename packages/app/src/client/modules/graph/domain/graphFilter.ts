@@ -7,7 +7,7 @@ export type GraphFilter = {
   epic: string | null;
   /** 비어 있으면 모든 유형을 남깁니다. */
   types: readonly string[];
-  /** 결정 bd-desk-2s1의 작업 상태입니다. 비어 있으면 모든 상태를 남깁니다. */
+  /** 남길 작업 상태입니다. 비어 있으면 모든 상태를 남깁니다. */
   states: readonly WorkState[];
 };
 

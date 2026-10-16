@@ -89,7 +89,7 @@ export function IssueGraph({ layout, edgeLabel, edgeType = "default", issueHref 
   );
 }
 
-/** 노드 전체가 상세 dialog를 여는 링크입니다. 작업 상태 색과 이름은 결정 bd-desk-2s1의 기준을 따릅니다. */
+/** 노드 전체가 상세 dialog를 여는 링크입니다. 작업 상태 색과 이름은 다른 화면과 같은 workState 기준을 따릅니다. */
 function IssueNodeView({ data: { issue, href } }: NodeProps<IssueNode>) {
   const messages = useMessages();
   const state = workState(issue);

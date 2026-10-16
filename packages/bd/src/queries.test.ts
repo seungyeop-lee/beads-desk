@@ -570,6 +570,29 @@ describe("boardIssues", () => {
     });
   });
 
+  test("human 라벨이 붙은 열림·진행 중 이슈는 어느 열에도 넣지 않고, 닫혔거나 막힌 것은 그 열에 넣는다", async () => {
+    const issue = (id: string, status: string) => ({ id, status, labels: ["human"] });
+    await useFakeBd({
+      [boardArgs.all]: {
+        stdout: JSON.stringify([
+          issue("question", "open"),
+          issue("asking", "in_progress"),
+          issue("answered", "closed"),
+          issue("marked-blocked", "blocked"),
+          issue("dep-blocked", "open"),
+        ]),
+      },
+      [boardArgs.ready]: { stdout: JSON.stringify([issue("question", "open")]) },
+      [boardArgs.blocked]: { stdout: JSON.stringify([issue("dep-blocked", "open")]) },
+    });
+
+    const result = await boardIssues(workDir);
+
+    expect(
+      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
+    ).toEqual({ answered: "closed", "marked-blocked": "blocked", "dep-blocked": "blocked" });
+  });
+
   test("막힘 열의 이슈에는 bd blocked가 알려 준 막고 있는 이슈 id를 붙인다", async () => {
     await useFakeBd({
       [boardArgs.all]: { stdout: JSON.stringify([{ id: "waiting", status: "open" }]) },

@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
+  awaitsHumanDecision,
   humanGateReason,
   isOpenHumanGate,
   isRecord,
@@ -415,6 +416,8 @@ function supersedingIssue(record: unknown): string | null {
 /**
  * 모든 이슈를 한 번에 읽어 상태로 열을 정합니다. decision과 epic은 보드에 넣지 않습니다.
  * 열림 이슈는 bd ready에 있으면 ready에 넣습니다.
+ * human 라벨이 붙은 열림·진행 중 이슈는 bd ready에 있어도 사람의 판단을 기다리는 것이라 넣지 않습니다.
+ * 열을 나누는 순서는 app의 작업 상태(workState)와 같아야 합니다.
  * bd blocked에 나온 이슈는 의존 관계 때문에 막힌 것이라 상태와 관계없이 blocked에 넣습니다.
  * 보류(deferred), pinned, hooked, 사용자 정의 상태처럼 어느 열에도 맞지 않는 이슈는 넣지 않습니다.
  * 조회가 하나라도 실패하면 열을 잘못 나누게 되므로 오류를 돌려줍니다.
@@ -453,8 +456,9 @@ function isWork(issue: Issue): boolean {
 function statusColumn(issue: Issue, readyIds: Set<string>): BoardColumn | null {
   switch (issue.status) {
     case "open":
-      return readyIds.has(issue.id) ? "ready" : null;
+      return readyIds.has(issue.id) && !awaitsHumanDecision(issue) ? "ready" : null;
     case "in_progress":
+      return awaitsHumanDecision(issue) ? null : "in_progress";
     case "blocked":
     case "closed":
       return issue.status;

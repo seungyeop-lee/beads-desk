@@ -50,19 +50,31 @@ test("진행 중과 보류는 저장 상태를 따르고, 알 수 없는 상태�
   expect(workState(issue({ status: "pinned" }))).toBe("other");
 });
 
-test("작업 상태로 묶어 진행 중, 바로 작업 가능, 막힘, 그 밖, 보류, 닫힘 순으로 돌려주고 빈 묶음은 뺀다", () => {
+test("human 라벨이 붙은 열린 이슈는 bd ready에 있거나 진행 중이어도 awaiting_human이고, 닫힘, 막힘, 보류가 먼저다", () => {
+  const human = { labels: ["human"] };
+  expect(workState(issue({ ...human, ready: true }))).toBe("awaiting_human");
+  expect(workState(issue({ ...human, status: "in_progress" }))).toBe("awaiting_human");
+  expect(workState(issue({ ...human, issueType: "epic" }))).toBe("awaiting_human");
+  expect(workState(issue({ ...human, status: "closed" }))).toBe("closed");
+  expect(workState(issue({ ...human, blockedBy: ["demo-2"] }))).toBe("blocked");
+  expect(workState(issue({ ...human, status: "deferred" }))).toBe("deferred");
+});
+
+test("작업 상태로 묶어 진행 중, 바로 작업 가능, 막힘, 판단 기다림, 그 밖, 보류, 닫힘 순으로 돌려주고 빈 묶음은 뺀다", () => {
   const groups = groupByWorkState([
     issue({ id: "closed", status: "closed" }),
     issue({ id: "ready", ready: true }),
     issue({ id: "doing", status: "in_progress" }),
     issue({ id: "epic", issueType: "epic" }),
     issue({ id: "waiting", blockedBy: ["ready"] }),
+    issue({ id: "question", labels: ["human"], ready: true }),
   ]);
 
   expect(groups.map(({ state, issues }) => [state, issues.map(({ id }) => id)])).toEqual([
     ["in_progress", ["doing"]],
     ["ready", ["ready"]],
     ["blocked", ["waiting"]],
+    ["awaiting_human", ["question"]],
     ["other", ["epic"]],
     ["closed", ["closed"]],
   ]);

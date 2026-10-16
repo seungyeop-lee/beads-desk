@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { filterGraphIssues } from "./graphFilter";
 
 function issue(id: string, fields: Partial<Issue> = {}): Issue {
-  return { id, status: "open", issueType: "task", parent: null, ...fields } as Issue;
+  return { id, status: "open", issueType: "task", parent: null, labels: [], ...fields } as Issue;
 }
 
 const issues = [

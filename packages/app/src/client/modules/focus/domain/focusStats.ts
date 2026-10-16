@@ -43,7 +43,7 @@ export type FocusStats = {
 
 /**
  * 지금 화면의 통계를 이미 읽어 온 목록에서 계산합니다. bd status의 처리 시간 값은 믿을 수 없어 쓰지 않습니다.
- * 결정은 지금 화면의 다른 수치처럼 빼고, 처리량과 처리 시간은 직접 작업하지 않는 epic도 뺍니다(결정 bd-desk-2s1).
+ * 결정은 지금 화면의 다른 수치처럼 빼고, 처리량과 처리 시간은 직접 작업하지 않는 epic도 뺍니다.
  */
 export function focusStats(issues: Issue[], epics: EpicSummary[], now: number): FocusStats {
   const tracked = issues.filter((issue) => issue.issueType !== "decision");
