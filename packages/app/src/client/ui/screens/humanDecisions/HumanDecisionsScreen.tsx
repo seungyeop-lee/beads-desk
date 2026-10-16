@@ -28,7 +28,10 @@ type PendingItem =
   | { kind: "gate"; id: string; summary: HumanGateSummary }
   | { kind: "question"; id: string; issue: Issue };
 
-/** 판단을 기다리는 human gate와 질문을 왼쪽에 모으고, 고른 항목의 내용을 읽으며 오른쪽에서 바로 처리합니다. */
+/**
+ * 판단을 기다리는 human gate와 질문을 왼쪽에 승인 요청과 질문 묶음으로 나눠 보이고, 고른 항목의 내용을 읽으며 오른쪽에서 바로 처리합니다.
+ * 비어 있는 묶음은 숨깁니다.
+ */
 export function HumanDecisionsScreen() {
   const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
   const { data: gates, error: gatesError, loading: gatesLoading } = useHumanGates();
@@ -47,6 +50,16 @@ export function HumanDecisionsScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 처리해 닫힌 항목은 목록에서 빠지므로, 고른 항목이 없어지면 맨 위 항목을 이어서 보여 줍니다.
   const selected = pending.find((item) => item.id === selectedId) ?? pending[0];
+  const groups = [
+    {
+      label: messages.humanDecisions.approvalRequests,
+      items: pending.filter((item) => item.kind === "gate"),
+    },
+    {
+      label: messages.humanDecisions.questions,
+      items: pending.filter((item) => item.kind === "question"),
+    },
+  ].filter((group) => group.items.length > 0);
 
   return (
     <main className="mx-auto flex max-w-[96rem] flex-col gap-6 px-8 pb-16">
@@ -71,17 +84,29 @@ export function HumanDecisionsScreen() {
       {loaded &&
         (selected ? (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            <ul className="surface flex flex-col divide-y divide-base-300">
-              {pending.map((item) => (
-                <li key={item.id}>
-                  <PendingRow
-                    item={item}
-                    current={item.id === selected.id}
-                    onSelect={() => setSelectedId(item.id)}
-                  />
-                </li>
+            <div className="flex flex-col gap-5">
+              {groups.map((group) => (
+                <section key={group.label} aria-label={group.label} className="flex flex-col gap-2">
+                  <h2 className="flex items-baseline gap-2 px-1 text-[15px] font-bold">
+                    {group.label}
+                    <span className="font-mono text-xs font-normal text-base-content/50">
+                      {group.items.length}
+                    </span>
+                  </h2>
+                  <ul className="surface flex flex-col divide-y divide-base-300">
+                    {group.items.map((item) => (
+                      <li key={item.id}>
+                        <PendingRow
+                          item={item}
+                          current={item.id === selected.id}
+                          onSelect={() => setSelectedId(item.id)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
             {selected.kind === "gate" ? (
               <HumanGateDecision key={selected.id} summary={selected.summary} />
             ) : (

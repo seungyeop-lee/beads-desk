@@ -456,6 +456,8 @@ export const koMessages = {
     description:
       "agent가 사람에게 넘긴 질문과 확인 요청(human gate)입니다. 질문은 응답하거나 넘기면 닫히고, 확인 요청은 승인하면 막고 있던 작업이 풀립니다.",
     empty: "판단을 기다리는 이슈가 없습니다.",
+    approvalRequests: "승인 요청",
+    questions: "질문",
     openDetail: "상세 열기",
     noDescription: "설명이 없습니다.",
   },

@@ -446,6 +446,8 @@ export const enMessages: Messages = {
     description:
       "Questions and review gates (human gates) agents handed to a human. Responding to or dismissing a question closes it; approving a gate unblocks its issues.",
     empty: "No issues are waiting for a human decision.",
+    approvalRequests: "Approval requests",
+    questions: "Questions",
     openDetail: "Open details",
     noDescription: "No description.",
   },
