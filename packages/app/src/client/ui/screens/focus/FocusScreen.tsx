@@ -27,6 +27,7 @@ import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { HumanGateChip } from "@/client/ui/issues/HumanGateChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
+import { UserIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
@@ -277,9 +278,15 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
           </span>
           <HumanDecisionChip issue={issue} />
           <WaiterCount count={waiters} />
+          {/* 바로 앞의 대기 수와 이어 "1개 대기 없음"처럼 읽히지 않도록, 담당자는 아이콘을 붙여 따로 정한 폭에 둡니다. */}
           {showAssignee && (
-            <span className="shrink-0 text-xs text-base-content/60">
-              {issue.assignee ?? messages.common.none}
+            <span
+              className="flex w-28 shrink-0 items-center gap-1 text-xs text-base-content/60"
+              title={`${messages.issue.assignee}: ${issue.assignee ?? messages.common.none}`}
+            >
+              <UserIcon className="size-3.5 shrink-0" />
+              <span className="sr-only">{messages.issue.assignee}</span>
+              <span className="truncate">{issue.assignee ?? messages.common.none}</span>
             </span>
           )}
           {issue.priority !== null && (
