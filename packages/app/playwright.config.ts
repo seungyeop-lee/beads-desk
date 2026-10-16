@@ -1,6 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 import { usesRamDisk } from "./e2e/support/ramDisk";
 
+// bd는 명령마다 사용 통계를 쌓고, 가끔 `bd send-metrics`를 실행한 bd의 cwd에서 분리된 프로세스로 띄워 보냅니다.
+// 이 프로세스는 시나리오 workspace를 cwd로 잡은 채 실행이 끝난 뒤에도 남아, 서버를 종료해도 RAM disk를 뗄 수 없게 합니다.
+// worker와 worker가 띄우는 서버, git hook까지 이 값을 물려받아, e2e가 실행하는 bd는 통계를 쌓지도 보내지도 않습니다.
+process.env.DO_NOT_TRACK = "1";
+
 export default defineConfig({
   testDir: "./e2e",
   // worker마다 서버를 따로 띄우므로(e2e/support/appServer.ts) 시나리오를 worker 사이에 나눠 실행할 수 있습니다.

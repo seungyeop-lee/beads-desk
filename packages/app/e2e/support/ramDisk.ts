@@ -49,7 +49,8 @@ export function usesRamDisk(): boolean {
 
 /**
  * RAM disk를 뗍니다. volume 경로로 eject하면 RAM 장치까지 떼어집니다.
- * 열린 파일이 없는데도 eject가 거부될 때가 있어(원인 미확인), 그러면 강제로 unmount한 뒤 RAM 장치를 뗍니다.
+ * volume 안을 cwd로 둔 프로세스가 남아 있으면 eject가 거부되고, 그러면 강제로 unmount한 뒤 RAM 장치를 뗍니다.
+ * 이렇게 남던 bd의 `send-metrics`는 playwright.config.ts에서 막았으므로, 이 경고가 보이면 diskutil이 알려 준 PID부터 확인합니다.
  * 그래도 떼지 못하면 경고만 남겨 시나리오 결과가 실행 결과로 그대로 남게 하고, 남은 volume은 다음 실행이 다시 정리합니다.
  */
 async function eject(mountPoint: string): Promise<void> {
