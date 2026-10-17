@@ -1,6 +1,3 @@
-import { mkdir } from "node:fs/promises";
-import { resolve } from "node:path";
-import type { Page, TestInfo } from "@playwright/test";
 import { expect, test } from "../support/bdWorkspace";
 
 test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방문한 뒤 최초 화면까지 돌아간다", async ({
@@ -34,7 +31,10 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
     page.getByRole("region", { name: "의존 그래프" }).getByRole("link", { name: /복귀 마지막/ }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveCount(0);
-  await capture(page, testInfo, "chain-close-ko");
+  await page.screenshot({
+    path: testInfo.outputPath("chain-close-ko.png"),
+    animations: "disabled",
+  });
 
   await page
     .getByRole("region", { name: "의존 그래프" })
@@ -127,10 +127,3 @@ test("직접 진입과 외부·손상된 복귀 정보는 그래프별 대체 �
     await expect(page).toHaveURL(fallback!);
   }
 });
-
-async function capture(page: Page, testInfo: TestInfo, name: string) {
-  await page.screenshot({ path: testInfo.outputPath(`${name}.png`), animations: "disabled" });
-  const directory = resolve(process.cwd(), "../../tmp/0bl-evidence");
-  await mkdir(directory, { recursive: true });
-  await page.screenshot({ path: resolve(directory, `${name}.png`), animations: "disabled" });
-}
