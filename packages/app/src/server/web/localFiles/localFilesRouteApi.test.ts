@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { afterAll, afterEach, beforeAll, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
 import { localFileUrl } from "@/shared/contract/localFiles";
 import { handleLocalFileRequest } from "./localFilesRouteApi";
 
@@ -48,6 +48,11 @@ beforeAll(async () => {
   await symlink(join(parent, "repo-other", "secret.md"), join(worktreeParent, "escape.md"));
   await mkdir(join(parent, "repo-wt-other"));
   await writeFile(join(parent, "repo-wt-other", "secret.md"), "outside secret");
+});
+// 개발자가 셸에 export한 허용 루트를 물려받으면 허용 밖이어야 할 파일이 허용되어 403 검사가 실패합니다.
+// 모든 테스트를 설정하지 않은 상태에서 시작하고, 허용 루트가 필요한 테스트만 값을 지정합니다.
+beforeEach(() => {
+  vi.stubEnv("BEADS_DESK_LOCAL_FILE_ROOTS", undefined);
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -140,7 +145,6 @@ test("git 조회가 실패하면 workspace 파일만 허용한다", async () => 
 });
 
 test("설정하지 않으면 worktree를 모아 둔 상위 디렉터리의 파일을 허용하지 않는다", async () => {
-  vi.stubEnv("BEADS_DESK_LOCAL_FILE_ROOTS", undefined);
   const response = await get(join(worktreeParent, "review-artifacts", "bd-x", "shot.png"));
   expect(response.status).toBe(403);
 });
