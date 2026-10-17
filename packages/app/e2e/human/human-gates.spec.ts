@@ -14,7 +14,7 @@ test("human gate는 막고 있는 작업과 함께 판단 기다림 화면에 �
 
   await page.goto("/focus");
   await page.getByRole("link", { name: "판단 기다림 1", exact: true }).click();
-  await expect(page).toHaveURL(/\/human$/);
+  await expect(page).toHaveURL(/\/human/);
   const decision = page.getByRole("region", { name: `Review: ${work}` });
   await expect(decision.getByRole("region", { name: "사유" })).toContainText(
     "로그인 화면 수정 결과",

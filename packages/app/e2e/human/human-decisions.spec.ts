@@ -1,4 +1,5 @@
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
+import { createHumanGate } from "../support/humanGates";
 
 test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가서 응답하면, 이슈가 닫히고 응답 댓글이 남는다", async ({
   page,
@@ -16,7 +17,7 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
 
   await page.goto("/focus");
   await page.getByRole("link", { name: "판단 기다림 1", exact: true }).click();
-  await expect(page).toHaveURL(/\/human$/);
+  await expect(page).toHaveURL(/\/human/);
   const decision = page.getByRole("region", { name: "인증 방식을 정해 주세요" });
   await expect(decision).toContainText("OAuth2와 세션 쿠키 중 무엇으로 할까요?");
 
@@ -85,6 +86,46 @@ test("이슈 목록에서는 판단을 기다리는 이슈에만 표시가 붙�
   await expect(
     dialog.getByRole("region", { name: "사람의 판단을 기다리는 이슈입니다" }),
   ).toHaveCount(0);
+});
+
+test("오른쪽에 보이는 항목을 주소가 가리키고 새로고침해도 유지되며, 닫히면 남은 항목으로 넘어간다", async ({
+  page,
+  workspace,
+}) => {
+  const { work, question } = await workspace.createIssues({
+    work: { title: "로그인 화면 다시 그리기", type: "task" },
+    question: { title: "남은 질문", type: "task", labels: ["human"] },
+  });
+  const gate = await createHumanGate(workspace, work, "로그인 화면 수정 결과");
+
+  // 파라미터 없이 들어가면 맨 위 항목인 확인 요청을 자동으로 보이고, 주소도 이를 가리킨다.
+  await page.goto("/human");
+  await expect(page).toHaveURL(new RegExp(`item=${gate}$`));
+  await expect(page.getByRole("region", { name: `Review: ${work}` })).toBeVisible();
+
+  // 질문을 고르면 주소가 질문을 가리키고, 새로고침해도 같은 항목이 열려 있다.
+  await page.getByRole("button", { name: /남은 질문/ }).click();
+  await expect(page).toHaveURL(new RegExp(`item=${question}$`));
+  await page.reload();
+  await expect(page.getByRole("region", { name: "남은 질문" })).toBeVisible();
+
+  // 확인 요청을 다시 고르면 주소가 확인 요청을 가리킨다.
+  await page.getByRole("button", { name: new RegExp(`Review: ${work}`) }).click();
+  const decision = page.getByRole("region", { name: `Review: ${work}` });
+  await expect(decision).toBeVisible();
+
+  // 확인 요청에 응답해 닫으면 남은 질문으로 넘어가고 주소도 따라 바뀐다.
+  await decision.getByRole("textbox", { name: "응답", exact: true }).click();
+  await page.keyboard.type("진행합니다");
+  await decision.getByRole("button", { name: "응답하고 닫기" }).click();
+
+  await expect
+    .poll(() => workspace.showIssue(gate).then((issue) => issue.close_reason), {
+      timeout: SAVE_TIMEOUT,
+    })
+    .toBe("Responded");
+  await expect(page).toHaveURL(new RegExp(`item=${question}$`));
+  await expect(page.getByRole("region", { name: "남은 질문" })).toBeVisible();
 });
 
 async function commentTexts(workspace: BdWorkspace, id: string): Promise<string[]> {

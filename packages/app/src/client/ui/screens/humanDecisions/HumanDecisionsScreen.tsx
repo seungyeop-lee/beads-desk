@@ -2,7 +2,8 @@
 
 import { awaitingHuman, type Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo } from "react";
 import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
@@ -21,6 +22,9 @@ import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateDecision } from "./HumanGateDecision";
 
+/** 왼쪽 목록에서 고른 항목 id를 담는 query 이름입니다. 주소에 남겨 새로고침하거나 주소를 다시 열어도 같은 항목을 보입니다. */
+const ITEM_PARAM = "item";
+
 /** 왼쪽 목록의 한 줄입니다. human gate는 막고 있는 작업과 함께, 질문은 이슈 하나로 보입니다. */
 type PendingItem =
   | { kind: "gate"; id: string; summary: HumanGateSummary }
@@ -28,7 +32,7 @@ type PendingItem =
 
 /**
  * 판단을 기다리는 human gate와 질문을 왼쪽에 확인 요청과 질문 묶음으로 나눠 보이고, 고른 항목의 내용을 읽으며 오른쪽에서 바로 처리합니다.
- * 비어 있는 묶음은 숨깁니다.
+ * 오른쪽에 보이는 항목을 주소 query가 항상 가리켜 새로고침해도 유지되고, 비어 있는 묶음은 숨깁니다.
  */
 export function HumanDecisionsScreen() {
   const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
@@ -44,9 +48,26 @@ export function HumanDecisionsScreen() {
     ],
     [awaiting],
   );
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedId = searchParams.get(ITEM_PARAM);
   // 처리해 닫힌 항목은 목록에서 빠지므로, 고른 항목이 없어지면 맨 위 항목을 이어서 보여 줍니다.
   const selected = pending.find((item) => item.id === selectedId) ?? pending[0];
+  const select = (id: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set(ITEM_PARAM, id);
+    router.replace(`${pathname}?${params}`, { scroll: false });
+  };
+  // 주소가 오른쪽에 보이는 항목과 어긋나면 고칩니다. 처음 진입해 맨 위 항목을 자동으로 보일 때와, 고른 항목이 닫혀 다른 항목으로 넘어갈 때입니다. 조회가 끝나기 전에는 목록이 비어 있을 뿐이므로 loaded일 때만 고칩니다.
+  useEffect(() => {
+    if (!loaded) return;
+    if (selectedId === (selected?.id ?? null)) return;
+    const params = new URLSearchParams(searchParams);
+    if (selected) params.set(ITEM_PARAM, selected.id);
+    else params.delete(ITEM_PARAM);
+    router.replace(params.size > 0 ? `${pathname}?${params}` : pathname, { scroll: false });
+  }, [selectedId, loaded, selected, searchParams, pathname, router]);
   const groups = [
     {
       label: messages.humanDecisions.gates,
@@ -96,7 +117,7 @@ export function HumanDecisionsScreen() {
                         <PendingRow
                           item={item}
                           current={item.id === selected.id}
-                          onSelect={() => setSelectedId(item.id)}
+                          onSelect={() => select(item.id)}
                         />
                       </li>
                     ))}
