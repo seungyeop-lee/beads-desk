@@ -80,8 +80,9 @@ export function BoardScreen() {
     }
   };
 
+  // 열이 나란히 놓이는 너비(md 이상)에서는 main이 body(flex h-dvh)의 남은 높이를 채우고, 카드가 넘치면 카드 목록만 열 안에서 스크롤됩니다. 좁은 너비에서는 각 열이 카드 내용만큼 늘어나 페이지를 스크롤해 봅니다.
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
+    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16 md:min-h-0 md:flex-1 md:pb-6">
       <ScreenHeader
         title={messages.board.title}
         tone={screenTone("/board")}
@@ -97,15 +98,14 @@ export function BoardScreen() {
       <WriteErrorAlert writes={writes} />
 
       {columns && (
-        // 열 높이를 다른 열이나 화면 높이에 맞춰 늘리지 않습니다. 열마다 자기 카드만큼만 늘어나고, 긴 목록은 페이지를 스크롤해 봅니다.
-        <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid items-start gap-3 md:grid-cols-2 md:min-h-0 md:flex-1 md:auto-rows-fr md:items-stretch xl:grid-cols-4">
           {BOARD_COLUMNS.map((column) => (
             // 카드를 놓을 자리라 열 영역이 drag event를 받습니다. 키보드로는 상세 dialog의 상태 선택으로 같은 일을 합니다.
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
             <section
               key={column}
               aria-label={messages.board.columns[column]}
-              className={`tone-wash ${COLUMN_TONES[column]} flex min-w-0 flex-col gap-2 rounded-box p-2 transition-shadow ${dropTarget === column ? "ring-2 ring-base-content/30 ring-inset" : ""}`}
+              className={`tone-wash ${COLUMN_TONES[column]} flex min-w-0 flex-col gap-2 rounded-box p-2 transition-shadow md:min-h-0 ${dropTarget === column ? "ring-2 ring-base-content/30 ring-inset" : ""}`}
               onDragOver={(event) => {
                 if (!acceptsDrop(column) || !event.dataTransfer.types.includes(DRAG_TYPE)) return;
                 event.preventDefault();
@@ -137,8 +137,8 @@ export function BoardScreen() {
                   </select>
                 )}
               </h2>
-              {/* 빈 열에도 제목 한 줄짜리 카드 한 장 높이를 남겨, 끌어 온 카드를 놓을 자리를 보입니다. */}
-              <ul className="flex min-h-19 flex-col gap-2">
+              {/* 좁은 너비에서 빈 열에도 제목 한 줄짜리 카드 한 장 높이를 남겨, 끌어 온 카드를 놓을 자리를 보입니다. */}
+              <ul className="flex min-h-19 flex-col gap-2 md:min-h-0 md:flex-1 md:overflow-y-auto">
                 {columns[column].map((issue) => (
                   <BoardCard
                     key={issue.id}

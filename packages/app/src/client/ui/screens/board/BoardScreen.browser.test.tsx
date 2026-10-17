@@ -1,0 +1,120 @@
+import type { Issue } from "@beads-desk/bd/issue";
+import { expect, test, vi } from "vitest";
+import { page } from "vitest/browser";
+import { render } from "vitest-browser-react";
+import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
+import type { BoardItem } from "@/shared/contract/board";
+import { BoardScreen } from "./BoardScreen";
+
+// 바로 작업 가능 열에 카드를 쌓아 화면 높이를 넘게 하고, 나머지 열은 비워 빈 열의 높이도 함께 잽니다.
+const ITEMS: BoardItem[] = Array.from({ length: 14 }, (_, index) => ({
+  column: "ready",
+  issue: issue(`desk-${index}`, `쌓인 작업 ${index}`),
+}));
+
+// 화면이 서버에서 읽는 보드와 주소를 읽어 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
+vi.mock("@/client/modules/board/application/useBoard", () => ({
+  useBoard: () => ({ data: ITEMS, error: null, loading: false }),
+}));
+vi.mock("@/client/modules/humanGates/application/useHumanGateTitles", () => ({
+  useHumanGateTitles: () => new Map(),
+}));
+vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({
+  useIssueWrites: () => ({
+    pending: false,
+    error: null,
+    dismissError: () => {},
+    run: async (write: () => unknown) => write(),
+  }),
+}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
+  IssueDetailRoute: () => null,
+  useIssueHref: () => (id: string) => `/board?issue=${id}`,
+}));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/board",
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: () => {}, replace: () => {} }),
+}));
+
+test("넓은 창에서 열이 화면 높이를 채우고 카드 목록만 열 안에서 스크롤된다", async () => {
+  await page.viewport(1280, 720);
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <BoardInAppLayout />
+    </LocaleProvider>,
+  );
+
+  const ready = screen.getByRole("region", { name: "바로 작업 가능", exact: true }).element();
+  const blocked = screen.getByRole("region", { name: "막힘", exact: true }).element();
+  const list = ready.querySelector("ul")!;
+  const heading = ready.querySelector("h2")!;
+
+  expect(list.scrollHeight, "카드 목록의 세로 넘침").toBeGreaterThan(list.clientHeight);
+  expect(
+    document.documentElement.scrollHeight <= document.documentElement.clientHeight,
+    "페이지 세로 넘침",
+  ).toBe(true);
+  expect(
+    Math.abs(blocked.getBoundingClientRect().height - ready.getBoundingClientRect().height),
+    "빈 열과 카드 많은 열의 높이 차",
+  ).toBeLessThanOrEqual(1);
+  const bottomGap = document.documentElement.clientHeight - ready.getBoundingClientRect().bottom;
+  expect(bottomGap, "열 아래 끝에서 뷰포트 아래까지 거리").toBeGreaterThanOrEqual(0);
+  expect(bottomGap, "열 아래 끝에서 뷰포트 아래까지 거리").toBeLessThan(40);
+
+  const headingTop = heading.getBoundingClientRect().top;
+  list.scrollTop = list.scrollHeight;
+  expect(heading.getBoundingClientRect().top, "목록을 스크롤한 뒤 열 머리줄 위치").toBe(headingTop);
+});
+
+test("좁은 창에서는 열이 세로로 쌓이고 빈 열이 카드 한 장 높이 수준으로 작게 남는다", async () => {
+  await page.viewport(455, 900);
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <BoardScreen />
+    </LocaleProvider>,
+  );
+
+  const blocked = screen.getByRole("region", { name: "막힘", exact: true }).element();
+  const height = blocked.querySelector("ul")!.getBoundingClientRect().height;
+  expect(height, "빈 열 카드 목록의 높이").toBeGreaterThanOrEqual(75);
+  expect(height, "빈 열 카드 목록의 높이").toBeLessThan(120);
+  expect(
+    document.documentElement.scrollHeight > document.documentElement.clientHeight,
+    "긴 목록은 페이지가 스크롤됨",
+  ).toBe(true);
+});
+
+/**
+ * app의 body(`flex h-dvh flex-col`)와 AppHeader(h-14, 아래 border 1px)를 흉내 낸 배치입니다.
+ * 보드 화면의 main이 남은 높이를 채우는 배치는 이 구조에 의존하므로 함께 검사합니다.
+ */
+function BoardInAppLayout() {
+  return (
+    <div className="flex h-dvh min-h-screen flex-col [&>main]:w-full">
+      <div className="h-14 shrink-0 border-b border-base-300" />
+      <BoardScreen />
+    </div>
+  );
+}
+
+function issue(id: string, title: string): Issue {
+  return {
+    id,
+    title,
+    status: "open",
+    priority: 2,
+    issueType: "task",
+    assignee: null,
+    labels: [],
+    parent: null,
+    dependencyCount: 0,
+    dependentCount: 0,
+    createdAt: 0,
+    updatedAt: 0,
+    startedAt: null,
+    closedAt: null,
+    deferUntil: null,
+  };
+}
