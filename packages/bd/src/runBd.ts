@@ -13,6 +13,8 @@ export type RunBdOptions = {
   cwd: string;
   /** 쓰기 명령이면 true입니다. 기다리는 읽기보다 먼저 실행합니다. */
   write?: boolean;
+  /** 변경 감시가 DB 상태를 읽는 실행이면 true입니다. 화면 조회보다 먼저 실행하고, 대기 중인 쓰기보다는 뒤에 실행합니다. */
+  watch?: boolean;
 };
 
 export type BdError = {
@@ -30,7 +32,7 @@ const DOLT_UNREACHABLE = /Dolt server unreachable/i;
 const DOLT_START_COOLDOWN_MS = 30_000;
 
 /**
- * bd를 실행합니다. 같은 process 안의 모든 호출은 한 번에 하나씩 실행되고, 기다리는 쓰기가 기다리는 읽기보다 먼저 실행됩니다.
+ * bd를 실행합니다. 같은 process 안의 모든 호출은 한 번에 하나씩 실행되고, 기다리는 실행은 쓰기, 변경 감시 읽기, 나머지 읽기 순서로 실행됩니다.
  * server mode workspace의 Dolt 서버가 꺼져 있으면 `bd dolt start`로 켜고 한 번 다시 실행합니다.
  */
 export function runBd(args: string[], options: RunBdOptions): Promise<BdResult> {
@@ -44,11 +46,12 @@ export function runBd(args: string[], options: RunBdOptions): Promise<BdResult> 
       return spawnBd(args, options.cwd);
     }
     return result;
-  }, options.write ?? false);
+  }, options);
 }
 
 type BdProcessState = {
   writes: (() => Promise<void>)[];
+  watchReads: (() => Promise<void>)[];
   reads: (() => Promise<void>)[];
   running: boolean;
   lastDoltStartAt: Map<string, number>;
@@ -56,6 +59,7 @@ type BdProcessState = {
 
 // bd를 동시에 실행하면 같은 workspace의 Dolt가 손상될 수 있어 실행을 process 전체에서 직렬화합니다.
 // 화면은 쓰기가 끝날 때마다 다시 조회하므로, 쓰기가 읽기 뒤에 줄 서면 연달아 고친 값이 몇 초씩 늦게 저장됩니다.
+// 변경 감시 읽기는 화면 조회보다 먼저 실행합니다. 조회가 쌓여 있는 동안에는 invalidate가 그만큼 늦어지기 때문입니다.
 // 이 module은 instrumentation과 route handler에 서로 다른 사본으로 들어가므로 상태를 globalThis에 둡니다.
 const PROCESS_STATE_KEY = Symbol.for("beads-desk.bd.processState");
 
@@ -63,6 +67,7 @@ function processState(): BdProcessState {
   const holder = globalThis as { [PROCESS_STATE_KEY]?: BdProcessState };
   holder[PROCESS_STATE_KEY] ??= {
     writes: [],
+    watchReads: [],
     reads: [],
     running: false,
     lastDoltStartAt: new Map(),
@@ -70,10 +75,13 @@ function processState(): BdProcessState {
   return holder[PROCESS_STATE_KEY];
 }
 
-function serialized<T>(operation: () => Promise<T>, write: boolean): Promise<T> {
+function serialized<T>(operation: () => Promise<T>, options: RunBdOptions): Promise<T> {
   const state = processState();
   return new Promise<T>((resolve, reject) => {
-    (write ? state.writes : state.reads).push(() => operation().then(resolve, reject));
+    let queue = state.reads;
+    if (options.write) queue = state.writes;
+    else if (options.watch) queue = state.watchReads;
+    queue.push(() => operation().then(resolve, reject));
     void drain(state);
   });
 }
@@ -89,7 +97,7 @@ async function drain(state: BdProcessState): Promise<void> {
 }
 
 function nextJob(state: BdProcessState): (() => Promise<void>) | undefined {
-  return state.writes.shift() ?? state.reads.shift();
+  return state.writes.shift() ?? state.watchReads.shift() ?? state.reads.shift();
 }
 
 async function startDoltServer(cwd: string): Promise<boolean> {
