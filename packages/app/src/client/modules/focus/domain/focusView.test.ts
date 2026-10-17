@@ -25,13 +25,14 @@ function issue(id: string, fields: Partial<Issue> = {}): Issue {
 
 const ids = (issues: Issue[]) => issues.map(({ id }) => id);
 
-test("진행 중, 바로 작업 가능, 막힘으로 나누고 결정은 뺀다", () => {
+test("진행 중, 바로 작업 가능, 막힘으로 나누고 결정과 보류는 뺀다", () => {
   const view = focusView(
     [
       issue("doing", { status: "in_progress" }),
       issue("ready-p3", { ready: true, priority: 3 }),
       issue("ready-p1", { ready: true, priority: 1 }),
       issue("waiting", { blockedBy: ["ready-p1"] }),
+      issue("later", { status: "deferred", blockedBy: ["ready-p1"] }),
       issue("decision", { issueType: "decision", status: "in_progress" }),
       issue("epic", { issueType: "epic", status: "in_progress" }),
       issue("done", { status: "closed" }),

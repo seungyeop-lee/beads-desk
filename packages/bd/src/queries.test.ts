@@ -857,6 +857,30 @@ describe("boardIssues", () => {
     expect(result.ok && result.value.map(({ issue }) => issue.blockedBy)).toEqual([["first"]]);
   });
 
+  test("보류 이슈는 bd blocked에 나와도 막힘 열을 비롯한 어느 열에도 넣지 않는다", async () => {
+    await useFakeBd({
+      [boardArgs.all]: {
+        stdout: JSON.stringify([
+          { id: "later", status: "deferred" },
+          { id: "waiting", status: "open" },
+        ]),
+      },
+      [boardArgs.ready]: { stdout: "[]" },
+      [boardArgs.blocked]: {
+        stdout: JSON.stringify([
+          { id: "later", status: "deferred", blocked_by: ["first"] },
+          { id: "waiting", status: "open", blocked_by: ["first"] },
+        ]),
+      },
+    });
+
+    const result = await boardIssues(workDir);
+
+    expect(
+      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
+    ).toEqual({ waiting: "blocked" });
+  });
+
   test("decision과 epic은 상태와 관계없이 어느 열에도 넣지 않는다", async () => {
     const issue = (id: string, status: string, issue_type: string) => ({ id, status, issue_type });
     await useFakeBd({

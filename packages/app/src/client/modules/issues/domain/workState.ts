@@ -18,13 +18,14 @@ export type WorkState =
 export const NON_WORK_TYPES: ReadonlySet<string> = new Set(["epic", "decision"]);
 
 /**
- * blockedBy와 ready는 목록 조회가 채운 값입니다. 의존 관계 때문에 막힌 이슈는 저장 상태와 관계없이 blocked입니다.
+ * blockedBy와 ready는 목록 조회가 채운 값입니다. 닫힘과 보류는 저장 상태를 따르고, 미해결 의존이 있어도 blocked로 보지 않습니다.
+ * 그 밖에 의존 관계 때문에 막힌 이슈는 저장 상태와 관계없이 blocked입니다.
  * bd ready는 human 라벨 이슈도 돌려주지만, 사람이 판단할 차례라 진행 중이나 바로 작업 가능으로 보지 않습니다.
  */
 export function workState(issue: Issue): WorkState {
   if (issue.status === "closed") return "closed";
-  if (issue.status === "blocked" || (issue.blockedBy?.length ?? 0) > 0) return "blocked";
   if (issue.status === "deferred") return "deferred";
+  if (issue.status === "blocked" || (issue.blockedBy?.length ?? 0) > 0) return "blocked";
   if (awaitsHumanDecision(issue)) return "awaiting_human";
   if (NON_WORK_TYPES.has(issue.issueType)) return "other";
   if (issue.status === "in_progress") return "in_progress";

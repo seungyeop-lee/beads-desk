@@ -138,8 +138,14 @@ describe("openBy", () => {
 });
 
 describe("정리 신호", () => {
-  test("보류는 작업 상태로 센다", () => {
-    expect(stats([issue("deferred", { status: "deferred" }), issue("open")]).deferred).toBe(1);
+  test("보류는 작업 상태로 세고, 막고 있는 이슈가 남은 보류 이슈도 센다", () => {
+    expect(
+      stats([
+        issue("deferred", { status: "deferred" }),
+        issue("deferred-blocked", { status: "deferred", blockedBy: ["open"] }),
+        issue("open"),
+      ]).deferred,
+    ).toBe(2);
   });
 
   test("닫을 수 있는 에픽은 하위가 하나 이상이고 모두 닫힌 열린 에픽이다", () => {

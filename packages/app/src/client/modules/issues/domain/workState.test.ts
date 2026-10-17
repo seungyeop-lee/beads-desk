@@ -41,6 +41,10 @@ test("닫힌 이슈는 막고 있는 이슈가 남아 있어도 closed이다", (
   expect(workState(issue({ status: "closed", blockedBy: ["demo-2"] }))).toBe("closed");
 });
 
+test("보류 이슈는 막고 있는 이슈가 남아 있어도 deferred이다", () => {
+  expect(workState(issue({ status: "deferred", blockedBy: ["demo-2"] }))).toBe("deferred");
+});
+
 test("epic과 decision은 진행 중이거나 bd ready에 있어도 other이다", () => {
   expect(workState(issue({ issueType: "epic", status: "in_progress" }))).toBe("other");
   expect(workState(issue({ issueType: "decision", ready: true }))).toBe("other");
@@ -53,7 +57,7 @@ test("진행 중과 보류는 저장 상태를 따르고, 알 수 없는 상태�
   expect(workState(issue({ status: "pinned" }))).toBe("other");
 });
 
-test("human 라벨이 붙은 열린 이슈는 bd ready에 있거나 진행 중이어도 awaiting_human이고, 닫힘, 막힘, 보류가 먼저다", () => {
+test("human 라벨이 붙은 열린 이슈는 bd ready에 있거나 진행 중이어도 awaiting_human이고, 닫힘, 보류, 막힘이 먼저다", () => {
   const human = { labels: ["human"] };
   expect(workState(issue({ ...human, ready: true }))).toBe("awaiting_human");
   expect(workState(issue({ ...human, status: "in_progress" }))).toBe("awaiting_human");
