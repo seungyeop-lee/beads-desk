@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, readFile, realpath, rename, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
@@ -9,12 +9,15 @@ const POLL_INTERVAL_MS = 50;
 let workDir: string;
 let hashFile: string;
 let callLog: string;
+/** 이 파일이 있으면 가짜 bd가 실패합니다. */
+let failFlag: string;
 const originalBdBin = process.env.BD_BIN;
 
 beforeEach(async () => {
   workDir = await realpath(await mkdtemp(join(tmpdir(), "beads-desk-feed-")));
   hashFile = join(workDir, "hash");
   callLog = join(workDir, "calls.log");
+  failFlag = join(workDir, "fail");
   await writeHash("hash-1");
   // server mode workspace처럼 응답하고, DB hash는 파일 내용으로 돌려주는 가짜 bd입니다.
   const fakeBd = join(workDir, "fake-bd");
@@ -23,6 +26,7 @@ beforeEach(async () => {
     [
       "#!/bin/sh",
       `echo "$*" >> "${callLog}"`,
+      `[ -e "${failFlag}" ] && exit 1`,
       'case "$*" in',
       `  "--sandbox dolt show --json") echo '{"embedded":false,"database":"demo"}';;`,
       `  "--sandbox sql SELECT DOLT_HASHOF_DB() AS h --json") printf '[{"h":"%s"}]' "$(cat "${hashFile}")";;`,
@@ -61,9 +65,13 @@ async function waitUntil(condition: () => boolean | Promise<boolean>): Promise<v
   }
 }
 
-async function hashQueryCount(): Promise<number> {
+async function bdCallCount(command: string): Promise<number> {
   const log = await readFile(callLog, "utf8").catch(() => "");
-  return log.split("\n").filter((line) => line.includes("DOLT_HASHOF_DB")).length;
+  return log.split("\n").filter((line) => line.includes(command)).length;
+}
+
+function hashQueryCount(): Promise<number> {
+  return bdCallCount("DOLT_HASHOF_DB");
 }
 
 test("처음 기준값을 읽으면 한 번 알리고, 상태가 그대로이면 더 알리지 않는다", async () => {
@@ -76,6 +84,47 @@ test("처음 기준값을 읽으면 한 번 알리고, 상태가 그대로이면
   unsubscribe();
 
   expect(notified).toBe(1);
+});
+
+test("처음 조회가 끝나기 전에 함께 구독한 listener도 기준값을 읽은 뒤 한 번 알림을 받는다", async () => {
+  let first = 0;
+  let second = 0;
+  const stopFirst = subscribeWorkspaceChanges(workDir, () => first++, { pollIntervalMs: 60_000 });
+  const stopSecond = subscribeWorkspaceChanges(workDir, () => second++, { pollIntervalMs: 60_000 });
+
+  await waitUntil(() => first === 1);
+  stopFirst();
+  stopSecond();
+
+  expect(second).toBe(1);
+});
+
+test("처음 조회에서 DB 상태를 읽지 못해도 한 번 알리고, 계속 읽지 못하면 더 알리지 않는다", async () => {
+  await writeFile(failFlag, "");
+  let notified = 0;
+  const unsubscribe = subscribeWorkspaceChanges(workDir, () => notified++, {
+    pollIntervalMs: POLL_INTERVAL_MS,
+  });
+
+  await waitUntil(async () => (await bdCallCount("dolt show")) >= 4);
+  unsubscribe();
+
+  expect(notified).toBe(1);
+});
+
+test("DB 상태를 읽지 못하다가 읽게 되면 한 번 더 알린다", async () => {
+  await writeFile(failFlag, "");
+  let notified = 0;
+  const unsubscribe = subscribeWorkspaceChanges(workDir, () => notified++, {
+    pollIntervalMs: POLL_INTERVAL_MS,
+  });
+  await waitUntil(() => notified === 1);
+
+  await rm(failFlag);
+  await waitUntil(async () => (await hashQueryCount()) >= 3);
+  unsubscribe();
+
+  expect(notified).toBe(2);
 });
 
 test("DB 상태가 바뀌면 구독자에게 한 번 더 알린다", async () => {

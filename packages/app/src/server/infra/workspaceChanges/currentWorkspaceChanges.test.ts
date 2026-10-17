@@ -28,19 +28,19 @@ beforeEach(() => {
   });
 });
 
-test("현재 workspace를 바꾸면 새 workspace의 변경을 구독하고 바로 알린다", () => {
+test("현재 workspace를 바꾸면 새 workspace의 변경을 구독하고, 알림은 새 구독에 맡긴다", () => {
   const listener = vi.fn<() => void>();
   subscribeCurrentWorkspaceChanges(listener);
 
   current = "/b";
   changed();
 
-  expect(vi.mocked(subscribeWorkspaceChanges).mock.calls.map(([root]) => root)).toEqual([
-    "/a",
-    "/b",
+  expect(vi.mocked(subscribeWorkspaceChanges).mock.calls.map(([root, l]) => [root, l])).toEqual([
+    ["/a", listener],
+    ["/b", listener],
   ]);
   expect(unsubscribed).toEqual(["/a"]);
-  expect(listener).toHaveBeenCalledOnce();
+  expect(listener).not.toHaveBeenCalled();
 });
 
 test("workspace 목록만 바뀌면 구독은 그대로 두고 알린다", () => {

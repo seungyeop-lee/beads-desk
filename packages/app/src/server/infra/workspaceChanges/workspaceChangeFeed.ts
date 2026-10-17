@@ -7,6 +7,8 @@ type Feed = {
   timer: ReturnType<typeof setInterval>;
   fingerprint: ChangeFingerprint | null;
   last: string | null;
+  /** 처음 조회를 마쳤는지입니다. 처음 조회는 DB 상태를 읽지 못해도 알립니다. */
+  settled: boolean;
   /** 진행 중인 조회입니다. */
   polling: Promise<void> | null;
 };
@@ -27,7 +29,8 @@ function feeds(): Map<string, Feed> {
  * 구독자가 있는 동안에만 DB 상태를 주기적으로 읽고, 마지막 구독자가 떠나면 멈춥니다.
  *
  * 처음 구독하면 비교할 기준값을 읽은 뒤에도 한 번 호출합니다. 구독자가 그 전에 조회한 데이터와 기준값 사이에 쓰기가 있었다면
- * 그 쓰기는 기준값에 포함되어 변경으로 잡히지 않기 때문입니다.
+ * 그 쓰기는 기준값에 포함되어 변경으로 잡히지 않기 때문입니다. 기준값을 읽지 못했어도 호출합니다.
+ * 이 호출은 처음 조회가 끝나기 전에 구독한 listener에게만 갑니다.
  */
 export function subscribeWorkspaceChanges(
   workspaceRoot: string,
@@ -44,6 +47,7 @@ export function subscribeWorkspaceChanges(
       ),
       fingerprint: null,
       last: null,
+      settled: false,
       polling: null,
     };
     created.timer.unref();
@@ -84,15 +88,21 @@ function poll(workspaceRoot: string, feed: Feed): Promise<void> {
 }
 
 async function readFingerprint(workspaceRoot: string, feed: Feed): Promise<void> {
-  if (!feed.fingerprint) {
-    const opened = await openChangeFingerprint(workspaceRoot);
-    if (!opened.ok) return;
-    feed.fingerprint = opened.value;
-  }
-  const current = await feed.fingerprint();
-  if (current === null) return;
-  if (current !== feed.last) {
+  const current = await currentFingerprint(workspaceRoot, feed);
+  const first = !feed.settled;
+  feed.settled = true;
+  if (first || (current !== null && current !== feed.last)) {
     for (const listener of feed.listeners) listener();
   }
-  feed.last = current;
+  if (current !== null) feed.last = current;
+}
+
+/** DB 상태를 비교할 값을 읽습니다. 읽지 못하면 null을 돌려줍니다. */
+async function currentFingerprint(workspaceRoot: string, feed: Feed): Promise<string | null> {
+  if (!feed.fingerprint) {
+    const opened = await openChangeFingerprint(workspaceRoot);
+    if (!opened.ok) return null;
+    feed.fingerprint = opened.value;
+  }
+  return feed.fingerprint();
 }

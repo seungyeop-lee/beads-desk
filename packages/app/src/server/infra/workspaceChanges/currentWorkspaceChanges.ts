@@ -10,12 +10,16 @@ export function subscribeCurrentWorkspaceChanges(listener: () => void): () => vo
   let unsubscribe = subscribeWorkspaceChanges(subscribedRoot, listener);
   const stopFollowing = onWorkspacesChanged(() => {
     const root = currentWorkspaceRoot();
-    if (root !== subscribedRoot) {
-      unsubscribe();
-      subscribedRoot = root;
-      unsubscribe = subscribeWorkspaceChanges(root, listener);
+    if (root === subscribedRoot) {
+      listener();
+      return;
     }
-    listener();
+    // 새 workspace를 구독하면 기준값을 읽은 뒤 listener가 한 번 호출되므로 여기서는 호출하지 않습니다.
+    // 여기서도 호출하면 전환 한 번에 화면이 두 번 다시 읽습니다. 모든 구독자가 같은 알림 안에서 새 workspace로 옮겨 가므로,
+    // 새 workspace의 처음 조회가 끝나기 전에 모두 구독해 그 호출을 받습니다.
+    unsubscribe();
+    subscribedRoot = root;
+    unsubscribe = subscribeWorkspaceChanges(root, listener);
   });
   return () => {
     stopFollowing();
