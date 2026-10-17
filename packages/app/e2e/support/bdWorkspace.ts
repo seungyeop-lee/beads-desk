@@ -111,6 +111,9 @@ export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate:
       const path = await mkdtemp(join(tmpdir(), "beads-desk-e2e-"));
       try {
         await cp(workspaceTemplate, path, { recursive: true });
+        // `bd init`이 template의 `core.hookspath`를 `.beads/hooks` 절대 경로로 적어 두므로, 복사한 workspace의 git 명령도 template의 hook을 실행합니다.
+        // hook이 실행하는 `bd hooks run`은 cwd가 속한 workspace의 DB만 대상으로 해서 template의 DB는 그대로입니다.
+        // template은 worker가 끝날 때까지 남아 있어 hook 경로도 유효하므로, 복사한 뒤 hookspath를 다시 설정하지 않습니다.
         const body: RegisterWorkspaceRequest = { path, select: true };
         const response = await request.post(WORKSPACES_PATH, { data: body });
         expect(response.ok(), await response.text()).toBe(true);
