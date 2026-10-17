@@ -13,7 +13,7 @@ import { formatTime, nameTone } from "@/client/ui/issues/issueLabels";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 
-/** 고른 human gate의 사유를 보이고 응답하거나 응답 없이 닫으며, 막고 있는 작업은 응답 아래에 보입니다. */
+/** 고른 human gate의 사유를 보이고 응답하거나 응답 없이 닫으며, 이전 라운드 피드백은 응답 아래에, 막고 있는 작업은 맨 아래에 보입니다. */
 export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
   const { gate, reason, blocks } = summary;
   const issueHref = useIssueHref();
@@ -43,8 +43,8 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
         </section>
       )}
 
-      {summary.previousGateCount > 0 && <PreviousGateFeedback gateId={gate.id} />}
       <HumanGateResponse gateId={gate.id} />
+      {summary.previousGateCount > 0 && <PreviousGateFeedback gateId={gate.id} />}
 
       <section className="flex flex-col gap-2 text-sm" aria-label={messages.humanGate.blocks}>
         <h3 className="font-semibold">{messages.humanGate.blocks}</h3>

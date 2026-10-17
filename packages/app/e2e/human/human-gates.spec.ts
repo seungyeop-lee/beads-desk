@@ -1,5 +1,19 @@
+import type { Locator } from "@playwright/test";
+
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { commentTexts, createHumanGate } from "../support/humanGates";
+
+/** 상세 카드 직속 섹션의 접근 가능한 이름을 DOM 순서대로 모읍니다. 응답 섹션은 제목(h3)이 접근 가능한 이름입니다. */
+function directSectionNames(decision: Locator) {
+  return decision
+    .locator(":scope > section")
+    .evaluateAll((sections) =>
+      sections.map(
+        (section) =>
+          section.getAttribute("aria-label") ?? section.querySelector("h3")?.textContent ?? "",
+      ),
+    );
+}
 
 test("human gate는 막고 있는 작업과 함께 판단 기다림 화면에 나오고, 응답하면 gate만 닫히고 응답이 gate 댓글로 남는다", async ({
   page,
@@ -59,7 +73,7 @@ test("human 라벨이 붙은 human gate를 응답 없이 닫으면 적은 사유
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
 });
 
-test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫힌 gate의 피드백이 오래된 라운드부터 보이고, 목록 행에 이전 라운드 수가 달린다", async ({
+test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫힌 gate의 피드백이 오래된 라운드부터 보이고, 상세는 사유, 응답, 이전 게이트 피드백, 막고 있는 작업 순이며, 목록 행에 이전 라운드 수가 달린다", async ({
   page,
   workspace,
 }) => {
@@ -81,10 +95,16 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
   await expect(freshRow.getByLabel(/이전 게이트 라운드/)).toHaveCount(0);
 
   await row.click();
-  const feedback = page
-    .getByRole("region", { name: `Review: ${work}`, exact: true })
-    .getByRole("region", { name: "이전 게이트 피드백" });
+  const decision = page.getByRole("region", { name: `Review: ${work}`, exact: true });
+  const feedback = decision.getByRole("region", { name: "이전 게이트 피드백" });
   await expect(feedback).toBeVisible();
+  // 섹션 순서만 확인한다. 피드백 안 라운드 순서는 아래에서 따로 확인하므로 여기는 섹션 이름 기준으로만 잡는다.
+  expect(await directSectionNames(decision)).toEqual([
+    "사유",
+    "응답",
+    "이전 게이트 피드백",
+    "막고 있는 작업",
+  ]);
   const rounds = feedback.locator(":scope > article");
   await expect(rounds).toHaveCount(2);
   await expect(rounds.nth(0)).toContainText(first);
@@ -109,5 +129,7 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
     name: `Review: ${freshWork}`,
     exact: true,
   });
+  await expect(freshDecision.getByRole("region", { name: "사유" })).toBeVisible();
+  expect(await directSectionNames(freshDecision)).toEqual(["사유", "응답", "막고 있는 작업"]);
   await expect(freshDecision.getByRole("region", { name: "이전 게이트 피드백" })).toHaveCount(0);
 });
