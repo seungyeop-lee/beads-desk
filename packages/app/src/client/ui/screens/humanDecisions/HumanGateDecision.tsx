@@ -54,7 +54,7 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
   );
 }
 
-/** 같은 작업을 막았던 닫힌 gate(이전 라운드)의 닫은 사유와 코멘트를 오래된 라운드부터 보입니다. */
+/** 같은 작업을 막았던 닫힌 gate(이전 라운드)의 닫은 사유와 코멘트를 라운드 시작 시각이 오래된 순으로 보이고, 같은 초에 시작한 라운드는 gate id 오름차순으로 순서가 정해집니다. */
 function PreviousGateFeedback({ gateId }: { gateId: string }) {
   const { data: rounds, error } = usePreviousGateRounds(gateId);
   const locale = useLocale();
