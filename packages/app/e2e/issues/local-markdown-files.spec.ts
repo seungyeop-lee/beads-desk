@@ -93,11 +93,16 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일을 열
           const selection = window.getSelection()!;
           selection.removeAllRanges();
           selection.addRange(range);
+          // ProseMirror는 편집기가 focus를 받고 20ms 뒤, 아직 읽지 않은 DOM 선택을 편집기 상태의 선택(본문 맨 앞)으로 되돌립니다.
+          // 부하가 커서 이 타이머가 만료된 채 기다리는 동안 선택을 바꾸면, 타이머가 브라우저의 selectionchange보다 먼저 실행되어
+          // 입력이 본문 맨 앞에 들어갑니다. selectionchange를 바로 보내면 편집기가 이 선택을 상태에 반영해 되돌려지지 않습니다.
+          document.dispatchEvent(new Event("selectionchange"));
           return;
         }
         throw new Error("편집할 문단을 찾지 못했습니다.");
       });
       await page.keyboard.type(" 고침");
+      await expect(editor).toContainText("편집할 문단 고침");
       await page.keyboard.press("ControlOrMeta+Enter");
       await expect
         .poll(async () => (await workspace.showIssue(id))[key], { timeout: SAVE_TIMEOUT })
