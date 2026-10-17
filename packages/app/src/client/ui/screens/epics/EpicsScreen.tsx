@@ -137,7 +137,7 @@ function EpicSection({
             {statusLabel(messages, epic.status)}
           </span>
           <progress
-            className="progress h-1.5 w-40 min-w-24 shrink text-[color-mix(in_oklab,var(--color-sage),#3f6212_25%)]"
+            className="progress h-1.5 w-40 min-w-24 shrink text-[color-mix(in_oklab,var(--color-sage),#3f6212_40%)]"
             value={closedChildren}
             max={Math.max(totalChildren, 1)}
             aria-label={messages.epics.progress(epic.id)}
