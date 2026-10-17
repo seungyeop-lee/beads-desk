@@ -385,19 +385,22 @@ export const enMessages: Messages = {
   graph: {
     scopes: { epic: "Order", center: "Blocks chain" },
     help: {
-      epic: "Issues in the epic that must finish first are in the stages on the left, following blocks dependencies. Issues in the same stage can proceed in parallel, and closed issues are dimmed. Issues outside the epic that block its issues are drawn with a dashed border, and issues with no blocks dependency are listed under No blocks dependency.",
+      epic: "Issues in the epic that must finish first are in the stages on the left, following blocks dependencies. Issues in the same stage can proceed in parallel, and closed issues have dimmed titles. Issues outside the epic that block its issues are drawn with a dashed border, and issues with no blocks dependency are listed under No blocks dependency.",
       center:
-        "Follows the blocks chain with prerequisite work on the left and dependent work on the right. Gates stay out of the work order and appear below the work waiting for them, joined by thick solid arrows in the stored blocks direction. Direct related and discovered-from links are also shown without affecting execution order. Discovery arrows point from the originating work to the discovered issue. Closed issues are dimmed.",
+        "Follows the blocks chain with prerequisite work on the left and dependent work on the right. Gates stay out of the work order and appear below the work waiting for them, joined by thick solid arrows in the stored blocks direction. Direct related and discovered-from links are also shown without affecting execution order. Discovery arrows point from the originating work to the discovered issue. Closed issues have dimmed titles.",
     },
     loadFailed: (error) => `Could not load the graph: ${error}`,
     canvas: "Dependency graph",
     edgeLabel: (from, to) => `${to} after ${from}`,
     legend: "Relationship legend",
-    blockingLegend: "Solid arrow: DEPENDS ON → BLOCKS",
-    conditionLegend: "Thick solid arrow: gate condition (DEPENDS ON → BLOCKS)",
+    edgeLegend: {
+      blocks: "Solid arrow: DEPENDS ON → BLOCKS",
+      gate: "Thick solid arrow: gate condition (DEPENDS ON → BLOCKS)",
+      humanGate: "Purple thick solid arrow: gate awaiting a human decision",
+      related: "Dotted line: RELATED",
+      discovered: "Dashed arrow: discovered in → discovered issue",
+    },
     conditionEdge: (from, to) => `${to} DEPENDS ON ${from} (gate condition)`,
-    relatedLegend: "Dotted line: RELATED",
-    discoveredLegend: "Dash-dot arrow: discovered in → discovered issue",
     auxiliaryHint:
       "Only the center issue's direct related and discovered-from links are shown. Auxiliary links do not set execution order or block work.",
     relatedEdge: (from, to) => `${from} and ${to}: RELATED`,

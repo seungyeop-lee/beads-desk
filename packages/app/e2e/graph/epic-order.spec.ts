@@ -66,8 +66,6 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   const [x1, x2, x3] = [await left("순서 첫째"), await left("순서 둘째"), await left("순서 셋째")];
   expect(x1).toBeLessThan(x2);
   expect(x2).toBeLessThan(x3);
-  await expect(node("순서 첫째")).toHaveCSS("opacity", "0.5");
-  await expect(node("순서 둘째")).toHaveCSS("opacity", "1");
   await page.screenshot({ path: testInfo.outputPath("unordered-execution-issues.png") });
 
   await node("순서 셋째").click();

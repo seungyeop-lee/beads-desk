@@ -59,8 +59,6 @@ test("상세의 선행·후속 그래프는 지원하는 관계가 있는 이슈
   expect(new Set(xs).size).toBe(xs.length);
   await expect(node("사슬 옆 갈래")).toHaveCount(0);
   await expect(node("닫힌 선행")).toBeVisible();
-  await expect(node("닫힌 선행")).toHaveCSS("opacity", "0.5");
-  await expect(node("사슬 가운데")).toHaveCSS("opacity", "1");
   await expect(node("related 이슈")).toBeVisible();
   await expect(node("관계 없는 이슈")).toHaveCount(0);
 
@@ -79,7 +77,7 @@ test("상세의 선행·후속 그래프는 지원하는 관계가 있는 이슈
   await expect(node("사슬 맨 뒤")).toBeVisible();
 });
 
-test("닫힌 이슈의 상세에서 선행·후속 그래프를 열면 닫힌 앞뒤 사슬도 흐리게 보인다", async ({
+test("닫힌 이슈의 상세에서 선행·후속 그래프를 열면 닫힌 앞뒤 사슬도 순서대로 보인다", async ({
   page,
   workspace,
 }, testInfo) => {
@@ -110,7 +108,6 @@ test("닫힌 이슈의 상세에서 선행·후속 그래프를 열면 닫힌 �
   const xs: number[] = [];
   for (const title of ["완료한 선행 작업", "완료한 기준 작업", "완료한 후속 작업"]) {
     await expect(node(title)).toBeVisible();
-    await expect(node(title)).toHaveCSS("opacity", "0.5");
     xs.push((await node(title).boundingBox())!.x);
   }
   expect(xs).toEqual([...xs].sort((a, b) => a - b));
@@ -189,11 +186,11 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
   for (const gate of [openGate, closedGate])
     await expect(canvas.getByLabel(`${work}의 선행 조건: ${gate} (blocks)`)).toHaveCount(1);
   await expect(page.getByLabel("관계 범례")).toContainText("굵은 실선 화살표: gate 대기 조건");
+  await expect(page.getByLabel("관계 범례")).toContainText(
+    "보라색 굵은 실선 화살표: 사람 판단을 기다리는 gate",
+  );
   await expect(canvas.getByLabel(`${work} 다음에 ${after}`)).toHaveCount(1);
   await expect(canvas.getByLabel(`${before} 다음에 ${work}`)).toHaveCount(1);
-  await expect(openGateNode).toHaveCSS("opacity", "1");
-  await expect(closedGateNode).toHaveCSS("opacity", "0.5");
-  await expect(workNode).toHaveCSS("opacity", "1");
   await page.screenshot({
     path: testInfo.outputPath("gate-blocking-chain.png"),
     animations: "disabled",
@@ -214,7 +211,6 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
   await expect(closedGateNode).toBeVisible();
   await expect(afterNode).toBeVisible();
   await expect(closedGateNode).toHaveAttribute("aria-current", "true");
-  await expect(closedGateNode).toHaveCSS("opacity", "0.5");
 
   await page
     .context()
@@ -241,6 +237,7 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
     await expect(gateNode).toContainText("에픽 밖");
     await expect(canvas.getByLabel(`${gate} 다음에 ${work}`)).toHaveCount(1);
   }
+  await expect(page.getByLabel("관계 범례")).toContainText("보라색 굵은 실선 화살표");
 });
 
 test("관련·양방향 발견 관계를 사슬과 구분하고, 보조 관계만 있는 이슈의 상세에서도 그 관계를 그래프로 연다", async ({
@@ -281,7 +278,6 @@ test("관련·양방향 발견 관계를 사슬과 구분하고, 보조 관계�
     "작업 중 발견한 이슈",
   ])
     await expect(node(title)).toBeVisible();
-  await expect(node("이슈를 발견한 작업")).toHaveCSS("opacity", "0.5");
   await expect(node("보조 관계 기준")).toHaveAttribute("aria-current", "true");
   await expect(canvas.getByLabel(`${before} 다음에 ${center}`)).toHaveCount(1);
   await expect(canvas.getByLabel(`${center} 다음에 ${after}`)).toHaveCount(1);
@@ -295,16 +291,14 @@ test("관련·양방향 발견 관계를 사슬과 구분하고, 보조 관계�
       `${center}: 이 작업 중 발견한 이슈 ${found} (${found}: 이 이슈를 발견한 작업 ${center})`,
     ),
   ).toHaveCount(1);
-  await expect(canvas.locator(".graph-blocks").first()).toHaveCSS("stroke-width", "2px");
-  await expect(canvas.locator(".graph-auxiliary-related")).toHaveCSS(
-    "stroke-dasharray",
-    "3px, 5px",
+  await expect(canvas.locator('path[data-edge="blocks"]')).toHaveCount(2);
+  await expect(canvas.locator('path[data-edge="related"]')).toHaveCount(1);
+  await expect(canvas.locator('path[data-edge="discovered"]')).toHaveCount(2);
+  await expect(page.getByLabel("관계 범례")).toContainText("점선: 관련");
+  await expect(page.getByLabel("관계 범례")).toContainText(
+    "파선 화살표: 발견한 작업 → 발견한 이슈",
   );
-  await expect(canvas.locator(".graph-auxiliary-discovered-from").first()).toHaveCSS(
-    "stroke-dasharray",
-    "8px, 4px, 2px, 4px",
-  );
-  await expect(page.getByLabel("관계 범례")).toContainText("발견한 작업 → 발견한 이슈");
+  await expect(page.getByLabel("관계 범례")).not.toContainText("gate");
   await page.screenshot({
     path: testInfo.outputPath("auxiliary-chain.png"),
     animations: "disabled",

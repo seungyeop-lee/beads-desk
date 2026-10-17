@@ -1,6 +1,6 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약을 보이고, 후손 이슈를 막는 에픽 밖 이슈를 점선 노드로, 노드마다 대기 수를 보이며, 이슈 중심 보기의 기준 노드 강조는 없다", async ({
+test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약을 보이고, 후손 이슈를 막는 에픽 밖 이슈를 점선 노드로, 노드마다 대기 수를 보이며, 범례는 그린 blocks 간선만 설명하고, 이슈 중심 보기의 기준 노드 강조는 없다", async ({
   page,
   workspace,
 }) => {
@@ -50,6 +50,8 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
   await expect(node("계획 둘째")).not.toContainText("에픽 밖");
   await expect(canvas.getByLabel(`${first} 다음에 ${outsideId}`)).toHaveCount(1);
   await expect(canvas.getByLabel(`${outsideId} 다음에 ${third}`)).toHaveCount(1);
+  const legend = page.getByLabel("관계 범례");
+  await expect(legend).toHaveText("실선 화살표: 선행 → 후속");
 
   await expect(node("계획 둘째")).toContainText("2개 대기");
   await expect(outside).toContainText("2개 대기");

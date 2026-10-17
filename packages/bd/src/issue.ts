@@ -26,6 +26,8 @@ export type Issue = {
   blockedBy?: string[];
   /** bd ready에 들어 있으면 true입니다. 목록 조회가 따로 채웁니다. */
   ready?: boolean;
+  /** gate가 기다리는 대상(human, timer, gh:pr 등)입니다. bd 출력에 await_type이 있는 gate에만 채웁니다. */
+  awaitType?: string;
 };
 
 /** agent가 사람에게 판단을 넘긴 이슈에 붙이는 라벨입니다. bd human 명령이 이 라벨로 이슈를 모읍니다. */
@@ -198,6 +200,9 @@ export function parseIssue(value: unknown): Issue | null {
     deferUntil: timestampOr(value.defer_until, null),
     ...(Array.isArray(value.blocked_by)
       ? { blockedBy: value.blocked_by.filter((id) => typeof id === "string") }
+      : {}),
+    ...(typeof value.await_type === "string" && value.await_type.length > 0
+      ? { awaitType: value.await_type }
       : {}),
   };
 }

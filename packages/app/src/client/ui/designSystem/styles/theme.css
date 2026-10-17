@@ -99,7 +99,8 @@
     "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
   --color-ink: #1c1917;
   /*
-   * myday의 파스텔 휠입니다. OKLCH 색상을 30°씩 돌린 12색이고, 배경 전용이라 위에 쓰는 글자는 잉크 색입니다.
+   * myday의 파스텔 휠입니다. OKLCH 색상을 30°씩 돌린 12색이고, 배경에 칠하는 색이라 위에 쓰는 글자는 잉크 색입니다.
+   * 선으로 그릴 때는 이름 끝에 -line이 붙은 변형을 씁니다. 파스텔을 밝은 바탕에 그대로 선으로 그리면 대비가 약 1.4:1이라 보이지 않습니다.
    * 30° 차이는 거의 구별되지 않으므로, 한 화면에 나란히 놓을 색은 60° 이상 띄웁니다.
    */
   --color-coral: #fbc9cb;
@@ -114,4 +115,9 @@
   --color-lavender: #d3d3fd;
   --color-lilac: #e6cdf2;
   --color-blossom: #f5c9e0;
+  /* 선 변형: 밝은 테마는 잉크를 섞어 바탕 대비를 3:1 이상으로 올리고, 어두운 테마는 파스텔을 그대로 씁니다. */
+  --color-lavender-line: light-dark(
+    color-mix(in oklab, var(--color-lavender) 50%, var(--color-ink)),
+    var(--color-lavender)
+  );
 }

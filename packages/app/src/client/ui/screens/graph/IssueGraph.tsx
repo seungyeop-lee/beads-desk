@@ -6,7 +6,6 @@ import {
   getBezierPath,
   getSmoothStepPath,
   Handle,
-  MarkerType,
   MiniMap,
   Position,
   ReactFlow,
@@ -17,12 +16,20 @@ import {
   ViewportPortal,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AuxiliaryEdge } from "@/client/modules/graph/domain/centerGraph";
 import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import {
+  auxiliaryEdgeLook,
+  blocksEdgeLook,
+  type EdgeLook,
+  EdgeMarkers,
+  edgeMarkerId,
+  edgeStyle,
+} from "./edgeLook";
 import { COLUMN_STEP, type GraphLayout, NODE_WIDTH, type PlacedEdge } from "./graphLayout";
 import { initialGraphViewport, STAGE_LABEL_HEIGHT } from "./graphViewport";
 import { IssueCard, type PlanMarks } from "./IssueCard";
@@ -30,11 +37,14 @@ import { IssueCard, type PlanMarks } from "./IssueCard";
 type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
 type IssueNode = Node<IssueNodeData, "issue">;
 type AuxiliaryFlowEdge = Edge<
-  { relation: AuxiliaryEdge["type"]; sourcePosition: Position; targetPosition: Position },
+  { look: EdgeLook; sourcePosition: Position; targetPosition: Position },
   "auxiliary"
 >;
 type GraphEdge = BlocksEdge | AuxiliaryFlowEdge;
-type BlocksEdge = Edge<Pick<PlacedEdge, "passes" | "bypassX" | "condition">, "blocks">;
+type BlocksEdge = Edge<
+  Pick<PlacedEdge, "passes" | "bypassX" | "condition"> & { look: EdgeLook },
+  "blocks"
+>;
 
 /** 에픽 계획 보기가 단계 이름과 노드 표시를 그리는 데 쓰는 값입니다. 이슈 중심 보기는 넘기지 않습니다. */
 export type GraphPlan = {
@@ -94,6 +104,7 @@ export function IssueGraph({
     return () => observer.disconnect();
   }, [initialized, planned]);
   const messages = useMessages();
+  const markerPrefix = `edge${useId().replace(/\W/g, "")}`;
   const { nodes, edges } = useMemo(
     () => ({
       nodes: layout.nodes.map(({ issue, x, y, height }): IssueNode => ({
@@ -117,6 +128,7 @@ export function IssueGraph({
           const targetY = layout.nodes.find(({ issue }) => issue.id === to)!.y;
           const sourcePosition = sourceY <= targetY ? Position.Bottom : Position.Top;
           const targetPosition = sourceY < targetY ? Position.Top : Position.Bottom;
+          const look = auxiliaryEdgeLook(type);
           return {
             id: `${type}:${from}->${to}`,
             type: "auxiliary",
@@ -124,30 +136,33 @@ export function IssueGraph({
             target: to,
             sourceHandle: `${type}-${sourcePosition}`,
             targetHandle: `${type}-${targetPosition}`,
-            data: { relation: type, sourcePosition, targetPosition },
-            markerEnd: type === "discovered-from" ? { type: MarkerType.Arrow } : undefined,
+            data: { look, sourcePosition, targetPosition },
+            markerEnd: edgeMarkerId(markerPrefix, look),
             ariaLabel:
               type === "related"
                 ? messages.graph.relatedEdge(from, to)
                 : messages.graph.discoveredEdge(from, to),
           };
         }),
-        ...layout.edges.map(({ from, to, passes, bypassX, condition }): BlocksEdge => ({
-          id: `${from}->${to}`,
-          type: "blocks",
-          source: from,
-          target: to,
-          sourceHandle: "blocks",
-          targetHandle: blocksTargetHandle(layout, to, condition, bypassX),
-          data: { passes, bypassX, condition },
-          markerEnd: { type: MarkerType.ArrowClosed },
-          ariaLabel: condition
-            ? messages.graph.conditionEdge(from, to)
-            : messages.graph.edgeLabel(from, to),
-        })),
+        ...layout.edges.map(({ from, to, passes, bypassX, condition }): BlocksEdge => {
+          const look = blocksEdgeLook(layout, { from, to });
+          return {
+            id: `${from}->${to}`,
+            type: "blocks",
+            source: from,
+            target: to,
+            sourceHandle: "blocks",
+            targetHandle: blocksTargetHandle(layout, to, condition, bypassX),
+            data: { passes, bypassX, condition, look },
+            markerEnd: edgeMarkerId(markerPrefix, look),
+            ariaLabel: condition
+              ? messages.graph.conditionEdge(from, to)
+              : messages.graph.edgeLabel(from, to),
+          };
+        }),
       ],
     }),
-    [layout, issueHref, plan, centerId, messages, auxiliary],
+    [layout, issueHref, plan, centerId, messages, auxiliary, markerPrefix],
   );
 
   return (
@@ -160,6 +175,7 @@ export function IssueGraph({
       aria-label={messages.graph.canvas}
       className="min-h-64 flex-1 overflow-hidden rounded-box border border-base-300 bg-base-100"
     >
+      <EdgeMarkers idPrefix={markerPrefix} />
       {initialized && (
         <ReactFlow
           nodes={nodes}
@@ -312,10 +328,11 @@ function BlocksEdgeView({
   data,
   markerEnd,
 }: EdgeProps<BlocksEdge>) {
+  const lineProps = data && { style: edgeStyle(data.look), "data-edge": data.look.kind };
   if (data?.condition) {
     const bends = data.condition.map(({ x, y }) => `L${x},${y}`).join(" ");
     const path = `M${sourceX},${sourceY} ${bends} L${targetX},${targetY}`;
-    return <BaseEdge path={path} markerEnd={markerEnd} className="graph-condition" />;
+    return <BaseEdge path={path} markerEnd={markerEnd} {...lineProps} />;
   }
   if (data?.bypassX !== undefined) {
     const [path] = getSmoothStepPath({
@@ -327,7 +344,7 @@ function BlocksEdgeView({
       targetPosition: Position.Right,
       offset: data.bypassX - sourceX,
     });
-    return <BaseEdge path={path} markerEnd={markerEnd} className="graph-blocks" />;
+    return <BaseEdge path={path} markerEnd={markerEnd} {...lineProps} />;
   }
   const curve = (x1: number, y1: number, x2: number, y2: number) =>
     getBezierPath({
@@ -345,7 +362,7 @@ function BlocksEdgeView({
     [x, y] = [pass.right, pass.y];
   }
   path += curve(x, y, targetX, targetY);
-  return <BaseEdge path={path} markerEnd={markerEnd} className="graph-blocks" />;
+  return <BaseEdge path={path} markerEnd={markerEnd} {...lineProps} />;
 }
 
 function AuxiliaryEdgeView({
@@ -365,7 +382,12 @@ function AuxiliaryEdgeView({
     targetPosition: data?.targetPosition ?? Position.Top,
   });
   return (
-    <BaseEdge path={path} markerEnd={markerEnd} className={`graph-auxiliary-${data?.relation}`} />
+    <BaseEdge
+      path={path}
+      markerEnd={markerEnd}
+      style={data && edgeStyle(data.look)}
+      data-edge={data?.look.kind}
+    />
   );
 }
 

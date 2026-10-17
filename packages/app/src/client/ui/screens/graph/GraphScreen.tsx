@@ -10,6 +10,7 @@ import { CloseIcon, HelpIcon } from "@/client/ui/designSystem/icons";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
+import { EdgeLegend } from "./EdgeLegend";
 import { EpicPlanGraph } from "./EpicPlanGraph";
 import { graphBackHref, readGraphScope } from "./graphAddress";
 import { IssueGraph } from "./IssueGraph";
@@ -150,27 +151,7 @@ function BlockingChainGraph({
       {measurement}
       {layout.nodes.length > 0 ? (
         <>
-          <div
-            className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-base-content/65"
-            aria-label={messages.graph.legend}
-          >
-            <span className="flex items-center gap-2">
-              <span className="graph-legend-blocks w-8" />
-              {messages.graph.blockingLegend}
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="graph-legend-condition w-8" />
-              {messages.graph.conditionLegend}
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="graph-legend-related w-8" />
-              {messages.graph.relatedLegend}
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="graph-legend-discovered w-8" />
-              {messages.graph.discoveredLegend}
-            </span>
-          </div>
+          <EdgeLegend layout={layout} auxiliary={graph.auxiliary} />
           <p className="text-xs text-base-content/55">{messages.graph.auxiliaryHint}</p>
           <IssueGraph
             layout={layout}

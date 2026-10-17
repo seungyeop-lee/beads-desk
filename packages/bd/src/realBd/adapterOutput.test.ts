@@ -173,9 +173,10 @@ test("그래프는 상태·await 유형과 무관하게 gate를 읽고 일반 �
         id: gates[0],
         issueType: "gate",
         status: "open",
+        awaitType: "human",
       }),
       expect.objectContaining({ id: gates[1], issueType: "gate", status: "closed" }),
-      expect.objectContaining({ id: gates[2], issueType: "gate" }),
+      expect.objectContaining({ id: gates[2], issueType: "gate", awaitType: "gh:pr" }),
     ]),
   );
   expect(graph.dependencies).toEqual(

@@ -65,6 +65,16 @@ describe("parseIssues", () => {
     expect(deferred?.deferUntil).toBe(Date.parse("2026-10-16T13:04:46Z"));
   });
 
+  test("gate는 기다리는 대상을 awaitType으로 담고, gate가 아닌 이슈에는 awaitType이 없다", () => {
+    const [gate, task] = parseIssues([
+      { id: "x-1", issue_type: "gate", await_type: "human" },
+      { id: "x-2", issue_type: "task" },
+    ]);
+
+    expect(gate?.awaitType).toBe("human");
+    expect(task).not.toHaveProperty("awaitType");
+  });
+
   test("id가 없는 항목은 건너뛰고, 없는 필드는 빈 값으로 채운다", () => {
     const issues = parseIssues([{ title: "no id" }, { id: "x-1" }]);
 

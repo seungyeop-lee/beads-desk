@@ -261,40 +261,262 @@ test("선후 관계 없는 이슈가 없는 에픽은 패널과 패널 조작을
   );
 });
 
+// 간선 종류(blocks, gate, human gate, 관련, 발견)와 해소된 관계가 모두 들어 있는 이슈 중심 그래프입니다.
+const ALL_EDGES = graphData(
+  {
+    "look-center": { title: "간선 기준" },
+    "look-before": { title: "열린 선행" },
+    "look-done": { title: "닫힌 선행", status: "closed" },
+    "look-human": { title: "사람 gate", issueType: "gate", awaitType: "human" },
+    "look-human-done": {
+      title: "닫힌 사람 gate",
+      issueType: "gate",
+      awaitType: "human",
+      status: "closed",
+    },
+    "look-pr": { title: "PR gate", issueType: "gate", awaitType: "gh:pr" },
+    "look-timer": {
+      title: "닫힌 timer gate",
+      issueType: "gate",
+      awaitType: "timer",
+      status: "closed",
+    },
+    "look-note": { title: "관련 메모" },
+    "look-found": { title: "발견한 이슈" },
+  },
+  [
+    ["look-center", "look-before"],
+    ["look-center", "look-done"],
+    ["look-center", "look-human"],
+    ["look-center", "look-human-done"],
+    ["look-center", "look-pr"],
+    ["look-center", "look-timer"],
+  ],
+  [
+    ["look-center", "look-note", "related"],
+    ["look-found", "look-center", "discovered-from"],
+  ],
+);
+
+/** 그래프에 그린 간선의 선입니다. 범례 샘플은 캔버스 밖에 있으므로 들어가지 않습니다. */
+async function renderedEdges(screen: Awaited<ReturnType<typeof renderGraph>>, count: number) {
+  const canvas = screen.getByRole("region", { name: "의존 그래프" }).element();
+  await expect.poll(() => canvas.querySelectorAll("path[data-edge]").length).toBe(count);
+  return [...canvas.querySelectorAll<SVGPathElement>("path[data-edge]")];
+}
+
+/** 선이 marker-end로 가리키는 화살촉 path입니다. 화살촉이 없으면 null입니다. */
+function arrowOf(line: Element): SVGPathElement | null {
+  const id = /#([^"')]+)/.exec(getComputedStyle(line).markerEnd)?.[1];
+  return id ? document.getElementById(id)!.querySelector("path") : null;
+}
+
+/** 화살촉의 색입니다. 속이 찬 화살촉은 fill, 속이 빈 화살촉은 테두리(stroke)가 색입니다. */
+function arrowColor(arrow: SVGPathElement): string {
+  const style = getComputedStyle(arrow);
+  return style.stroke === "none" ? style.fill : style.stroke;
+}
+
+/** 선의 모양입니다. 범례 샘플과 실제 간선을 비교하는 데 씁니다. */
+function lineLook(line: Element) {
+  const style = getComputedStyle(line);
+  const arrow = arrowOf(line);
+  return {
+    stroke: style.stroke,
+    width: style.strokeWidth,
+    dash: style.strokeDasharray,
+    linecap: style.strokeLinecap,
+    arrow: arrow && {
+      color: arrowColor(arrow),
+      shape: arrow.getAttribute("d"),
+      fill: getComputedStyle(arrow).fill,
+    },
+  };
+}
+
+/** WCAG 상대 휘도입니다. 계산된 CSS 색을 canvas에 칠해 sRGB 값으로 바꿉니다. */
+function luminance(color: string): number {
+  const context = document.createElement("canvas").getContext("2d")!;
+  context.fillStyle = color;
+  context.fillRect(0, 0, 1, 1);
+  const [r, g, b, alpha] = context.getImageData(0, 0, 1, 1).data;
+  expect(alpha, `${color}는 불투명해야 합니다`).toBe(255);
+  const linear = (value: number) => {
+    const c = value / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * linear(r!) + 0.7152 * linear(g!) + 0.0722 * linear(b!);
+}
+
+function contrast(a: string, b: string): number {
+  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (light! + 0.05) / (dark! + 0.05);
+}
+
+test("간선 종류마다 화살촉은 선과 같은 색이고, 관련 간선에는 화살촉이 없다", async () => {
+  const screen = await renderGraph("center", "look-center", ALL_EDGES);
+  const lines = await renderedEdges(screen, 8);
+  expect(new Set(lines.map((line) => line.dataset.edge))).toEqual(
+    new Set(["blocks", "gate", "humanGate", "related", "discovered"]),
+  );
+  const arrow = (line: Element) => {
+    const path = arrowOf(line);
+    return path && arrowColor(path);
+  };
+  expect(lines.map((line) => [line.dataset.edge, arrow(line)])).toEqual(
+    lines.map((line) => [
+      line.dataset.edge,
+      line.dataset.edge === "related" ? null : getComputedStyle(line).stroke,
+    ]),
+  );
+  const discovered = lines.find((line) => line.dataset.edge === "discovered")!;
+  expect(getComputedStyle(arrowOf(discovered)!).fill, "발견 화살촉은 속이 비어 있다").not.toBe(
+    getComputedStyle(discovered).stroke,
+  );
+});
+
+test("범례는 그래프에 그린 간선 종류만 그 순서대로 보이고, 샘플의 선과 화살촉은 같은 종류의 실제 간선과 같다", async () => {
+  const screen = await renderGraph("center", "look-center", ALL_EDGES);
+  const lines = await renderedEdges(screen, 8);
+  const legend = screen.getByLabelText("관계 범례").element();
+  const samples = [...legend.querySelectorAll("svg[data-edge] path")];
+  expect(samples.map((sample) => sample.closest("svg")!.dataset.edge)).toEqual([
+    "blocks",
+    "gate",
+    "humanGate",
+    "related",
+    "discovered",
+  ]);
+  for (const sample of samples) {
+    const kind = sample.closest("svg")!.dataset.edge;
+    const actual = lines.filter((line) => line.dataset.edge === kind).map(lineLook);
+    expect(actual, `${kind} 범례 샘플`).toContainEqual(lineLook(sample));
+  }
+  for (const text of [
+    "실선 화살표: 선행 → 후속",
+    "굵은 실선 화살표: gate 대기 조건(선행 → 후속)",
+    "보라색 굵은 실선 화살표: 사람 판단을 기다리는 gate",
+    "점선: 관련",
+    "파선 화살표: 발견한 작업 → 발견한 이슈",
+  ])
+    expect(legend.textContent).toContain(text);
+});
+
+test("에픽 순서 보기의 범례는 그린 blocks 간선 항목만 보인다", async () => {
+  const screen = await renderGraph(
+    "epic",
+    "legend-epic",
+    graphData(
+      {
+        "legend-epic": { title: "범례 에픽", issueType: "epic" },
+        "legend-1": { title: "범례 첫 단계", parent: "legend-epic" },
+        "legend-2": { title: "범례 둘째 단계", parent: "legend-epic" },
+      },
+      [["legend-2", "legend-1"]],
+    ),
+  );
+  await renderedEdges(screen, 1);
+  const legend = screen.getByLabelText("관계 범례").element();
+  expect(
+    [...legend.querySelectorAll("svg[data-edge]")].map((svg) => svg.getAttribute("data-edge")),
+  ).toEqual(["blocks"]);
+});
+
+for (const theme of ["desk", "desk-dark"])
+  test(`${theme} 테마에서 모든 간선과 화살촉의 색은 캔버스 바탕과 3:1 이상 대비된다`, async () => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      const screen = await renderGraph("center", "look-center", ALL_EDGES);
+      const lines = await renderedEdges(screen, 8);
+      const background = getComputedStyle(
+        screen.getByRole("region", { name: "의존 그래프" }).element(),
+      ).backgroundColor;
+      for (const line of lines) {
+        const colors = [getComputedStyle(line).stroke];
+        const arrow = arrowOf(line);
+        if (arrow) colors.push(arrowColor(arrow));
+        for (const color of colors)
+          expect(
+            contrast(color, background),
+            `${line.dataset.edge} ${color}`,
+          ).toBeGreaterThanOrEqual(3);
+      }
+    } finally {
+      delete document.documentElement.dataset.theme;
+    }
+  });
+
+test("닫힌 카드와 에픽 밖 카드는 흐리게 하지 않고, 닫힌 카드는 제목 글자만 흐리게 그린다", async () => {
+  const screen = await renderGraph(
+    "epic",
+    "card-epic",
+    graphData(
+      {
+        "card-epic": { title: "카드 에픽", issueType: "epic" },
+        "card-done": { title: "닫힌 카드", parent: "card-epic", status: "closed" },
+        "card-open": { title: "열린 카드", parent: "card-epic" },
+        "card-outside": { title: "에픽 밖 카드" },
+      },
+      [
+        ["card-open", "card-done"],
+        ["card-open", "card-outside"],
+      ],
+    ),
+  );
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  const card = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
+  await expect.element(card("에픽 밖 카드")).toBeVisible();
+  expect(
+    ["닫힌 카드", "에픽 밖 카드"].map((title) => getComputedStyle(card(title).element()).opacity),
+  ).toEqual(["1", "1"]);
+  const titleColor = (title: string) =>
+    getComputedStyle(card(title).getByText(title, { exact: true }).element()).color;
+  expect(titleColor("닫힌 카드")).not.toBe(titleColor("열린 카드"));
+  expect(titleColor("에픽 밖 카드")).toBe(titleColor("열린 카드"));
+});
+
+type IssueSeed = {
+  title: string;
+  issueType?: string;
+  parent?: string;
+  status?: string;
+  awaitType?: string;
+};
+
 /**
- * 이슈와 blocks 관계로 그래프 데이터를 만듭니다. blocks는 [기다리는 이슈, 막는 이슈] 쌍이고,
- * 에픽 보기가 후손을 고르는 ancestorEpics는 parent를 한 단계만 따라 채웁니다.
+ * 이슈와 관계로 그래프 데이터를 만듭니다. blocks는 [기다리는 이슈, 막는 이슈] 쌍이고, others는 blocks가 아닌 관계를
+ * [이슈, 의존 대상, 유형]으로 적습니다. 에픽 보기가 후손을 고르는 ancestorEpics는 parent를 한 단계만 따라 채웁니다.
  */
 function graphData(
-  issues: Record<string, { title: string; issueType?: string; parent?: string }>,
+  issues: Record<string, IssueSeed>,
   blocks: (readonly [string, string])[],
+  others: (readonly [string, string, string])[] = [],
 ): GraphData {
   return {
-    issues: Object.entries(issues).map(([id, { title, issueType = "task", parent = null }]) =>
-      issue(id, title, issueType, parent),
-    ),
-    dependencies: blocks.map(([issueId, dependsOnId]) => ({
-      issueId,
-      dependsOnId,
-      type: "blocks",
-      createdAt: 0,
-    })),
+    issues: Object.entries(issues).map(([id, seed]) => issue(id, seed)),
+    dependencies: [
+      ...blocks.map(([issueId, dependsOnId]) => [issueId, dependsOnId, "blocks"] as const),
+      ...others,
+    ].map(([issueId, dependsOnId, type]) => ({ issueId, dependsOnId, type, createdAt: 0 })),
     ancestorEpics: Object.fromEntries(
       Object.entries(issues).flatMap(([id, { parent }]) => (parent ? [[id, [parent]]] : [])),
     ),
   };
 }
 
-function issue(id: string, title: string, issueType: string, parent: string | null): Issue {
+function issue(
+  id: string,
+  { title, issueType = "task", parent, status = "open", awaitType }: IssueSeed,
+): Issue {
   return {
     id,
     title,
-    status: "open",
+    status,
     priority: 2,
     issueType,
     assignee: null,
     labels: [],
-    parent,
+    parent: parent ?? null,
     dependencyCount: 0,
     dependentCount: 0,
     createdAt: 0,
@@ -302,5 +524,6 @@ function issue(id: string, title: string, issueType: string, parent: string | nu
     startedAt: null,
     closedAt: null,
     deferUntil: null,
+    ...(awaitType && { awaitType }),
   };
 }

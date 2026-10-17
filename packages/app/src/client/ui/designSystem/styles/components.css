@@ -323,9 +323,8 @@
   font-weight: 600;
 }
 
-/* React Flow(의존 그래프)의 기본 색은 밝은 테마 고정이라, 조작 버튼, 미니맵, 간선을 지금 테마의 색으로 맞춥니다. */
+/* React Flow(의존 그래프)의 기본 색은 밝은 테마 고정이라, 조작 버튼과 미니맵을 지금 테마의 색으로 맞춥니다. 간선은 graph/edgeLook.tsx가 칠합니다. */
 .react-flow {
-  --xy-edge-stroke: color-mix(in oklab, var(--color-base-content) 35%, #0000);
   --xy-minimap-background-color: var(--color-base-200);
   --xy-minimap-mask-background-color: color-mix(in oklab, var(--color-base-content) 12%, #0000);
   --xy-minimap-mask-stroke-color: var(--color-primary);
@@ -351,37 +350,4 @@
 .react-flow__minimap-node.minimap-center {
   --xy-minimap-node-stroke-color: var(--color-primary);
   vector-effect: non-scaling-stroke;
-}
-
-.graph-auxiliary-related,
-.graph-auxiliary-discovered-from {
-  stroke-width: 1;
-  opacity: 0.65;
-}
-.graph-auxiliary-related {
-  stroke-dasharray: 3 5;
-}
-.graph-auxiliary-discovered-from {
-  stroke-dasharray: 8 4 2 4;
-}
-.graph-legend-blocks {
-  border-top: 2px solid currentColor;
-}
-.graph-legend-related {
-  border-top: 1px dotted currentColor;
-}
-.graph-legend-discovered {
-  border-top: 1px dashed currentColor;
-}
-
-.graph-blocks {
-  stroke-width: 2;
-}
-
-.graph-condition {
-  stroke: color-mix(in oklab, var(--color-base-content) 65%, #0000);
-  stroke-width: 3;
-}
-.graph-legend-condition {
-  border-top: 3px solid currentColor;
 }

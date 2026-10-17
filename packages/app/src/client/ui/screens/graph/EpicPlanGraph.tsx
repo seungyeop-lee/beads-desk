@@ -10,6 +10,7 @@ import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
+import { EdgeLegend } from "./EdgeLegend";
 import { graphBounds, INITIAL_MIN_ZOOM, VIEWPORT_MARGIN } from "./graphViewport";
 import { IssueGraph } from "./IssueGraph";
 import { useGraphLayout } from "./useGraphLayout";
@@ -80,6 +81,8 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
           </ul>
         </div>
       )}
+
+      <EdgeLegend layout={layout} />
 
       <div
         className={`flex min-h-0 flex-1 gap-4 ${panelExpanded ? "flex-col @2xl/plan:flex-row" : "flex-col"}`}

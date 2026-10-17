@@ -57,14 +57,8 @@ test("복수·공유 gate와 gate의 선행 조건을 실제 blocks 방향으로
   }
   await expect(canvas.getByLabel(`${before} 다음에 ${center}`)).toHaveCount(1);
   await expect(canvas.getByLabel(`${center} 다음에 ${after}`)).toHaveCount(1);
-  await expect(canvas.locator(".graph-condition")).toHaveCount(5);
-  await expect(canvas.locator(".graph-condition").first()).toHaveCSS("stroke-width", "3px");
-  await expect(canvas.locator(".graph-auxiliary-related")).toHaveCount(1);
-  await expect(canvas.locator(".graph-condition").first()).toHaveCSS("stroke-dasharray", "none");
-  await expect(canvas.locator(".graph-auxiliary-related")).toHaveCSS(
-    "stroke-dasharray",
-    "3px, 5px",
-  );
+  await expect(canvas.locator('path[data-edge="humanGate"]')).toHaveCount(5);
+  await expect(canvas.locator('path[data-edge="related"]')).toHaveCount(1);
   const titles = [
     "조건 선행 작업",
     "여러 조건을 기다리는 작업",
