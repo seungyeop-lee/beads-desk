@@ -71,6 +71,13 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 코드 주석에는 bd 이슈 ID를 적지 않고, 지켜야 할 규칙이나 이유를 문장으로 적습니다. `.beads/`는 저장소에 들어가지 않아서, 저장소나 npm 패키지로 코드를 읽는 사람은 그 ID로 내용을 찾을 수 없습니다.
 
+## 워크트리 작업
+
+AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작업할 수 있습니다. worktree는 새 checkout이므로, 만든 뒤 루트에서 `pnpm install`을 먼저 실행합니다(hook도 이때 설치됩니다).
+
+- 편집 도구에 넘기는 파일 경로는 worktree 절대 경로로 씁니다. 상대 경로는 세션 작업 디렉터리(메인 트리) 기준으로 해석돼서 메인 트리에 편집이 생깁니다. 셸 명령마다 `git -C <worktree>`를 쓰는 것과 같은 이유로, 편집 도구의 경로에도 똑같이 적용됩니다.
+- 워크트리 작업 중 메인 트리에 변경이 생겼으면 먼저 diff를 확인합니다. 변경이 워크트리에서 하려던 편집뿐이면 `git -C <메인 트리> restore -- <파일>`로 원복하고 그 편집을 worktree에 절대 경로로 다시 적용한 뒤, 검증을 처음부터 다시 실행합니다. 내 편집으로 설명되지 않는 변경이 섞여 있으면 직접 되돌리지 않고 보고합니다.
+
 ## 검증
 
 `pnpm run check`가 typecheck, lint, format 검사, unit test, 컴포넌트 테스트를 차례로 실행합니다. lefthook이 pre-commit에서 staged 파일의 format과 lint를, pre-push에서 `pnpm run check`를 실행합니다. hook은 `pnpm install` 때 설치됩니다.
@@ -87,7 +94,7 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면, unit test나 컴포넌트 테스트로 확인할 수 없는지 먼저 따져 본 뒤 시나리오를 추가합니다. 시나리오를 추가하는 기준과 작성 규칙, 시나리오를 바꾼 작업이 보고할 테스트 수와 실행 시간은 `packages/app/e2e/AGENTS.md`에 있습니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
 
 1. 작업하는 동안에는 `pnpm run build`로 빌드한 뒤, `packages/app`에서 `pnpm exec playwright test <spec 경로>`로 바꾼 동작을 다루는 spec만 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고칠 때마다 다시 빌드합니다.
-2. 화면을 바꿨으면 바뀐 화면을 스크린샷 등으로 직접 확인합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.
+2. 화면을 바꿨으면 바뀐 화면을 스크린샷으로 직접 확인합니다. 화면 관련 작업의 스크린샷은 `/tmp` 폴더에 저장하고, 보고할 때 마크다운 링크로 제시합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.
 3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다.
 
 - `pnpm run test:e2e`는 app을 production build로 빌드한 뒤 시나리오를 worker 8개(RAM disk를 쓰지 않으면 4개)로 나눠 실행합니다. worker마다 3900번부터 빈 포트를 찾아 `next start`를 띄우고, 실행이 끝나면 서버를 종료합니다. 다른 프로세스가 쓰는 포트는 건너뛰므로 `next dev`가 떠 있어도 됩니다.
