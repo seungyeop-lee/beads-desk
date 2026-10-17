@@ -142,16 +142,23 @@ function BlockingChainGraph({
 }) {
   const messages = useMessages();
   const graph = useMemo(() => {
-    const result = centerGraph(data, scope.id);
-    return { ...result, issue: data.issues.find(({ id }) => id === scope.id) };
+    const { order, extra, auxiliary } = centerGraph(data, scope.id);
+    return {
+      order,
+      auxiliary: {
+        center: data.issues.find(({ id }) => id === scope.id),
+        issues: extra,
+        edges: auxiliary,
+      },
+    };
   }, [data, scope]);
-  const { layout, measurement, ready } = useGraphLayout(graph.order, false, graph);
+  const { layout, measurement, ready } = useGraphLayout(graph.order, false, graph.auxiliary);
   return (
     <>
       {measurement}
       {layout.nodes.length > 0 ? (
         <>
-          <EdgeLegend layout={layout} auxiliary={graph.auxiliary} />
+          <EdgeLegend layout={layout} auxiliary={graph.auxiliary.edges} />
           <IssueGraph layout={layout} ready={ready} issueHref={issueHref} centerId={scope.id} />
         </>
       ) : (

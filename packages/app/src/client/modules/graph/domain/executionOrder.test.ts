@@ -24,13 +24,8 @@ function blocks(...pairs: [string, string][]): IssueDependency[] {
   }));
 }
 
-/** 이슈 자리는 id로, 간선이 지나가는 자리는 "출발→도착"으로 나타냅니다. */
 const layerIds = (layers: OrderComponent["layers"]) =>
-  layers.map((layer) =>
-    layer.map((slot) =>
-      "issue" in slot ? slot.issue.id : `${slot.passing.from}→${slot.passing.to}`,
-    ),
-  );
+  layers.map((layer) => layer.map(({ id }) => id));
 
 test("blocks로 이어진 이슈를 먼저 할 것부터 layer에 두고, blocks 관계가 없는 이슈는 unlinked로 따로 모은다", () => {
   const order = executionOrder(
@@ -49,49 +44,13 @@ test("blocks로 이어진 이슈를 먼저 할 것부터 layer에 두고, blocks
   expect(order.cycles).toEqual([]);
 });
 
-test("여러 이슈를 기다리는 이슈는 가장 늦게 끝나는 이슈 다음 layer에 둔다", () => {
+test("여러 이슈를 기다리는 이슈는 가장 늦게 끝나는 이슈 다음 layer에 두고, layer를 건너뛰는 간선은 사이 layer에 아무것도 두지 않는다", () => {
   const order = executionOrder(
     [issue("a"), issue("b"), issue("c")],
     blocks(["a", "b"], ["b", "c"], ["a", "c"]),
   );
 
-  expect(layerIds(order.components[0]!.layers)).toEqual([["a"], ["b", "a→c"], ["c"]]);
-});
-
-test("layer를 건너뛰는 간선은 사이 layer마다 지나가는 자리를 하나씩 차지하고, 위치가 같으면 이슈 아래에 둔다", () => {
-  const order = executionOrder(
-    [issue("a"), issue("b"), issue("c"), issue("d")],
-    blocks(["a", "b"], ["b", "c"], ["c", "d"], ["a", "d"]),
-  );
-
-  expect(layerIds(order.components[0]!.layers)).toEqual([["a"], ["b", "a→d"], ["c", "a→d"], ["d"]]);
-});
-
-test("앞 layer에서 이어지는 위치가 같으면, 지나가는 간선 가운데 먼저 도착하는 간선을 위에 둔다", () => {
-  const order = executionOrder(
-    [issue("a"), issue("b"), issue("c"), issue("d")],
-    blocks(["a", "b"], ["b", "c"], ["c", "d"], ["a", "d"], ["a", "c"]),
-  );
-
-  expect(layerIds(order.components[0]!.layers)).toEqual([
-    ["a"],
-    ["b", "a→c", "a→d"],
-    ["c", "a→d"],
-    ["d"],
-  ]);
-});
-
-test("지나가는 자리도 앞 layer에서 이어지는 위치를 따라 정렬해, 아래쪽에서 출발한 간선은 아래쪽으로 지나간다", () => {
-  const order = executionOrder(
-    [issue("top", { priority: 0 }), issue("bottom", { priority: 1 }), issue("mid"), issue("end")],
-    blocks(["top", "mid"], ["bottom", "mid"], ["mid", "end"], ["bottom", "end"], ["top", "end"]),
-  );
-
-  expect(layerIds(order.components[0]!.layers)).toEqual([
-    ["top", "bottom"],
-    ["top→end", "mid", "bottom→end"],
-    ["end"],
-  ]);
+  expect(layerIds(order.components[0]!.layers)).toEqual([["a"], ["b"], ["c"]]);
 });
 
 test("서로 기다리는 순환은 한 layer에 함께 두고, 순환을 기다리는 이슈는 그 다음 layer에 둔다", () => {

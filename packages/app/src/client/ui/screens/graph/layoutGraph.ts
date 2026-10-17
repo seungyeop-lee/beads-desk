@@ -6,7 +6,6 @@ import {
   type OrderEdge,
   workLayers,
 } from "@/client/modules/graph/domain/executionOrder";
-import { layerIssues } from "@/client/modules/graph/domain/layeredGraph";
 import type { GraphLayout } from "./graphLayout";
 import { routeGrid } from "./gridRoutes";
 
@@ -15,8 +14,11 @@ export type GraphLayoutInput = {
   /** 실제로 잰 카드 높이입니다. 아직 재지 않은 이슈는 nodeHeight로 놓습니다. */
   heights: ReadonlyMap<string, number>;
   nodeHeight: number;
-  /** 이슈 중심 보기에서 blocks 사슬 밖에 함께 그리는 관련·발견 이슈와 그 간선입니다. */
-  auxiliary?: { issue: Issue | undefined; extra: Issue[]; auxiliary: AuxiliaryEdge[] };
+  /**
+   * 이슈 중심 보기에서 함께 그리는 관련·발견 관계입니다. center는 기준 이슈이고, issues는 blocks 사슬 밖에서 관계로만 이어진 이슈,
+   * edges는 기준 이슈에 직접 연결된 관련·발견 간선입니다.
+   */
+  auxiliary?: { center: Issue | undefined; issues: Issue[]; edges: AuxiliaryEdge[] };
 };
 
 type Cell = { issue: Issue; column: number; row: number };
@@ -92,7 +94,7 @@ export function layoutGraph({
 function componentColumns(component: OrderComponent): Issue[][] {
   const work = workLayers(component);
   // 작업 없이 gate만 이어진 묶음은 gate를 붙일 작업이 없으므로 실행 순서의 열에 그대로 둡니다.
-  if (work.length === 0) return component.layers.map(layerIssues);
+  if (work.length === 0) return component.layers;
   const stacks = gateStacks(component, work);
   const anchorOf = new Map(
     [...stacks].flatMap(([anchor, gates]) => gates.map((gate) => [gate.id, anchor] as const)),
@@ -111,7 +113,7 @@ function componentColumns(component: OrderComponent): Issue[][] {
 function gateStacks(component: OrderComponent, work: Issue[][]): Map<string, Issue[]> {
   const columnOf = new Map(work.flatMap((layer, at) => layer.map(({ id }) => [id, at] as const)));
   const layerOf = new Map(
-    component.layers.flatMap((layer, at) => layerIssues(layer).map(({ id }) => [id, at] as const)),
+    component.layers.flatMap((layer, at) => layer.map(({ id }) => [id, at] as const)),
   );
   const isGate = (id: string) => !columnOf.has(id);
   const forward = links(component.edges, "from");
@@ -143,7 +145,7 @@ function gateStacks(component: OrderComponent, work: Issue[][]): Map<string, Iss
     ids.reduce((best, id) => (better(columnOf.get(id)!, columnOf.get(best)!) ? id : best));
 
   const stacks = new Map<string, { gate: Issue; waits: boolean }[]>();
-  const gates = component.layers.flatMap(layerIssues).filter(({ id }) => isGate(id));
+  const gates = component.layers.flat().filter(({ id }) => isGate(id));
   for (const gate of gates) {
     const waiting = reachedWork(gate.id, forward);
     const blockers = reachedWork(gate.id, backward);
@@ -261,14 +263,14 @@ function orderColumns(
  */
 function placeAuxiliary(
   cells: Cell[],
-  { issue: center, extra, auxiliary }: NonNullable<GraphLayoutInput["auxiliary"]>,
+  { center, issues, edges }: NonNullable<GraphLayoutInput["auxiliary"]>,
 ): AuxiliaryEdge[] {
-  if (auxiliary.length === 0) return [];
+  if (edges.length === 0) return [];
   if (cells.length === 0 && center) cells.push({ issue: center, column: 0, row: 0 });
   const cellOf = new Map(cells.map((cell) => [cell.issue.id, cell]));
   const taken = new Set(cells.map(({ column, row }) => `${column}:${row}`));
-  for (const issue of extra) {
-    const edge = auxiliary.find(
+  for (const issue of issues) {
+    const edge = edges.find(
       ({ from, to }) =>
         (from === issue.id && cellOf.has(to)) || (to === issue.id && cellOf.has(from)),
     );
@@ -288,7 +290,7 @@ function placeAuxiliary(
     cellOf.set(issue.id, cell);
     taken.add(`${column}:${row}`);
   }
-  return auxiliary.filter(({ from, to }) => cellOf.has(from) && cellOf.has(to));
+  return edges.filter(({ from, to }) => cellOf.has(from) && cellOf.has(to));
 }
 
 /** anchor의 왼쪽(-1)이나 오른쪽(1) 열에서 anchor와 같은 행부터 가까운 행 순서이고, 거리가 같으면 아래 행이 먼저입니다. */

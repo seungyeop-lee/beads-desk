@@ -1,10 +1,5 @@
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
-import {
-  type LayeredComponent,
-  type LayeredGraph,
-  layeredGraph,
-  layerIssues,
-} from "./layeredGraph";
+import { type LayeredComponent, type LayeredGraph, layeredGraph } from "./layeredGraph";
 
 /** from을 먼저 끝내야 to를 시작할 수 있습니다. */
 export type OrderEdge = { from: string; to: string };
@@ -41,6 +36,6 @@ function blockingEdges(byId: Map<string, Issue>, dependencies: IssueDependency[]
  */
 export function workLayers({ layers }: OrderComponent): Issue[][] {
   return layers
-    .map((layer) => layerIssues(layer).filter(({ issueType }) => issueType !== "gate"))
+    .map((layer) => layer.filter(({ issueType }) => issueType !== "gate"))
     .filter((layer) => layer.length > 0);
 }

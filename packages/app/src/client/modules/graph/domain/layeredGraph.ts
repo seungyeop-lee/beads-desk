@@ -5,13 +5,10 @@ import { byPriorityThenCreated } from "@/client/modules/issues/domain/issueListV
 export type LayerEdge = { from: string; to: string };
 
 /**
- * layer 안에서 한 줄을 차지하는 자리입니다. 이슈가 놓이거나, 두 layer 이상 떨어진 이슈를 잇는 간선이 지나갑니다.
- * 간선이 지나가는 자리는 layer 안 순서를 처음 정할 때만 씁니다. 그래프 화면은 이 자리를 그리지 않고 간선을 따로 잇습니다.
+ * 간선으로 이어진 이슈 묶음입니다. layers[0]은 묶음 안에서 가장 왼쪽에 두는 이슈이고, layer 안은 위에서 아래 순서입니다.
+ * layer 안 순서는 처음 순서일 뿐이고, 그래프 화면은 배치 엔진이 이 순서를 다시 정렬해 씁니다.
  */
-export type LayerSlot<E extends LayerEdge> = { issue: Issue } | { passing: E };
-
-/** 간선으로 이어진 이슈 묶음입니다. layers[0]은 묶음 안에서 가장 왼쪽에 두는 자리이고, 위에서 아래 순서입니다. */
-export type LayeredComponent<E extends LayerEdge> = { layers: LayerSlot<E>[][]; edges: E[] };
+export type LayeredComponent<E extends LayerEdge> = { layers: Issue[][]; edges: E[] };
 
 export type LayeredGraph<E extends LayerEdge> = {
   /** 이슈가 많은 묶음부터 둡니다. */
@@ -71,34 +68,20 @@ function layeredComponent<E extends LayerEdge>(
   const sccs = stronglyConnected(group, next);
   const layerOf = longestPathLayers(sccs, next);
 
-  const layers: LayerSlot<E>[][] = [];
-  for (const issue of group) (layers[layerOf.get(issue.id)!] ??= []).push({ issue });
-  for (const edge of edges) {
-    for (let at = layerOf.get(edge.from)! + 1; at < layerOf.get(edge.to)!; at++) {
-      layers[at]!.push({ passing: edge });
-    }
-  }
+  const layers: Issue[][] = [];
+  for (const issue of group) (layers[layerOf.get(issue.id)!] ??= []).push(issue);
 
-  // 앞 layer에서의 위치를 기록하며 내려가, 바로 앞 layer에서 이어지는 자리들의 위치 평균으로 다음 layer를 정렬합니다.
-  // 간선이 지나가는 자리도 이슈와 함께 정렬해야, 건너뛰는 간선이 다른 간선과 덜 엇갈립니다.
+  // 앞 layer들에서의 위치를 기록하며 내려가, 먼저 끝나야 하는 이슈들의 위치 평균으로 다음 layer를 정렬합니다.
   const position = new Map<string, number>();
-  const slotKey = (slot: LayerSlot<E>, layer: number) =>
-    "issue" in slot ? slot.issue.id : passingKey(slot.passing, layer);
-  // 간선이 layer에 들어오기 직전 자리는, 바로 앞 layer가 출발 이슈의 layer이면 그 이슈이고 아니면 그 간선이 지나간 자리입니다.
-  const enteringFrom = (edge: E, layer: number) =>
-    position.get(layerOf.get(edge.from) === layer - 1 ? edge.from : passingKey(edge, layer - 1))!;
   layers.forEach((layer, index) => {
-    const anchor = (slot: LayerSlot<E>) => {
-      const before =
-        "issue" in slot
-          ? edges
-              .filter((edge) => edge.to === slot.issue.id && layerOf.get(edge.from)! < index)
-              .map((edge) => enteringFrom(edge, index))
-          : [enteringFrom(slot.passing, index)];
+    const anchor = ({ id }: Issue) => {
+      const before = edges
+        .filter((edge) => edge.to === id && layerOf.get(edge.from)! < index)
+        .map((edge) => position.get(edge.from)!);
       return before.length > 0 ? before.reduce((sum, at) => sum + at, 0) / before.length : 0;
     };
-    layer.sort((a, b) => anchor(a) - anchor(b) || slotOrder(a, b, layerOf));
-    layer.forEach((slot, at) => position.set(slotKey(slot, index), at));
+    layer.sort((a, b) => anchor(a) - anchor(b) || byPriorityThenCreated(a, b));
+    layer.forEach(({ id }, at) => position.set(id, at));
   });
   const cycles = sccs.filter((scc) => scc.length > 1).map((scc) => cyclePath(scc, next));
   return { component: { layers, edges }, cycles };
@@ -183,31 +166,6 @@ function cyclePath(scc: string[], next: ReadonlyMap<string, string[]>): string[]
   return [start, start];
 }
 
-/** layer 안의 자리 가운데 이슈만 순서대로 돌려줍니다. */
-export function layerIssues<E extends LayerEdge>(layer: LayerSlot<E>[]): Issue[] {
-  return layer.flatMap((slot) => ("issue" in slot ? [slot.issue] : []));
-}
-
-function passingKey(edge: LayerEdge, layer: number): string {
-  return `${edge.from}\n${edge.to}\n${layer}`;
-}
-
-/**
- * 앞 layer에서 이어지는 위치가 같은 자리끼리의 순서입니다. 이슈는 간선이 지나가는 자리보다 위에, 이슈끼리는 우선순위 순으로 둡니다.
- * 지나가는 간선끼리는 먼저 도착하는 간선을 위에 두어, 도착하려고 이슈 쪽으로 올라갈 때 더 멀리 가는 간선과 엇갈리지 않게 합니다.
- */
-function slotOrder<E extends LayerEdge>(
-  a: LayerSlot<E>,
-  b: LayerSlot<E>,
-  layerOf: ReadonlyMap<string, number>,
-): number {
-  if ("issue" in a && "issue" in b) return byPriorityThenCreated(a.issue, b.issue);
-  if ("passing" in a && "passing" in b) {
-    return layerOf.get(a.passing.to)! - layerOf.get(b.passing.to)!;
-  }
-  return "issue" in a ? -1 : 1;
-}
-
 function issueCount(component: LayeredComponent<LayerEdge>): number {
-  return component.layers.reduce((sum, layer) => sum + layerIssues(layer).length, 0);
+  return component.layers.reduce((sum, layer) => sum + layer.length, 0);
 }

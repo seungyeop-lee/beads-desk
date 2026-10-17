@@ -39,9 +39,9 @@ function centerInput(
     heights: new Map(Object.entries(heights)),
     nodeHeight: NODE_HEIGHT,
     auxiliary: {
-      issue: data.issues.find(({ id }) => id === centerId),
-      extra: graph.extra,
-      auxiliary: graph.auxiliary,
+      center: data.issues.find(({ id }) => id === centerId),
+      issues: graph.extra,
+      edges: graph.auxiliary,
     },
   };
 }
