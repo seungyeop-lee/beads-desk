@@ -95,6 +95,14 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
   expect(firstRound.indexOf("정정:")).toBeLessThan(
     firstRound.indexOf("Response: 버튼 색 수정 반영 확인"),
   );
+  await rounds
+    .nth(0)
+    .getByRole("link", { name: `Review: ${work}` })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`[?&]issue=${first}`));
+  await expect(page.getByRole("dialog", { name: `${first} 이슈` })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: `${first} 이슈` })).toBeHidden();
 
   await freshRow.click();
   const freshDecision = page.getByRole("region", {

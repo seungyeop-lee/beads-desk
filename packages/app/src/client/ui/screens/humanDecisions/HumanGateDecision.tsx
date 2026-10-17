@@ -59,6 +59,7 @@ function PreviousGateFeedback({ gateId }: { gateId: string }) {
   const { data: rounds, error } = usePreviousGateRounds(gateId);
   const locale = useLocale();
   const messages = useMessages();
+  const issueHref = useIssueHref();
   if (error) {
     return (
       <div role="alert" className="alert alert-error alert-soft">
@@ -87,7 +88,11 @@ function PreviousGateFeedback({ gateId }: { gateId: string }) {
         >
           <header className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-baseline gap-2">
-              <h4 className="font-medium">{gate.title || messages.common.untitled}</h4>
+              <h4 className="font-medium">
+                <Link href={issueHref(gate.id)} scroll={false} className="hover:underline">
+                  {gate.title || messages.common.untitled}
+                </Link>
+              </h4>
               <span className="font-mono text-xs text-base-content/45">{gate.id}</span>
               {gate.closedAt !== null && (
                 <span className="text-xs text-base-content/55">
