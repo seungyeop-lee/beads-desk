@@ -38,8 +38,8 @@ test("페이지를 처음 열면 같은 API를 한 번만 요청한다", async (
 
   await page.goto("/issues");
   await expect(page.getByRole("link", { name: "주 이슈" })).toBeVisible();
-  // 기준값 알림이 오기 전에 조회를 시작하면 같은 요청이 두 번 가므로, 변경 감시 주기 하나를 지나 더 오지
-  // 않는지를 봅니다. 오지 않는 요청을 기다릴 신호가 없어 고정 대기를 씁니다.
+  // 기준값 알림이 오기 전에 조회를 시작하면 같은 요청이 두 번 가므로, 더 오는 요청이 없음을
+  // 기다려 확인합니다. 오지 않는 요청을 기다릴 신호가 없어 고정 대기를 씁니다.
   await page.waitForTimeout(3_000);
 
   expect(requestCounts).toEqual({ "/api/workspaces": 1, "/api/issues": 1 });
