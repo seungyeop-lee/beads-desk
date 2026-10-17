@@ -1,12 +1,11 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { byPriorityThenCreated } from "@/client/modules/issues/domain/issueListView";
 import type { GraphData } from "@/shared/contract/graph";
-import { type ExecutionOrder, executionOrder } from "./executionOrder";
+import { type ExecutionOrder, executionOrder, workLayers } from "./executionOrder";
 import { scopedIssues } from "./graphScope";
-import { layerIssues } from "./layeredGraph";
 
 /**
- * 단계는 실행 순서의 열입니다. 묶음이 여러 개여도 같은 열의 이슈는 같은 단계입니다.
+ * 단계는 gate를 뺀 실행 순서의 열(workLayers)입니다. 묶음이 여러 개여도 같은 열의 이슈는 같은 단계입니다.
  * current는 닫히지 않은 이슈가 남은 가장 왼쪽 단계의 번호(0부터)이고, 모든 단계가 끝났으면 null입니다.
  */
 export type StageProgress = { total: number; current: number | null };
@@ -57,12 +56,11 @@ function outsideBlockers({ issues, dependencies }: GraphData, descendants: Issue
 }
 
 function stageProgress({ components }: ExecutionOrder): StageProgress {
-  const total = Math.max(0, ...components.map((component) => component.layers.length));
+  const columns = components.map(workLayers);
+  const total = Math.max(0, ...columns.map((layers) => layers.length));
   const stages = Array.from({ length: total }, (_, stage) => stage);
   const current = stages.find((stage) =>
-    components.some((component) =>
-      layerIssues(component.layers[stage] ?? []).some((issue) => issue.status !== "closed"),
-    ),
+    columns.some((layers) => (layers[stage] ?? []).some((issue) => issue.status !== "closed")),
   );
   return { total, current: current ?? null };
 }

@@ -125,28 +125,69 @@ for (const [scope, id] of [
       ),
     );
     const canvas = screen.getByRole("region", { name: "의존 그래프" });
-    const node = (key: keyof typeof SKIP_TITLES) =>
-      canvas.getByRole("link", { name: new RegExp(SKIP_TITLES[key]) });
-    const edge = (from: string, to: string) =>
-      canvas.getByRole("img", { name: `${from} 다음에 ${to}` });
-    for (const [from, to] of SKIP_EDGES) await expect.element(edge(from, to)).toBeInTheDocument();
-    await expect.element(node("skip-d")).toBeVisible();
-
-    const boxes = Object.keys(SKIP_TITLES).map((key) => ({
-      key,
-      box: node(key as keyof typeof SKIP_TITLES)
-        .element()
-        .getBoundingClientRect(),
-    }));
-    for (const [from, to] of SKIP_EDGES) {
-      const points = pathPoints(edge(from, to).element().querySelector("path")!);
-      const covering = boxes
-        .filter(({ key }) => key !== from && key !== to)
-        .filter(({ box }) => points.some((point) => inside(point, box)))
-        .map(({ key }) => key);
-      expect(covering, `${from} → ${to} 간선을 가리는 노드`).toEqual([]);
-    }
+    for (const [from, to] of SKIP_EDGES)
+      await expect
+        .element(canvas.getByRole("img", { name: `${from} 다음에 ${to}` }))
+        .toBeInTheDocument();
+    await expect
+      .element(canvas.getByRole("link", { name: new RegExp(SKIP_TITLES["skip-d"]) }))
+      .toBeVisible();
+    expect(await coveredEdges(screen, SKIP_EDGES.length)).toEqual([]);
   });
+
+test("이슈 중심 그래프의 gate·관련·발견 간선도 양 끝이 아닌 노드 밑을 지나지 않는다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph("center", "look-center", ALL_EDGES);
+  expect(await coveredEdges(screen, 8)).toEqual([]);
+});
+
+test("에픽 계획 그래프의 gate 간선도 양 끝이 아닌 노드 밑을 지나지 않는다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph(
+    "epic",
+    "gate-epic",
+    graphData(
+      {
+        "gate-epic": { title: "gate 에픽", issueType: "epic" },
+        "gate-first": { title: "gate 앞 작업", parent: "gate-epic" },
+        "gate-work": { title: "gate를 기다리는 작업", parent: "gate-epic" },
+        "gate-next": { title: "gate 뒤 작업", parent: "gate-epic" },
+        "gate-human": { title: "사람 판단", issueType: "gate", awaitType: "human" },
+        "gate-pr": { title: "PR 대기", issueType: "gate", awaitType: "gh:pr" },
+      },
+      [
+        ["gate-work", "gate-first"],
+        ["gate-next", "gate-work"],
+        ["gate-work", "gate-human"],
+        ["gate-work", "gate-pr"],
+        ["gate-next", "gate-pr"],
+      ],
+    ),
+  );
+  expect(await coveredEdges(screen, 5)).toEqual([]);
+});
+
+/**
+ * 캔버스에 그린 간선 가운데 양 끝이 아닌 노드 밑으로 지나 가려지는 간선과 그 노드입니다. count개의 간선이 그려질 때까지 기다립니다.
+ * 간선 id는 blocks이면 "from->to", 관련·발견이면 "관계:from->to"입니다.
+ */
+async function coveredEdges(screen: Awaited<ReturnType<typeof renderGraph>>, count: number) {
+  const canvas = screen.getByRole("region", { name: "의존 그래프" }).element();
+  await expect.poll(() => canvas.querySelectorAll("path[data-edge]").length).toBe(count);
+  const boxes = [...canvas.querySelectorAll<HTMLElement>(".react-flow__node")].map((node) => ({
+    id: node.dataset.id!,
+    box: node.getBoundingClientRect(),
+  }));
+  return [...canvas.querySelectorAll<SVGGElement>(".react-flow__edge")].flatMap((edge) => {
+    const [from, to] = edge.dataset.id!.replace(/^[^:]*:/, "").split("->");
+    const points = pathPoints(edge.querySelector<SVGPathElement>("path[data-edge]")!);
+    const covering = boxes
+      .filter(({ id }) => id !== from && id !== to)
+      .filter(({ box }) => points.some((point) => inside(point, box)))
+      .map(({ id }) => id);
+    return covering.length > 0 ? [{ edge: edge.dataset.id, covering }] : [];
+  });
+}
 
 /** 간선 선을 따라 일정 간격으로 고른 점을 화면 좌표로 돌려줍니다. */
 function pathPoints(path: SVGPathElement) {

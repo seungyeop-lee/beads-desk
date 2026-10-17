@@ -170,3 +170,18 @@ test("후손 이슈를 직접 막는 에픽 밖 이슈를 outside로 담아 단�
   ]);
   expect(plan.stages).toEqual({ total: 3, current: 0 });
 });
+
+test("gate는 단계에 넣지 않아, gate만 있는 열은 단계 수에서 빠지고 열린 gate가 있어도 현재 단계로 보지 않는다", () => {
+  const plan = epicPlan(
+    graph(
+      [issue("a", { status: "closed" }), issue("b"), issue("inner", { issueType: "gate" })],
+      [issue("outer", { issueType: "gate" })],
+      blocks(["a", "inner"], ["inner", "b"], ["outer", "a"]),
+    ),
+    "epic",
+  );
+
+  expect(layerIds(plan)).toEqual([[["outer"], ["a"], ["inner"], ["b"]]]);
+  expect([...plan.outside]).toEqual(["outer"]);
+  expect(plan.stages).toEqual({ total: 2, current: 1 });
+});

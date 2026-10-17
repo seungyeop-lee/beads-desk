@@ -1,5 +1,10 @@
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
-import { type LayeredComponent, type LayeredGraph, layeredGraph } from "./layeredGraph";
+import {
+  type LayeredComponent,
+  type LayeredGraph,
+  layeredGraph,
+  layerIssues,
+} from "./layeredGraph";
 
 /** from을 먼저 끝내야 to를 시작할 수 있습니다. */
 export type OrderEdge = { from: string; to: string };
@@ -28,4 +33,14 @@ function blockingEdges(byId: Map<string, Issue>, dependencies: IssueDependency[]
     seen.add(key);
     return [{ from: dependsOnId, to: issueId }];
   });
+}
+
+/**
+ * 묶음의 열에서 gate를 뺀 작업 열입니다. gate만 남는 열은 지우고, 묶음에 작업이 없으면 빈 배열입니다.
+ * gate는 작업 단계가 아니라 대기 조건이므로, 그래프는 gate를 막는 작업 아래에 두고 이 열 번호를 단계 번호로 씁니다.
+ */
+export function workLayers({ layers }: OrderComponent): Issue[][] {
+  return layers
+    .map((layer) => layerIssues(layer).filter(({ issueType }) => issueType !== "gate"))
+    .filter((layer) => layer.length > 0);
 }

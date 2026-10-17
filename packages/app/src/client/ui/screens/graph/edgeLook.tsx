@@ -46,6 +46,14 @@ const KIND_STROKES: Record<EdgeKind, KindStroke> = {
 const ARROW = { width: 12, height: 10, path: "M0,0 L12,5 L0,10 Z" };
 const HOLLOW_ARROW_STROKE = 1.5;
 
+/** 화살촉이 선을 따라 덮는 길이입니다. 간선의 마지막 구간이 이보다 짧으면 선이 화살촉 옆으로 들어가는 것처럼 보입니다. */
+export const ARROW_LENGTH = ARROW.width;
+
+/** 이 종류의 간선이 끝에 화살촉을 그리는지입니다. */
+export function hasArrow(kind: EdgeKind): boolean {
+  return KIND_STROKES[kind].arrow !== undefined;
+}
+
 function strokeColor({ kind, resolved }: EdgeLook): string {
   const stroke = KIND_STROKES[kind];
   return resolved ? (stroke.resolvedColor ?? stroke.color) : stroke.color;
@@ -64,7 +72,7 @@ export function edgeStyle(look: EdgeLook): CSSProperties {
 
 /** 이 표현의 화살촉 marker id입니다. 화살촉이 없는 종류는 undefined입니다. */
 export function edgeMarkerId(idPrefix: string, look: EdgeLook): string | undefined {
-  if (!KIND_STROKES[look.kind].arrow) return undefined;
+  if (!hasArrow(look.kind)) return undefined;
   return `${idPrefix}-${look.kind}${look.resolved ? "-resolved" : ""}`;
 }
 

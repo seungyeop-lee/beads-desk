@@ -152,13 +152,7 @@ function BlockingChainGraph({
       {layout.nodes.length > 0 ? (
         <>
           <EdgeLegend layout={layout} auxiliary={graph.auxiliary} />
-          <IssueGraph
-            layout={layout}
-            ready={ready}
-            issueHref={issueHref}
-            centerId={scope.id}
-            auxiliary={graph.auxiliary}
-          />
+          <IssueGraph layout={layout} ready={ready} issueHref={issueHref} centerId={scope.id} />
         </>
       ) : (
         <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">

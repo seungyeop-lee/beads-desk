@@ -14,7 +14,8 @@ const layout: GraphLayout = {
     { issue: { id: "b" } as Issue, x: 352, y: 0, height: 76 },
   ],
   edges: [],
-  nodeHeight: 76,
+  auxiliary: [],
+  columns: [0, 352],
 };
 
 test.each([
@@ -35,20 +36,31 @@ test("큰 그래프는 글자가 너무 작아지지 않게 배율을 제한하�
   expect(viewport.x + (graphBounds(large, false).width / 2) * viewport.zoom).toBe(450);
 });
 
-test("gate와 이어진 간선이 꺾이는 점도 초기 보기 범위에 포함한다", () => {
-  const withCondition = {
+test("blocks 간선과 관련·발견 간선의 꺾임점도 초기 보기 범위에 포함한다", () => {
+  const withBends: GraphLayout = {
     ...layout,
     edges: [
       {
         from: "a",
         to: "b",
-        passes: [],
-        condition: [
+        points: [
+          { x: 280, y: 70 },
+          { x: 300, y: 70 },
+          { x: 300, y: 260 },
+        ],
+      },
+    ],
+    auxiliary: [
+      {
+        from: "a",
+        to: "b",
+        type: "related",
+        points: [
+          { x: 0, y: 70 },
           { x: -20, y: 70 },
-          { x: 740, y: 260 },
         ],
       },
     ],
   };
-  expect(graphBounds(withCondition, false)).toEqual({ x: -20, y: 0, width: 760, height: 260 });
+  expect(graphBounds(withBends, false)).toEqual({ x: -20, y: 0, width: 652, height: 260 });
 });

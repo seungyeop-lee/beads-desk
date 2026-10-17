@@ -6,7 +6,7 @@ export type LayerEdge = { from: string; to: string };
 
 /**
  * layer 안에서 한 줄을 차지하는 자리입니다. 이슈가 놓이거나, 두 layer 이상 떨어진 이슈를 잇는 간선이 지나갑니다.
- * 간선이 지나가는 자리를 따로 두어야, 그 간선이 사이 layer의 이슈 밑으로 지나가 가려지지 않습니다.
+ * 간선이 지나가는 자리는 layer 안 순서를 처음 정할 때만 씁니다. 그래프 화면은 이 자리를 그리지 않고 간선을 따로 잇습니다.
  */
 export type LayerSlot<E extends LayerEdge> = { issue: Issue } | { passing: E };
 
