@@ -542,6 +542,68 @@ describe("previousGateRounds", () => {
     ]);
   });
 
+  test("같은 초에 시작한 라운드는 게이트 id 오름차순으로 순서를 고정한다", async () => {
+    // bd가 간선 시각을 초 단위로 저장하므로 같은 초에 시작한 라운드는 정렬 동률이다.
+    // 목록 순서와 반대로 줘도 id 오름차순이 이겨서 동률 규칙이 있는지를 확인한다.
+    await useFakeBd({
+      [listGates]: {
+        stdout: JSON.stringify([
+          { id: "g-cur", issue_type: "gate", await_type: "human", status: "open" },
+          { id: "g-old2", issue_type: "gate", await_type: "human", status: "closed" },
+          { id: "g-old1", issue_type: "gate", await_type: "human", status: "closed" },
+        ]),
+      },
+      [listOpen]: {
+        stdout: JSON.stringify([
+          {
+            id: "t-1",
+            status: "open",
+            dependencies: [
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-old2",
+                type: "blocks",
+                created_at: "2026-01-01T00:00:00Z",
+              },
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-old1",
+                type: "blocks",
+                created_at: "2026-01-01T00:00:00Z",
+              },
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-cur",
+                type: "blocks",
+                created_at: "2026-01-02T00:00:00Z",
+              },
+            ],
+          },
+        ]),
+      },
+      "show --json --include-comments --include-dependents -- g-old1": {
+        stdout: JSON.stringify({
+          id: "g-old1",
+          issue_type: "gate",
+          status: "closed",
+          comments: [],
+        }),
+      },
+      "show --json --include-comments --include-dependents -- g-old2": {
+        stdout: JSON.stringify({
+          id: "g-old2",
+          issue_type: "gate",
+          status: "closed",
+          comments: [],
+        }),
+      },
+    });
+
+    const result = await previousGateRounds(workDir, "g-cur");
+
+    expect(result.ok && result.value.map(({ gate }) => gate.id)).toEqual(["g-old1", "g-old2"]);
+  });
+
   test("게이트 id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
     expect(await previousGateRounds(workDir, " ")).toEqual({
       ok: false,

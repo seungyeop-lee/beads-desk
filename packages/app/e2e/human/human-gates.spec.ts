@@ -73,7 +73,7 @@ test("human 라벨이 붙은 human gate를 응답 없이 닫으면 적은 사유
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
 });
 
-test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫힌 gate의 피드백이 오래된 라운드부터 보이고, 상세는 사유, 응답, 이전 게이트 피드백, 막고 있는 작업 순이며, 목록 행에 이전 라운드 수가 달린다", async ({
+test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫힌 gate의 피드백이 라운드마다 보이고, 상세는 사유, 응답, 이전 게이트 피드백, 막고 있는 작업 순이며, 목록 행에 이전 라운드 수가 달린다", async ({
   page,
   workspace,
 }) => {
@@ -98,7 +98,7 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
   const decision = page.getByRole("region", { name: `Review: ${work}`, exact: true });
   const feedback = decision.getByRole("region", { name: "이전 게이트 피드백" });
   await expect(feedback).toBeVisible();
-  // 섹션 순서만 확인한다. 피드백 안 라운드 순서는 아래에서 따로 확인하므로 여기는 섹션 이름 기준으로만 잡는다.
+  // 섹션 순서만 확인한다. 피드백 안 라운드 순서는 같은 초에 만든 라운드가 정렬 동률이라 화면 순서가 정해지지 않으므로 여기서 확인하지 않고, 동률 규칙은 packages/bd의 unit test가 고정한다.
   expect(await directSectionNames(decision)).toEqual([
     "사유",
     "응답",
@@ -107,18 +107,18 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
   ]);
   const rounds = feedback.locator(":scope > article");
   await expect(rounds).toHaveCount(2);
-  await expect(rounds.nth(0)).toContainText(first);
-  await expect(rounds.nth(0)).toContainText("정정: 버튼 색도 함께 바꿔 주세요.");
-  await expect(rounds.nth(1)).toContainText(second);
-  await expect(rounds.nth(1)).toContainText("Response: 간격 조정 요청");
-  const firstRound = await rounds.nth(0).innerText();
-  expect(firstRound.indexOf("정정:")).toBeLessThan(
-    firstRound.indexOf("Response: 버튼 색 수정 반영 확인"),
+  // 같은 초에 만든 라운드는 순서가 정해지지 않으므로 인덱스 대신 게이트 id로 article을 찾아 검사한다.
+  const firstRound = rounds.filter({ hasText: first });
+  await expect(firstRound).toHaveCount(1);
+  await expect(firstRound).toContainText("정정: 버튼 색도 함께 바꿔 주세요.");
+  const secondRound = rounds.filter({ hasText: second });
+  await expect(secondRound).toHaveCount(1);
+  await expect(secondRound).toContainText("Response: 간격 조정 요청");
+  const firstRoundText = await firstRound.innerText();
+  expect(firstRoundText.indexOf("정정:")).toBeLessThan(
+    firstRoundText.indexOf("Response: 버튼 색 수정 반영 확인"),
   );
-  await rounds
-    .nth(0)
-    .getByRole("link", { name: `Review: ${work}` })
-    .click();
+  await firstRound.getByRole("link", { name: `Review: ${work}` }).click();
   await expect(page).toHaveURL(new RegExp(`[?&]issue=${first}`));
   await expect(page.getByRole("dialog", { name: `${first} 이슈` })).toBeVisible();
   await page.keyboard.press("Escape");
