@@ -13,6 +13,12 @@ import { test as base } from "./appServer";
 const execFileAsync = promisify(execFile);
 
 /**
+ * fixture가 실행하는 bd입니다. 서버가 bd를 고르는 규칙(packages/bd/src/runBd.ts의 `bdBin`)과 같아야 합니다.
+ * 둘이 다른 bd를 실행하면 fixture가 만든 DB를 서버가 다른 버전의 bd로 읽습니다.
+ */
+const BD = process.env.BD_BIN || "bd";
+
+/**
  * 화면에서 고친 값이 bd에 저장될 때까지 기다리는 시간입니다.
  * 서버는 bd를 한 번에 하나씩 실행해서, 쓰기는 그때 실행 중인 bd가 끝나야 시작합니다.
  * 시나리오가 bd를 함께 실행하는 동안 서버의 bd 한 번이 3초 넘게 걸린 적이 있어 기본 5초보다 넉넉히 둡니다.
@@ -83,7 +89,7 @@ export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate:
       const path = await mkdtemp(join(tmpdir(), "beads-desk-e2e-template-"));
       try {
         await run(path, "git", "init", "--quiet");
-        await run(path, "bd", "init", "--prefix", "e2e", "--quiet", "--non-interactive");
+        await run(path, BD, "init", "--prefix", "e2e", "--quiet", "--non-interactive");
         await use(path);
       } finally {
         await rm(path, { recursive: true, force: true, maxRetries: 5 });
@@ -112,7 +118,7 @@ export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate:
 export { expect };
 
 function bdWorkspace(path: string): BdWorkspace {
-  const bd = (...args: string[]) => run(path, "bd", ...args);
+  const bd = (...args: string[]) => run(path, BD, ...args);
   return {
     path,
     bd,
