@@ -1,5 +1,4 @@
-import type { Issue } from "@beads-desk/bd/issue";
-import { NON_WORK_TYPES } from "./workState";
+import { NON_WORK_TYPES, type Issue } from "@beads-desk/bd/issue";
 
 const UNCLAIMABLE_TYPES: ReadonlySet<string> = new Set([...NON_WORK_TYPES, "feature"]);
 

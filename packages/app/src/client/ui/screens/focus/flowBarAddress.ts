@@ -1,4 +1,4 @@
-import { NON_WORK_TYPES } from "@/client/modules/issues/domain/workState";
+import { NON_WORK_TYPES } from "@beads-desk/bd/issue";
 import { DEFAULT_TYPES, issueListHref } from "@/client/ui/screens/issues/issueListAddress";
 
 /** 흐름 통계의 처리량 계열입니다. 그날 만든 이슈와 닫은 이슈를 셉니다. */

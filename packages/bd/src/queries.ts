@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
-  awaitsHumanDecision,
   HUMAN_LABEL,
   humanGateReason,
   isOpenHumanGate,
   isRecord,
+  NON_WORK_TYPES,
   parseIssue,
   parseIssueDependencies,
   parseIssueDetail,
@@ -17,6 +17,8 @@ import {
   type IssueDetail,
   type IssueEvent,
   type IssueStatus,
+  type WorkState,
+  workState,
 } from "./issue";
 import { inputError, runBdJson, type BdOutcome } from "./runBd";
 
@@ -49,7 +51,9 @@ export type HumanDecisionIssues = {
   labeled: Issue[];
 };
 
-export type BoardColumn = "ready" | "in_progress" | "blocked" | "closed";
+const BOARD_COLUMNS = ["ready", "in_progress", "blocked", "closed"] as const satisfies WorkState[];
+
+export type BoardColumn = (typeof BOARD_COLUMNS)[number];
 
 export type BoardIssue = {
   column: BoardColumn;
@@ -75,12 +79,6 @@ const ALL_GATE_LIST_ARGS = [
 ];
 
 const OPEN_LIST_ARGS = ["list", "--json", "--tree=false", "--limit", LIST_LIMIT];
-
-/**
- * 작업 단위가 아니라 바로 작업 가능 목록과 보드에서 빼는 유형입니다. bd ready는 이 유형도 돌려줍니다.
- * decision은 열려 있으면 유효한 결정이라는 기록이고, epic은 하위 이슈를 묶을 뿐 직접 작업하지 않습니다.
- */
-const NON_WORK_TYPES = new Set(["decision", "epic"]);
 
 export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutcome<Issue[]>> {
   return queryIssues(cwd, listArgs(statuses));
@@ -564,34 +562,18 @@ function supersedingIssue(record: unknown): string | null {
 }
 
 /**
- * 모든 이슈를 한 번에 읽어 상태로 열을 정합니다. decision과 epic은 보드에 넣지 않습니다.
- * 열림 이슈는 bd ready에 있으면 ready에 넣습니다.
- * human 라벨이 붙은 열림·진행 중 이슈는 bd ready에 있어도 사람의 판단을 기다리는 것이라 넣지 않습니다.
- * 열을 나누는 순서는 app의 작업 상태(workState)와 같아야 합니다.
- * 보류(deferred) 이슈는 bd blocked에 나와도 보류가 먼저라 어느 열에도 넣지 않습니다.
- * 그 밖에 bd blocked에 나온 이슈는 의존 관계 때문에 막힌 것이라 상태와 관계없이 blocked에 넣습니다.
- * pinned, hooked, 사용자 정의 상태처럼 어느 열에도 맞지 않는 이슈는 넣지 않습니다.
+ * 모든 이슈를 한 번에 읽어 작업 상태(workState)로 열을 정합니다. 열이 없는 작업 상태(보류, 판단 기다림, other)의 이슈는 넣지 않습니다.
+ * decision과 epic은 작업 상태와 관계없이 보드에 넣지 않습니다.
  * 조회가 하나라도 실패하면 열을 잘못 나누게 되므로 오류를 돌려줍니다.
  */
 export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>> {
-  const [all, ready, blocked] = await Promise.all([
-    queryIssues(cwd, listArgs([])),
-    queryIssues(cwd, READY_ARGS),
-    queryIssues(cwd, BLOCKED_ARGS),
-  ]);
-  if (!all.ok) return all;
-  if (!ready.ok) return ready;
-  if (!blocked.ok) return blocked;
-
-  const readyIds = new Set(ready.value.map((issue) => issue.id));
-  const blockers = blockersById(blocked.value);
+  const result = await withWorkSignals(cwd, queryIssues(cwd, listArgs([])));
+  if (!result.ok) return result;
   return {
     ok: true,
-    value: all.value.filter(isWork).flatMap((issue): BoardIssue[] => {
-      if (issue.status === "deferred") return [];
-      const blockedBy = blockers.get(issue.id);
-      if (blockedBy) return [{ column: "blocked", issue: { ...issue, blockedBy } }];
-      const column = statusColumn(issue, readyIds);
+    value: result.value.filter(isWork).flatMap((issue): BoardIssue[] => {
+      const state = workState(issue);
+      const column = BOARD_COLUMNS.find((column) => column === state);
       return column ? [{ column, issue }] : [];
     }),
   };
@@ -603,20 +585,6 @@ function blockersById(blocked: Issue[]): Map<string, string[]> {
 
 function isWork(issue: Issue): boolean {
   return !NON_WORK_TYPES.has(issue.issueType);
-}
-
-function statusColumn(issue: Issue, readyIds: Set<string>): BoardColumn | null {
-  switch (issue.status) {
-    case "open":
-      return readyIds.has(issue.id) && !awaitsHumanDecision(issue) ? "ready" : null;
-    case "in_progress":
-      return awaitsHumanDecision(issue) ? null : "in_progress";
-    case "blocked":
-    case "closed":
-      return issue.status;
-    default:
-      return null;
-  }
 }
 
 /** 읽을 때마다 workspace DB 상태를 나타내는 값을 돌려줍니다. 두 값이 같으면 그 사이에 쓰기가 없었습니다. */

@@ -974,6 +974,34 @@ describe("boardIssues", () => {
     ).toEqual({ task: "ready", feature: "ready" });
   });
 
+  test("막힌 decision과 epic도 막힘 열에 넣지 않는다", async () => {
+    const issue = (id: string, status: string, issue_type: string) => ({ id, status, issue_type });
+    await useFakeBd({
+      [boardArgs.all]: {
+        stdout: JSON.stringify([
+          issue("task", "open", "task"),
+          issue("dep-decision", "open", "decision"),
+          issue("dep-epic", "open", "epic"),
+          issue("marked-epic", "blocked", "epic"),
+        ]),
+      },
+      [boardArgs.ready]: { stdout: "[]" },
+      [boardArgs.blocked]: {
+        stdout: JSON.stringify([
+          { ...issue("task", "open", "task"), blocked_by: ["first"] },
+          { ...issue("dep-decision", "open", "decision"), blocked_by: ["first"] },
+          { ...issue("dep-epic", "open", "epic"), blocked_by: ["first"] },
+        ]),
+      },
+    });
+
+    const result = await boardIssues(workDir);
+
+    expect(
+      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
+    ).toEqual({ task: "blocked" });
+  });
+
   test("조회가 하나라도 실패하면 열을 잘못 나누지 않도록 오류를 돌려준다", async () => {
     await useFakeBd({
       [boardArgs.all]: { stdout: "[]" },

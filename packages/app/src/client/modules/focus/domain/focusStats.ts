@@ -1,7 +1,7 @@
-import type { Issue } from "@beads-desk/bd/issue";
+import { NON_WORK_TYPES, type Issue } from "@beads-desk/bd/issue";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { localDayOf } from "@/client/modules/issues/domain/issueDateFilter";
-import { NON_WORK_TYPES, workState } from "@/client/modules/issues/domain/workState";
+import { workState } from "@/client/modules/issues/domain/workState";
 import { isClosableEpic } from "@/shared/domain/epics/closableEpic";
 
 /** 처리량과 처리 시간을 보는 기간입니다. 오늘을 포함합니다. */
