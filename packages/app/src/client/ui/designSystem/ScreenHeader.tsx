@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { HelpIcon } from "./icons";
+import { HelpTooltip } from "./HelpTooltip";
 
 type Props = {
   title: ReactNode;
@@ -22,24 +22,8 @@ export function ScreenHeader({ title, tone, count, loading, help, children }: Pr
       <div className="relative flex min-w-0 items-center gap-3">
         {tone && <span className={`tone-dot ${tone} size-3`} />}
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {help && (
-          <span className="group/help">
-            <button
-              type="button"
-              className="btn btn-circle btn-ghost btn-xs text-base-content/45"
-              aria-label={help}
-            >
-              <HelpIcon width={16} height={16} />
-            </button>
-            {/* 제목이 길면 ? 아이콘이 화면 오른쪽 끝에 붙어, 아이콘 옆에 띄운 설명은 화면 밖으로 나갑니다. 그래서 설명을 제목 줄 아래에 제목과 같은 왼쪽 끝부터 띄우고, 폭을 header(@container) 폭인 100cqw 이하로 줄입니다. */}
-            <span
-              aria-hidden
-              className="pointer-events-none invisible absolute top-full left-0 z-10 mt-2 w-max max-w-[min(32rem,100cqw)] rounded-field bg-neutral px-3 py-2 text-sm leading-snug break-keep text-neutral-content opacity-0 shadow-lg transition-opacity group-hover/help:visible group-hover/help:opacity-100 group-has-focus-visible/help:visible group-has-focus-visible/help:opacity-100"
-            >
-              {help}
-            </span>
-          </span>
-        )}
+        {/* 설명은 이 div 아래에 제목과 같은 왼쪽 끝부터 띄우고, 폭은 header(@container) 폭 이하로 줄입니다. */}
+        {help && <HelpTooltip help={help} />}
         {count !== undefined && (
           <span className="font-mono text-sm text-base-content/45 tabular-nums">{count}</span>
         )}

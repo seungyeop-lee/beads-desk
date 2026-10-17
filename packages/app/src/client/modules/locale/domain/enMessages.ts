@@ -394,15 +394,23 @@ export const enMessages: Messages = {
     edgeLabel: (from, to) => `${to} after ${from}`,
     legend: "Relationship legend",
     edgeLegend: {
-      blocks: "Solid arrow: DEPENDS ON → BLOCKS",
-      gate: "Thick solid arrow: gate condition (DEPENDS ON → BLOCKS)",
-      humanGate: "Purple thick solid arrow: gate awaiting a human decision",
-      related: "Dotted line: RELATED",
-      discovered: "Dashed arrow: discovered in → discovered issue",
+      blocks: "DEPENDS ON → BLOCKS",
+      gate: "Awaiting gate",
+      humanGate: "Awaiting human",
+      related: "RELATED",
+      discovered: "discovered-from",
+    },
+    edgeLegendHelp: {
+      blocks:
+        "The earlier issue must close before the later one can start. Drawn darker while the earlier issue is open and lighter once it is closed.",
+      gate: "Work waits on a condition such as a timer, a GitHub run or PR, or another issue.",
+      humanGate: "A gate that opens only when a person responds with a decision.",
+      related:
+        "Issues worth reading together. Does not set execution order or block work. Only the center issue's direct links are shown.",
+      discovered:
+        "Points to an issue found while working. Does not set execution order or block work. Only the center issue's direct links are shown.",
     },
     conditionEdge: (from, to) => `${to} DEPENDS ON ${from} (gate condition)`,
-    auxiliaryHint:
-      "Only the center issue's direct related and discovered-from links are shown. Auxiliary links do not set execution order or block work.",
     relatedEdge: (from, to) => `${from} and ${to}: RELATED`,
     discoveredEdge: (from, to) =>
       `${from} → ${to}: discovered-from (discovered in → discovered issue)`,

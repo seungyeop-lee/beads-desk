@@ -152,7 +152,6 @@ function BlockingChainGraph({
       {layout.nodes.length > 0 ? (
         <>
           <EdgeLegend layout={layout} auxiliary={graph.auxiliary} />
-          <p className="text-xs text-base-content/55">{messages.graph.auxiliaryHint}</p>
           <IssueGraph
             layout={layout}
             ready={ready}

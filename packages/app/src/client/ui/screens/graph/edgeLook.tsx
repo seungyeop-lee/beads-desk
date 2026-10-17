@@ -34,7 +34,7 @@ const KIND_STROKES: Record<EdgeKind, KindStroke> = {
   gate: { color: ink(75), resolvedColor: ink(50), width: 3, arrow: "filled" },
   humanGate: {
     color: "var(--color-lavender-line)",
-    resolvedColor: "color-mix(in oklab, var(--color-lavender-line) 80%, var(--color-base-100))",
+    resolvedColor: "color-mix(in oklab, var(--color-lavender-line) 75%, var(--color-base-100))",
     width: 3,
     arrow: "filled",
   },

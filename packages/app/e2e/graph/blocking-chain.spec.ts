@@ -185,10 +185,10 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
   await expect(afterNode).toBeVisible();
   for (const gate of [openGate, closedGate])
     await expect(canvas.getByLabel(`${work}의 선행 조건: ${gate} (blocks)`)).toHaveCount(1);
-  await expect(page.getByLabel("관계 범례")).toContainText("굵은 실선 화살표: gate 대기 조건");
-  await expect(page.getByLabel("관계 범례")).toContainText(
-    "보라색 굵은 실선 화살표: 사람 판단을 기다리는 gate",
-  );
+  const legendHelp = page.getByLabel("관계 범례").getByRole("button");
+  await expect(legendHelp).toHaveCount(3);
+  await expect(legendHelp.nth(1)).toHaveAccessibleName(/^작업이 timer, GitHub 실행·PR/);
+  await expect(legendHelp.nth(2)).toHaveAccessibleName("사람이 판단해 응답해야 열리는 gate입니다.");
   await expect(canvas.getByLabel(`${work} 다음에 ${after}`)).toHaveCount(1);
   await expect(canvas.getByLabel(`${before} 다음에 ${work}`)).toHaveCount(1);
   await page.screenshot({
@@ -217,9 +217,12 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
     .addCookies([{ name: "beads-desk-locale", value: "en", url: new URL(page.url()).origin }]);
   await page.reload();
   await expect(page.getByLabel(`${work} DEPENDS ON ${closedGate} (gate condition)`)).toHaveCount(1);
-  await expect(page.getByLabel("Relationship legend")).toContainText(
-    "Thick solid arrow: gate condition",
-  );
+  await expect(page.getByLabel("Relationship legend")).toContainText("Awaiting gate");
+  await expect(
+    page
+      .getByLabel("Relationship legend")
+      .getByRole("button", { name: /^Work waits on a condition/ }),
+  ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("gate-center-en.png"),
     animations: "disabled",
@@ -237,7 +240,9 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
     await expect(gateNode).toContainText("에픽 밖");
     await expect(canvas.getByLabel(`${gate} 다음에 ${work}`)).toHaveCount(1);
   }
-  await expect(page.getByLabel("관계 범례")).toContainText("보라색 굵은 실선 화살표");
+  await expect(
+    page.getByLabel("관계 범례").getByRole("button", { name: /^사람이 판단해 응답해야/ }),
+  ).toBeVisible();
 });
 
 test("관련·양방향 발견 관계를 사슬과 구분하고, 보조 관계만 있는 이슈의 상세에서도 그 관계를 그래프로 연다", async ({
@@ -294,11 +299,11 @@ test("관련·양방향 발견 관계를 사슬과 구분하고, 보조 관계�
   await expect(canvas.locator('path[data-edge="blocks"]')).toHaveCount(2);
   await expect(canvas.locator('path[data-edge="related"]')).toHaveCount(1);
   await expect(canvas.locator('path[data-edge="discovered"]')).toHaveCount(2);
-  await expect(page.getByLabel("관계 범례")).toContainText("점선: 관련");
-  await expect(page.getByLabel("관계 범례")).toContainText(
-    "파선 화살표: 발견한 작업 → 발견한 이슈",
-  );
-  await expect(page.getByLabel("관계 범례")).not.toContainText("gate");
+  const legendHelp = page.getByLabel("관계 범례").getByRole("button");
+  await expect(legendHelp).toHaveCount(3);
+  await expect(legendHelp.nth(1)).toHaveAccessibleName(/^함께 보면 좋은 이슈입니다/);
+  await expect(legendHelp.nth(2)).toHaveAccessibleName(/^작업하다가 발견한 이슈를 향합니다/);
+  await expect(page.getByText(/관련·발견 관계만 함께 표시합니다/)).toHaveCount(0);
   await page.screenshot({
     path: testInfo.outputPath("auxiliary-chain.png"),
     animations: "disabled",

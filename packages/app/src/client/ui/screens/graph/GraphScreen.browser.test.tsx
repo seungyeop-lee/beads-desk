@@ -334,18 +334,32 @@ function lineLook(line: Element) {
   };
 }
 
-/** WCAG 상대 휘도입니다. 계산된 CSS 색을 canvas에 칠해 sRGB 값으로 바꿉니다. */
-function luminance(color: string): number {
+/** 계산된 CSS 색을 canvas에 칠해 0~255 sRGB 값으로 바꿉니다. 투명한 색이면 실패합니다. */
+function srgb(color: string): [number, number, number] {
   const context = document.createElement("canvas").getContext("2d")!;
   context.fillStyle = color;
   context.fillRect(0, 0, 1, 1);
   const [r, g, b, alpha] = context.getImageData(0, 0, 1, 1).data;
   expect(alpha, `${color}는 불투명해야 합니다`).toBe(255);
+  return [r!, g!, b!];
+}
+
+/** HSL 채도(0~1)입니다. 회색이면 0입니다. */
+function saturation(color: string): number {
+  const channels = srgb(color).map((value) => value / 255);
+  const [max, min] = [Math.max(...channels), Math.min(...channels)];
+  const lightness = (max + min) / 2;
+  return max === min ? 0 : (max - min) / (1 - Math.abs(2 * lightness - 1));
+}
+
+/** WCAG 상대 휘도입니다. */
+function luminance(color: string): number {
+  const [r, g, b] = srgb(color);
   const linear = (value: number) => {
     const c = value / 255;
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   };
-  return 0.2126 * linear(r!) + 0.7152 * linear(g!) + 0.0722 * linear(b!);
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 }
 
 function contrast(a: string, b: string): number {
@@ -392,15 +406,65 @@ test("범례는 그래프에 그린 간선 종류만 그 순서대로 보이고,
     const actual = lines.filter((line) => line.dataset.edge === kind).map(lineLook);
     expect(actual, `${kind} 범례 샘플`).toContainEqual(lineLook(sample));
   }
-  for (const text of [
-    "실선 화살표: 선행 → 후속",
-    "굵은 실선 화살표: gate 대기 조건(선행 → 후속)",
-    "보라색 굵은 실선 화살표: 사람 판단을 기다리는 gate",
-    "점선: 관련",
-    "파선 화살표: 발견한 작업 → 발견한 이슈",
-  ])
-    expect(legend.textContent).toContain(text);
+  expect(
+    [...legend.querySelectorAll("svg[data-edge]")].map((svg) => svg.parentElement!.innerText),
+  ).toEqual(["선행 → 후속", "gate 대기", "사람 판단 대기", "관련", "발견"]);
 });
+
+const LEGEND_HELP = [
+  /^앞 이슈가 끝나야 뒤 이슈를 시작할 수 있습니다/,
+  /^작업이 timer, GitHub 실행·PR, 다른 이슈 같은 조건을 기다립니다/,
+  /^사람이 판단해 응답해야 열리는 gate입니다/,
+  /^함께 보면 좋은 이슈입니다\..*기준 이슈에 직접 연결된 관계만 표시합니다/,
+  /^작업하다가 발견한 이슈를 향합니다\..*기준 이슈에 직접 연결된 관계만 표시합니다/,
+];
+
+test("범례 항목의 ? 아이콘에 마우스를 올리면 그 항목의 설명이 화면 안에 보이고 벗어나면 숨겨지며, 보조 관계 설명 줄은 따로 두지 않는다", async () => {
+  await page.viewport(1024, 800);
+  const screen = await renderGraph("center", "look-center", ALL_EDGES);
+  await renderedEdges(screen, 8);
+  for (const help of LEGEND_HELP) {
+    const button = screen.getByRole("button", { name: help });
+    const tooltip = screen.getByText(help);
+    await expect.poll(() => getComputedStyle(tooltip.element()).visibility).toBe("hidden");
+    await userEvent.hover(button);
+    await expectInsideViewport(tooltip.element(), 1024, 800);
+    await userEvent.unhover(button);
+    await expect.poll(() => getComputedStyle(tooltip.element()).visibility).toBe("hidden");
+  }
+  expect(screen.getByText(/관련·발견 관계만 함께 표시합니다/).elements()).toHaveLength(0);
+});
+
+test("범례 항목의 ? 아이콘에 키보드 초점을 두면 그 항목의 설명이 보인다", async () => {
+  const screen = await renderGraph("center", "look-center", ALL_EDGES);
+  await renderedEdges(screen, 8);
+  const button = screen.getByRole("button", { name: LEGEND_HELP[2]! });
+  (screen.getByRole("heading", { level: 1 }).getByRole("link").element() as HTMLElement).focus();
+  for (let step = 0; step < 10 && document.activeElement !== button.element(); step++)
+    await userEvent.tab();
+  await expect.element(button).toHaveFocus();
+  await expectInsideViewport(screen.getByText(LEGEND_HELP[2]!).element(), 1440, 900);
+});
+
+for (const theme of ["desk", "desk-dark"])
+  test(`${theme} 테마에서 사람 판단 gate 선은 열림·닫힘 모두 회색 잉크 선과 달리 채도가 높은 보라색이다`, async () => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      const screen = await renderGraph("center", "look-center", ALL_EDGES);
+      const lines = await renderedEdges(screen, 8);
+      const saturations = (kind: string) =>
+        lines
+          .filter((line) => line.dataset.edge === kind)
+          .map((line) => saturation(getComputedStyle(line).stroke));
+      const human = saturations("humanGate");
+      expect(human).toHaveLength(2);
+      for (const ink of [...saturations("blocks"), ...saturations("gate")])
+        expect(ink).toBeLessThan(0.1);
+      for (const value of human) expect(value).toBeGreaterThan(0.3);
+    } finally {
+      delete document.documentElement.dataset.theme;
+    }
+  });
 
 test("에픽 순서 보기의 범례는 그린 blocks 간선 항목만 보인다", async () => {
   const screen = await renderGraph(

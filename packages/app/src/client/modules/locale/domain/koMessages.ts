@@ -406,15 +406,23 @@ export const koMessages = {
     edgeLabel: (from: string, to: string) => `${from} 다음에 ${to}`,
     legend: "관계 범례",
     edgeLegend: {
-      blocks: "실선 화살표: 선행 → 후속",
-      gate: "굵은 실선 화살표: gate 대기 조건(선행 → 후속)",
-      humanGate: "보라색 굵은 실선 화살표: 사람 판단을 기다리는 gate",
-      related: "점선: 관련",
-      discovered: "파선 화살표: 발견한 작업 → 발견한 이슈",
+      blocks: "선행 → 후속",
+      gate: "gate 대기",
+      humanGate: "사람 판단 대기",
+      related: "관련",
+      discovered: "발견",
+    },
+    edgeLegendHelp: {
+      blocks:
+        "앞 이슈가 끝나야 뒤 이슈를 시작할 수 있습니다. 앞 이슈가 열려 있으면 진하게, 닫혔으면 연하게 그립니다.",
+      gate: "작업이 timer, GitHub 실행·PR, 다른 이슈 같은 조건을 기다립니다.",
+      humanGate: "사람이 판단해 응답해야 열리는 gate입니다.",
+      related:
+        "함께 보면 좋은 이슈입니다. 순서나 차단을 뜻하지 않습니다. 기준 이슈에 직접 연결된 관계만 표시합니다.",
+      discovered:
+        "작업하다가 발견한 이슈를 향합니다. 순서나 차단을 뜻하지 않습니다. 기준 이슈에 직접 연결된 관계만 표시합니다.",
     },
     conditionEdge: (from: string, to: string) => `${to}의 선행 조건: ${from} (blocks)`,
-    auxiliaryHint:
-      "기준 이슈에 직접 연결된 관련·발견 관계만 함께 표시합니다. 보조 관계는 실행 순서나 차단을 뜻하지 않습니다.",
     relatedEdge: (from: string, to: string) => `${from}와 ${to}: 관련`,
     discoveredEdge: (from: string, to: string) =>
       `${from}: 이 작업 중 발견한 이슈 ${to} (${to}: 이 이슈를 발견한 작업 ${from})`,

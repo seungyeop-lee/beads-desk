@@ -115,9 +115,12 @@
   --color-lavender: #d3d3fd;
   --color-lilac: #e6cdf2;
   --color-blossom: #f5c9e0;
-  /* 선 변형: 밝은 테마는 잉크를 섞어 바탕 대비를 3:1 이상으로 올리고, 어두운 테마는 파스텔을 그대로 씁니다. */
+  /*
+   * 선 변형: 채도가 높은 보라를 섞어 잉크 색 선과 색상으로 구분되게 합니다. 밝은 테마는 짙은 보라(#5b21b6)로 바탕 대비를 3:1 이상으로 올리고,
+   * 어두운 테마는 밝은 보라(#8b5cf6)를 섞습니다. 파스텔을 그대로 쓰거나 잉크를 섞으면 회색 선과 거의 같아 보입니다.
+   */
   --color-lavender-line: light-dark(
-    color-mix(in oklab, var(--color-lavender) 50%, var(--color-ink)),
-    var(--color-lavender)
+    color-mix(in oklab, var(--color-lavender) 20%, #5b21b6),
+    color-mix(in oklab, var(--color-lavender) 50%, #8b5cf6)
   );
 }

@@ -51,7 +51,9 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
   await expect(canvas.getByLabel(`${first} 다음에 ${outsideId}`)).toHaveCount(1);
   await expect(canvas.getByLabel(`${outsideId} 다음에 ${third}`)).toHaveCount(1);
   const legend = page.getByLabel("관계 범례");
-  await expect(legend).toHaveText("실선 화살표: 선행 → 후속");
+  await expect(legend).toContainText("선행 → 후속");
+  await expect(legend.getByRole("button")).toHaveCount(1);
+  await expect(legend.getByRole("button")).toHaveAccessibleName(/^앞 이슈가 끝나야 뒤 이슈를/);
 
   await expect(node("계획 둘째")).toContainText("2개 대기");
   await expect(outside).toContainText("2개 대기");
