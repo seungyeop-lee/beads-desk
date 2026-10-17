@@ -542,9 +542,9 @@ describe("previousGateRounds", () => {
     ]);
   });
 
-  test("같은 초에 시작한 라운드는 게이트 id 오름차순으로 순서를 고정한다", async () => {
+  test("같은 초에 시작한 라운드는 게이트 id 오름차순으로 돌려준다", async () => {
     // bd가 간선 시각을 초 단위로 저장하므로 같은 초에 시작한 라운드는 정렬 동률이다.
-    // 목록 순서와 반대로 줘도 id 오름차순이 이겨서 동률 규칙이 있는지를 확인한다.
+    // 두 목록 모두 g-old2를 먼저 나오게 해, 입력 순서가 아니라 동률 규칙이 순서를 정함을 확인한다.
     await useFakeBd({
       [listGates]: {
         stdout: JSON.stringify([

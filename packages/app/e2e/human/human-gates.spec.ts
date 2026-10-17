@@ -98,7 +98,7 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
   const decision = page.getByRole("region", { name: `Review: ${work}`, exact: true });
   const feedback = decision.getByRole("region", { name: "이전 게이트 피드백" });
   await expect(feedback).toBeVisible();
-  // 섹션 순서만 확인한다. 피드백 안 라운드 순서는 같은 초에 만든 라운드가 정렬 동률이라 화면 순서가 정해지지 않으므로 여기서 확인하지 않고, 동률 규칙은 packages/bd의 unit test가 고정한다.
+  // 피드백 안 라운드 순서는 같은 초에 만든 라운드가 정렬 동률이라 정해지지 않으므로 여기서는 섹션 순서만 확인한다. 동률 규칙은 packages/bd 단위 테스트가 고정한다.
   expect(await directSectionNames(decision)).toEqual([
     "사유",
     "응답",
@@ -107,7 +107,7 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
   ]);
   const rounds = feedback.locator(":scope > article");
   await expect(rounds).toHaveCount(2);
-  // 같은 초에 만든 라운드는 순서가 정해지지 않으므로 인덱스 대신 게이트 id로 article을 찾아 검사한다.
+  // 라운드 순서가 정해지지 않으므로 인덱스 대신 게이트 id로 article을 찾는다.
   const firstRound = rounds.filter({ hasText: first });
   await expect(firstRound).toHaveCount(1);
   await expect(firstRound).toContainText("정정: 버튼 색도 함께 바꿔 주세요.");
