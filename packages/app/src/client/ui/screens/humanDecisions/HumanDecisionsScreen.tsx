@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
+import { sortByRequestedAt } from "@/client/modules/humanDecisions/domain/humanDecisionsView";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
@@ -40,7 +41,10 @@ export function HumanDecisionsScreen() {
   const messages = useMessages();
   // 한쪽만 먼저 보이면 고른 항목이 다른 쪽이 도착할 때 바뀌므로, gate 조회가 끝난 뒤(실패 포함) 함께 보입니다.
   const loaded = issues !== null && (gates !== null || gatesError !== null);
-  const awaiting = useMemo(() => awaitingHuman(gates ?? [], issues ?? []), [gates, issues]);
+  const awaiting = useMemo(
+    () => sortByRequestedAt(awaitingHuman(gates ?? [], issues ?? [])),
+    [gates, issues],
+  );
   const pending = useMemo(
     (): PendingItem[] => [
       ...awaiting.gates.map((summary) => ({ kind: "gate" as const, id: summary.gate.id, summary })),

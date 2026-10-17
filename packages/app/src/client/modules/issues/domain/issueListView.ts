@@ -50,7 +50,7 @@ export function byClosedDesc(a: Issue, b: Issue): number {
 // id의 숫자 부분은 숫자로 비교해 x.2가 x.10보다 앞에 오게 합니다.
 const ID_COLLATOR = new Intl.Collator("en", { numeric: true });
 
-function byId(a: Issue, b: Issue): number {
+export function byId(a: Issue, b: Issue): number {
   return ID_COLLATOR.compare(a.id, b.id);
 }
 
