@@ -119,58 +119,66 @@ describe("runBd", () => {
     expect(await readFile(log, "utf8")).toBe("show\nupdate\nclose\nsql\nlist\nready\n");
   });
 
-  test("줄 서 있는 같은 읽기가 겹치면 bd를 한 번만 실행하고 같은 결과를 돌려준다", async () => {
+  test("기다리는 화면 조회와 같은 조회는 bd를 다시 실행하지 않고 같은 결과를 받는다", async () => {
     const log = join(workDir, "runs.log");
-    await useFakeBd(`echo "$2" >> "${log}"\nsleep 0.1\necho ok`);
-    const holder = runBd(["show"], { cwd: workDir });
+    await useFakeBd(`echo "$2" >> "${log}"\nsleep 0.1\necho "$2 result"`);
+    const running = runBd(["show"], { cwd: workDir });
 
     const [first, second] = await Promise.all([
       runBd(["list"], { cwd: workDir }),
       runBd(["list"], { cwd: workDir }),
     ]);
-    await holder;
+    await running;
 
     expect(await readFile(log, "utf8")).toBe("show\nlist\n");
-    expect(first.stdout).toBe("ok\n");
-    expect(second.stdout).toBe("ok\n");
+    expect(first.stdout).toBe("list result\n");
+    expect(second.stdout).toBe("list result\n");
   });
 
-  test("이미 시작한 같은 읽기에는 붙지 않고 다시 실행한다", async () => {
+  test("이미 실행을 시작한 같은 조회에는 붙지 않고 bd를 다시 실행한다", async () => {
     const log = join(workDir, "runs.log");
-    await useFakeBd(`echo "$2" >> "${log}"\nsleep 0.1\necho ok`);
-    // 큐가 비어 있으면 첫 호출은 바로 실행을 시작하므로, 뒤따른 같은 호출은 합쳐지지 않는다.
-    const firstRead = runBd(["list"], { cwd: workDir });
-    const secondRead = runBd(["list"], { cwd: workDir });
-    await Promise.all([firstRead, secondRead]);
+    await useFakeBd(`echo "$2" >> "${log}"\nsleep 0.1`);
+
+    // 큐가 비어 있으므로 첫 조회는 요청과 동시에 실행을 시작합니다.
+    await Promise.all([runBd(["list"], { cwd: workDir }), runBd(["list"], { cwd: workDir })]);
 
     expect(await readFile(log, "utf8")).toBe("list\nlist\n");
   });
 
-  test("합쳐 들어간 읽기도 그사이에 온 쓰기보다 뒤에 실행해 쓴 값을 본다", async () => {
+  test("같은 쓰기가 여러 번 기다리고 있으면 모두 실행한다", async () => {
+    const log = join(workDir, "runs.log");
+    await useFakeBd(`echo "$2" >> "${log}"\nsleep 0.1`);
+
+    await Promise.all([
+      runBd(["show"], { cwd: workDir }),
+      runBd(["update"], { cwd: workDir, write: true }),
+      runBd(["update"], { cwd: workDir, write: true }),
+    ]);
+
+    expect(await readFile(log, "utf8")).toBe("show\nupdate\nupdate\n");
+  });
+
+  test("하나로 합친 조회는 시작하기 전에 들어온 쓰기를 반영한 값을 모두에게 돌려준다", async () => {
     const state = join(workDir, "state");
     const log = join(workDir, "runs.log");
     await writeFile(state, "before\n");
     await useFakeBd(
-      [
-        'if [ "$2" = "update" ]; then echo after > "' +
-          state +
-          '"; echo "$2" >> "' +
-          log +
-          '"; exit 0; fi',
-        'echo "$2" >> "' + log + '"',
-        "sleep 0.1",
-        'cat "' + state + '"',
-      ].join("\n"),
+      `echo "$2" >> "${log}"
+if [ "$2" = "update" ]; then echo after > "${state}"; exit 0; fi
+sleep 0.1
+cat "${state}"`,
     );
-    const firstJob = runBd(["show"], { cwd: workDir });
-    const firstRead = runBd(["list"], { cwd: workDir });
-    const secondRead = runBd(["list"], { cwd: workDir });
-    const write = runBd(["update", "x"], { cwd: workDir, write: true });
-    await Promise.all([firstJob, firstRead, secondRead, write]);
+
+    const [, first, second] = await Promise.all([
+      runBd(["show"], { cwd: workDir }),
+      runBd(["list"], { cwd: workDir }),
+      runBd(["list"], { cwd: workDir }),
+      runBd(["update"], { cwd: workDir, write: true }),
+    ]);
 
     expect(await readFile(log, "utf8")).toBe("show\nupdate\nlist\n");
-    expect((await firstRead).stdout).toBe("after\n");
-    expect((await secondRead).stdout).toBe("after\n");
+    expect(first.stdout).toBe("after\n");
+    expect(second.stdout).toBe("after\n");
   });
 
   test("Dolt 서버에 연결하지 못하면 bd dolt start 후 한 번 다시 실행한다", async () => {
