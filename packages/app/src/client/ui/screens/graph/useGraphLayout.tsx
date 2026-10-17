@@ -1,31 +1,21 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Issue } from "@beads-desk/bd/issue";
-import type { AuxiliaryEdge } from "@/client/modules/graph/domain/centerGraph";
 import type { ExecutionOrder } from "@/client/modules/graph/domain/executionOrder";
-import {
-  centerLayout,
-  layeredLayout,
-  NODE_HEIGHT,
-  NODE_WIDTH,
-  PLAN_NODE_HEIGHT,
-} from "./graphLayout";
+import { NODE_HEIGHT, NODE_WIDTH, PLAN_NODE_HEIGHT } from "./graphLayout";
 import { IssueCard } from "./IssueCard";
-import { conditionLayout } from "./conditionLayout";
+import { type GraphLayoutInput, layoutGraph } from "./layoutGraph";
 
 export function useGraphLayout(
   order: ExecutionOrder,
   planned = false,
-  center?: { extra: Issue[]; auxiliary: AuxiliaryEdge[]; issue: Issue | undefined },
+  auxiliary?: GraphLayoutInput["auxiliary"],
 ) {
   const measurementRef = useRef<HTMLDivElement>(null);
   const [heights, setHeights] = useState<ReadonlyMap<string, number>>(new Map());
   const minimum = planned ? PLAN_NODE_HEIGHT : NODE_HEIGHT;
-  const layout = useMemo(() => {
-    const main = center ? conditionLayout(order, heights) : layeredLayout(order, minimum, heights);
-    return center
-      ? centerLayout(main, center.extra, center.auxiliary, center.issue, heights)
-      : main;
-  }, [order, minimum, heights, center]);
+  const layout = useMemo(
+    () => layoutGraph({ order, heights, nodeHeight: minimum, auxiliary }),
+    [order, minimum, heights, auxiliary],
+  );
   useLayoutEffect(() => {
     const root = measurementRef.current;
     if (!root) return;
