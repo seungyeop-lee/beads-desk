@@ -109,6 +109,7 @@ function spawnBd(args: string[], cwd: string): Promise<BdResult> {
     // spawn을 정적 분석하면 Turbopack이 프로젝트 전체를 server 출력 추적 대상에 넣습니다.
     const child = spawn(/*turbopackIgnore: true*/ bdBin(), ["--sandbox", ...args], {
       cwd,
+      env: bdEnv(),
       shell: false,
       windowsHide: true,
     });
@@ -140,6 +141,25 @@ function spawnErrorMessage(error: NodeJS.ErrnoException, cwd: string): string {
 // signal로 종료되면 Node는 종료 코드를 null로 넘깁니다. 셸처럼 128 + signal 번호로 바꿔 실패로 다룹니다.
 function signalExitCode(signal: NodeJS.Signals | null): number {
   return 128 + (signal ? constants.signals[signal] : 0);
+}
+
+/** 호출한 쪽이 cwd로 정한 workspace 대신 다른 DB를 bd가 열게 하는 변수입니다. bd는 `BEADS_DIR`가 있으면 cwd의 `.beads`를 쓰지 않습니다. */
+const DB_LOCATION_ENV = ["BEADS_DIR", "BEADS_DB", "BD_DB"];
+
+// bd는 설정 key마다 `BD_<KEY>` 환경 변수를 읽으므로, 사용자가 셸에 export한 bd 설정이 서버를 거쳐 bd까지 전달됩니다.
+// 그중 adapter가 해석하는 출력 형태를 바꾸는 값은 고정하고, 다른 DB를 가리키는 값은 지웁니다.
+// `BD_READONLY`, `BEADS_ACTOR`, Dolt 서버 접속 정보처럼 사용자가 의도해서 둔 설정은 그대로 넘깁니다.
+function bdEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    // `BD_JSON_ENVELOPE=1`이면 `--json` 출력이 `{"data": ...}`로 감싸져, adapter가 이슈를 하나도 찾지 못합니다.
+    BD_JSON_ENVELOPE: "0",
+    // json 설정이 켜지면 `--json`을 주지 않은 `bd version`도 JSON을 출력합니다.
+    // 지우지 않고 false로 두어야 workspace의 config.yaml에서 켠 값까지 덮어씁니다. 명령에 준 `--json`은 이 값보다 우선합니다.
+    BD_JSON: "false",
+  };
+  for (const key of DB_LOCATION_ENV) delete env[key];
+  return env;
 }
 
 function bdBin(): string {

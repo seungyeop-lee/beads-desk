@@ -3,7 +3,7 @@ import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { afterAll, beforeAll, expect, test } from "vitest";
+import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import {
   addDependency,
   boardIssues,
@@ -262,6 +262,21 @@ test("판단을 셀 때 열린 human gate와 human 라벨이 붙은 닫히지 �
   expect(labeled.map(({ id }) => id)).toEqual(expect.arrayContaining([question, deferred]));
   expect(labeled.map(({ id }) => id)).not.toContain(answered);
   expect(labeled.map(({ id }) => id)).not.toContain(work);
+});
+
+test("셸에 BD_JSON_ENVELOPE, BD_JSON, BEADS_DIR가 있어도 지정한 workspace의 이슈를 읽는다", async () => {
+  const id = value(await createIssue(cwd, { title: "셸 설정과 무관한 작업" }));
+  const elsewhere = await mkdtemp(join(tmpdir(), "beads-desk-real-bd-elsewhere-"));
+  vi.stubEnv("BD_JSON_ENVELOPE", "1");
+  vi.stubEnv("BD_JSON", "true");
+  vi.stubEnv("BEADS_DIR", join(elsewhere, ".beads"));
+  try {
+    expect(value(await listIssues(cwd, [])).map((issue) => issue.id)).toContain(id);
+    expect(value(await showIssue(cwd, id))).toMatchObject({ title: "셸 설정과 무관한 작업" });
+  } finally {
+    vi.unstubAllEnvs();
+    await rm(elsewhere, { recursive: true, force: true });
+  }
 });
 
 function value<T>(outcome: BdOutcome<T>): T {

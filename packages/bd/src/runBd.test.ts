@@ -1,7 +1,7 @@
 import { chmod, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { runBd, runBdChecked } from "./runBd";
 
 let workDir: string;
@@ -13,6 +13,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   process.env.BD_BIN = originalBdBin;
+  vi.unstubAllEnvs();
 });
 
 /** 주어진 셸 본문을 실행하는 가짜 bd를 만들고 BD_BIN으로 지정합니다. */
@@ -136,6 +137,29 @@ describe("runBd", () => {
 
     expect([first.code, second.code]).toEqual([1, 1]);
     expect(await readFile(attempts, "utf8")).toBe("attempt\n");
+  });
+
+  test("셸에서 물려받은 bd 설정 가운데 출력 형태와 DB 위치를 바꾸는 값은 고치고, 나머지는 그대로 넘긴다", async () => {
+    await useFakeBd(
+      [
+        'echo "envelope=$BD_JSON_ENVELOPE json=$BD_JSON"',
+        'echo "dir=${BEADS_DIR-unset} db=${BEADS_DB-unset} bd_db=${BD_DB-unset}"',
+        'echo "readonly=$BD_READONLY actor=$BEADS_ACTOR"',
+      ].join("\n"),
+    );
+    vi.stubEnv("BD_JSON_ENVELOPE", "1");
+    vi.stubEnv("BD_JSON", "true");
+    vi.stubEnv("BEADS_DIR", "/elsewhere/.beads");
+    vi.stubEnv("BEADS_DB", "/elsewhere/beads.db");
+    vi.stubEnv("BD_DB", "/elsewhere/beads.db");
+    vi.stubEnv("BD_READONLY", "true");
+    vi.stubEnv("BEADS_ACTOR", "someone");
+
+    const result = await runBd(["list"], { cwd: workDir });
+
+    expect(result.stdout).toBe(
+      "envelope=0 json=false\ndir=unset db=unset bd_db=unset\nreadonly=true actor=someone\n",
+    );
   });
 });
 
