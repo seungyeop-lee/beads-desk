@@ -458,6 +458,7 @@ export const koMessages = {
       today: "오늘",
       "3d": "최근 3일",
       "7d": "최근 7일",
+      "30d": "최근 30일",
     },
     stillBlocked: (id: string) =>
       `${id}: 다른 이슈에 막혀 있어 막힘 열에 남습니다. 막고 있는 이슈를 먼저 닫아 주세요.`,

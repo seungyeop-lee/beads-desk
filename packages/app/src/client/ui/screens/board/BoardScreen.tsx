@@ -41,7 +41,7 @@ const COLUMN_TONES: Record<BoardColumn, string> = {
   closed: statusTone("closed"),
 };
 
-const CLOSED_WINDOWS: ClosedWindow[] = ["today", "3d", "7d"];
+const CLOSED_WINDOWS: ClosedWindow[] = ["today", "3d", "7d", "30d"];
 
 /** 끌어 온 카드의 id, 원래 열, 상태를 담는 drag data 형식입니다. */
 const DRAG_TYPE = "application/x-beads-desk-card";

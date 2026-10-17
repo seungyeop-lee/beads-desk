@@ -446,6 +446,7 @@ export const enMessages: Messages = {
       today: "Today",
       "3d": "Last 3 days",
       "7d": "Last 7 days",
+      "30d": "Last 30 days",
     },
     stillBlocked: (id) =>
       `${id}: It stays in Blocked because other issues block it. Close the blocking issues first.`,

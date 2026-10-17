@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { BoardItem } from "@/shared/contract/board";
-import { boardColumns, dropOutcome } from "./boardView";
+import { boardColumns, dropOutcome, type ClosedWindow } from "./boardView";
 
 const now = new Date(2026, 9, 13, 15, 0).getTime();
 const hoursAgo = (hours: number) => now - hours * 3_600_000;
@@ -31,18 +31,20 @@ test("열마다 우선순위, 만든 시각, id 순으로 정렬한다", () => {
 
 test("닫힌 열은 고른 기간 안에 닫은 이슈만 최근 것부터 보인다", () => {
   const items = [
+    item("closed", "tenDaysAgo", { closedAt: hoursAgo(24 * 10) }),
     item("closed", "old", { closedAt: hoursAgo(24 * 4) }),
     item("closed", "yesterday", { closedAt: hoursAgo(20) }),
     item("closed", "morning", { closedAt: hoursAgo(5) }),
     item("closed", "unknown"),
   ];
 
-  const ids = (window: "today" | "3d" | "7d") =>
+  const ids = (window: ClosedWindow) =>
     boardColumns(items, window, now).closed.map((issue) => issue.id);
 
   expect(ids("today")).toEqual(["morning"]);
   expect(ids("3d")).toEqual(["morning", "yesterday"]);
   expect(ids("7d")).toEqual(["morning", "yesterday", "old"]);
+  expect(ids("30d")).toEqual(["morning", "yesterday", "old", "tenDaysAgo"]);
 });
 
 describe("dropOutcome", () => {

@@ -3,9 +3,14 @@ import { byClosedDesc, byPriorityThenCreated } from "@/client/modules/issues/dom
 import type { BoardColumn, BoardItem } from "@/shared/contract/board";
 
 /** 닫힌 열에 보일 기간입니다. today는 오늘 0시부터입니다. */
-export type ClosedWindow = "today" | "3d" | "7d";
+export type ClosedWindow = "today" | "3d" | "7d" | "30d";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const CLOSED_WINDOW_DAYS: Record<Exclude<ClosedWindow, "today">, number> = {
+  "3d": 3,
+  "7d": 7,
+  "30d": 30,
+};
 
 /** 카드를 열에 놓으면 바꿀 상태입니다. */
 const DROP_STATUS: Record<Exclude<BoardColumn, "blocked">, IssueStatus> = {
@@ -63,5 +68,5 @@ function closedSince(closedWindow: ClosedWindow, now: number): number {
     const today = new Date(now);
     return new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   }
-  return now - (closedWindow === "3d" ? 3 : 7) * DAY_MS;
+  return now - CLOSED_WINDOW_DAYS[closedWindow] * DAY_MS;
 }
