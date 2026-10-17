@@ -1,10 +1,10 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방문한 뒤 최초 화면까지 돌아간다", async ({
+test("그래프를 연달아 방문한 뒤 닫기로 한 그래프씩 거슬러 최초 화면까지 돌아간다", async ({
   page,
   workspace,
 }, testInfo) => {
-  const { first, second, last } = await workspace.createIssues(
+  const { second, last } = await workspace.createIssues(
     {
       first: { title: "복귀 첫째", type: "task" },
       second: { title: "복귀 둘째", type: "task" },
@@ -15,17 +15,14 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
       ["last", "second"],
     ],
   );
-  const origin = `/issues?view=blocked&type=task&date=created&from=2020-01-01&to=2099-12-31&issue=${second}&side=${first}`;
+  const origin = `/focus?issue=${second}`;
   await page.goto(origin);
-  const originalDialog = page.getByRole("dialog", { name: `${second} 이슈` });
-  await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
-  await originalDialog.getByRole("link", { name: "선행·후속 그래프" }).click();
+  await page
+    .getByRole("dialog", { name: `${second} 이슈` })
+    .getByRole("link", { name: "선행·후속 그래프" })
+    .click();
   await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
     "복귀 둘째 · 선행·후속",
-  );
-  await expect(page.getByRole("link", { name: "닫기", exact: true })).toHaveAttribute(
-    "href",
-    origin,
   );
   await expect(
     page.getByRole("region", { name: "의존 그래프" }).getByRole("link", { name: /복귀 마지막/ }),
@@ -60,8 +57,6 @@ test("상세의 조건과 옆 패널을 보존하고 그래프를 연달아 방�
   await expect(close).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(origin);
-  await expect(originalDialog).toBeVisible();
-  await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
 });
 
 test("같은 그래프를 다시 열어도 자기 자신을 복귀 순서에 넣지 않는다", async ({

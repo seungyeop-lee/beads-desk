@@ -5,6 +5,7 @@ const KOREAN_TITLE =
 const ENGLISH_TITLE =
   "Read every word of this long English issue title without opening its detail or hovering, while keeping different node heights and all dependency edges readable";
 
+// 그래프를 닫았을 때 출발 화면의 주소와 옆 패널로 돌아가는지는 이 시나리오에서만 확인합니다. 다른 그래프 시나리오에 같은 확인을 더하지 않습니다.
 test("출발 목록을 유지하고 그래프 상세를 편집하며 Escape·닫기·브라우저 뒤로가기로 원래 상세와 옆 패널을 복원한다", async ({
   page,
   workspace,

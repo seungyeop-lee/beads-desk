@@ -24,8 +24,7 @@ test.describe("폭 768px 창", () => {
       "--author",
       "검토자",
     );
-    const origin = `/issues?view=blocked&type=task&issue=${ids.second}&side=${ids.first}`;
-    await page.goto(origin);
+    await page.goto(`/issues?issue=${ids.second}`);
     await page
       .getByRole("dialog")
       .getByRole("link", { name: messages.graph.blockingChain, exact: true })
@@ -136,10 +135,5 @@ test.describe("폭 768px 창", () => {
     await detail.getByRole("button", { name: messages.common.close, exact: true }).first().click();
 
     await expect(dialog.getByRole("region", { name: messages.graph.canvas })).toBeVisible();
-    await dialog.getByRole("link", { name: messages.common.close, exact: true }).click();
-    await expect(page).toHaveURL(origin);
-    await expect(
-      page.getByRole("region", { name: messages.issueDetail.sidePanel(ids.first), exact: true }),
-    ).toBeVisible();
   });
 });
