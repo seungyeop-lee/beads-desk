@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { localFileUrl } from "../../src/shared/contract/localFiles";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
+import { placeCaretAfter } from "../support/editorCaret";
 
 const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAFAAAAAoCAIAAADmAupWAAAAS0lEQVR4nO3PQQ0AIBDAMFRgFPX8kEGyazIB67pnj2p9PwAGBgYGBgYeE3A94HrA9YDrAdcDrgdcD7gecD3gesD1gOsB1wOuB1zvAbv72g+Aq0cLAAAAAElFTkSuQmCC",
@@ -81,26 +82,7 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일을 열
       await region.getByRole("button", { name: "편집", exact: true }).click();
       const editor = region.getByRole("textbox", { name: field });
       await expect(editor.getByRole("link", { name: "workspace 문서" })).toBeVisible();
-      await editor.evaluate((element) => {
-        element.focus();
-        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-        let text: Node | null;
-        while ((text = walker.nextNode())) {
-          if (!text.textContent?.includes("편집할 문단")) continue;
-          const range = document.createRange();
-          range.selectNodeContents(text);
-          range.collapse(false);
-          const selection = window.getSelection()!;
-          selection.removeAllRanges();
-          selection.addRange(range);
-          // ProseMirror는 편집기가 focus를 받고 20ms 뒤, 아직 읽지 않은 DOM 선택을 편집기 상태의 선택(본문 맨 앞)으로 되돌립니다.
-          // 부하가 커서 이 타이머가 만료된 채 기다리는 동안 선택을 바꾸면, 타이머가 브라우저의 selectionchange보다 먼저 실행되어
-          // 입력이 본문 맨 앞에 들어갑니다. selectionchange를 바로 보내면 편집기가 이 선택을 상태에 반영해 되돌려지지 않습니다.
-          document.dispatchEvent(new Event("selectionchange"));
-          return;
-        }
-        throw new Error("편집할 문단을 찾지 못했습니다.");
-      });
+      await placeCaretAfter(editor, "편집할 문단");
       await page.keyboard.type(" 고침");
       await expect(editor).toContainText("편집할 문단 고침");
       await page.keyboard.press("ControlOrMeta+Enter");
