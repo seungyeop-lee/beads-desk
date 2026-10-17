@@ -4,7 +4,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test as base, type WorkerInfo } from "@playwright/test";
+import type { WorkerInfo } from "@playwright/test";
+import { test as base, type UserHomeEnv } from "./userHome";
 
 /** worker 서버 포트를 찾기 시작하는 번호입니다. bd-desk와 next dev가 쓰는 3000번대와 겹치지 않습니다. */
 const BASE_PORT = 3900;
@@ -20,9 +21,8 @@ type AppServer = { url: string; stop(): Promise<void> };
  */
 export const test = base.extend<object, { appServerUrl: string }>({
   appServerUrl: [
-    // eslint-disable-next-line no-empty-pattern -- Playwright는 fixture의 첫 인자를 구조 분해로만 받습니다.
-    async ({}, use, workerInfo) => {
-      const server = await startOnFreePort(workerInfo);
+    async ({ userHomeEnv }, use, workerInfo) => {
+      const server = await startOnFreePort(workerInfo, userHomeEnv);
       try {
         await use(server.url);
       } finally {
@@ -40,18 +40,24 @@ export const test = base.extend<object, { appServerUrl: string }>({
  * worker마다 `BASE_PORT + parallelIndex`부터 worker 수만큼 건너뛰며 후보를 보므로, 같은 실행의 worker끼리는 후보가 겹치지 않습니다.
  * 다른 프로세스가 받고 있는 포트는 건너뜁니다. 다른 실행의 서버가 같은 포트를 먼저 열면 다음 후보로 넘어갑니다.
  */
-async function startOnFreePort({ parallelIndex, config }: WorkerInfo): Promise<AppServer> {
+async function startOnFreePort(
+  { parallelIndex, config }: WorkerInfo,
+  userHomeEnv: UserHomeEnv,
+): Promise<AppServer> {
   for (let attempt = 0; attempt < MAX_PORT_ATTEMPTS; attempt += 1) {
     const port = BASE_PORT + parallelIndex + attempt * config.workers;
     if (await isTaken(port)) continue;
-    const server = await startAppServer(port);
+    const server = await startAppServer(port, userHomeEnv);
     if (server) return server;
   }
   throw new Error(`e2e 서버를 띄울 빈 포트를 ${MAX_PORT_ATTEMPTS}번 안에 찾지 못했습니다.`);
 }
 
 /** 서버를 띄우고 응답할 때까지 기다립니다. 그 사이 다른 프로세스가 포트를 열었으면 undefined를 돌려줍니다. */
-async function startAppServer(port: number): Promise<AppServer | undefined> {
+async function startAppServer(
+  port: number,
+  userHomeEnv: UserHomeEnv,
+): Promise<AppServer | undefined> {
   const url = `http://127.0.0.1:${port}`;
   // 시작 workspace를 지정하지 않으면 서버가 cwd의 상위에서 이 저장소의 `.beads`를 찾아 씁니다.
   // `.beads`가 없는 빈 디렉터리를 주어, 시나리오가 workspace를 고르기 전에도 실제 저장소를 보지 않게 합니다.
@@ -66,6 +72,8 @@ async function startAppServer(port: number): Promise<AppServer | undefined> {
   const server = spawn("next", ["start", "--hostname", "127.0.0.1", "--port", String(port)], {
     env: {
       ...Object.fromEntries(inherited),
+      // 서버가 실행하는 bd도 fixture의 bd와 같은 빈 HOME에서 설정 파일을 찾게 합니다.
+      ...userHomeEnv,
       __NEXT_PROCESSED_ENV: "true",
       BEADS_DESK_WORKSPACE: launchRoot,
     },

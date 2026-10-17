@@ -9,6 +9,7 @@ import {
   type RegisterWorkspaceRequest,
 } from "../../src/shared/contract/workspaces";
 import { test as base } from "./appServer";
+import type { UserHomeEnv } from "./userHome";
 
 const execFileAsync = promisify(execFile);
 
@@ -84,12 +85,11 @@ export type BdIssue = {
  */
 export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate: string }>({
   workspaceTemplate: [
-    // eslint-disable-next-line no-empty-pattern -- Playwright는 fixture의 첫 인자를 구조 분해로만 받습니다.
-    async ({}, use) => {
+    async ({ userHomeEnv }, use) => {
       const path = await mkdtemp(join(tmpdir(), "beads-desk-e2e-template-"));
       try {
-        await run(path, "git", "init", "--quiet");
-        await run(path, BD, "init", "--prefix", "e2e", "--quiet", "--non-interactive");
+        await run(path, userHomeEnv, "git", "init", "--quiet");
+        await run(path, userHomeEnv, BD, "init", "--prefix", "e2e", "--quiet", "--non-interactive");
         await use(path);
       } finally {
         await rm(path, { recursive: true, force: true, maxRetries: 5 });
@@ -98,14 +98,14 @@ export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate:
     { scope: "worker" },
   ],
   workspace: [
-    async ({ request, workspaceTemplate }, use) => {
+    async ({ request, workspaceTemplate, userHomeEnv }, use) => {
       const path = await mkdtemp(join(tmpdir(), "beads-desk-e2e-"));
       try {
         await cp(workspaceTemplate, path, { recursive: true });
         const body: RegisterWorkspaceRequest = { path, select: true };
         const response = await request.post(WORKSPACES_PATH, { data: body });
         expect(response.ok(), await response.text()).toBe(true);
-        await use(bdWorkspace(path));
+        await use(bdWorkspace(path, userHomeEnv));
       } finally {
         // 시나리오가 끝난 뒤에도 서버가 줄 서 있던 조회로 이 workspace에서 bd를 실행하고 있을 수 있습니다.
         await rm(path, { recursive: true, force: true, maxRetries: 5 });
@@ -117,8 +117,8 @@ export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate:
 
 export { expect };
 
-function bdWorkspace(path: string): BdWorkspace {
-  const bd = (...args: string[]) => run(path, BD, ...args);
+function bdWorkspace(path: string, userHomeEnv: UserHomeEnv): BdWorkspace {
+  const bd = (...args: string[]) => run(path, userHomeEnv, BD, ...args);
   return {
     path,
     bd,
@@ -151,6 +151,7 @@ function bdWorkspace(path: string): BdWorkspace {
       // 실행하는 환경에 git 사용자 설정이 없어도 커밋할 수 있도록 작성자를 정해 둡니다.
       await run(
         path,
+        userHomeEnv,
         "git",
         "-c",
         "user.name=e2e",
@@ -166,7 +167,16 @@ function bdWorkspace(path: string): BdWorkspace {
   };
 }
 
-async function run(cwd: string, command: string, ...args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync(command, args, { cwd });
+/** 명령은 서버의 bd와 같은 빈 HOME에서 실행합니다. `bd init`이 설치한 git hook은 git 명령 중에 bd를 실행하므로, git에도 같은 HOME을 줍니다. */
+async function run(
+  cwd: string,
+  userHomeEnv: UserHomeEnv,
+  command: string,
+  ...args: string[]
+): Promise<string> {
+  const { stdout } = await execFileAsync(command, args, {
+    cwd,
+    env: { ...process.env, ...userHomeEnv },
+  });
   return stdout;
 }
