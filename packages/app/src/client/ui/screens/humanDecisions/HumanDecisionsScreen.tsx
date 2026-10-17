@@ -171,6 +171,14 @@ function PendingRow({
             P{issue.priority} {priorityLabel(messages, issue.priority)}
           </span>
         )}
+        {item.kind === "gate" && item.summary.previousGateCount > 0 && (
+          <span
+            className="chip h-5 px-2 text-[11px]"
+            aria-label={messages.humanGate.previousRounds(item.summary.previousGateCount)}
+          >
+            🕘 {item.summary.previousGateCount}
+          </span>
+        )}
         <span className="ml-auto shrink-0 text-right font-mono text-xs text-base-content/45">
           {issue.id}
         </span>

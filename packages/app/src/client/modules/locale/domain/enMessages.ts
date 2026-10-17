@@ -128,6 +128,11 @@ export const enMessages: Messages = {
     blocks: "Blocks",
     noBlocks: "This gate blocks no issue. Responding or dismissing closes only the gate.",
     manyBlocks: (count) => `Blocks ${count} issues. Closing the gate unblocks all of them.`,
+    previousRounds: (count) => `Previous gate rounds: ${count}`,
+    previousFeedback: "Previous gate feedback",
+    previousLoading: "Loading previous gate feedback",
+    previousLoadFailed: (error) => `Failed to load previous gate feedback: ${error}`,
+    roundClosed: (time) => `Closed ${time}`,
     responseTitle: "Response",
     responseBody:
       "Your response is saved as a comment on the gate. Responding or dismissing closes the gate. The blocked issues stay open.",

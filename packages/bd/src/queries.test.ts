@@ -18,6 +18,7 @@ import {
   listIssues,
   openChangeFingerprint,
   orphanIssues,
+  previousGateRounds,
   readyIssues,
   showIssue,
   staleIssues,
@@ -277,10 +278,10 @@ describe("decisionRecords", () => {
 });
 
 describe("humanGates", () => {
-  const listGates = "list --json --tree=false --type=gate --limit 0";
+  const listGates = "list --json --tree=false --type=gate --all --limit 0";
   const listOpen = "list --json --tree=false --limit 0";
 
-  test("열린 human gate만 읽고, 닫히지 않은 이슈의 blocks 의존 관계에서 gate가 막고 있는 이슈를 찾는다", async () => {
+  test("열린 human gate만 읽고, 막고 있는 이슈와 이전 라운드 수를 blocks 의존 관계에서 찾는다", async () => {
     await useFakeBd({
       [listGates]: {
         stdout: JSON.stringify([
@@ -300,7 +301,7 @@ describe("humanGates", () => {
             description: "Ad-hoc gate blocking t-9",
           },
           { id: "g-3", issue_type: "gate", await_type: "timer", status: "open" },
-          { id: "g-4", issue_type: "gate", await_type: "human", status: "closed" },
+          { id: "g-old", issue_type: "gate", await_type: "human", status: "closed" },
         ]),
       },
       [listOpen]: {
@@ -310,7 +311,18 @@ describe("humanGates", () => {
             title: "로그인 화면",
             status: "in_progress",
             dependencies: [
-              { issue_id: "t-1", depends_on_id: "g-1", type: "blocks" },
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-1",
+                type: "blocks",
+                created_at: "2026-01-02T00:00:00Z",
+              },
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-old",
+                type: "blocks",
+                created_at: "2026-01-01T00:00:00Z",
+              },
               { issue_id: "t-1", depends_on_id: "g-2", type: "related" },
             ],
           },
@@ -318,7 +330,14 @@ describe("humanGates", () => {
             id: "t-2",
             title: "회원 가입 화면",
             status: "open",
-            dependencies: [{ issue_id: "t-2", depends_on_id: "g-1", type: "blocks" }],
+            dependencies: [
+              {
+                issue_id: "t-2",
+                depends_on_id: "g-1",
+                type: "blocks",
+                created_at: "2026-01-02T00:00:00Z",
+              },
+            ],
           },
         ]),
       },
@@ -328,15 +347,55 @@ describe("humanGates", () => {
 
     expect(
       result.ok &&
-        result.value.map(({ gate, reason, blocks }) => [
+        result.value.map(({ gate, reason, blocks, previousGateCount }) => [
           gate.id,
           reason,
           blocks.map(({ id }) => id),
+          previousGateCount,
         ]),
     ).toEqual([
-      ["g-1", "로그인 화면 수정\n\n두 번째 줄", ["t-1", "t-2"]],
-      ["g-2", "", []],
+      ["g-1", "로그인 화면 수정\n\n두 번째 줄", ["t-1", "t-2"], 0],
+      ["g-2", "", [], 0],
     ]);
+  });
+
+  test("gate가 여러 작업을 막으면 그 작업 전부를 막았던 닫힌 gate만 이전 라운드로 센다", async () => {
+    await useFakeBd({
+      [listGates]: {
+        stdout: JSON.stringify([
+          { id: "g-1", issue_type: "gate", await_type: "human", status: "open" },
+          { id: "g-both", issue_type: "gate", await_type: "human", status: "closed" },
+          { id: "g-one", issue_type: "gate", await_type: "human", status: "closed" },
+        ]),
+      },
+      [listOpen]: {
+        stdout: JSON.stringify([
+          {
+            id: "t-1",
+            status: "open",
+            dependencies: [
+              { issue_id: "t-1", depends_on_id: "g-1", type: "blocks" },
+              { issue_id: "t-1", depends_on_id: "g-both", type: "blocks" },
+              { issue_id: "t-1", depends_on_id: "g-one", type: "blocks" },
+            ],
+          },
+          {
+            id: "t-2",
+            status: "open",
+            dependencies: [
+              { issue_id: "t-2", depends_on_id: "g-1", type: "blocks" },
+              { issue_id: "t-2", depends_on_id: "g-both", type: "blocks" },
+            ],
+          },
+        ]),
+      },
+    });
+
+    const result = await humanGates(workDir);
+
+    expect(
+      result.ok && result.value.map(({ gate, previousGateCount }) => [gate.id, previousGateCount]),
+    ).toEqual([["g-1", 1]]);
   });
 
   test("bd gate create가 만든 설명 형식이 아니면 설명 전체를 사유로 읽는다", async () => {
@@ -364,6 +423,181 @@ describe("humanGates", () => {
     await useFakeBd({ [listGates]: { stdout: "[]" }, [listOpen]: { stderr: "boom", code: 1 } });
 
     expect(await humanGates(workDir)).toEqual({
+      ok: false,
+      error: { message: "boom\n", exitCode: 1 },
+    });
+  });
+});
+
+describe("previousGateRounds", () => {
+  const listGates = "list --json --tree=false --type=gate --all --limit 0";
+  const listOpen = "list --json --tree=false --limit 0";
+
+  test("같은 작업을 막았던 닫힌 gate를 간선이 생긴 순으로 읽어 코멘트와 닫은 사유를 돌려준다", async () => {
+    await useFakeBd({
+      [listGates]: {
+        stdout: JSON.stringify([
+          { id: "g-cur", issue_type: "gate", await_type: "human", status: "open" },
+          {
+            id: "g-old1",
+            title: "Review: t-1",
+            issue_type: "gate",
+            await_type: "human",
+            status: "closed",
+            labels: ["human"],
+            closed_at: "2026-01-02T00:00:00Z",
+          },
+          { id: "g-old2", issue_type: "gate", await_type: "human", status: "closed" },
+          { id: "g-timer", issue_type: "gate", await_type: "timer", status: "closed" },
+        ]),
+      },
+      [listOpen]: {
+        stdout: JSON.stringify([
+          {
+            id: "t-1",
+            status: "open",
+            dependencies: [
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-old2",
+                type: "blocks",
+                created_at: "2026-01-02T00:00:00Z",
+              },
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-timer",
+                type: "blocks",
+                created_at: "2026-01-02T12:00:00Z",
+              },
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-old1",
+                type: "blocks",
+                created_at: "2026-01-01T00:00:00Z",
+              },
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-cur",
+                type: "blocks",
+                created_at: "2026-01-03T00:00:00Z",
+              },
+            ],
+          },
+        ]),
+      },
+      "show --json --include-comments --include-dependents -- g-old1": {
+        stdout: JSON.stringify({
+          id: "g-old1",
+          issue_type: "gate",
+          status: "closed",
+          close_reason: "Responded",
+          comments: [
+            {
+              id: "c-1",
+              author: "reviewer",
+              text: "정정: 버튼 색도 바꿔 주세요.",
+              created_at: "2026-01-01T01:00:00Z",
+            },
+            {
+              id: "c-2",
+              author: "reviewer",
+              text: "Response: 승인",
+              created_at: "2026-01-01T02:00:00Z",
+            },
+          ],
+        }),
+      },
+      "show --json --include-comments --include-dependents -- g-old2": {
+        stdout: JSON.stringify({
+          id: "g-old2",
+          issue_type: "gate",
+          status: "closed",
+          comments: [],
+        }),
+      },
+      "show --json --include-comments --include-dependents -- g-timer": {
+        stdout: JSON.stringify({
+          id: "g-timer",
+          issue_type: "gate",
+          status: "closed",
+          comments: [],
+        }),
+      },
+    });
+
+    const result = await previousGateRounds(workDir, "g-cur");
+
+    expect(
+      result.ok &&
+        result.value.map(({ gate, closeReason, comments }) => [
+          gate.id,
+          gate.labels,
+          closeReason,
+          comments.map(({ text }) => text),
+        ]),
+    ).toEqual([
+      ["g-old1", ["human"], "Responded", ["정정: 버튼 색도 바꿔 주세요.", "Response: 승인"]],
+      ["g-old2", [], null, []],
+      ["g-timer", [], null, []],
+    ]);
+  });
+
+  test("게이트 id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
+    expect(await previousGateRounds(workDir, " ")).toEqual({
+      ok: false,
+      error: { message: "게이트 id가 비어 있습니다.", exitCode: null },
+    });
+  });
+
+  test("막는 작업이 없거나 알 수 없는 gate는 이전 라운드가 없다", async () => {
+    await useFakeBd({
+      [listGates]: {
+        stdout: JSON.stringify([
+          { id: "g-old", issue_type: "gate", await_type: "human", status: "closed" },
+        ]),
+      },
+      [listOpen]: { stdout: "[]" },
+    });
+
+    const result = await previousGateRounds(workDir, "g-cur");
+
+    expect(result).toEqual({ ok: true, value: [] });
+  });
+
+  test("이전 라운드 상세 조회가 실패하면 오류를 돌려준다", async () => {
+    await useFakeBd({
+      [listGates]: {
+        stdout: JSON.stringify([
+          { id: "g-cur", issue_type: "gate", await_type: "human", status: "open" },
+          { id: "g-old", issue_type: "gate", await_type: "human", status: "closed" },
+        ]),
+      },
+      [listOpen]: {
+        stdout: JSON.stringify([
+          {
+            id: "t-1",
+            status: "open",
+            dependencies: [
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-old",
+                type: "blocks",
+                created_at: "2026-01-01T00:00:00Z",
+              },
+              {
+                issue_id: "t-1",
+                depends_on_id: "g-cur",
+                type: "blocks",
+                created_at: "2026-01-02T00:00:00Z",
+              },
+            ],
+          },
+        ]),
+      },
+      "show --json --include-comments --include-dependents -- g-old": { stderr: "boom", code: 1 },
+    });
+
+    expect(await previousGateRounds(workDir, "g-cur")).toEqual({
       ok: false,
       error: { message: "boom\n", exitCode: 1 },
     });
@@ -718,8 +952,8 @@ describe("dependencyGraph", () => {
     const result = await dependencyGraph(workDir);
 
     expect(result.ok && result.value.dependencies).toEqual([
-      { issueId: "b", dependsOnId: "a", type: "blocks" },
-      { issueId: "b", dependsOnId: "epic", type: "parent-child" },
+      { issueId: "b", dependsOnId: "a", type: "blocks", createdAt: 0 },
+      { issueId: "b", dependsOnId: "epic", type: "parent-child", createdAt: 0 },
     ]);
     expect(result.ok && result.value.issues).toMatchObject([
       { id: "a", ready: true },
@@ -769,6 +1003,7 @@ describe("dependencyGraph", () => {
         issueId: "work",
         dependsOnId: id,
         type: "blocks",
+        createdAt: 0,
       })),
     );
   });

@@ -13,6 +13,8 @@ export {
   listIssues,
   openChangeFingerprint,
   orphanIssues,
+  previousGateRounds,
+  type PreviousGateRound,
   readyIssues,
   showIssue,
   staleIssues,

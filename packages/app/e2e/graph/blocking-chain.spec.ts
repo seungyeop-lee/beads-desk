@@ -169,7 +169,9 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
     ]),
   );
   for (const gate of [openGate, closedGate])
-    expect(data.dependencies).toContainEqual({ issueId: work, dependsOnId: gate, type: "blocks" });
+    expect(data.dependencies).toContainEqual(
+      expect.objectContaining({ issueId: work, dependsOnId: gate, type: "blocks" }),
+    );
 
   await page.goto(`/issues?issue=${work}`);
   await page

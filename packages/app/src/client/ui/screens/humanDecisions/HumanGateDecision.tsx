@@ -2,13 +2,16 @@
 
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
+import { usePreviousGateRounds } from "@/client/modules/humanGates/application/usePreviousGateRounds";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { CommentTimeline } from "@/client/ui/issues/detail/CommentList";
 import { HumanGateResponse } from "@/client/ui/issues/detail/HumanGateResponse";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
+import { formatTime, nameTone } from "@/client/ui/issues/issueLabels";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
-import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /** 고른 human gate의 사유와 막고 있는 작업을 보이고, 응답하거나 응답 없이 닫습니다. */
 export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
@@ -45,7 +48,74 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
         <BlockedIssues blocks={blocks} />
       </section>
 
+      {summary.previousGateCount > 0 && <PreviousGateFeedback gateId={gate.id} />}
       <HumanGateResponse gateId={gate.id} />
+    </section>
+  );
+}
+
+/** 같은 작업을 막았던 닫힌 gate(이전 라운드)의 닫은 사유와 코멘트를 오래된 라운드부터 보입니다. */
+function PreviousGateFeedback({ gateId }: { gateId: string }) {
+  const { data: rounds, error } = usePreviousGateRounds(gateId);
+  const locale = useLocale();
+  const messages = useMessages();
+  if (error) {
+    return (
+      <div role="alert" className="alert alert-error alert-soft">
+        <span>{messages.humanGate.previousLoadFailed(error)}</span>
+      </div>
+    );
+  }
+  if (!rounds || rounds.length === 0) {
+    return (
+      <span
+        className="loading loading-spinner loading-sm text-base-content/40"
+        aria-label={messages.humanGate.previousLoading}
+      />
+    );
+  }
+  return (
+    <section
+      className="flex flex-col gap-3 text-sm"
+      aria-label={messages.humanGate.previousFeedback}
+    >
+      <h3 className="font-semibold">{messages.humanGate.previousFeedback}</h3>
+      {rounds.map(({ gate, closeReason, comments }) => (
+        <article
+          key={gate.id}
+          className="flex flex-col gap-3 rounded-box border border-base-300 px-4 py-3"
+        >
+          <header className="flex flex-col gap-1.5">
+            <div className="flex flex-wrap items-baseline gap-2">
+              <h4 className="font-medium">{gate.title || messages.common.untitled}</h4>
+              <span className="font-mono text-xs text-base-content/45">{gate.id}</span>
+              {gate.closedAt !== null && (
+                <span className="text-xs text-base-content/55">
+                  {messages.humanGate.roundClosed(formatTime(locale, gate.closedAt))}
+                </span>
+              )}
+            </div>
+            {gate.labels.length > 0 && (
+              <ul className="flex flex-wrap gap-1.5">
+                {gate.labels.map((label) => (
+                  <li key={label} className={`chip h-5 px-2 text-[11px] ${nameTone(label)}`}>
+                    {label}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </header>
+          {comments.length > 0 ? (
+            <CommentTimeline comments={comments} />
+          ) : (
+            closeReason && (
+              <p className="text-base-content/60">
+                {messages.issueDetail.closeReason}: {closeReason}
+              </p>
+            )
+          )}
+        </article>
+      ))}
     </section>
   );
 }

@@ -277,6 +277,7 @@ function graphData(
       issueId,
       dependsOnId,
       type: "blocks",
+      createdAt: 0,
     })),
     ancestorEpics: Object.fromEntries(
       Object.entries(issues).flatMap(([id, { parent }]) => (parent ? [[id, [parent]]] : [])),

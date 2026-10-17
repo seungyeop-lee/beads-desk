@@ -8,7 +8,12 @@ function issue(id: string, fields: Partial<Issue> = {}): Issue {
 
 /** [기다리는 이슈, 먼저 끝나야 하는 이슈]를 bd의 blocks 의존으로 바꿉니다. */
 function blocks(...pairs: [string, string][]): IssueDependency[] {
-  return pairs.map(([issueId, dependsOnId]) => ({ issueId, dependsOnId, type: "blocks" }));
+  return pairs.map(([issueId, dependsOnId]) => ({
+    issueId,
+    dependsOnId,
+    type: "blocks",
+    createdAt: 0,
+  }));
 }
 
 const ids = (issues: Issue[]) => issues.map((it) => it.id);
@@ -73,7 +78,7 @@ test("이슈 중심 보기는 닫힌 선행·후속 이슈 너머까지 담고, 
         ["after-closed", "closed-after"],
         ["closed-side", "closed-before"],
       ),
-      { issueId: "related", dependsOnId: "center", type: "related" },
+      { issueId: "related", dependsOnId: "center", type: "related", createdAt: 0 },
     ],
     ancestorEpics: {},
   };

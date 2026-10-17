@@ -142,6 +142,11 @@ export const koMessages = {
     blocks: "막고 있는 작업",
     noBlocks: "이 gate가 막고 있는 작업 이슈가 없습니다. 응답하거나 닫으면 gate만 닫힙니다.",
     manyBlocks: (count: number) => `작업 ${count}개를 막고 있습니다. gate가 닫히면 모두 풀립니다.`,
+    previousRounds: (count: number) => `이전 게이트 라운드 ${count}개`,
+    previousFeedback: "이전 게이트 피드백",
+    previousLoading: "이전 게이트 피드백을 불러오는 중",
+    previousLoadFailed: (error: string) => `이전 게이트 피드백을 불러오지 못했습니다: ${error}`,
+    roundClosed: (time: string) => `닫힘 ${time}`,
     responseTitle: "응답",
     responseBody:
       "응답은 gate에 댓글로 남고, 응답하거나 응답 없이 닫으면 gate가 닫힙니다. 막혀 있던 작업 이슈는 닫히지 않습니다.",

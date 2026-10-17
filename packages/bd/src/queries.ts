@@ -12,6 +12,7 @@ import {
   parseIssueEvents,
   parseIssues,
   type Issue,
+  type IssueComment,
   type IssueDependency,
   type IssueDetail,
   type IssueEvent,
@@ -37,6 +38,8 @@ export type HumanGate = {
   reason: string;
   /** 이 gate가 막고 있는 닫히지 않은 이슈입니다. */
   blocks: Issue[];
+  /** 지금 gate가 막는 작업을 이전에 막았던 닫힌 gate 수입니다. */
+  previousGateCount: number;
 };
 
 export type HumanDecisionIssues = {
@@ -59,6 +62,19 @@ const LIST_LIMIT = "0";
 const READY_ARGS = ["ready", "--limit", LIST_LIMIT, "--json"];
 
 const BLOCKED_ARGS = ["blocked", "--json"];
+
+/** gate 목록은 --all로 닫힌 gate까지 읽어 이전 라운드를 찾습니다. */
+const ALL_GATE_LIST_ARGS = [
+  "list",
+  "--json",
+  "--tree=false",
+  "--type=gate",
+  "--all",
+  "--limit",
+  LIST_LIMIT,
+];
+
+const OPEN_LIST_ARGS = ["list", "--json", "--tree=false", "--limit", LIST_LIMIT];
 
 /**
  * 작업 단위가 아니라 바로 작업 가능 목록과 보드에서 빼는 유형입니다. bd ready는 이 유형도 돌려줍니다.
@@ -280,30 +296,122 @@ export async function decisionRecords(cwd: string): Promise<BdOutcome<DecisionRe
  * 열린 human gate와 각 gate가 막고 있는 닫히지 않은 이슈를 읽습니다.
  * bd list는 --all을 주어도 gate를 돌려주지 않아 --type=gate로 따로 읽습니다.
  * gate 출력에는 막고 있는 이슈 id가 없으므로, 닫히지 않은 이슈의 blocks 의존 관계에서 찾습니다.
+ * gate 목록은 --all로 닫힌 gate까지 읽어 각 gate의 이전 라운드 수를 셉니다.
  */
 export async function humanGates(cwd: string): Promise<BdOutcome<HumanGate[]>> {
   const [gates, open] = await Promise.all([
-    runBdJson(cwd, ["list", "--json", "--tree=false", "--type=gate", "--limit", LIST_LIMIT]),
-    runBdJson(cwd, ["list", "--json", "--tree=false", "--limit", LIST_LIMIT]),
+    runBdJson(cwd, ALL_GATE_LIST_ARGS),
+    runBdJson(cwd, OPEN_LIST_ARGS),
   ]);
   if (!gates.ok) return gates;
   if (!open.ok) return open;
 
+  const gateRecords = recordsOf(gates.value);
   const openById = new Map(parseIssues(open.value).map((issue) => [issue.id, issue]));
   const blockers = parseIssueDependencies(open.value).filter(({ type }) => type === "blocks");
+  const closedGates = gateRecords.filter(isClosedGate);
   return {
     ok: true,
-    value: recordsOf(gates.value)
-      .filter(isOpenHumanGate)
-      .flatMap((record) => {
-        const gate = parseIssue(record);
-        if (!gate) return [];
-        const blocks = blockers
-          .filter(({ dependsOnId }) => dependsOnId === gate.id)
-          .flatMap(({ issueId }) => openById.get(issueId) ?? []);
-        return [{ gate, reason: humanGateReason(textOf(record.description)), blocks }];
-      }),
+    value: gateRecords.filter(isOpenHumanGate).flatMap((record) => {
+      const gate = parseIssue(record);
+      if (!gate) return [];
+      const blockedIds = blockers
+        .filter(({ dependsOnId }) => dependsOnId === gate.id)
+        .map(({ issueId }) => issueId);
+      return [
+        {
+          gate,
+          reason: humanGateReason(textOf(record.description)),
+          blocks: blockedIds.flatMap((id) => openById.get(id) ?? []),
+          previousGateCount: previousGateRoundsOf(blockedIds, blockers, closedGates).length,
+        },
+      ];
+    }),
   };
+}
+
+export type PreviousGateRound = {
+  gate: Issue;
+  /** gate를 닫을 때 bd가 남긴 사유입니다. */
+  closeReason: string | null;
+  comments: IssueComment[];
+};
+
+/**
+ * 지금 human gate와 같은 작업을 막았던 닫힌 gate(이전 라운드)를 오래된 라운드부터 읽어 닫은 사유와 코멘트를 돌려줍니다.
+ * 라운드 순서는 작업이 gate에 막힌 blocks 간선의 created_at으로 정하고, 라운드마다 bd show로 코멘트를 읽습니다.
+ */
+export async function previousGateRounds(
+  cwd: string,
+  gateId: string,
+): Promise<BdOutcome<PreviousGateRound[]>> {
+  const id = gateId.trim();
+  if (id.length === 0) {
+    return inputError("게이트 id가 비어 있습니다.");
+  }
+  const [gates, open] = await Promise.all([
+    runBdJson(cwd, ALL_GATE_LIST_ARGS),
+    runBdJson(cwd, OPEN_LIST_ARGS),
+  ]);
+  if (!gates.ok) return gates;
+  if (!open.ok) return open;
+
+  const blockers = parseIssueDependencies(open.value).filter(({ type }) => type === "blocks");
+  const blockedIds = blockers
+    .filter(({ dependsOnId }) => dependsOnId === id)
+    .map(({ issueId }) => issueId);
+  const previous = previousGateRoundsOf(blockedIds, blockers, recordsOf(gates.value));
+  const details = await Promise.all(previous.map((round) => showIssue(cwd, round.gate.id)));
+  for (const detail of details) {
+    if (!detail.ok) return detail;
+  }
+  return {
+    ok: true,
+    value: previous.map((round, index) => {
+      const detail = details[index];
+      return detail?.ok
+        ? {
+            gate: round.gate,
+            closeReason: detail.value.closeReason,
+            comments: detail.value.comments,
+          }
+        : { gate: round.gate, closeReason: null, comments: [] };
+    }),
+  };
+}
+
+/** gate가 닫혔는지 bd JSON 레코드로 확인합니다. await 유형은 따지지 않습니다. */
+function isClosedGate(record: Record<string, unknown>): boolean {
+  return record.issue_type === "gate" && record.status === "closed";
+}
+
+/**
+ * 지금 gate가 막는 작업을 이전에 막았던 닫힌 gate를 라운드가 시작된 순으로 돌려줍니다.
+ * gate가 여러 작업을 막으면 그 작업 전부를 막았던 닫힌 gate만 이전 라운드로 잇고, 막는 작업이 없으면 이전 라운드도 없습니다.
+ */
+function previousGateRoundsOf(
+  blockedIds: string[],
+  blockers: IssueDependency[],
+  gateRecords: Record<string, unknown>[],
+): { gate: Issue; roundStartedAt: number }[] {
+  if (blockedIds.length === 0) return [];
+  const blocked = new Set(blockedIds);
+  return gateRecords
+    .filter(isClosedGate)
+    .flatMap((record) => {
+      const gate = parseIssue(record);
+      if (!gate) return [];
+      const roundEdges = blockers.filter(
+        ({ dependsOnId, issueId }) => dependsOnId === gate.id && blocked.has(issueId),
+      );
+      return roundEdges.length === blocked.size
+        ? [{ gate, roundStartedAt: Math.min(...roundEdges.map(({ createdAt }) => createdAt)) }]
+        : [];
+    })
+    .sort(
+      (left, right) =>
+        left.roundStartedAt - right.roundStartedAt || left.gate.id.localeCompare(right.gate.id),
+    );
 }
 
 /**

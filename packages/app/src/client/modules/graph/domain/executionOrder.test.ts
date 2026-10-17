@@ -16,7 +16,12 @@ function issue(id: string, fields: Partial<Issue> = {}): Issue {
 
 /** [먼저 끝나야 하는 이슈, 기다리는 이슈]를 bd의 blocks 의존으로 바꿉니다. */
 function blocks(...pairs: [string, string][]): IssueDependency[] {
-  return pairs.map(([before, after]) => ({ issueId: after, dependsOnId: before, type: "blocks" }));
+  return pairs.map(([before, after]) => ({
+    issueId: after,
+    dependsOnId: before,
+    type: "blocks",
+    createdAt: 0,
+  }));
 }
 
 /** 이슈 자리는 id로, 간선이 지나가는 자리는 "출발→도착"으로 나타냅니다. */
@@ -115,8 +120,8 @@ test("blocks가 아닌 관계와 목록 밖 이슈와의 관계는 그리지 않
   const order = executionOrder(
     [issue("a"), issue("b")],
     [
-      { issueId: "b", dependsOnId: "a", type: "parent-child" },
-      { issueId: "b", dependsOnId: "closed-or-filtered", type: "blocks" },
+      { issueId: "b", dependsOnId: "a", type: "parent-child", createdAt: 0 },
+      { issueId: "b", dependsOnId: "closed-or-filtered", type: "blocks", createdAt: 0 },
     ],
   );
 

@@ -10,6 +10,7 @@ const blocks = (issueId: string, dependsOnId: string): IssueDependency => ({
   issueId,
   dependsOnId,
   type: "blocks",
+  createdAt: 0,
 });
 
 const placed = (layout: GraphLayout, id: string) =>

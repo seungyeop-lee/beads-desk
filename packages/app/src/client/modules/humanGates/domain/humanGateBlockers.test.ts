@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { blockersOf, humanGateTitles } from "./humanGateBlockers";
 
 const gate = { id: "x-gate", title: "Review: x-1" } as Issue;
-const gateTitles = humanGateTitles([{ gate, reason: "", blocks: [] }]);
+const gateTitles = humanGateTitles([{ gate, reason: "", blocks: [], previousGateCount: 0 }]);
 const titles = new Map([["x-2", "선행 작업"]]);
 
 describe("blockersOf", () => {

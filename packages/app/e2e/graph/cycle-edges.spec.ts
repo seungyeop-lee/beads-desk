@@ -15,9 +15,9 @@ const graph: GraphData = {
     })!,
   ),
   dependencies: [
-    { issueId: "cycle-b", dependsOnId: "cycle-a", type: "blocks" },
-    { issueId: "cycle-c", dependsOnId: "cycle-b", type: "blocks" },
-    { issueId: "cycle-a", dependsOnId: "cycle-c", type: "blocks" },
+    { issueId: "cycle-b", dependsOnId: "cycle-a", type: "blocks", createdAt: 0 },
+    { issueId: "cycle-c", dependsOnId: "cycle-b", type: "blocks", createdAt: 0 },
+    { issueId: "cycle-a", dependsOnId: "cycle-c", type: "blocks", createdAt: 0 },
   ],
   ancestorEpics: {
     "cycle-a": ["cycle-epic"],

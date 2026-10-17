@@ -177,8 +177,13 @@ export function parseIssueDetail(value: unknown): IssueDetail | null {
   };
 }
 
-/** 의존 관계 한 건입니다. issueId가 dependsOnId에 의존합니다. blocks이면 dependsOnId를 먼저 끝내야 합니다. */
-export type IssueDependency = { issueId: string; dependsOnId: string; type: string };
+/** 의존 관계 한 건입니다. issueId가 dependsOnId에 의존합니다. blocks이면 dependsOnId를 먼저 끝내야 합니다. 시각은 epoch ms입니다. */
+export type IssueDependency = {
+  issueId: string;
+  dependsOnId: string;
+  type: string;
+  createdAt: number;
+};
 
 /** bd list --json이 이슈마다 담는 dependencies 배열을 한 목록으로 모읍니다. */
 export function parseIssueDependencies(value: unknown): IssueDependency[] {
@@ -187,6 +192,7 @@ export function parseIssueDependencies(value: unknown): IssueDependency[] {
       issueId: stringOr(dependency.issue_id, ""),
       dependsOnId: stringOr(dependency.depends_on_id, ""),
       type: stringOr(dependency.type, ""),
+      createdAt: timestampOr(dependency.created_at, 0),
     })),
   );
 }

@@ -58,3 +58,48 @@ test("human 라벨이 붙은 human gate를 응답 없이 닫으면 적은 사유
   expect((await workspace.showIssue(work)).status).toBe("open");
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
 });
+
+test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫힌 gate의 피드백이 오래된 라운드부터 보이고, 목록 행에 이전 라운드 수가 달린다", async ({
+  page,
+  workspace,
+}) => {
+  const work = await workspace.createIssue("로그인 화면 다시 그리기");
+  const first = await createHumanGate(workspace, work, "1차 결과 확인");
+  await workspace.bd("comments", "add", first, "정정: 버튼 색도 함께 바꿔 주세요.");
+  await workspace.bd("human", "respond", first, "버튼 색 수정 반영 확인");
+  const second = await createHumanGate(workspace, work, "2차 결과 확인");
+  await workspace.bd("human", "respond", second, "간격 조정 요청");
+  await createHumanGate(workspace, work, "3차 결과 확인");
+
+  const freshWork = await workspace.createIssue("회원 가입 화면 그리기");
+  await createHumanGate(workspace, freshWork, "회원 가입 결과 확인");
+
+  await page.goto("/human");
+  const row = page.getByRole("button", { name: new RegExp(`Review: ${work}\\b`) });
+  await expect(row.getByLabel("이전 게이트 라운드 2개")).toBeVisible();
+  const freshRow = page.getByRole("button", { name: new RegExp(`Review: ${freshWork}\\b`) });
+  await expect(freshRow.getByLabel(/이전 게이트 라운드/)).toHaveCount(0);
+
+  await row.click();
+  const feedback = page
+    .getByRole("region", { name: `Review: ${work}`, exact: true })
+    .getByRole("region", { name: "이전 게이트 피드백" });
+  await expect(feedback).toBeVisible();
+  const rounds = feedback.locator(":scope > article");
+  await expect(rounds).toHaveCount(2);
+  await expect(rounds.nth(0)).toContainText(first);
+  await expect(rounds.nth(0)).toContainText("정정: 버튼 색도 함께 바꿔 주세요.");
+  await expect(rounds.nth(1)).toContainText(second);
+  await expect(rounds.nth(1)).toContainText("Response: 간격 조정 요청");
+  const firstRound = await rounds.nth(0).innerText();
+  expect(firstRound.indexOf("정정:")).toBeLessThan(
+    firstRound.indexOf("Response: 버튼 색 수정 반영 확인"),
+  );
+
+  await freshRow.click();
+  const freshDecision = page.getByRole("region", {
+    name: `Review: ${freshWork}`,
+    exact: true,
+  });
+  await expect(freshDecision.getByRole("region", { name: "이전 게이트 피드백" })).toHaveCount(0);
+});

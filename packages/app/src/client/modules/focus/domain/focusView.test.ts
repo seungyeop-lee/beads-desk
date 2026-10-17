@@ -70,7 +70,7 @@ test("판단 기다림은 열린 human gate와, 유형과 작업 상태에 상�
       issue("plain", { ready: true }),
     ],
     [],
-    [{ gate: issue("gate", { issueType: "gate" }), reason: "", blocks: [] }],
+    [{ gate: issue("gate", { issueType: "gate" }), reason: "", blocks: [], previousGateCount: 0 }],
   );
 
   expect(view.awaitingHumanCount).toBe(3);

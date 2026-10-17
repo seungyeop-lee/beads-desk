@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import {
+  addComment,
   addDependency,
   boardIssues,
   claimIssue,
@@ -19,6 +20,7 @@ import {
   lintFindings,
   listIssues,
   orphanIssues,
+  previousGateRounds,
   readyIssues,
   respondToHuman,
   showIssue,
@@ -178,11 +180,13 @@ test("그래프는 상태·await 유형과 무관하게 gate를 읽고 일반 �
   );
   expect(graph.dependencies).toEqual(
     expect.arrayContaining(
-      gates.map((id) => ({
-        issueId: task,
-        dependsOnId: id,
-        type: "blocks",
-      })),
+      gates.map((id) =>
+        expect.objectContaining({
+          issueId: task,
+          dependsOnId: id,
+          type: "blocks",
+        }),
+      ),
     ),
   );
   const ordinary = value(await listIssues(cwd, []));
@@ -243,6 +247,29 @@ test("bd gate create로 만든 human gate와 막고 있는 이슈를 읽고, 응
   });
   expect(value(await showIssue(cwd, work)).status).toBe("open");
   expect(value(await humanGates(cwd)).map((found) => found.gate.id)).not.toContain(gateId);
+});
+
+test("같은 작업을 다시 막는 gate는 이전 라운드의 닫힌 gate와 기록을 오래된 순으로 읽는다", async () => {
+  const work = value(await createIssue(cwd, { title: "재판단을 기다리는 작업" }));
+  const createRound = () =>
+    run("bd", "gate", "create", "--blocks", work, "--title", `Review: ${work}`, "--json");
+  const first: string = JSON.parse(await createRound()).id;
+  value(await addComment(cwd, first, "정정: 간격도 조정해 주세요."));
+  value(await respondToHuman(cwd, first, "간격 조정 반영"));
+  const second: string = JSON.parse(await createRound()).id;
+  value(await respondToHuman(cwd, second, "다시 검토해 주세요"));
+  const third: string = JSON.parse(await createRound()).id;
+
+  const current = value(await humanGates(cwd)).find(({ gate }) => gate.id === third);
+  expect(current?.previousGateCount).toBe(2);
+
+  const rounds = value(await previousGateRounds(cwd, third));
+  expect(rounds.map(({ gate }) => gate.id)).toEqual([first, second]);
+  expect(rounds[0]?.comments.map(({ text }) => text)).toEqual([
+    "정정: 간격도 조정해 주세요.",
+    "Response: 간격 조정 반영",
+  ]);
+  expect(rounds.map(({ closeReason }) => closeReason)).toEqual(["Responded", "Responded"]);
 });
 
 test("판단을 셀 때 열린 human gate와 human 라벨이 붙은 닫히지 않은 이슈만 읽는다", async () => {

@@ -10,7 +10,12 @@ function issue(id: string, fields: Partial<Issue> = {}): Issue {
 
 /** [먼저 끝나야 하는 이슈, 기다리는 이슈]를 bd의 blocks 의존으로 바꿉니다. */
 function blocks(...pairs: [string, string][]): IssueDependency[] {
-  return pairs.map(([before, after]) => ({ issueId: after, dependsOnId: before, type: "blocks" }));
+  return pairs.map(([before, after]) => ({
+    issueId: after,
+    dependsOnId: before,
+    type: "blocks",
+    createdAt: 0,
+  }));
 }
 
 /** epic의 후손 이슈(children)와 에픽 밖 이슈(others)로 그래프 데이터를 만듭니다. */
@@ -102,8 +107,8 @@ test.each(["feature", "epic"])(
         ],
         [],
         [
-          { issueId: "group-child", dependsOnId: "group", type: "parent-child" },
-          { issueId: "task-child", dependsOnId: "task-parent", type: "parent-child" },
+          { issueId: "group-child", dependsOnId: "group", type: "parent-child", createdAt: 0 },
+          { issueId: "task-child", dependsOnId: "task-parent", type: "parent-child", createdAt: 0 },
         ],
       ),
       "epic",
