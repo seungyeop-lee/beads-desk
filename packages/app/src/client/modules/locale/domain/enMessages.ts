@@ -375,6 +375,7 @@ export const enMessages: Messages = {
     empty: "No epics.",
     toggleChildren: (id, expanded) => `${expanded ? "Collapse" : "Expand"} child issues of ${id}`,
     progress: (id) => `Progress of ${id}`,
+    childrenLoading: "Loading child issues",
     childrenLoadFailed: (error) => `Could not load child issues: ${error}`,
     childrenEmpty: "No child issues.",
     newChild: "New child issue",

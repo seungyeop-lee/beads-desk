@@ -224,7 +224,12 @@ function EpicDescendants({
           <span>{messages.epics.childrenLoadFailed(error)}</span>
         </div>
       )}
-      {!descendants && !error && <span className="loading loading-spinner loading-xs" />}
+      {!descendants && !error && (
+        <span className="flex items-center gap-2 text-sm text-base-content/60">
+          <span className="loading loading-spinner loading-sm" />
+          {messages.epics.childrenLoading}
+        </span>
+      )}
       {descendants && (
         <IssueTable
           tree={epicDescendantRows(descendants)}
