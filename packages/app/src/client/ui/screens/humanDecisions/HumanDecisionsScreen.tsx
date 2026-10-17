@@ -86,7 +86,7 @@ export function HumanDecisionsScreen() {
         tone={screenTone("/human")}
         count={loaded ? awaiting.count : undefined}
         loading={loading || gatesLoading}
-        description={messages.humanDecisions.description}
+        help={messages.humanDecisions.description}
       />
 
       {/* bd 실행 자체가 실패하면 두 조회가 같은 오류를 받으므로 한 번만 보입니다. */}

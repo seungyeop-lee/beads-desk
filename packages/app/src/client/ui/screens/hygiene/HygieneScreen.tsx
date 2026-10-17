@@ -53,7 +53,7 @@ export function HygieneScreen() {
       <ScreenHeader
         title={text.title}
         tone={screenTone("/hygiene")}
-        description={text.description}
+        help={text.description}
         loading={loading || stale.loading || writes.pending}
       />
 

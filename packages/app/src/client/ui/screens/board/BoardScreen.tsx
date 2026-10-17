@@ -87,7 +87,7 @@ export function BoardScreen() {
         title={messages.board.title}
         tone={screenTone("/board")}
         loading={loading || writes.pending}
-        description={messages.board.description}
+        help={messages.board.description}
       />
 
       {error && (
