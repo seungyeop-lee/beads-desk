@@ -33,21 +33,32 @@ const DOLT_START_COOLDOWN_MS = 30_000;
 
 /**
  * bd를 실행합니다. 같은 process 안의 모든 호출은 한 번에 하나씩 실행되고, 기다리는 실행은 쓰기, 변경 감시 읽기, 나머지 읽기 순서로 실행됩니다.
+ * 아직 시작하지 않은 같은 내용의 읽기가 겹치면 bd 실행을 하나로 합쳐 결과를 나눠 줍니다.
  * server mode workspace의 Dolt 서버가 꺼져 있으면 `bd dolt start`로 켜고 한 번 다시 실행합니다.
  */
 export function runBd(args: string[], options: RunBdOptions): Promise<BdResult> {
-  return serialized(async () => {
-    const result = await spawnBd(args, options.cwd);
-    if (
-      result.code !== 0 &&
-      DOLT_UNREACHABLE.test(result.stderr) &&
-      (await startDoltServer(options.cwd))
-    ) {
-      return spawnBd(args, options.cwd);
-    }
-    return result;
-  }, options);
+  return serialized(
+    async () => {
+      const result = await spawnBd(args, options.cwd);
+      if (
+        result.code !== 0 &&
+        DOLT_UNREACHABLE.test(result.stderr) &&
+        (await startDoltServer(options.cwd))
+      ) {
+        return spawnBd(args, options.cwd);
+      }
+      return result;
+    },
+    options,
+    args,
+  );
 }
+
+type PendingRead = {
+  /** 큐에서 꺼내 실행을 시작했으면 true입니다. 시작한 실행은 쓰기 이전의 값을 담고 있을 수 있어 뒤늦은 같은 읽기가 붙지 않습니다. */
+  started: boolean;
+  promise: Promise<unknown>;
+};
 
 type BdProcessState = {
   writes: (() => Promise<void>)[];
@@ -55,11 +66,15 @@ type BdProcessState = {
   reads: (() => Promise<void>)[];
   running: boolean;
   lastDoltStartAt: Map<string, number>;
+  /** 아직 시작하지 않은 화면 조회를 합치는 대상입니다. 키는 실행 디렉터리와 인자입니다. */
+  pendingReads: Map<string, PendingRead>;
 };
 
 // bd를 동시에 실행하면 같은 workspace의 Dolt가 손상될 수 있어 실행을 process 전체에서 직렬화합니다.
 // 화면은 쓰기가 끝날 때마다 다시 조회하므로, 쓰기가 읽기 뒤에 줄 서면 연달아 고친 값이 몇 초씩 늦게 저장됩니다.
 // 변경 감시 읽기는 화면 조회보다 먼저 실행합니다. 조회가 쌓여 있는 동안에는 invalidate가 그만큼 늦어지기 때문입니다.
+// 화면 조회끼리 같은 내용이 겹치면 시작 전에 하나로 합칩니다. 알림 하나에 여러 탭이 같은 조회를 다시 읽을 때
+// 같은 bd 실행이 줄을 서서 화면 갱신이 늦어지는 일을 줄이기 위해서입니다.
 // 이 module은 instrumentation과 route handler에 서로 다른 사본으로 들어가므로 상태를 globalThis에 둡니다.
 const PROCESS_STATE_KEY = Symbol.for("beads-desk.bd.processState");
 
@@ -71,19 +86,41 @@ function processState(): BdProcessState {
     reads: [],
     running: false,
     lastDoltStartAt: new Map(),
+    pendingReads: new Map(),
   };
   return holder[PROCESS_STATE_KEY];
 }
 
-function serialized<T>(operation: () => Promise<T>, options: RunBdOptions): Promise<T> {
+function serialized<T>(
+  operation: () => Promise<T>,
+  options: RunBdOptions,
+  args?: string[],
+): Promise<T> {
   const state = processState();
-  return new Promise<T>((resolve, reject) => {
-    let queue = state.reads;
-    if (options.write) queue = state.writes;
-    else if (options.watch) queue = state.watchReads;
-    queue.push(() => operation().then(resolve, reject));
-    void drain(state);
+  if (options.write || options.watch || args === undefined) {
+    return new Promise<T>((resolve, reject) => {
+      let queue = state.reads;
+      if (options.write) queue = state.writes;
+      else if (options.watch) queue = state.watchReads;
+      queue.push(() => operation().then(resolve, reject));
+      void drain(state);
+    });
+  }
+  const key = `${options.cwd}\0${args.join("\0")}`;
+  const pending = state.pendingReads.get(key);
+  // 아직 시작하지 않은 같은 조회에만 붙습니다. 시작한 조회는 그사이에 끼어든 쓰기 이전의 값을 담고 있을 수 있습니다.
+  // 쓰기는 줄 서 있는 읽기보다 항상 먼저 실행하므로, 시작 전 조회에 붙은 호출은 직접 실행했을 때와 같거나 더 새 값을 받습니다.
+  if (pending && !pending.started) return pending.promise as Promise<T>;
+  const { promise, resolve, reject } = Promise.withResolvers<T>();
+  const entry: PendingRead = { started: false, promise };
+  state.pendingReads.set(key, entry);
+  state.reads.push(() => {
+    entry.started = true;
+    state.pendingReads.delete(key);
+    return operation().then(resolve, reject);
   });
+  void drain(state);
+  return promise;
 }
 
 async function drain(state: BdProcessState): Promise<void> {
