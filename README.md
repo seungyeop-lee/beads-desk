@@ -51,9 +51,9 @@ If you add two or more workspaces, you can switch between them with the selector
 
 ## Local file links in issues
 
-Absolute-path file links and images in an issue body open when the file is inside the current workspace directory, a worktree registered in its git repository (a directory listed by `git worktree list`), or `/tmp`. Other files show `허용 범위 밖의 파일입니다.` (the file is outside the allowed range).
+Absolute-path file links and images in an issue body open when the file is inside the current workspace directory, a worktree registered in its git repository (a directory listed by `git worktree list`), `/tmp`, `/var/tmp`, or the OS temporary directory (`$TMPDIR` on macOS). Other files show `허용 범위 밖의 파일입니다.` (the file is outside the allowed range).
 
-Files in `/tmp` open so evidence such as report screenshots left by agent sessions can be checked right away. The OS may remove `/tmp` files after a few days or on reboot, so links there serve immediate review, not long-term storage.
+Files in `/tmp`, `/var/tmp`, and the OS temporary directory open so evidence such as report screenshots left by agent sessions can be checked right away. The OS may remove `/tmp` and `$TMPDIR` files after a few days or on reboot, while `/var/tmp` persists across reboots, so links to `/tmp` or `$TMPDIR` serve immediate review, not long-term storage.
 
 To open files in other directories, start the server with those directories in the `BEADS_DESK_LOCAL_FILE_ROOTS` environment variable.
 

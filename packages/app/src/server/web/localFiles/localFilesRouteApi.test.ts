@@ -21,7 +21,9 @@ const get = (path: string, headers?: Record<string, string>) =>
   );
 
 beforeAll(async () => {
-  parent = await mkdtemp(join(tmpdir(), "beads-desk-local-files-"));
+  // fixture는 기본 허용 루트(/tmp, /var/tmp, os.tmpdir()) 밖이어야 허용 밖 접근의 403 검사가 성립하므로,
+  // 임시 디렉터리가 모두 기본 허용 루트가 된 지금은 프로젝트 디렉터리 아래에 만듭니다.
+  parent = await mkdtemp(join(process.cwd(), "beads-desk-local-files-"));
   root = join(parent, "repo");
   worktree = join(parent, "elsewhere", "작업 트리");
   await mkdir(root);
@@ -163,6 +165,8 @@ test("git 조회가 실패하면 workspace 파일만 허용한다", async () => 
   const original = root;
   root = join(parent, "plain");
   await mkdir(root);
+  // fixture가 프로젝트 저장소 안에 있어 git이 상위 저장소를 찾아내므로, 깨진 .git으로 실패를 만듭니다.
+  await writeFile(join(root, ".git"), "gitdir: 깨진 경로");
   await writeFile(join(root, "inside.md"), "plain workspace");
   try {
     expect((await get(join(root, "inside.md"))).status).toBe(200);
@@ -177,8 +181,8 @@ test("설정하지 않으면 worktree를 모아 둔 상위 디렉터리의 파�
   expect(response.status).toBe(403);
 });
 
-test("/tmp 아래 파일을 기본으로 제공한다", async () => {
-  const dir = await mkdtemp(join("/tmp", "bd-desk-local-files-tmp-"));
+test.each(["/tmp", "/var/tmp", tmpdir()])("%s 아래 파일을 기본으로 제공한다", async (base) => {
+  const dir = await mkdtemp(join(base, "bd-desk-local-files-tmp-"));
   try {
     await writeFile(join(dir, "shot.png"), "png");
     const response = await get(join(dir, "shot.png"));
