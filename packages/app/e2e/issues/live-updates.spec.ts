@@ -27,3 +27,35 @@ test("상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸면 새로
   });
   await expect(side.getByText("막힘", { exact: true })).toBeVisible({ timeout: NOTIFY_TIMEOUT });
 });
+
+test("페이지를 처음 열면 같은 API를 한 번만 요청한다", async ({ page, workspace }) => {
+  await workspace.createIssue("주 이슈");
+  const requestCounts: Record<string, number> = { "/api/workspaces": 0, "/api/issues": 0 };
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path in requestCounts) requestCounts[path] += 1;
+  });
+
+  await page.goto("/issues");
+  await expect(page.getByRole("link", { name: "주 이슈" })).toBeVisible();
+  // 기준값 알림이 오기 전에 조회를 시작하면 같은 요청이 두 번 가므로, 변경 감시 주기 하나를 지나 더 오지
+  // 않는지를 봅니다. 오지 않는 요청을 기다릴 신호가 없어 고정 대기를 씁니다.
+  await page.waitForTimeout(3_000);
+
+  expect(requestCounts).toEqual({ "/api/workspaces": 1, "/api/issues": 1 });
+});
+
+test("페이지를 연 직후 CLI로 만든 이슈를 놓치지 않는다", async ({ page, workspace }) => {
+  await workspace.createIssue("주 이슈");
+
+  await page.goto("/issues");
+  // 첫 조회가 기준값 알림을 기다리는 사이라도, 쓰기가 그 앞이나 뒤에 끼어들어도 화면에 반영되어야 합니다.
+  await workspace.bd("create", "나중에 만든 이슈");
+
+  await expect(page.getByRole("link", { name: "주 이슈" })).toBeVisible({
+    timeout: NOTIFY_TIMEOUT,
+  });
+  await expect(page.getByRole("link", { name: "나중에 만든 이슈" })).toBeVisible({
+    timeout: NOTIFY_TIMEOUT,
+  });
+});

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-type Subscribe = typeof import("./workspaceEventSource").subscribeWorkspaceInvalidation;
+type WorkspaceEvents = typeof import("./workspaceEventSource");
 
 class FakeEventSource extends EventTarget {
   static instances: FakeEventSource[] = [];
@@ -86,9 +86,9 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const latestSource = () => FakeEventSource.instances.at(-1)!;
 
 /** 탭 하나의 module 상태를 따로 갖도록 매번 새로 불러옵니다. */
-async function openTab(): Promise<Subscribe> {
+async function openTab(): Promise<WorkspaceEvents> {
   vi.resetModules();
-  return (await import("./workspaceEventSource")).subscribeWorkspaceInvalidation;
+  return import("./workspaceEventSource");
 }
 
 beforeEach(() => {
@@ -109,9 +109,9 @@ afterEach(async () => {
 });
 
 test("invalidate 이벤트를 받으면 구독자에게 알린다", async () => {
-  const subscribe = await openTab();
+  const events = await openTab();
   const listener = vi.fn<() => void>();
-  const unsubscribe = subscribe(listener);
+  const unsubscribe = events.subscribeWorkspaceInvalidation(listener);
   await flush();
 
   latestSource().emit("open");
@@ -127,8 +127,8 @@ test("invalidate 이벤트를 받으면 구독자에게 알린다", async () => 
 test("여러 탭이 SSE 연결 하나를 함께 쓴다", async () => {
   const first = vi.fn<() => void>();
   const second = vi.fn<() => void>();
-  const stopFirst = (await openTab())(first);
-  const stopSecond = (await openTab())(second);
+  const stopFirst = (await openTab()).subscribeWorkspaceInvalidation(first);
+  const stopSecond = (await openTab()).subscribeWorkspaceInvalidation(second);
   await flush();
 
   latestSource().emit("open");
@@ -142,9 +142,9 @@ test("여러 탭이 SSE 연결 하나를 함께 쓴다", async () => {
 });
 
 test("연결을 연 탭이 떠나면 다른 탭이 이어받고, 그 사이 놓친 변경을 반영하도록 알린다", async () => {
-  const stopFirst = (await openTab())(() => {});
+  const stopFirst = (await openTab()).subscribeWorkspaceInvalidation(() => {});
   const second = vi.fn<() => void>();
-  const stopSecond = (await openTab())(second);
+  const stopSecond = (await openTab()).subscribeWorkspaceInvalidation(second);
   await flush();
   const firstSource = latestSource();
 
@@ -159,17 +159,17 @@ test("연결을 연 탭이 떠나면 다른 탭이 이어받고, 그 사이 놓�
 });
 
 test("구독을 해제하자마자 다시 구독하면 연결을 유지하고 다른 탭에 알리지 않는다", async () => {
-  const subscribe = await openTab();
-  const stopFirst = subscribe(() => {});
+  const events = await openTab();
+  const stopFirst = events.subscribeWorkspaceInvalidation(() => {});
   await flush();
   const other = vi.fn<() => void>();
-  const stopOther = (await openTab())(other);
+  const stopOther = (await openTab()).subscribeWorkspaceInvalidation(other);
   await flush();
   latestSource().emit("open");
 
   // 화면 조건이 바뀌면 React가 같은 시점에 이전 구독을 해제하고 새로 구독합니다.
   stopFirst();
-  const stopAgain = subscribe(() => {});
+  const stopAgain = events.subscribeWorkspaceInvalidation(() => {});
   await flush();
   await flush();
   latestSource().emit("open");
@@ -183,7 +183,7 @@ test("구독을 해제하자마자 다시 구독하면 연결을 유지하고 �
 
 test("끊겼다가 다시 연결되면 놓친 변경이 있을 수 있어 구독자에게 알린다", async () => {
   const listener = vi.fn<() => void>();
-  const unsubscribe = (await openTab())(listener);
+  const unsubscribe = (await openTab()).subscribeWorkspaceInvalidation(listener);
   await flush();
 
   latestSource().emit("open");
@@ -196,7 +196,7 @@ test("끊겼다가 다시 연결되면 놓친 변경이 있을 수 있어 구독
 
 test("가려진 탭은 알림을 미뤘다가 다시 보일 때 한 번만 반영한다", async () => {
   const listener = vi.fn<() => void>();
-  const unsubscribe = (await openTab())(listener);
+  const unsubscribe = (await openTab()).subscribeWorkspaceInvalidation(listener);
   await flush();
 
   fakeDocument.setVisibility("hidden");
@@ -209,4 +209,71 @@ test("가려진 탭은 알림을 미뤘다가 다시 보일 때 한 번만 반�
   unsubscribe();
 
   expect(listener).toHaveBeenCalledOnce();
+});
+
+test("연결을 주도하는 탭은 awaitFirstInvalidation을 첫 알림이 올 때까지 기다린다", async () => {
+  const events = await openTab();
+  events.subscribeWorkspaceInvalidation(() => {});
+  await flush();
+
+  latestSource().emit("open");
+  let settled = false;
+  void events.awaitFirstInvalidation().then(() => {
+    settled = true;
+  });
+  expect(settled).toBe(false);
+
+  latestSource().emit("invalidate");
+  await flush();
+
+  expect(settled).toBe(true);
+});
+
+test("다른 탭이 이미 연결 중이면 awaitFirstInvalidation은 기다리지 않는다", async () => {
+  (await openTab()).subscribeWorkspaceInvalidation(() => {});
+  await flush();
+  latestSource().emit("open");
+
+  const follower = await openTab();
+  follower.subscribeWorkspaceInvalidation(() => {});
+  const settled = vi.fn<() => void>();
+  void follower.awaitFirstInvalidation().then(settled);
+  await flush();
+
+  expect(settled).toHaveBeenCalledOnce();
+});
+
+test("연결에 오류가 나면 awaitFirstInvalidation을 기다리던 조회를 푼다", async () => {
+  const events = await openTab();
+  events.subscribeWorkspaceInvalidation(() => {});
+  await flush();
+  latestSource().emit("open");
+
+  const settled = vi.fn<() => void>();
+  void events.awaitFirstInvalidation().then(settled);
+  latestSource().emit("error");
+  await flush();
+
+  expect(settled).toHaveBeenCalledOnce();
+});
+
+test("다른 탭의 연결을 이어받으면 이어받은 연결의 첫 알림까지 awaitFirstInvalidation을 기다린다", async () => {
+  const leader = await openTab();
+  const stopLeader = leader.subscribeWorkspaceInvalidation(() => {});
+  await flush();
+  latestSource().emit("open");
+
+  const taker = await openTab();
+  taker.subscribeWorkspaceInvalidation(() => {});
+  await flush();
+
+  stopLeader();
+  await flush();
+  const settled = vi.fn<() => void>();
+  void taker.awaitFirstInvalidation().then(settled);
+  expect(settled).not.toHaveBeenCalled();
+
+  latestSource().emit("open");
+  await flush();
+  expect(settled).toHaveBeenCalledOnce();
 });

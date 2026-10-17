@@ -99,6 +99,27 @@ test("처음 조회가 끝나기 전에 함께 구독한 listener도 기준값�
   expect(second).toBe(1);
 });
 
+test("이미 기준값을 읽은 feed에 구독하면 그 listener에게 바로 알리고, 상태가 바뀌면 같이 알림을 받는다", async () => {
+  let first = 0;
+  let second = 0;
+  const stopFirst = subscribeWorkspaceChanges(workDir, () => first++, { pollIntervalMs: 60_000 });
+  await waitUntil(() => first === 1);
+
+  const stopSecond = subscribeWorkspaceChanges(workDir, () => second++, { pollIntervalMs: 60_000 });
+  expect(second).toBe(1);
+  expect(first).toBe(1);
+  await sleep(100);
+  expect(second).toBe(1);
+
+  await writeHash("hash-2");
+  await checkWorkspaceChangesNow(workDir);
+  stopFirst();
+  stopSecond();
+
+  expect(first).toBe(2);
+  expect(second).toBe(2);
+});
+
 test("처음 조회에서 DB 상태를 읽지 못해도 한 번 알리고, 계속 읽지 못하면 더 알리지 않는다", async () => {
   await writeFile(failFlag, "");
   let notified = 0;

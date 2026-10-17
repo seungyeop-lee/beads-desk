@@ -1,4 +1,7 @@
-import { subscribeWorkspaceInvalidation } from "@/client/infra/workspaceEvents/workspaceEventSource";
+import {
+  awaitFirstInvalidation,
+  subscribeWorkspaceInvalidation,
+} from "@/client/infra/workspaceEvents/workspaceEventSource";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 
 /**
@@ -21,6 +24,12 @@ export function watchWorkspaceRead<T>(
     }
     reading = true;
     try {
+      // 첫 조회는 연결을 주도하는 탭이 서버의 기준값 알림을 받은 뒤에 시작합니다. 그 전에 조회한 데이터는
+      // 기준값과 그 사이의 쓰기를 놓칠 수 있어 결국 다시 조회하게 되므로, 처음부터 알림 뒤에 읽어 두 번 읽지 않게
+      // 합니다. 기다리는 동안 온 알림은 이 조회가 덮으므로 do 반복문 첫머리에서 지워지는 표시로 남기만 합니다.
+      // 첫 알림을 받고 난 뒤에는 이 await가 바로 끝나므로 다시 읽기가 늦어지지 않습니다.
+      await awaitFirstInvalidation();
+      if (stopped) return;
       do {
         changedWhileReading = false;
         const result = await read();
@@ -32,8 +41,8 @@ export function watchWorkspaceRead<T>(
     }
   };
 
-  void load();
   const unsubscribe = subscribeWorkspaceInvalidation(() => void load());
+  void load();
   return () => {
     stopped = true;
     unsubscribe();
