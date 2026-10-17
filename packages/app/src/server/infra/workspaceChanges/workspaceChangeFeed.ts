@@ -7,7 +7,7 @@ type Feed = {
   timer: ReturnType<typeof setInterval>;
   fingerprint: ChangeFingerprint | null;
   last: string | null;
-  /** 처음 조회를 마쳤는지입니다. 처음 조회는 DB 상태를 읽지 못해도 알립니다. 마친 뒤 구독하는 listener는 구독 직후 알림을 받습니다. */
+  /** 처음 조회를 마쳤는지입니다. 처음 조회는 DB 상태를 읽지 못해도 알립니다. */
   settled: boolean;
   /** 진행 중인 조회입니다. */
   polling: Promise<void> | null;
@@ -30,8 +30,7 @@ function feeds(): Map<string, Feed> {
  *
  * 구독하면 기준값을 읽은 뒤에도 한 번 호출합니다. listener가 기준값보다 먼저 조회한 데이터와 기준값 사이에 쓰기가
  * 있었다면 그 쓰기는 기준값에 포함되어 변경으로 잡히지 않기 때문입니다. 기준값을 읽지 못했어도 호출합니다.
- * 처음 만든 feed에서는 첫 조회가 끝날 때 그때까지 구독한 모든 listener에게 가고, 이미 기준값을 읽은 feed에
- * 구독하면 구독 직후 그 listener에게만 갑니다. 그래서 listener는 구독할 때마다 기준값 알림을 한 번 받습니다.
+ * 그래서 listener는 구독할 때마다 기준값 알림을 정확히 한 번 받습니다.
  */
 export function subscribeWorkspaceChanges(
   workspaceRoot: string,

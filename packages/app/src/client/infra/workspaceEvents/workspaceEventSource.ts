@@ -14,9 +14,9 @@ let stopLeading: AbortController | null = null;
 let stale = false;
 /** 이 탭이 SSE 연결을 열어 주도하는 중인지입니다. 아직 lock을 얻을지 정해지지 않았으면 null입니다. */
 let leading: boolean | null = null;
-/** leading이 정해질 때까지 기다리는 notice입니다. start()마다 다시 만듭니다. */
+/** leading이 정해지기를 기다리는 promise입니다. start()마다 다시 만듭니다. */
 let leadingDecided: PromiseWithResolvers<void> = Promise.withResolvers();
-/** 지금 열 계 연결에서 첫 알림을 받았는지를 기다리는 notice입니다. 연결마다 다시 만듭니다. */
+/** 지금 연결의 첫 알림을 기다리는 promise입니다. 연결을 열 때마다 다시 만듭니다. */
 let initialNotice: PromiseWithResolvers<void> = Promise.withResolvers();
 
 /**
@@ -38,7 +38,7 @@ export function subscribeWorkspaceInvalidation(listener: Listener): () => void {
 
 /**
  * 이 탭이 SSE 연결을 열게 되면 서버가 변경 감시의 기준값을 읽은 뒤 보내는 첫 알림을 기다립니다.
- * 기준값을 읽기 전에 조회한 데이터는 그 사이의 쓰기를 놓칠 수 있어서입니다. 서버는 연결이 구독할 때마다
+ * 기준값을 읽기 전에 조회한 데이터는 그 사이의 쓰기를 놓칠 수 있어서입니다. 서버는 새 연결이 구독할 때마다
  * 기준값 알림을 한 번 보내므로 이 promise는 반드시 끝나고, 연결에 오류가 나면 조회를 계속 미루지 않도록 바로 끝납니다.
  * 다른 탭이 이미 연결을 열었으면 기다리지 않습니다. 그 탭이 받는 알림이 이 탭에도 전달되므로, 기준값보다
  * 먼저 조회한 데이터도 다음 알림으로 다시 읽게 되기 때문입니다.
