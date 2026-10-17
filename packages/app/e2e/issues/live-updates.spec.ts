@@ -1,6 +1,6 @@
 import { expect, test } from "../support/bdWorkspace";
 
-// 서버는 SSE 연결이 있는 동안 DB를 2초마다 확인하므로, 알림을 받고 다시 조회할 시간까지 넉넉히 기다립니다.
+// CLI로 바꾼 내용은 새로고침 없이 화면에 오므로, 그 반영을 기다리는 시간을 넉넉히 잡습니다.
 const NOTIFY_TIMEOUT = 10_000;
 
 test("상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸면 새로고침하지 않아도 화면에 반영된다", async ({
