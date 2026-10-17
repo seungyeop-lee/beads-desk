@@ -14,7 +14,11 @@ vi.mock("@/server/infra/runtime/serverRuntime", () => ({ currentWorkspaceRoot: (
 vi.mock("@/server/web/locale/requestLocale", () => ({ requestLocale: async () => "ko" }));
 
 const get = (path: string, headers?: Record<string, string>) =>
-  handleLocalFileRequest(new Request(`http://localhost${localFileUrl(path)}`, { headers }));
+  handleLocalFileRequest(
+    new Request(`http://localhost${localFileUrl(path)}`, {
+      headers: { Host: "localhost:3000", ...headers },
+    }),
+  );
 
 beforeAll(async () => {
   parent = await mkdtemp(join(tmpdir(), "beads-desk-local-files-"));
@@ -95,6 +99,7 @@ test("인코딩을 겹친 경로로 허용 범위를 벗어날 수 없다", asyn
   const response = await handleLocalFileRequest(
     new Request(
       `http://localhost/api/local-files?path=${encodeURIComponent(`${root}/../repo-other/secret.md`)}`,
+      { headers: { Host: "localhost:3000" } },
     ),
   );
   expect(response.status).toBe(403);
@@ -131,6 +136,29 @@ test("다른 사이트의 파일 요청을 거부한다", async () => {
     expect((await get(join(root, "조사 결과.md"), { "Sec-Fetch-Site": site })).status).toBe(403);
 });
 
+test.each(["localhost", "localhost:3000", "127.0.0.1:3000", "[::1]:3000"])(
+  "로컬 호스트 Host의 요청을 받아들인다: %s",
+  async (host) => {
+    expect((await get(join(root, "조사 결과.md"), { Host: host })).status).toBe(200);
+  },
+);
+
+test.each(["evil.example:3000", "localhost.evil.example"])(
+  "로컬 호스트가 아닌 Host의 요청을 거부한다: %s",
+  async (host) => {
+    const response = await get(join(root, "조사 결과.md"), { Host: host });
+    expect(response.status).toBe(403);
+    expect(await response.text()).toBe("허용 범위 밖의 파일입니다.");
+  },
+);
+
+test("Host 없는 요청을 거부한다", async () => {
+  const response = await handleLocalFileRequest(
+    new Request(`http://localhost${localFileUrl(join(root, "조사 결과.md"))}`),
+  );
+  expect(response.status).toBe(403);
+});
+
 test("git 조회가 실패하면 workspace 파일만 허용한다", async () => {
   const original = root;
   root = join(parent, "plain");
@@ -147,6 +175,18 @@ test("git 조회가 실패하면 workspace 파일만 허용한다", async () => 
 test("설정하지 않으면 worktree를 모아 둔 상위 디렉터리의 파일을 허용하지 않는다", async () => {
   const response = await get(join(worktreeParent, "review-artifacts", "bd-x", "shot.png"));
   expect(response.status).toBe(403);
+});
+
+test("/tmp 아래 파일을 기본으로 제공한다", async () => {
+  const dir = await mkdtemp(join("/tmp", "bd-desk-local-files-tmp-"));
+  try {
+    await writeFile(join(dir, "shot.png"), "png");
+    const response = await get(join(dir, "shot.png"));
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("png");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("BEADS_DESK_LOCAL_FILE_ROOTS로 지정한 디렉터리 아래 파일을 제공한다", async () => {

@@ -35,10 +35,13 @@ export async function readLocalFile(workspace: string, path: string): Promise<Lo
   }
 }
 
+// 작업 에이전트 세션이 리포트 검증용 파일을 남기는 /tmp도 기본 허용 루트로 둡니다.
+const TMP_ROOT = "/tmp";
+
 async function allowedRoots(workspace: string): Promise<string[]> {
   const [workspaceRoots, configured] = await Promise.all([
     gitRoots(workspace),
-    resolveExisting(configuredRoots()),
+    resolveExisting([TMP_ROOT, ...configuredRoots()]),
   ]);
   return [...workspaceRoots, ...configured];
 }

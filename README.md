@@ -51,7 +51,9 @@ If you add two or more workspaces, you can switch between them with the selector
 
 ## Local file links in issues
 
-Absolute-path file links and images in an issue body open only when the file is inside the current workspace directory or a worktree registered in its git repository (a directory listed by `git worktree list`). Other files show `허용 범위 밖의 파일입니다.` (the file is outside the allowed range).
+Absolute-path file links and images in an issue body open when the file is inside the current workspace directory, a worktree registered in its git repository (a directory listed by `git worktree list`), or `/tmp`. Other files show `허용 범위 밖의 파일입니다.` (the file is outside the allowed range).
+
+Files in `/tmp` open so evidence such as report screenshots left by agent sessions can be checked right away. The OS may remove `/tmp` files after a few days or on reboot, so links there serve immediate review, not long-term storage.
 
 To open files in other directories, start the server with those directories in the `BEADS_DESK_LOCAL_FILE_ROOTS` environment variable.
 
