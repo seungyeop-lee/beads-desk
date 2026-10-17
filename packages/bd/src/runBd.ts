@@ -162,7 +162,8 @@ function bdEnv(): NodeJS.ProcessEnv {
   return env;
 }
 
-function bdBin(): string {
+/** 실행할 bd를 고르는 규칙입니다. e2e fixture가 서버와 같은 bd를 실행하도록 이 규칙을 가져가 씁니다. */
+export function bdBin(): string {
   return process.env.BD_BIN || "bd";
 }
 

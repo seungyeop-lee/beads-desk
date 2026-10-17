@@ -1,8 +1,9 @@
 import { execFile } from "node:child_process";
 import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import { promisify } from "node:util";
+import { bdBin } from "@beads-desk/bd";
 import { expect } from "@playwright/test";
 import {
   WORKSPACES_PATH,
@@ -13,11 +14,8 @@ import type { UserHomeEnv } from "./userHome";
 
 const execFileAsync = promisify(execFile);
 
-/**
- * fixture가 실행하는 bd입니다. 서버가 bd를 고르는 규칙(packages/bd/src/runBd.ts의 `bdBin`)과 같아야 합니다.
- * 둘이 다른 bd를 실행하면 fixture가 만든 DB를 서버가 다른 버전의 bd로 읽습니다.
- */
-const BD = process.env.BD_BIN || "bd";
+/** fixture가 실행하는 bd입니다. 서버가 고르는 규칙을 `@beads-desk/bd`의 `bdBin`에서 가져와, fixture가 만든 DB를 서버가 같은 bd로 읽습니다. */
+const BD = bdBin();
 
 /**
  * 화면에서 고친 값이 bd에 저장될 때까지 기다리는 시간입니다.
@@ -167,16 +165,20 @@ function bdWorkspace(path: string, userHomeEnv: UserHomeEnv): BdWorkspace {
   };
 }
 
-/** 명령은 서버의 bd와 같은 빈 HOME에서 실행합니다. `bd init`이 설치한 git hook은 git 명령 중에 bd를 실행하므로, git에도 같은 HOME을 줍니다. */
+/**
+ * 명령은 서버의 bd와 같은 빈 HOME에서 실행합니다. `bd init`이 설치한 git hook은 git 명령 중에 PATH에서 bd를 찾으므로,
+ * git에도 같은 HOME을 주고 `BD_BIN`이 절대 경로면 그 디렉터리를 PATH 앞에 넣어 hook도 같은 bd를 실행하게 합니다.
+ */
 async function run(
   cwd: string,
   userHomeEnv: UserHomeEnv,
   command: string,
   ...args: string[]
 ): Promise<string> {
-  const { stdout } = await execFileAsync(command, args, {
-    cwd,
-    env: { ...process.env, ...userHomeEnv },
-  });
+  const env: NodeJS.ProcessEnv = { ...process.env, ...userHomeEnv };
+  if (process.env.BD_BIN && isAbsolute(process.env.BD_BIN)) {
+    env.PATH = `${dirname(process.env.BD_BIN)}:${env.PATH ?? ""}`;
+  }
+  const { stdout } = await execFileAsync(command, args, { cwd, env });
   return stdout;
 }

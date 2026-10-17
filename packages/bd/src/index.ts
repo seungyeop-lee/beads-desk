@@ -47,4 +47,4 @@ export {
   setIssueStatus,
   updateIssueFields,
 } from "./mutations";
-export { runBd, type BdOutcome } from "./runBd";
+export { bdBin, runBd, type BdOutcome } from "./runBd";
