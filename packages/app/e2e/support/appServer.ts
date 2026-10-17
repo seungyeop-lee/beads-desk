@@ -57,8 +57,11 @@ async function startAppServer(port: number): Promise<AppServer | undefined> {
   // `.beads`가 없는 빈 디렉터리를 주어, 시나리오가 workspace를 고르기 전에도 실제 저장소를 보지 않게 합니다.
   // 서버마다 다른 디렉터리를 주고, health 응답의 첫 workspace로 응답한 서버가 이 서버인지 가립니다.
   const launchRoot = await mkdtemp(join(tmpdir(), "beads-desk-e2e-server-"));
+  // 개발자가 셸에 export한 앱 설정(`BEADS_DESK_LOCAL_FILE_ROOTS` 등)을 물려받으면 개발자마다 시나리오 결과가 달라집니다.
+  // `BEADS_DESK_`로 시작하는 변수는 모두 빼고, 시나리오에 필요한 값만 여기서 지정합니다.
+  const inherited = Object.entries(process.env).filter(([key]) => !key.startsWith("BEADS_DESK_"));
   const server = spawn("next", ["start", "--hostname", "127.0.0.1", "--port", String(port)], {
-    env: { ...process.env, BEADS_DESK_WORKSPACE: launchRoot },
+    env: { ...Object.fromEntries(inherited), BEADS_DESK_WORKSPACE: launchRoot },
     stdio: ["ignore", "pipe", "pipe"],
     // 서버가 띄운 하위 프로세스까지 함께 끝내도록 process group을 따로 둡니다.
     detached: true,
