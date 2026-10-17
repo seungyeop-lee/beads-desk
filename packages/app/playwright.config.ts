@@ -6,6 +6,16 @@ import { usesRamDisk } from "./e2e/support/ramDisk";
 // worker와 worker가 띄우는 서버, git hook까지 이 값을 물려받아, e2e가 실행하는 bd는 통계를 쌓지도 보내지도 않습니다.
 process.env.DO_NOT_TRACK = "1";
 
+// bd는 `BEADS_DIR`, `BEADS_DB`, `BEADS_ACTOR` 같은 `BEADS_` 변수와, 설정 key마다 대응하는 `BD_` 변수(`BD_READONLY`, `BD_JSON_ENVELOPE` 등)를 읽습니다.
+// 개발자 셸에 이런 값이 있으면 fixture와 서버의 bd가 다른 DB를 쓰거나, 쓰기를 거부하거나, 다른 형태의 JSON을 출력합니다.
+// 여기서 지운 값은 `DO_NOT_TRACK`처럼 worker와 서버, git hook이 실행하는 bd에 전달되지 않습니다.
+// `BD_BIN`은 실행할 bd를 고르는 값이라 남깁니다. `BEADS_DESK_` 변수는 e2e 실행 설정에 쓰이므로 남기고, 서버에는 e2e/support/appServer.ts가 넘기지 않습니다.
+for (const key of Object.keys(process.env)) {
+  const readByBd =
+    key.startsWith("BD_") || (key.startsWith("BEADS_") && !key.startsWith("BEADS_DESK_"));
+  if (readByBd && key !== "BD_BIN") delete process.env[key];
+}
+
 export default defineConfig({
   testDir: "./e2e",
   // worker마다 서버를 따로 띄우므로(e2e/support/appServer.ts) 시나리오를 worker 사이에 나눠 실행할 수 있습니다.

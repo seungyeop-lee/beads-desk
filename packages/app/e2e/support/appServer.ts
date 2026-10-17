@@ -59,9 +59,16 @@ async function startAppServer(port: number): Promise<AppServer | undefined> {
   const launchRoot = await mkdtemp(join(tmpdir(), "beads-desk-e2e-server-"));
   // 개발자가 셸에 export한 앱 설정(`BEADS_DESK_LOCAL_FILE_ROOTS` 등)을 물려받으면 개발자마다 시나리오 결과가 달라집니다.
   // `BEADS_DESK_`로 시작하는 변수는 모두 빼고, 시나리오에 필요한 값만 여기서 지정합니다.
+  // `next start`는 환경 변수에 없는 값을 packages/app의 `.env*` 파일(`.env.local` 등)에서 채우므로, 개발자가 그 파일에 넣은 설정도 막아야 합니다.
+  // Next.js(@next/env)는 `__NEXT_PROCESSED_ENV`가 있으면 `.env*` 파일을 이미 읽은 것으로 보고 다시 읽지 않습니다.
+  // 문서에 없는 내부 값이므로, Next.js를 올리면 @next/env가 이 값을 여전히 확인하는지 봅니다.
   const inherited = Object.entries(process.env).filter(([key]) => !key.startsWith("BEADS_DESK_"));
   const server = spawn("next", ["start", "--hostname", "127.0.0.1", "--port", String(port)], {
-    env: { ...Object.fromEntries(inherited), BEADS_DESK_WORKSPACE: launchRoot },
+    env: {
+      ...Object.fromEntries(inherited),
+      __NEXT_PROCESSED_ENV: "true",
+      BEADS_DESK_WORKSPACE: launchRoot,
+    },
     stdio: ["ignore", "pipe", "pipe"],
     // 서버가 띄운 하위 프로세스까지 함께 끝내도록 process group을 따로 둡니다.
     detached: true,
