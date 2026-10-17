@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
+import { placeCaretAfter } from "../support/editorCaret";
 
 const ORIGINAL = [
   "## 배경",
@@ -39,8 +40,7 @@ test("상세 본문은 편집하는 동안에도 서식대로 보이고, 고친 
 
   const editor = dialog.getByRole("textbox", { name: "설명" });
   await expect(editor.getByRole("heading", { name: "배경" })).toBeVisible();
-  await editor.getByText("고칠 문단").click();
-  await page.keyboard.press("End");
+  await placeCaretAfter(editor, "고칠 문단");
   await page.keyboard.type(" 고침");
   await page.keyboard.press("ControlOrMeta+Enter");
 
@@ -163,8 +163,7 @@ test("상세 본문의 저장 단추를 누르면 고친 본문이 bd에 저장�
   await page.goto(`/issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  await dialog.getByRole("textbox", { name: "설명" }).getByText("저장할 문단").click();
-  await page.keyboard.press("End");
+  await placeCaretAfter(dialog.getByRole("textbox", { name: "설명" }), "저장할 문단");
   await page.keyboard.type(" 고침");
   await dialog.getByRole("button", { name: "저장", exact: true }).click();
 
@@ -182,8 +181,7 @@ test("상세 본문의 취소 단추를 누르면 고친 내용을 버리고 원
   await page.goto(`/issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  await dialog.getByRole("textbox", { name: "설명" }).getByText("그대로 둘 문단").click();
-  await page.keyboard.press("End");
+  await placeCaretAfter(dialog.getByRole("textbox", { name: "설명" }), "그대로 둘 문단");
   await page.keyboard.type(" 버릴 글자");
   await dialog.getByRole("button", { name: "취소", exact: true }).click();
 
@@ -202,8 +200,7 @@ test("상세 본문의 코드 블록 안에서도 Ctrl/Cmd+Enter로 저장한다
   await page.goto(`/issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  await dialog.getByRole("textbox", { name: "설명" }).getByText("const a = 1;").click();
-  await page.keyboard.press("End");
+  await placeCaretAfter(dialog.getByRole("textbox", { name: "설명" }), "const a = 1;");
   await page.keyboard.type(" // 고침");
   await page.keyboard.press("ControlOrMeta+Enter");
 
@@ -219,8 +216,7 @@ test("상세 본문을 저장하는 동안 편집기는 입력을 받지 않는�
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
   const editor = dialog.getByRole("textbox", { name: "설명" });
-  await editor.getByText("저장할 문단").click();
-  await page.keyboard.press("End");
+  await placeCaretAfter(editor, "저장할 문단");
   await page.keyboard.type(" 고침");
   const release = await holdServerActions(page);
   await page.keyboard.press("ControlOrMeta+Enter");
@@ -246,8 +242,7 @@ test("상세 본문에 이미지 파일을 붙여 넣어도 본문에 들어가�
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
   const editor = dialog.getByRole("textbox", { name: "설명" });
-  await editor.getByText("붙여 넣을 문단").click();
-  await page.keyboard.press("End");
+  await placeCaretAfter(editor, "붙여 넣을 문단");
   await editor.evaluate((element) => {
     const data = new DataTransfer();
     data.items.add(

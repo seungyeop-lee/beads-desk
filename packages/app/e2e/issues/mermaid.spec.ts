@@ -2,6 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { Locator } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
+import { placeCaretAfter } from "../support/editorCaret";
 import { createHumanGate } from "../support/humanGates";
 
 const DIAGRAM = "flowchart LR\n  A[시작] -->|처리| B[완료]";
@@ -119,8 +120,7 @@ test("시스템 테마가 바뀌어도 저장 전 입력이 남고 여러 블록
   await expect(dialog.locator(".preview svg").first()).toBeVisible();
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
   const editor = dialog.getByRole("textbox", { name: "설명", exact: true });
-  await editor.getByText("저장 전 문단").click();
-  await page.keyboard.press("End");
+  await placeCaretAfter(editor, "저장 전 문단");
   await page.keyboard.type(" 고침");
   const block = editor.locator(".milkdown-code-block").first();
   await expect(block.locator(".preview svg")).toBeVisible();
@@ -143,8 +143,7 @@ test("다른 문단만 저장하면 mermaid 원문의 fence·들여쓰기·줄�
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await expect(dialog.locator(".preview svg")).toBeVisible();
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  await dialog.getByRole("textbox", { name: "설명" }).getByText("고칠 문단").click();
-  await page.keyboard.press("End");
+  await placeCaretAfter(dialog.getByRole("textbox", { name: "설명" }), "고칠 문단");
   await page.keyboard.type(" 고침");
   await dialog.getByRole("button", { name: "저장", exact: true }).click();
   await expect
