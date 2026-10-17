@@ -80,6 +80,7 @@ export type BdIssue = {
  * 시나리오마다 빈 bd workspace를 임시 디렉터리에 만들고 서버의 현재 workspace로 바꿉니다.
  * 시나리오가 workspace를 쓰지 않아도 만들어, 앞 시나리오가 심은 이슈가 다음 시나리오에 보이지 않게 합니다.
  * `bd init`은 한 번에 수 초씩 걸려서, worker마다 한 번만 초기화한 원본을 복사해 씁니다.
+ * init은 `--skip-agents`로 에이전트 통합 파일(CLAUDE.md, AGENTS.md, .cursor 등)을 만들지 않습니다. 시나리오 workspace에는 필요 없는 파일입니다.
  */
 export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate: string }>({
   workspaceTemplate: [
@@ -87,7 +88,17 @@ export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate:
       const path = await mkdtemp(join(tmpdir(), "beads-desk-e2e-template-"));
       try {
         await run(path, userHomeEnv, "git", "init", "--quiet");
-        await run(path, userHomeEnv, BD, "init", "--prefix", "e2e", "--quiet", "--non-interactive");
+        await run(
+          path,
+          userHomeEnv,
+          BD,
+          "init",
+          "--prefix",
+          "e2e",
+          "--quiet",
+          "--non-interactive",
+          "--skip-agents",
+        );
         await use(path);
       } finally {
         await rm(path, { recursive: true, force: true, maxRetries: 5 });
