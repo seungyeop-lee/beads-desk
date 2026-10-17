@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
+  type BoardColumn,
   HUMAN_LABEL,
   humanGateReason,
+  isBoardColumn,
   isOpenHumanGate,
   isRecord,
   NON_WORK_TYPES,
@@ -17,7 +19,6 @@ import {
   type IssueDetail,
   type IssueEvent,
   type IssueStatus,
-  type WorkState,
   workState,
 } from "./issue";
 import { inputError, runBdJson, type BdOutcome } from "./runBd";
@@ -50,10 +51,6 @@ export type HumanDecisionIssues = {
   /** human 라벨이 붙은 닫히지 않은 이슈입니다. */
   labeled: Issue[];
 };
-
-const BOARD_COLUMNS = ["ready", "in_progress", "blocked", "closed"] as const satisfies WorkState[];
-
-export type BoardColumn = (typeof BOARD_COLUMNS)[number];
 
 export type BoardIssue = {
   column: BoardColumn;
@@ -573,8 +570,7 @@ export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>>
     ok: true,
     value: result.value.filter(isWork).flatMap((issue): BoardIssue[] => {
       const state = workState(issue);
-      const column = BOARD_COLUMNS.find((column) => column === state);
-      return column ? [{ column, issue }] : [];
+      return isBoardColumn(state) ? [{ column: state, issue }] : [];
     }),
   };
 }

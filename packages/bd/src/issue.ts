@@ -70,6 +70,20 @@ export function workState(issue: Issue): WorkState {
   return "other";
 }
 
+/** 보드에 열이 있는 작업 상태입니다. 배열 순서는 화면에 보이는 열 순서와 관계없고, 화면 순서는 app이 정합니다. */
+const BOARD_WORK_STATES = [
+  "ready",
+  "in_progress",
+  "blocked",
+  "closed",
+] as const satisfies WorkState[];
+
+export type BoardColumn = (typeof BOARD_WORK_STATES)[number];
+
+export function isBoardColumn(state: WorkState): state is BoardColumn {
+  return BOARD_WORK_STATES.some((column) => column === state);
+}
+
 export type AwaitingHuman<G, Q> = {
   gates: readonly G[];
   /** 닫히지 않았고 human 라벨이 붙은 이슈입니다. 유형과 작업 상태는 따지지 않습니다. */
