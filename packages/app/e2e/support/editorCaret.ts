@@ -1,5 +1,5 @@
 import type { Locator } from "@playwright/test";
-import { expect } from "@playwright/test";
+import { expect } from "./bdWorkspace";
 
 /**
  * Milkdown 편집기에서 `text`가 처음 나오는 곳의 끝에 커서를 둡니다. 코드 블록처럼 한 줄이 여러 요소로
@@ -15,16 +15,13 @@ export async function placeCaretAfter(editor: Locator, text: string): Promise<vo
     element.focus();
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const nodes: { node: Text; start: number }[] = [];
-    let length = 0;
+    let concatenated = "";
     for (let textNode = walker.nextNode(); textNode; textNode = walker.nextNode()) {
       const node = textNode as Text;
-      nodes.push({ node, start: length });
-      length += node.textContent?.length ?? 0;
+      nodes.push({ node, start: concatenated.length });
+      concatenated += node.textContent ?? "";
     }
-    const foundAt = nodes
-      .map(({ node }) => node.textContent ?? "")
-      .join("")
-      .indexOf(target);
+    const foundAt = concatenated.indexOf(target);
     if (foundAt < 0) {
       throw new Error(`편집기에서 ${target}가 들어 있는 글자를 찾지 못했습니다.`);
     }
