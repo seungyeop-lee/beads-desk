@@ -57,6 +57,17 @@ test("응답 없이 닫는 데 성공해도 패널이 빠지기 전에는 알리
     .toHaveTextContent(messages.humanDecision.dismissed(ISSUE_ID));
 });
 
+test("응답을 적기 전에는 응답 버튼이 막혀 있어 마우스를 받지 않고, 버튼 위에서 pointer를 보이지 않는다", async () => {
+  const screen = await render(<Panel shown />);
+  const respond = screen.getByRole("button", { name: messages.humanDecision.respond });
+
+  await expect.element(respond).toBeDisabled();
+  expect(getComputedStyle(respond.element()).pointerEvents).toBe("none");
+  const box = respond.element().getBoundingClientRect();
+  const target = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+  expect(target && getComputedStyle(target).cursor).not.toBe("pointer");
+});
+
 /** 화면이 다시 조회해 이슈가 빠진 상황을 shown이 false인 것으로 나타냅니다. */
 function Panel({ shown }: { shown: boolean }) {
   return (

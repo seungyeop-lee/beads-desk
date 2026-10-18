@@ -2,6 +2,8 @@ import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicDescendants, EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture";
@@ -131,6 +133,53 @@ test("펼친 에픽의 기능은 처음에 접혀 있고, 펼치면 기능 아�
 
   await screen.getByRole("button", { name: "desk-epic.1 하위 이슈 접기" }).click();
   await expect.element(nested).not.toBeInTheDocument();
+});
+
+test("에픽과 하위 이슈의 ID는 짧은 ID 복사 단추이고, 하위 이슈 표는 제목을 고치지 않고 막힌 이슈에 선행 이슈를 보인다", async () => {
+  reads.epics = [
+    { epic: epic("desk-epic", "묶음 에픽"), totalChildren: 2, closedChildren: 0 },
+    { epic: epic("desk-loading", "읽는 중인 에픽"), totalChildren: 1, closedChildren: 0 },
+  ];
+  reads.descendants = {
+    "desk-epic": {
+      issues: [
+        issue("desk-epic.1", { title: "선행 작업", parent: "desk-epic", dependentCount: 1 }),
+        issue("desk-epic.2", {
+          title: "기다리는 작업",
+          parent: "desk-epic",
+          blockedBy: ["desk-epic.1"],
+          dependencyCount: 1,
+        }),
+      ],
+      waiters: {},
+    },
+  };
+  const screen = await renderScreen();
+  const card = (title: string) =>
+    page.elementLocator(screen.getByRole("link", { name: title }).element().closest("section")!);
+
+  for (const id of ["desk-epic", "desk-epic.1", "desk-epic.2"]) {
+    const copyButton = screen.getByRole("button", { name: messages.copyId.labelOf(id) });
+    expect(copyButton.element().textContent).toBe(shortIssueId(id));
+  }
+  const waitingRow = screen.getByRole("row", { name: /기다리는 작업/ });
+  await expect
+    .element(waitingRow.getByRole("link", { name: messages.blocking.waitingOn("desk-epic.1") }))
+    .toHaveAttribute("href", "/epics?issue=desk-epic.1");
+  // 하위 이슈 표의 행에서 누를 수 있는 단추는 ID 복사뿐입니다.
+  expect(waitingRow.getByRole("button").elements()).toHaveLength(1);
+
+  // 처음에는 첫 열린 에픽만 펼치므로, 하위 이슈를 읽는 중인 에픽은 펼쳐서 봅니다.
+  const toggle = screen.getByRole("button", {
+    name: messages.epics.toggleChildren("desk-loading", false),
+  });
+  expect(getComputedStyle(toggle.element()).cursor).toBe("pointer");
+  await toggle.click();
+  const loadingPicker = card("읽는 중인 에픽").getByRole("combobox", {
+    name: messages.epics.addExistingChild,
+  });
+  await expect.element(loadingPicker).toBeDisabled();
+  expect(getComputedStyle(loadingPicker.element()).cursor).not.toBe("pointer");
 });
 
 function renderScreen() {

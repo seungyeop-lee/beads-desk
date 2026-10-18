@@ -80,6 +80,7 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
       timeout: SAVE_TIMEOUT,
     })
     .toBe("좁은 화면에서 만든 작업");
+  expect((await workspace.showIssue(created)).parent).toBeUndefined();
 });
 
 test("등록한 workspace가 하나뿐이면 헤더에 workspace 선택을 보이지 않는다", async ({

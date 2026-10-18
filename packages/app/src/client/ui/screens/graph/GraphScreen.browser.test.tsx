@@ -1100,7 +1100,7 @@ test("에픽 순서 보기는 열마다 단계 이름과 진행 요약을 보이
 const LONG_PLAN_TITLE =
   "에픽 안의 다른 이슈와 선후 관계가 없는 긴 제목도 목록에서 마지막 글자까지 빠짐없이 확인하고 독립적으로 작업을 진행할 수 있도록 표시합니다";
 
-test("선후 관계 없음 목록과 그래프 노드는 긴 제목을 끝까지 보이고, 목록은 대기 수와 짧은 ID를 보이며 닫힌 이슈 행을 흐리게 그린다", async () => {
+test("선후 관계 없음 목록과 그래프 노드는 긴 제목을 끝까지 보이고 짧은 ID를 복사 단추로 보이며, 목록은 대기 수를 보이고 닫힌 이슈 행을 흐리게 그린다", async () => {
   await page.viewport(1440, 900);
   const screen = await renderGraph(
     "epic",
@@ -1129,17 +1129,22 @@ test("선후 관계 없음 목록과 그래프 노드는 긴 제목을 끝까지
     cardOf(panel, LONG_PLAN_TITLE).getByText(LONG_PLAN_TITLE, { exact: true }).element(),
   );
   expect(cardText(panel, LONG_PLAN_TITLE)).toContain("1개 대기");
-  expect(cardText(panel, LONG_PLAN_TITLE)).toContain(shortIssueId("long-alone"));
+  expect(copyButton(panel, "long-alone").element().textContent).toBe(shortIssueId("long-alone"));
   const closedRow = panel.getByRole("link", { name: /완료한 독립 작업/ }).element().parentElement!;
   expect(getComputedStyle(closedRow).opacity).toBe("0.5");
 
   const canvas = screen.getByRole("region", { name: "의존 그래프" });
   const node = canvas.getByRole("link", { name: new RegExp(LONG_PLAN_TITLE) });
   expect(getComputedStyle(node.element()).width).toBe("280px");
+  expect(copyButton(canvas, "long-second").element().textContent).toBe(shortIssueId("long-second"));
   expectWholeTitle(
     cardOf(canvas, LONG_PLAN_TITLE).getByText(LONG_PLAN_TITLE, { exact: true }).element(),
   );
 });
+
+function copyButton(scope: Locator, id: string) {
+  return scope.getByRole("button", { name: `${id} ID 복사`, exact: true });
+}
 
 /** 제목이 두 줄을 넘게 감겨도 잘리거나 스크롤되지 않고 모두 보입니다. */
 function expectWholeTitle(title: Element) {

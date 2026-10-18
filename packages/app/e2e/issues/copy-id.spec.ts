@@ -41,9 +41,14 @@ test("판단 기다림 화면에서 Blocks 행과 왼쪽 카드의 ID를 누르�
 
   await questionCard.click();
   await expect(questionCard).toHaveAttribute("aria-current", "true");
+  await expect(
+    page
+      .getByRole("region", { name: "e2e 정해야 할 질문", exact: true })
+      .getByRole("button", { name: `${question} ID 복사` }),
+  ).toBeVisible();
 });
 
-test("지금 화면 행, 보드 카드, 상세 머리글의 ID를 누르면 전체 ID를 복사하고, 행과 카드는 상세를 열거나 끌리지 않는다", async ({
+test("지금 화면 행, 보드 카드, 상세 머리글의 ID를 누르면 전체 ID를 복사하고, 행과 카드는 상세를 열거나 끌리지 않으며, 보드 카드는 누르는 동안 grabbing 커서를 보인다", async ({
   page,
   workspace,
 }) => {
@@ -54,6 +59,8 @@ test("지금 화면 행, 보드 카드, 상세 머리글의 ID를 누르면 전�
   const row = page.getByRole("link", { name: `${work} e2e 복사할 작업` });
 
   await page.goto("/focus");
+  // 시나리오 workspace의 prefix는 `e2e`이므로 행에는 `e2e-` 뒤만 보입니다.
+  await expect(copyButton).toHaveText(work.replace(/^e2e-/, ""));
   await expectCopies(page, copyButton, work);
   await expect(page).not.toHaveURL(/issue=/);
   await row.click();
@@ -75,7 +82,8 @@ test("지금 화면 행, 보드 카드, 상세 머리글의 ID를 누르면 전�
   });
   await pressAndMove(copyButton, row);
   await expect(page.locator("html")).toHaveAttribute("data-dragged", "false");
-  await pressAndMove(row, copyButton);
+  // 누르는 동안의 grabbing 커서는 컴포넌트 테스트에서 마우스를 누를 수 없어 여기서 확인합니다.
+  await pressAndMove(row, copyButton, () => expect(row).toHaveCSS("cursor", "grabbing"));
   await expect(page.locator("html")).toHaveAttribute("data-dragged", "true");
 
   await row.click();
@@ -112,10 +120,12 @@ async function expectCopies(page: Page, button: Locator, id: string) {
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(id);
 }
 
-async function pressAndMove(from: Locator, to: Locator) {
+/** whilePressed는 마우스를 누른 뒤 움직이기 전에 실행합니다. */
+async function pressAndMove(from: Locator, to: Locator, whilePressed?: () => Promise<void>) {
   const page = from.page();
   await from.hover();
   await page.mouse.down();
+  await whilePressed?.();
   const box = (await from.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2 + 10, box.y + box.height / 2 + 10);
   await to.hover();

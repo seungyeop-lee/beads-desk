@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
@@ -83,6 +84,46 @@ for (const width of AREA_WIDTHS) {
     }
   });
 }
+
+test("행은 짧은 ID를 복사 단추로 보이고, 표에서는 상태와 우선순위만 고치며, 의존 칸은 선행·후속 개수를 이름으로 알려 준다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueTable
+        issues={[
+          issue("desk-row", {
+            title: "표에서 볼 작업",
+            assignee: "minji",
+            dependencyCount: 1,
+            dependentCount: 0,
+          }),
+        ]}
+        issueHref={(id) => `/issues?issue=${id}`}
+        writes={WRITES}
+        gateTitles={new Map()}
+      />
+    </LocaleProvider>,
+  );
+  const row = screen.getByRole("row", { name: /표에서 볼 작업/ });
+
+  const copyButton = row.getByRole("button", { name: messages.copyId.labelOf("desk-row") });
+  expect(copyButton.element().textContent).toBe(shortIssueId("desk-row"));
+  // 제목과 담당자는 단추나 입력 칸이 아닌 글자로 보입니다.
+  expect(row.getByRole("button").elements()).toEqual([copyButton.element()]);
+  expect(row.getByRole("textbox").elements()).toHaveLength(0);
+  await expect.element(row.getByRole("cell", { name: "minji", exact: true })).toBeVisible();
+  const title = row.getByRole("link", { name: "표에서 볼 작업", exact: true });
+  await expect.element(title).toHaveAttribute("href", "/issues?issue=desk-row");
+  expect(getComputedStyle(title.element()).cursor).toBe("pointer");
+  await expect
+    .element(row.getByRole("combobox", { name: messages.issueTable.statusOf("desk-row") }))
+    .toBeEnabled();
+  await expect
+    .element(row.getByRole("combobox", { name: messages.issueTable.priorityOf("desk-row") }))
+    .toBeEnabled();
+  await expect
+    .element(row.getByTitle(messages.issueTable.dependencyCounts(1, 0), { exact: true }))
+    .toBeVisible();
+});
 
 test("판단을 기다리는 이슈의 행에만 판단 기다림 표시가 붙는다", async () => {
   const screen = await render(

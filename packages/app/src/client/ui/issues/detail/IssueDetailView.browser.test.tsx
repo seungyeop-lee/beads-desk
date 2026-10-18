@@ -16,6 +16,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
 
+// 사람 확인 영역이 gate마다 읽는 gate 상세는 고정 값으로 바꿉니다.
+vi.mock("@/client/modules/issues/application/useIssueDetail", () => ({
+  useIssueDetail: (id: string) => ({ data: issueDetail(id), error: null, loading: false }),
+}));
+
 const WRITES: IssueWrites = {
   pending: false,
   error: null,
@@ -58,6 +63,51 @@ test("에픽 상세에서 순서 보기와 선행·후속 그래프 링크가 �
   );
 });
 
+test("막힘 안내, 사람 확인 영역, 연결된 이슈 목록은 선행 이슈와 gate의 ID를 복사 단추로 보인다", async () => {
+  const gate = {
+    id: "desk-gate",
+    title: "Review: desk-1",
+    status: "open",
+    priority: 2,
+    issueType: "gate",
+    dependencyType: "blocks",
+    awaitType: "human",
+  };
+  const screen = await renderDetail(
+    issueDetail("desk-1", {
+      title: "막힌 이슈",
+      dependencyCount: 2,
+      dependencies: [...detail({ issueType: "task" }).dependencies, gate],
+    }),
+  );
+  const copyButton = (region: string, id: string) =>
+    screen
+      .getByRole("region", { name: region, exact: true })
+      .getByRole("button", { name: messages.copyId.labelOf(id), exact: true });
+
+  for (const id of ["desk-2", "desk-gate"]) {
+    await expect.element(copyButton(messages.blocking.bannerTitle, id)).toBeVisible();
+    await expect.element(copyButton(messages.issueDetail.linkedIssues, id)).toBeVisible();
+  }
+  await expect.element(copyButton(messages.humanGate.panelTitle, "desk-gate")).toBeVisible();
+});
+
+// 옆 패널을 열어 주 상세가 56rem(@4xl)보다 좁아지면 속성 열이 풀려 속성 입력이 본문 위로 옮겨 그려집니다.
+for (const width of [704, 1152])
+  test(`주 상세 폭 ${width}px에서도 상태와 우선순위 입력은 하나씩만 그려져 label이 그 입력을 가리킨다`, async () => {
+    const screen = await renderDetail(detail({ issueType: "task" }), width);
+
+    for (const [id, label] of [
+      ["issue-status", messages.issue.status],
+      ["issue-priority", messages.issue.priority],
+    ]) {
+      expect(document.querySelectorAll(`#${id}`)).toHaveLength(1);
+      await expect
+        .element(screen.getByRole("combobox", { name: label, exact: true }))
+        .toHaveAttribute("id", id);
+    }
+  });
+
 /** 링크는 연결된 이슈 영역의 제목(caption)보다 글자가 크고 덜 투명해야 영역을 훑지 않고도 눈에 띕니다. */
 function expectMoreVisibleThanCaption(link: Element, caption: Element) {
   const linkStyle = getComputedStyle(link);
@@ -80,10 +130,10 @@ function alphaOf(color: string) {
   return rgba ? Number(rgba[1]) : 1;
 }
 
-function renderDetail(issue: IssueDetail) {
+function renderDetail(issue: IssueDetail, width = 1152) {
   return render(
     <LocaleProvider locale="ko">
-      <div style={{ width: 1152 }}>
+      <div style={{ width }}>
         <IssueDetailView
           issue={issue}
           writes={WRITES}

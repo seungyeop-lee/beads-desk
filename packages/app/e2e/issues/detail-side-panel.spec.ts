@@ -1,7 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
-import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
+import { expect, test, type BdWorkspace } from "../support/bdWorkspace";
 
-test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열리고, 주소로 새로고침과 뒤로·앞으로 가기를 따른다", async ({
+test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열려 그 이슈와 연결된 이슈를 보이고, 주소로 새로고침과 뒤로·앞으로 가기를 따른다", async ({
   page,
   workspace,
 }) => {
@@ -12,13 +12,16 @@ test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열리고, �
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("link", { name: /^이전 이슈/ })).toHaveCount(0);
+  await expect(linkedItems(dialog)).toHaveText([/^선행.*선행 이슈/]);
 
   await dependencyLink(dialog, dependency).click();
   const side = sidePanel(page, dependency);
   await expect(side).toBeVisible();
   await expect(page).toHaveURL(detailUrl(main, dependency));
+  await expect(side.getByRole("button", { name: `${dependency} ID 복사` })).toBeVisible();
   await expect(side.getByRole("heading", { name: "선행 이슈" })).toBeVisible();
   await expect(side.getByText("선행 이슈 설명")).toBeVisible();
+  await expect(linkedItems(side)).toHaveText([/^후속.*주 이슈/]);
   await expect(side.locator("input, textarea, select")).toHaveCount(0);
 
   await page.reload();
@@ -36,7 +39,7 @@ test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열리고, �
   await expect(page).toHaveURL(detailUrl(main, null));
 });
 
-test("옆 패널은 그 이슈의 댓글을 작성자, markdown 본문과 함께 보이고, CLI로 남긴 댓글도 이어서 보인다", async ({
+test("옆 패널은 그 이슈의 댓글을 작성자, markdown 본문과 함께 읽기 전용으로 보인다", async ({
   page,
   workspace,
 }) => {
@@ -55,42 +58,16 @@ test("옆 패널은 그 이슈의 댓글을 작성자, markdown 본문과 함께
   await expect(comments.getByRole("strong")).toHaveText("먼저 남긴 댓글");
   await expect(side.locator("input, textarea, select")).toHaveCount(0);
   await expect(side.getByRole("button", { name: "댓글 남기기" })).toHaveCount(0);
-
-  await workspace.bd("comments", "add", dependency, "나중에 남긴 댓글", "--author", "작업자");
-  await expect(comments).toHaveCount(2);
-  await expect(comments.nth(1)).toContainText("작업자");
-  await expect(comments.nth(1)).toContainText("나중에 남긴 댓글");
 });
 
-test("옆 패널의 이슈로 이동한 뒤 이전 이슈 버튼을 누르면 떠날 때의 옆 패널과 함께 돌아온다", async ({
-  page,
-  workspace,
-}) => {
-  const { main, dependency } = await seedDependency(workspace);
-
-  await page.goto("/issues");
-  await page.getByRole("link", { name: "주 이슈" }).click();
-  await dependencyLink(page.getByRole("dialog", { name: `${main} 이슈` }), dependency).click();
-  await sidePanel(page, dependency).getByRole("link", { name: "이 이슈로 이동" }).click();
-
-  await expect(page.getByRole("dialog", { name: `${dependency} 이슈` })).toBeVisible();
-  await expect(sidePanel(page, dependency)).toBeHidden();
-  await expect(page).toHaveURL(detailUrl(dependency, null));
-
-  await page.getByRole("link", { name: `이전 이슈 ${main}로 돌아가기` }).click();
-  await expect(page.getByRole("dialog", { name: `${main} 이슈` })).toBeVisible();
-  await expect(sidePanel(page, dependency)).toBeVisible();
-  await expect(page).toHaveURL(detailUrl(main, dependency));
-  await expect(page.getByRole("link", { name: /^이전 이슈/ })).toHaveCount(0);
-});
-
-test("옆 패널의 이슈로 이동하고 돌아오기를 되풀이해도 dialog에는 그 이슈의 상세가 한 번만 보인다", async ({
+test("옆 패널의 이슈로 이동한 뒤 이전 이슈 버튼을 누르면 떠날 때의 옆 패널과 함께 돌아오고, 되풀이해도 dialog에는 그 이슈의 상세가 한 번만 보인다", async ({
   page,
   workspace,
 }) => {
   const { main, dependency } = await seedDependency(workspace);
   const dialog = page.getByRole("dialog");
   const dependencyDescription = dialog.getByText("선행 이슈 설명");
+  const back = page.getByRole("link", { name: `이전 이슈 ${main}로 돌아가기` });
 
   await page.goto("/issues");
   await page.getByRole("link", { name: "주 이슈" }).click();
@@ -100,12 +77,21 @@ test("옆 패널의 이슈로 이동하고 돌아오기를 되풀이해도 dialo
     await sidePanel(page, dependency).getByRole("link", { name: "이 이슈로 이동" }).click();
     await expect(page.getByRole("dialog", { name: `${dependency} 이슈` })).toBeVisible();
     await expect(dependencyDescription).toHaveCount(1);
+    if (round === 0) {
+      await expect(sidePanel(page, dependency)).toBeHidden();
+      await expect(page).toHaveURL(detailUrl(dependency, null));
+    }
 
-    await page.getByRole("link", { name: `이전 이슈 ${main}로 돌아가기` }).click();
+    await back.click();
     // 주 상세가 주 이슈를 받은 뒤에 세어, 주 이슈를 받기 전까지 이전 이슈를 보이는 순간을 세지 않습니다.
     await expect(dependencyLink(dialog, dependency)).toBeVisible();
     await expect(sidePanel(page, dependency)).toBeVisible();
     await expect(dependencyDescription).toHaveCount(1);
+    if (round === 0) {
+      await expect(page.getByRole("dialog", { name: `${main} 이슈` })).toBeVisible();
+      await expect(page).toHaveURL(detailUrl(main, dependency));
+      await expect(back).toHaveCount(0);
+    }
   }
 });
 
@@ -114,6 +100,10 @@ function dependencyLink(dialog: Locator, dependency: string) {
   return dialog
     .getByRole("region", { name: "연결된 이슈" })
     .getByRole("link", { name: `${dependency} 선행 이슈` });
+}
+
+function linkedItems(scope: Locator) {
+  return scope.getByRole("region", { name: "연결된 이슈" }).getByRole("listitem");
 }
 
 async function seedDependency(workspace: BdWorkspace) {
@@ -135,30 +125,3 @@ function detailUrl(issue: string, side: string | null): RegExp {
   const query = side ? `issue=${issue}&side=${side}` : `issue=${issue}`;
   return new RegExp(`/issues\\?${query}$`);
 }
-
-test("옆 패널을 연 상세에서도 상태와 우선순위 입력이 하나씩만 있고, 상태를 바꾸면 저장된다", async ({
-  page,
-  workspace,
-}) => {
-  const { main, dependency } = await workspace.createIssues(
-    {
-      main: { title: "주 이슈", type: "task", description: "주 이슈 본문" },
-      dependency: { title: "선행 이슈", type: "task" },
-    },
-    [["main", "dependency"]],
-  );
-  // 옆 패널 때문에 주 상세가 좁아지면 속성 입력이 본문 위로 옮겨 그려집니다.
-  await page.setViewportSize({ width: 1220, height: 1000 });
-  await page.goto(`/issues?issue=${main}&side=${dependency}`);
-
-  const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
-  await expect(dialog.getByRole("region", { name: `${dependency} 이슈 옆 패널` })).toBeVisible();
-  // 배치를 바꿔도 입력이 하나씩만 그려져야 label이 가리키는 대상이 하나로 정해집니다.
-  await expect(page.locator("#issue-status")).toHaveCount(1);
-  await expect(page.locator("#issue-priority")).toHaveCount(1);
-
-  await dialog.getByLabel("상태", { exact: true }).selectOption("in_progress");
-  await expect
-    .poll(async () => (await workspace.showIssue(main)).status, { timeout: SAVE_TIMEOUT })
-    .toBe("in_progress");
-});

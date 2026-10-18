@@ -19,6 +19,7 @@ test("권장 섹션이 빠진 bug와 거의 같은 이슈 두 개는 각각 권�
   await expect(issueRow(lint, bug)).toContainText(
     "빠진 섹션: Steps to Reproduce, Acceptance Criteria",
   );
+  await expect(issueRow(lint, bug).getByRole("button", { name: `${bug} ID 복사` })).toBeVisible();
   const duplicates = card(page, "중복 후보");
   await expect(duplicates.getByRole("link", { name: new RegExp(first) })).toBeVisible();
   await expect(duplicates.getByRole("link", { name: new RegExp(second) })).toBeVisible();

@@ -1,4 +1,5 @@
 import { expect, test, vi } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
@@ -67,6 +68,36 @@ for (const { previousGateCount, sections } of [
     expect(directSectionNames(decision)).toEqual(sections);
   });
 }
+
+test("gate 상세는 머리글에 gate의 ID를, 막고 있는 작업 목록에 작업의 ID를 복사 단추로 보인다", async () => {
+  const summary: HumanGateSummary = {
+    gate: issue("desk-g2", { title: "Review: desk-work", issueType: "gate" }),
+    reason: "로그인 화면 수정 결과",
+    blocks: [WORK],
+    previousGateCount: 0,
+  };
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <HumanGateDecision summary={summary} />
+    </LocaleProvider>,
+  );
+  const decision = screen.getByRole("region", { name: summary.gate.title, exact: true });
+
+  await expect
+    .element(
+      page
+        .elementLocator(decision.element().querySelector("header")!)
+        .getByRole("button", { name: messages.copyId.labelOf("desk-g2") }),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      decision
+        .getByRole("region", { name: messages.humanGate.blocks })
+        .getByRole("button", { name: messages.copyId.labelOf(WORK.id) }),
+    )
+    .toBeVisible();
+});
 
 /** 상세 카드 직속 섹션의 접근 가능한 이름을 DOM 순서대로 모읍니다. 응답 섹션은 aria-labelledby로 제목을 가리킵니다. */
 function directSectionNames(decision: Element) {

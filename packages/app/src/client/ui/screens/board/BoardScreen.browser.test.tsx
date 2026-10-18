@@ -1,6 +1,8 @@
 import { expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { BoardItem } from "@/shared/contract/board";
 import { issue } from "@/shared/domain/issues/issueFixture";
@@ -12,9 +14,12 @@ const ITEMS: BoardItem[] = Array.from({ length: 14 }, (_, index) => ({
   issue: issue(`desk-${index}`, { title: `쌓인 작업 ${index}` }),
 }));
 
+/** 테스트마다 화면이 서버에서 읽을 보드 카드를 정합니다. */
+const reads = vi.hoisted(() => ({ items: [] as BoardItem[] }));
+
 // 화면이 서버에서 읽는 보드와 주소를 읽어 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
 vi.mock("@/client/modules/board/application/useBoard", () => ({
-  useBoard: () => ({ data: ITEMS, error: null, loading: false }),
+  useBoard: () => ({ data: reads.items, error: null, loading: false }),
 }));
 vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
   useGateTitles: () => new Map(),
@@ -38,6 +43,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 test("넓은 창에서 열이 화면 높이를 채우고 카드 목록만 열 안에서 스크롤된다", async () => {
+  reads.items = ITEMS;
   await page.viewport(1280, 720);
   const screen = await render(
     <LocaleProvider locale="ko">
@@ -69,6 +75,7 @@ test("넓은 창에서 열이 화면 높이를 채우고 카드 목록만 열 �
 });
 
 test("좁은 창에서는 열이 세로로 쌓이고 빈 열이 카드 한 장 높이 수준으로 작게 남는다", async () => {
+  reads.items = ITEMS;
   await page.viewport(455, 900);
   const screen = await render(
     <LocaleProvider locale="ko">
@@ -84,6 +91,31 @@ test("좁은 창에서는 열이 세로로 쌓이고 빈 열이 카드 한 장 �
     document.documentElement.scrollHeight > document.documentElement.clientHeight,
     "긴 목록은 페이지가 스크롤됨",
   ).toBe(true);
+});
+
+test("카드는 짧은 ID를 복사 단추로 보이고, 카드를 덮는 링크는 grab 커서를 보이며, 막힌 카드는 기다리는 선행 이슈를 보인다", async () => {
+  reads.items = [
+    { column: "ready", issue: issue("desk-first", { title: "선행 작업", dependentCount: 1 }) },
+    {
+      column: "blocked",
+      issue: issue("desk-second", { title: "기다리는 작업", blockedBy: ["desk-first"] }),
+    },
+  ];
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <BoardScreen />
+    </LocaleProvider>,
+  );
+
+  for (const id of ["desk-first", "desk-second"]) {
+    const copyButton = screen.getByRole("button", { name: messages.copyId.labelOf(id) });
+    expect(copyButton.element().textContent).toBe(shortIssueId(id));
+  }
+  const card = screen.getByRole("link", { name: "desk-first 선행 작업" });
+  expect(getComputedStyle(card.element()).cursor).toBe("grab");
+  await expect
+    .element(screen.getByRole("region", { name: "막힘", exact: true }))
+    .toMatchTextContent(messages.blocking.waitingOn("desk-first"));
 });
 
 /**
