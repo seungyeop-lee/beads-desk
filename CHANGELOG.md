@@ -4,6 +4,12 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-10-18
+
+### Fixed
+
+- When an issue is blocked by a gate that is not a human gate, the blocked line on the **Now** screen, in the **Issues** and **Epics** tables, and on **Board** cards shows the gate's title instead of only its ID.
+
 ## [0.2.1] - 2026-10-18
 
 ### Fixed
