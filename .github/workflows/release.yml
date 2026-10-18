@@ -95,17 +95,11 @@ jobs:
           cat "$RUNNER_TEMP/release-notes.md"
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      # npm은 OIDC로 먼저 인증하고, 실패하면 ~/.npmrc의 token을 씁니다.
-      # 첫 게시처럼 trusted publisher를 설정하기 전에는 NPM_TOKEN secret을 두고, 설정한 뒤 secret을 지우면 OIDC만 남습니다.
+      # npm 인증은 trusted publishing(OIDC)만 씁니다. 패키지의 Publishing access가 token 게시를 막고 있어서 token으로는 게시할 수 없습니다.
       # npm은 prerelease version을 --tag 없이 게시하면 거부하므로, prerelease는 next tag로 게시해 latest를 바꾸지 않습니다.
       - name: Publish to npm
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm --version
-          if [ -n "$NPM_TOKEN" ]; then
-            echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > ~/.npmrc
-          fi
           node packages/app/scripts/run-npm-release.mjs publish ${{ needs.version.outputs.prerelease == 'true' && '--tag next' || '' }} ${{ github.event_name != 'push' && '--dry-run' || '' }}
       - name: Create the tag and GitHub Release
         if: github.event_name == 'push'
