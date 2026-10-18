@@ -33,7 +33,7 @@ body:
     id: bd-desk-version
     attributes:
       label: bd-desk version
-      description: Run `npm ls -g @seungyeop-lee/beads-desk` (or `pnpm list -g @seungyeop-lee/beads-desk` if you installed it with pnpm). If you built it from the repository, give the commit hash from `git rev-parse --short HEAD`.
+      description: Output of `bd-desk --version`. If you built it from the repository, give the commit hash from `git rev-parse --short HEAD`.
     validations:
       required: true
   - type: input

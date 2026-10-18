@@ -21,7 +21,8 @@ const USAGE = `Usage: bd-desk [start|stop|restart] [--port <number>] [--open]
            and the current workspace.
 
   --port <number>  Server port. Defaults to the first free port from ${DEFAULT_PORT}.
-  --open           Open the browser when the server is ready.`;
+  --open           Open the browser when the server is ready.
+  -v, --version    Print the installed bd-desk version.`;
 
 const require = createRequire(import.meta.url);
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -29,6 +30,10 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 if (args.includes("--help") || args.includes("-h")) {
   console.log(USAGE);
+  process.exit(0);
+}
+if (args.includes("--version") || args.includes("-v")) {
+  console.log(require("../package.json").version);
   process.exit(0);
 }
 const options = parseArguments(args);
