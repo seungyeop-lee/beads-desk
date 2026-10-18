@@ -1,100 +1,41 @@
 import { describe, expect, test } from "vitest";
-import type { BdCommandLog, SceneLog } from "../capture/captureLog.ts";
 import {
-  cameraAt,
-  formatBdCommand,
-  terminalCommands,
-  terminalScreen,
-  type CameraKey,
+  FPS,
+  INTRO_FRAMES,
+  introSchedule,
+  OUTRO_FRAMES,
+  SHOTS,
+  type Shot,
 } from "./introTimeline.ts";
 
-const command = (args: string[], startMs: number, endMs: number): BdCommandLog => ({
-  args,
-  stdout: `✓ ${args[0]}\n`,
-  startMs,
-  endMs,
-  shownMs: endMs + 3000,
-});
-const scene = (bdCommands: BdCommandLog[]): SceneLog => ({
-  name: "live-updates",
-  video: "live-updates.webm",
-  bdCommands,
+const shot = (...clips: [number, number][]): Shot => ({
+  recording: "now",
+  clips: clips.map(([fromMs, toMs]) => ({ fromMs, toMs })),
+  caption: { title: "Now", text: "" },
 });
 
-test("공백이 든 인자만 큰따옴표로 감싸 명령을 보인다", () => {
-  expect(formatBdCommand(["close", "acme-7qx", "--reason", "Sending domain verified"])).toBe(
-    'bd close acme-7qx --reason "Sending domain verified"',
-  );
-});
-
-describe("터미널 명령의 입력 시각", () => {
-  test("녹화에서 bd를 실행한 시각에 입력을 마치고 Enter를 누른다", () => {
-    const [typed] = terminalCommands(scene([command(["update", "acme-k3v.6"], 2000, 2400)]));
-    expect(typed).toMatchObject({ enterMs: 2000, outputMs: 2400 });
-    expect(typed!.typeFromMs).toBeLessThan(2000);
+describe("장면 일정", () => {
+  test("장면을 겹치지 않게 이어 붙이고, 마지막 장면 뒤에 설치 안내를 둔다", () => {
+    const { shots, outro } = introSchedule([shot([600, 6000]), shot([1000, 3000])]);
+    expect(shots.map(({ from, frames }) => ({ from, frames }))).toEqual([
+      { from: 0, frames: 5.4 * FPS },
+      { from: 5.4 * FPS, frames: 2 * FPS },
+    ]);
+    expect(outro).toEqual({ from: 7.4 * FPS, frames: OUTRO_FRAMES });
   });
 
-  test("앞 명령의 출력이 나오기 전에는 다음 명령을 입력하기 시작하지 않는다", () => {
-    const [first, second] = terminalCommands(
-      scene([command(["update", "a"], 2000, 2400), command(["close", "b"], 2500, 2700)]),
-    );
-    expect(second!.typeFromMs).toBeGreaterThanOrEqual(first!.outputMs);
-    expect(second!.typeFromMs).toBeLessThanOrEqual(second!.enterMs);
+  test("구간이 여럿인 장면은 빼낸 시간 없이 구간들의 길이를 더한 만큼 머문다", () => {
+    const { shots } = introSchedule([shot([0, 3000], [5000, 6000])]);
+    expect(shots[0]!.frames).toBe(4 * FPS);
   });
 });
 
-describe("녹화 시각에 따른 터미널 화면", () => {
-  const commands = terminalCommands(scene([command(["update", "acme-k3v.6"], 2000, 2400)]));
-  const { typeFromMs } = commands[0]!;
-
-  test("입력하기 전에는 빈 프롬프트만 보인다", () => {
-    expect(terminalScreen(commands, typeFromMs - 1)).toEqual({
-      lines: [{ prompt: true, text: "" }],
-      cursor: "idle",
-    });
-  });
-
-  test("입력하는 동안에는 명령의 앞부분까지 보인다", () => {
-    const { lines, cursor } = terminalScreen(commands, (typeFromMs + 2000) / 2);
-    expect(cursor).toBe("typing");
-    expect("bd update acme-k3v.6".startsWith(lines[0]!.text)).toBe(true);
-    expect(lines[0]!.text.length).toBeGreaterThan(0);
-    expect(lines[0]!.text.length).toBeLessThan("bd update acme-k3v.6".length);
-  });
-
-  test("Enter를 누른 뒤 bd가 끝날 때까지는 출력 없이 실행 중으로 보인다", () => {
-    expect(terminalScreen(commands, 2200)).toEqual({
-      lines: [{ prompt: true, text: "bd update acme-k3v.6" }],
-      cursor: "running",
-    });
-  });
-
-  test("bd가 끝나면 출력 뒤에 새 프롬프트가 보인다", () => {
-    expect(terminalScreen(commands, 2400)).toEqual({
-      lines: [
-        { prompt: true, text: "bd update acme-k3v.6" },
-        { prompt: false, text: "✓ update" },
-        { prompt: true, text: "" },
-      ],
-      cursor: "idle",
-    });
-  });
+test("소개 영상은 30초 이상 45초 이하다", () => {
+  expect(INTRO_FRAMES / FPS).toBeGreaterThanOrEqual(30);
+  expect(INTRO_FRAMES / FPS).toBeLessThanOrEqual(45);
 });
 
-describe("확대 상태", () => {
-  const zoomIn: CameraKey = { atMs: 1000, scale: 1.25, origin: { x: 300, y: 760 } };
-
-  test("첫 key 전에는 녹화 전체를 보인다", () => {
-    expect(cameraAt([zoomIn], 1000).scale).toBe(1);
-  });
-
-  test("옮겨 가는 동안에는 앞 상태와 key 사이에 있다", () => {
-    const { scale } = cameraAt([zoomIn], 1450);
-    expect(scale).toBeGreaterThan(1);
-    expect(scale).toBeLessThan(1.25);
-  });
-
-  test("다 옮겨 간 뒤에는 key의 상태에 머문다", () => {
-    expect(cameraAt([zoomIn], 5000)).toEqual({ scale: 1.25, origin: { x: 300, y: 760 } });
-  });
+test("모든 구간은 녹화 시작 이후에 시작하고, 시작보다 늦게 끝난다", () => {
+  const clips = SHOTS.flatMap((shot) => shot.clips);
+  expect(clips.filter(({ fromMs, toMs }) => fromMs < 0 || toMs <= fromMs)).toEqual([]);
 });

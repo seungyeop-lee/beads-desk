@@ -1,97 +1,36 @@
 import type { ReactNode } from "react";
 import { AbsoluteFill, interpolate, Sequence, useCurrentFrame } from "remotion";
-import type { CaptureLog } from "../capture/captureLog.ts";
-import { BrowserWindow, TITLE_BAR_HEIGHT } from "./BrowserWindow.tsx";
+import { BrowserWindow } from "./BrowserWindow.tsx";
 import {
   FADE_FRAMES,
-  findScene,
-  heroShot,
-  introSchedule,
-  RECORDING_SIZE,
-  shotFrames,
+  INTRO_SCHEDULE,
   VIDEO_SIZE,
   type Caption,
-  type Hero,
-  type Shot,
   type Slot,
 } from "./introTimeline.ts";
-import { Terminal } from "./Terminal.tsx";
-
-export type IntroProps = { log: CaptureLog };
 
 const BACKGROUND = "#efece6";
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
-const MARGIN = 40;
 /** 자막 띠의 높이입니다. 화면 아래쪽 이 높이에는 창을 두지 않아, 자막이 녹화를 가리지 않습니다. */
 const CAPTION_HEIGHT = 110;
-const TERMINAL_WIDTH = 500;
-const HERO_GAP = 28;
-const HERO_BROWSER_SCALE =
-  (VIDEO_SIZE.width - MARGIN * 2 - TERMINAL_WIDTH - HERO_GAP) / RECORDING_SIZE.width;
-const FEATURE_BROWSER_SCALE = 0.8;
+const BROWSER_SCALE = 0.8;
 
-/** hero, 기능 장면, 마지막 설치 안내를 차례로 이어 붙인 소개 영상입니다. */
-export function IntroVideo({ log }: IntroProps) {
-  const { hero, features, outro } = introSchedule(log);
+/** 장면을 차례로 이어 붙이고 마지막에 설치 안내를 보이는 소개 영상입니다. */
+export function IntroVideo() {
+  const { shots, outro } = INTRO_SCHEDULE;
   return (
     <AbsoluteFill style={{ background: BACKGROUND, fontFamily: FONT }}>
-      <FadingSequence slot={hero}>
-        <HeroScene hero={hero} log={log} />
-      </FadingSequence>
-      {features.map((shot) => (
+      {shots.map((shot) => (
         <FadingSequence key={shot.recording} slot={shot}>
-          <FeatureScene shot={shot} log={log} />
+          <SceneLayout caption={shot.caption}>
+            <BrowserWindow shot={shot} scale={BROWSER_SCALE} />
+          </SceneLayout>
         </FadingSequence>
       ))}
       <FadingSequence slot={outro}>
         <Outro />
       </FadingSequence>
     </AbsoluteFill>
-  );
-}
-
-/** README GIF로 쓰는 hero 장면만의 영상입니다. */
-export function HeroVideo({ log }: IntroProps) {
-  const hero = heroShot(log);
-  return (
-    <AbsoluteFill style={{ background: BACKGROUND, fontFamily: FONT }}>
-      <Fade frames={shotFrames(hero)}>
-        <HeroScene hero={hero} log={log} />
-      </Fade>
-    </AbsoluteFill>
-  );
-}
-
-function HeroScene({ hero, log }: { hero: Hero; log: CaptureLog }) {
-  const windowHeight = RECORDING_SIZE.height * HERO_BROWSER_SCALE + TITLE_BAR_HEIGHT;
-  return (
-    <SceneLayout caption={hero.caption}>
-      <div style={{ display: "flex", gap: HERO_GAP }}>
-        <Terminal
-          commands={hero.commands}
-          fromMs={hero.fromMs}
-          width={TERMINAL_WIDTH}
-          height={windowHeight}
-        />
-        <BrowserWindow
-          shot={hero}
-          video={findScene(log, hero.recording).video}
-          scale={HERO_BROWSER_SCALE}
-        />
-      </div>
-    </SceneLayout>
-  );
-}
-
-function FeatureScene({ shot, log }: { shot: Shot; log: CaptureLog }) {
-  return (
-    <SceneLayout caption={shot.caption}>
-      <BrowserWindow
-        shot={shot}
-        video={findScene(log, shot.recording).video}
-        scale={FEATURE_BROWSER_SCALE}
-      />
-    </SceneLayout>
   );
 }
 
