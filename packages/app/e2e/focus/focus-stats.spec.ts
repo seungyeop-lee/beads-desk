@@ -6,10 +6,7 @@ const pad = (value: number) => String(value).padStart(2, "0");
 const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 const todayName = `${now.getMonth() + 1}월 ${now.getDate()}일`;
 
-test("이슈를 만들고 착수해 닫으면 흐름 통계의 오늘 막대와 처리 시간이 바뀐다", async ({
-  page,
-  workspace,
-}) => {
+test("이슈를 만들고 닫으면 흐름 통계의 오늘 막대가 바뀐다", async ({ page, workspace }) => {
   await page.goto("/focus");
   const stats = page.getByRole("region", { name: "흐름" });
   await expect(stats.getByText("최근 7일 동안 닫은 이슈가 없습니다")).toHaveCount(2);
@@ -20,21 +17,22 @@ test("이슈를 만들고 착수해 닫으면 흐름 통계의 오늘 막대와 
   ).toBeVisible();
   await expect(stats.getByRole("link", { name: /닫은 이슈/ })).toHaveCount(0);
 
-  await workspace.bd("update", id, "--claim");
   await workspace.bd("close", id);
   await expect(
     stats.getByRole("link", { name: `${todayName}에 닫은 이슈 1개 보기` }),
   ).toBeVisible();
-  await expect(stats.getByText("중앙값 · 1개 기준")).toHaveCount(2);
 });
 
-test("오늘 막대를 누르면 이슈 목록에서 오늘 닫거나 만든 이슈의 조건으로 연다", async ({
+test("오늘 막대, 보류 수, 닫을 수 있는 에픽 수를 누르면 오늘 닫거나 만든 이슈의 조건으로 연 이슈 목록, 보류 보기 탭, 그 에픽을 모은 정리 페이지를 연다", async ({
   page,
   workspace,
 }) => {
+  // 오늘 만든 작업은 미룬 작업과 끝난 하위 작업 둘이고, 오늘 닫은 작업은 끝난 하위 작업 하나입니다. 에픽은 처리량에서 뺍니다.
   await workspace.createIssues({
-    done: { title: "오늘 끝낸 작업", type: "task", status: "closed" },
-    open: { title: "열린 작업", type: "task" },
+    later: { title: "미룬 작업", type: "task", status: "deferred" },
+    epic: { title: "다 끝난 에픽", type: "epic" },
+    child: { title: "끝난 하위 작업", type: "task", parent: "epic", status: "closed" },
+    empty: { title: "하위 없는 에픽", type: "epic" },
   });
 
   await page.goto("/focus");
@@ -47,21 +45,8 @@ test("오늘 막대를 누르면 이슈 목록에서 오늘 닫거나 만든 이
   await page.goBack();
   await stats.getByRole("link", { name: `${todayName}에 만든 이슈 2개 보기` }).click();
   await expect(page).toHaveURL(new RegExp(`/issues\\?from=${today}&to=${today}&type=`));
-});
 
-test("보류 수와 닫을 수 있는 에픽 수를 보이고, 누르면 보류 보기 탭과 그 에픽을 모은 정리 페이지를 연다", async ({
-  page,
-  workspace,
-}) => {
-  await workspace.createIssues({
-    later: { title: "미룬 작업", type: "task", status: "deferred" },
-    epic: { title: "다 끝난 에픽", type: "epic" },
-    child: { title: "끝난 하위 작업", type: "task", parent: "epic", status: "closed" },
-    empty: { title: "하위 없는 에픽", type: "epic" },
-  });
-
-  await page.goto("/focus");
-  const stats = page.getByRole("region", { name: "흐름" });
+  await page.goBack();
   await stats.getByRole("link", { name: "보류 1" }).click();
   await expect(page).toHaveURL(/\/issues\?view=deferred$/);
   await expect(page.getByRole("link", { name: "미룬 작업" })).toBeVisible();

@@ -83,3 +83,26 @@ for (const width of AREA_WIDTHS) {
     }
   });
 }
+
+test("판단을 기다리는 이슈의 행에만 판단 기다림 표시가 붙는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueTable
+        issues={[
+          issue("desk-question", { title: "판단이 필요한 작업", labels: ["human"] }),
+          issue("desk-plain", { title: "평범한 작업" }),
+        ]}
+        issueHref={(id) => `/issues?issue=${id}`}
+        writes={WRITES}
+        gateTitles={new Map()}
+      />
+    </LocaleProvider>,
+  );
+
+  const chip = (title: RegExp) =>
+    screen
+      .getByRole("row", { name: title })
+      .getByText(messages.humanDecision.chip, { exact: true });
+  await expect.element(chip(/판단이 필요한 작업/)).toBeVisible();
+  await expect.element(chip(/평범한 작업/)).not.toBeInTheDocument();
+});

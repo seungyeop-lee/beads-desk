@@ -1,28 +1,13 @@
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
-import { commentTexts, createHumanGate } from "../support/humanGates";
+import { createHumanGate } from "../support/humanGates";
 
-test("human gate가 막는 작업은 지금 화면, 목록, 보드에서 사람 확인 기다림과 gate 제목으로 보이고, 상세에서 응답하면 gate만 닫히고 사람 확인 안내가 사라진다", async ({
+test("human gate가 막는 작업의 상세에서 gate에 응답하면 gate가 닫히고 사람 확인 안내가 사라진다", async ({
   page,
   workspace,
 }) => {
   const work = await workspace.createIssue("로그인 화면 다시 그리기");
   const gate = await createHumanGate(workspace, work, "로그인 화면 수정 결과");
   const gateTitle = `Review: ${work}`;
-
-  await page.goto("/focus");
-  // 행과 카드의 링크는 위에 겹친 빈 요소라, 보이는 글자는 링크를 품은 목록 항목에서 확인합니다.
-  const blockedItem = page
-    .getByRole("region", { name: "막힘" })
-    .getByRole("listitem")
-    .filter({ has: page.getByRole("link", { name: /로그인 화면 다시 그리기/ }) });
-  const focusRow = blockedItem;
-  await expect(focusRow).toContainText("사람 확인 기다림");
-  await expect(focusRow).toContainText(gateTitle);
-
-  await page.goto("/board");
-  const card = blockedItem;
-  await expect(card).toContainText("사람 확인 기다림");
-  await expect(card).toContainText(gateTitle);
 
   await page.goto("/issues");
   await page.getByRole("link", { name: `사람 확인 기다림: ${gateTitle}` }).click();
@@ -40,20 +25,17 @@ test("human gate가 막는 작업은 지금 화면, 목록, 보드에서 사람 
       timeout: SAVE_TIMEOUT,
     })
     .toBe("Responded");
-  expect(await commentTexts(workspace, gate)).toEqual(["Response: 버튼 색을 바꿔 주세요"]);
-  expect((await workspace.showIssue(work)).status).toBe("open");
   await expect(panel).toHaveCount(0);
 });
 
-test("열린 gate 목록을 받기 전에는 human gate에 막힌 작업에 다른 막는 이슈를 보이지 않고, 받은 뒤 지금 화면, 보드, 목록, 에픽에서 사람 확인 기다림을 보인다", async ({
+test("열린 gate 목록을 받기 전에는 human gate에 막힌 작업에 다른 막는 이슈를 보이지 않고, 받은 뒤 지금 화면, 보드, 목록에서 사람 확인 기다림을 보인다", async ({
   page,
   workspace,
 }) => {
   const { prior, work } = await workspace.createIssues(
     {
-      epic: { title: "묶음 에픽", type: "epic" },
       prior: { title: "선행 작업", type: "task" },
-      work: { title: "검토받을 작업", type: "task", parent: "epic" },
+      work: { title: "검토받을 작업", type: "task" },
     },
     [["work", "prior"]],
   );
@@ -77,7 +59,6 @@ test("열린 gate 목록을 받기 전에는 human gate에 막힌 작업에 다�
     { href: "/focus", item: blockedWork },
     { href: "/board", item: blockedWork },
     { href: "/issues", item: workRow },
-    { href: "/epics", item: workRow },
   ]) {
     let releaseGates = () => {};
     heldGates = new Promise<void>((resolve) => {

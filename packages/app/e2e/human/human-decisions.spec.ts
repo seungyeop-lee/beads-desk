@@ -1,7 +1,8 @@
-import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
-import { createHumanGate, expectRowGoneWhenNotified } from "../support/humanGates";
+import type { Page } from "@playwright/test";
+import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
+import { commentTexts, createHumanGate, expectRowGoneWhenNotified } from "../support/humanGates";
 
-test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가서 응답하면, 이슈가 닫히고 응답 댓글이 남는다", async ({
+test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가서 응답하면, 이슈가 닫히고 응답 댓글이 남으며 새로고침하지 않아도 탭의 개수가 사라진다", async ({
   page,
   workspace,
 }) => {
@@ -18,6 +19,7 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
   await page.goto("/focus");
   await page.getByRole("link", { name: "판단 기다림 1", exact: true }).click();
   await expect(page).toHaveURL(/\/human/);
+  await expect(screenTab(page, "판단 기다림 1개")).toBeVisible();
   const decision = page.getByRole("region", { name: "인증 방식을 정해 주세요" });
   await expect(decision).toContainText("OAuth2와 세션 쿠키 중 무엇으로 할까요?");
 
@@ -37,6 +39,7 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
     .toBe("closed");
   expect(await commentTexts(workspace, question)).toEqual(["Response: OAuth2로 진행해 주세요"]);
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
+  await expect(screenTab(page, "판단 기다림")).toBeVisible();
 });
 
 test("응답 없이 닫는 동안에는 응답 편집기가 감춰지고 취소하면 적어 둔 응답이 남으며, 닫은 이슈는 판단 기다림 화면에서 사라지고 적은 사유가 닫은 사유로 남는다", async ({
@@ -76,28 +79,7 @@ test("응답 없이 닫는 동안에는 응답 편집기가 감춰지고 취소�
   await expect(page.getByRole("region", { name: "남은 질문" })).toBeVisible();
 });
 
-test("이슈 목록에서는 판단을 기다리는 이슈에만 표시가 붙고, 그렇지 않은 이슈의 상세에는 응답 영역이 없다", async ({
-  page,
-  workspace,
-}) => {
-  const { plain } = await workspace.createIssues({
-    question: { title: "판단이 필요한 작업", type: "task", labels: ["human"] },
-    plain: { title: "평범한 작업", type: "task" },
-  });
-
-  await page.goto("/issues");
-  await expect(page.getByRole("row", { name: /판단이 필요한 작업/ })).toContainText("판단 기다림");
-  await expect(page.getByRole("row", { name: /평범한 작업/ })).not.toContainText("판단 기다림");
-
-  await page.getByRole("link", { name: "평범한 작업" }).click();
-  const dialog = page.getByRole("dialog", { name: `${plain} 이슈` });
-  await expect(dialog.getByRole("textbox", { name: "새 댓글" })).toBeVisible();
-  await expect(
-    dialog.getByRole("region", { name: "사람의 판단을 기다리는 이슈입니다" }),
-  ).toHaveCount(0);
-});
-
-test("오른쪽에 보이는 항목을 주소가 가리키고 새로고침해도 유지되며, 닫히면 남은 항목으로 넘어간다", async ({
+test("human gate는 human 라벨이 붙어도 확인 요청 묶음에만 보이고, 오른쪽에 보이는 항목을 주소가 가리키고 새로고침해도 유지되며, 닫히면 남은 항목으로 넘어간다", async ({
   page,
   workspace,
 }) => {
@@ -105,10 +87,21 @@ test("오른쪽에 보이는 항목을 주소가 가리키고 새로고침해도
     work: { title: "로그인 화면 다시 그리기", type: "task" },
     question: { title: "남은 질문", type: "task", labels: ["human"] },
   });
-  const gate = await createHumanGate(workspace, work, "로그인 화면 수정 결과");
+  const gate = await createHumanGate(workspace, work, "로그인 화면 수정 결과", {
+    humanLabel: true,
+  });
+
+  // human 라벨이 붙은 gate는 질문 묶음과 탭의 개수에 한 번 더 들어가지 않는다.
+  await page.goto("/human");
+  const gates = page.getByRole("region", { name: "확인 요청", exact: true });
+  const questions = page.getByRole("region", { name: "질문", exact: true });
+  await expect(gates.getByRole("heading")).toHaveText("확인 요청1");
+  await expect(gates.getByRole("button", { name: new RegExp(`Review: ${work}`) })).toBeVisible();
+  await expect(questions.getByRole("heading")).toHaveText("질문1");
+  await expect(questions.getByRole("button", { name: /남은 질문/ })).toBeVisible();
+  await expect(screenTab(page, "판단 기다림 2개")).toBeVisible();
 
   // 파라미터 없이 들어가면 맨 위 항목인 확인 요청을 자동으로 보이고, 주소도 이를 가리킨다.
-  await page.goto("/human");
   await expect(page).toHaveURL(new RegExp(`item=${gate}$`));
   await expect(page.getByRole("region", { name: `Review: ${work}` })).toBeVisible();
 
@@ -137,7 +130,6 @@ test("오른쪽에 보이는 항목을 주소가 가리키고 새로고침해도
   await expect(page.getByRole("region", { name: "남은 질문" })).toBeVisible();
 });
 
-async function commentTexts(workspace: BdWorkspace, id: string): Promise<string[]> {
-  const comments: { text: string }[] = JSON.parse(await workspace.bd("comments", id, "--json"));
-  return comments.map((comment) => comment.text);
+function screenTab(page: Page, name: string) {
+  return page.getByRole("navigation", { name: "화면" }).getByRole("link", { name, exact: true });
 }

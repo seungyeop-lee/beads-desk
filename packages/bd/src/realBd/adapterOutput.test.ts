@@ -13,6 +13,7 @@ import {
   createIssue,
   deferIssue,
   dependencyGraph,
+  dismissHuman,
   duplicateCandidates,
   humanDecisionIssues,
   humanGates,
@@ -280,6 +281,21 @@ test("bd gate create로 만든 human gate와 막고 있는 이슈를 읽고, 응
   });
   expect(value(await showIssue(cwd, work)).status).toBe("open");
   expect(value(await humanGates(cwd)).map((found) => found.gate.id)).not.toContain(gateId);
+});
+
+test("human 라벨이 붙은 human gate를 응답 없이 닫으면 적은 사유가 닫은 사유로 남고, 막고 있던 작업은 열린 채로 남는다", async () => {
+  const work = value(await createIssue(cwd, { title: "그만둘 작업" }));
+  const gateId: string = JSON.parse(
+    await run("bd", "gate", "create", "--blocks", work, "--title", `Review: ${work}`, "--json"),
+  ).id;
+  await run("bd", "label", "add", gateId, "human");
+
+  value(await dismissHuman(cwd, gateId, "작업을 그만둠"));
+  expect(value(await showIssue(cwd, gateId))).toMatchObject({
+    status: "closed",
+    closeReason: "Dismissed: 작업을 그만둠",
+  });
+  expect(value(await showIssue(cwd, work)).status).toBe("open");
 });
 
 test("같은 작업을 다시 막는 gate는 이전 라운드의 닫힌 gate와 기록을 오래된 순으로 읽는다", async () => {

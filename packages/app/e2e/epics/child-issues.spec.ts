@@ -18,10 +18,12 @@ test("에픽의 새 하위 이슈는 상위 에픽을 바꿀 수 없고, 만든 
 
   await expect(page).toHaveURL(/[?&]issue=/);
   const created = new URL(page.url()).searchParams.get("issue") ?? "";
-  await expect(page.getByRole("dialog", { name: `${created} 이슈` })).toBeVisible();
+  const detail = page.getByRole("dialog", { name: `${created} 이슈` });
+  await expect(detail).toBeVisible();
   expect((await workspace.showIssue(created)).parent).toBe(epic);
 
-  await page.goto("/epics");
+  await page.keyboard.press("Escape");
+  await expect(detail).toBeHidden();
   await expect(page.getByRole("link", { name: "에픽에서 만든 하위 이슈" })).toBeVisible();
   await expect(page.getByLabel(`${epic} 진행률`)).toHaveAttribute("max", "1");
 });

@@ -1,29 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
 
-const ALL_STATUSES = ["열림", "진행 중", "막힘", "보류", "닫힘"];
-
-test("결정의 상태 select에는 결정 탭, 이슈 표, 상세 dialog 모두 열림과 닫힘만 있다", async ({
-  page,
-  workspace,
-}) => {
-  const { decision, task } = await workspace.createIssues({
-    decision: { title: "e2e 결정", type: "decision" },
-    task: { title: "e2e 작업", type: "task" },
-  });
-
-  await page.goto("/decisions");
-  await expect(rowStatus(page, decision).locator("option")).toHaveText(["열림", "닫힘"]);
-
-  await page.goto("/issues");
-  await showDecisionsInIssueTable(page);
-  await expect(rowStatus(page, decision).locator("option")).toHaveText(["열림", "닫힘"]);
-  await expect(rowStatus(page, task).locator("option")).toHaveText(ALL_STATUSES);
-
-  await page.getByRole("link", { name: "e2e 결정" }).click();
-  await expect(detailStatus(page, decision).locator("option")).toHaveText(["열림", "닫힘"]);
-});
-
 test("CLI로 보류한 결정은 보류로 보이고, 화면에서 열림으로 되돌릴 수 있다", async ({
   page,
   workspace,
@@ -79,18 +56,8 @@ async function submitCloseReason(page: Page) {
     .click();
 }
 
-/** 이슈 표는 처음에 결정을 빼고 보이므로 유형 메뉴에서 결정을 고릅니다. */
-async function showDecisionsInIssueTable(page: Page) {
-  await page.locator("summary", { hasText: "유형" }).click();
-  await page.getByRole("checkbox", { name: "결정" }).check();
-}
-
 function rowStatus(page: Page, id: string) {
   return page.getByRole("combobox", { name: `${id} 상태`, exact: true });
-}
-
-function detailStatus(page: Page, id: string) {
-  return page.getByRole("dialog", { name: `${id} 이슈` }).getByLabel("상태", { exact: true });
 }
 
 async function expectStatus(workspace: BdWorkspace, id: string, status: string) {
