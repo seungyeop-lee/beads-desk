@@ -4,6 +4,7 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { DecisionSummary } from "@/shared/contract/decisions";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { DecisionsScreen } from "./DecisionsScreen";
 
 const KOREAN =
@@ -57,21 +58,12 @@ for (const width of WIDTHS) {
 }
 
 function decision(id: string, title: string, status: string): Issue {
-  return {
-    id,
+  return issue(id, {
     title,
     status,
-    priority: 2,
     issueType: "decision",
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
     createdAt: Date.UTC(2026, 9, 17),
     updatedAt: Date.UTC(2026, 9, 17),
-    startedAt: null,
     closedAt: status === "closed" ? Date.UTC(2026, 9, 17) : null,
-    deferUntil: null,
-  };
+  });
 }

@@ -1,4 +1,3 @@
-export type { Issue, IssueDependency, IssueDetail, IssueEvent, IssueStatus } from "./issue";
 export {
   boardIssues,
   decisionRecords,

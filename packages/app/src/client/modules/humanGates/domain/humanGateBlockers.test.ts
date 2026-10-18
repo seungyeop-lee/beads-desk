@@ -1,8 +1,8 @@
-import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { blockersOf, humanGateTitles } from "./humanGateBlockers";
 
-const gate = { id: "x-gate", title: "Review: x-1" } as Issue;
+const gate = issue("x-gate", { title: "Review: x-1" });
 const gateTitles = humanGateTitles([{ gate, reason: "", blocks: [], previousGateCount: 0 }]);
 const titles = new Map([["x-2", "선행 작업"]]);
 

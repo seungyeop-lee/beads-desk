@@ -1,5 +1,6 @@
-import { listIssues, withWorkSignals, type Issue } from "@beads-desk/bd";
+import { listIssues, withWorkSignals } from "@beads-desk/bd";
 import { beforeEach, expect, test, vi } from "vitest";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { readEpicDescendants } from "./epicDescendants";
 
 vi.mock("@beads-desk/bd", async (importOriginal) => ({
@@ -14,13 +15,13 @@ beforeEach(() => {
 
 test("epic의 후손 이슈와 에픽 밖에서 기다리는 이슈까지 센 후손 이슈의 대기 수를 조립한다", async () => {
   const issues = [
-    { id: "e-1", status: "open" },
-    { id: "e-1.1", status: "open", parent: "e-1" },
-    { id: "e-1.2", status: "open", parent: "e-1", blockedBy: ["e-1.1"] },
-    { id: "outside", status: "open", blockedBy: ["e-1.2"] },
-    { id: "blocker", status: "open" },
-    { id: "e-1.3", status: "open", parent: "e-1", blockedBy: ["blocker"] },
-  ] as Issue[];
+    issue("e-1"),
+    issue("e-1.1", { parent: "e-1" }),
+    issue("e-1.2", { parent: "e-1", blockedBy: ["e-1.1"] }),
+    issue("outside", { blockedBy: ["e-1.2"] }),
+    issue("blocker"),
+    issue("e-1.3", { parent: "e-1", blockedBy: ["blocker"] }),
+  ];
   vi.mocked(listIssues).mockResolvedValue({ ok: true, value: issues });
 
   const result = await readEpicDescendants("/workspace", "e-1");

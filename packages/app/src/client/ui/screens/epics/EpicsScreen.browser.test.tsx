@@ -4,6 +4,7 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicSummary } from "@/shared/contract/epics";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { EpicsScreen } from "./EpicsScreen";
 
 const EPICS: EpicSummary[] = [
@@ -64,21 +65,5 @@ function lineCount(element: Element) {
 }
 
 function epic(id: string, title: string): Issue {
-  return {
-    id,
-    title,
-    status: "open",
-    priority: 2,
-    issueType: "epic",
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-  };
+  return issue(id, { title, issueType: "epic" });
 }

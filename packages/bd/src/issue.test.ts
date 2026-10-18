@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
 import { describe, expect, test } from "vitest";
+import { fixture } from "./fakeBd";
 import {
   awaitingHuman,
   awaitsHumanDecision,
@@ -9,13 +9,9 @@ import {
   parseIssues,
 } from "./issue";
 
-async function fixture(name: string): Promise<unknown> {
-  return JSON.parse(await readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8"));
-}
-
 describe("parseIssues", () => {
   test("bd list 출력을 Issue 목록으로 바꾼다", async () => {
-    const issues = parseIssues(await fixture("list.json"));
+    const issues = parseIssues(JSON.parse(await fixture("list.json")));
 
     expect(issues.map((issue) => issue.id)).toEqual([
       "demo-x2e",
@@ -43,7 +39,7 @@ describe("parseIssues", () => {
   });
 
   test("착수한 이슈는 startedAt을 epoch ms로 담는다", async () => {
-    const started = parseIssues(await fixture("list.json")).find(
+    const started = parseIssues(JSON.parse(await fixture("list.json"))).find(
       (issue) => issue.id === "demo-x2e",
     );
 
@@ -51,7 +47,9 @@ describe("parseIssues", () => {
   });
 
   test("닫힌 이슈는 closedAt을 epoch ms로 담는다", async () => {
-    const closed = parseIssues(await fixture("list.json")).find((issue) => issue.id === "demo-cy2");
+    const closed = parseIssues(JSON.parse(await fixture("list.json"))).find(
+      (issue) => issue.id === "demo-cy2",
+    );
 
     expect(closed?.status).toBe("closed");
     expect(closed?.closedAt).toBeTypeOf("number");
@@ -106,7 +104,7 @@ describe("parseIssues", () => {
 
 describe("parseIssueDetail", () => {
   test("bd show 출력을 본문, 의존 관계, 댓글이 담긴 상세로 바꾼다", async () => {
-    const [shown] = (await fixture("show.json")) as unknown[];
+    const [shown] = JSON.parse(await fixture("show.json")) as unknown[];
 
     const detail = parseIssueDetail(shown);
 
@@ -212,7 +210,7 @@ describe("isOpenHumanGateLink", () => {
 
 describe("parseIssueEvents", () => {
   test("bd history --events 출력을 이벤트 종류별로 해석한다", async () => {
-    const events = parseIssueEvents(await fixture("history-events.json"));
+    const events = parseIssueEvents(JSON.parse(await fixture("history-events.json")));
     const byId = (prefix: string) => events.find((event) => event.id.startsWith(prefix));
 
     expect(events).toHaveLength(12);

@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 import { ALL_STATUSES, type IssueListFilter } from "@/shared/contract/issueList";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { useIssueCandidates, useIssueList } from "./useIssueList";
 
 const readIssueList = vi.hoisted(() =>
@@ -46,23 +47,3 @@ test("한 화면의 여러 component가 같은 이슈 목록을 한 번만 읽�
   });
   expect(readIssueList).toHaveBeenCalledWith(ALL_STATUSES);
 });
-
-function issue(id: string): Issue {
-  return {
-    id,
-    title: id,
-    status: "open",
-    priority: 2,
-    issueType: "task",
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-  };
-}

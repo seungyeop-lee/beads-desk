@@ -1,7 +1,7 @@
-import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-react";
 import type { WorkStateGroup } from "@/client/modules/issues/domain/workState";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { IssueViewTabs } from "./IssueViewTabs";
 
@@ -41,24 +41,4 @@ for (const { width, horizontal } of [
     const hit = document.elementFromPoint(tabBox.x + tabBox.width / 2, navBox.bottom - 0.5);
     expect(hit?.closest("a")).toBe(current);
   });
-}
-
-function issue(id: string): Issue {
-  return {
-    id,
-    title: id,
-    status: "open",
-    priority: 2,
-    issueType: "task",
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-  };
 }

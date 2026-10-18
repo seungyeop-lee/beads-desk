@@ -1,6 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { DecisionSummary } from "@/shared/contract/decisions";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { decisionGroups } from "./decisionsView";
 
 function summary(
@@ -8,10 +9,7 @@ function summary(
   fields: Partial<Issue>,
   supersededBy: string | null = null,
 ): DecisionSummary {
-  return {
-    decision: { id, status: "open", createdAt: 0, closedAt: null, ...fields } as Issue,
-    supersededBy,
-  };
+  return { decision: issue(id, fields), supersededBy };
 }
 
 test("닫히지 않은 decision은 최근에 만든 것부터, 닫힌 decision은 최근에 닫은 것부터 따로 보인다", () => {

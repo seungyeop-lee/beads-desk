@@ -3,31 +3,11 @@ import { expect, test } from "vitest";
 import { focusStats } from "@/client/modules/focus/domain/focusStats";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
 import { readIssueListAddress } from "@/client/ui/screens/issues/issueListAddress";
 import { FLOW_SERIES, flowBarHref } from "./flowBarAddress";
-
-function issue(id: string, fields: Partial<Issue>): Issue {
-  return {
-    id,
-    title: id,
-    status: "open",
-    priority: 2,
-    issueType: "task",
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-    ...fields,
-  };
-}
 
 // 현지 시각으로 만들어, 테스트를 실행하는 시간대와 관계없이 하루의 경계를 확인합니다.
 const at = (day: number, hour = 12) => new Date(2026, 9, day, hour).getTime();

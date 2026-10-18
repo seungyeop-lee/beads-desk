@@ -1,5 +1,6 @@
 import type { Issue, IssueLink } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import {
   canJoinHierarchy,
   dependencyToAdd,
@@ -119,8 +120,8 @@ test("결정은 상하위 관계에 넣지 않는다", () => {
 });
 
 test("관계 맺기 후보에서 이미 연결한 이슈는 늘 빼고, 결정은 상위·하위 관계에서만 뺀다", () => {
-  const decision = { id: "decision", issueType: "decision" } as Issue;
-  const linkedTask = { id: "linked", issueType: "task" } as Issue;
+  const decision = issue("decision", { issueType: "decision" });
+  const linkedTask = issue("linked");
   const excludedKinds = (issue: Issue) =>
     RELATION_KINDS.filter((kind) => notRelationCandidate(kind, new Set(["linked"]))(issue));
 
@@ -130,7 +131,7 @@ test("관계 맺기 후보에서 이미 연결한 이슈는 늘 빼고, 결정�
 
 test("대체·중복 닫기 후보에서 자기 자신과 이미 의존하는 이슈는 빼고, 이 이슈에 의존하는 이슈는 남긴다", () => {
   const excluded = notReplacementTarget({ id: "self", dependencies: [link("blocker", "blocks")] });
-  const candidate = (id: string) => ({ id }) as Issue;
+  const candidate = (id: string) => issue(id);
 
   expect(excluded(candidate("self"))).toBe(true);
   expect(excluded(candidate("blocker"))).toBe(true);

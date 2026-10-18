@@ -1,14 +1,11 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { EpicSummary } from "@/shared/contract/epics";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { epicDescendantRows, notChildCandidate, settleExpandedEpics, sortEpics } from "./epicsView";
 
 function summary(id: string, status: string, priority = 2, createdAt = 0): EpicSummary {
-  return {
-    epic: { id, status, priority, createdAt } as Issue,
-    totalChildren: 0,
-    closedChildren: 0,
-  };
+  return { epic: issue(id, { status, priority, createdAt }), totalChildren: 0, closedChildren: 0 };
 }
 
 test("진행 중, 열림, 닫힘 순으로 묶고 묶음 안에서는 우선순위와 만든 시각 순으로 정렬한다", () => {
@@ -62,20 +59,20 @@ describe("settleExpandedEpics", () => {
 
 test("에픽에 하위로 넣을 후보에서 에픽, 결정, 이미 그 에픽에 속한 후손 이슈를 모두 뺀다", () => {
   const excluded = notChildCandidate([
-    { id: "feature", parent: "epic" } as Issue,
-    { id: "task", parent: "feature" } as Issue,
+    issue("feature", { parent: "epic" }),
+    issue("task", { parent: "feature" }),
   ]);
 
-  expect(excluded({ id: "other-epic", issueType: "epic" } as Issue)).toBe(true);
-  expect(excluded({ id: "decision", issueType: "decision" } as Issue)).toBe(true);
-  expect(excluded({ id: "feature", issueType: "feature" } as Issue)).toBe(true);
-  expect(excluded({ id: "task", issueType: "task" } as Issue)).toBe(true);
-  expect(excluded({ id: "other", issueType: "task" } as Issue)).toBe(false);
+  expect(excluded(issue("other-epic", { issueType: "epic" }))).toBe(true);
+  expect(excluded(issue("decision", { issueType: "decision" }))).toBe(true);
+  expect(excluded(issue("feature", { issueType: "feature" }))).toBe(true);
+  expect(excluded(issue("task"))).toBe(true);
+  expect(excluded(issue("other"))).toBe(false);
 });
 
 test("에픽의 후손 이슈는 상태 순으로 정렬하되, 상태가 달라도 하위 이슈를 상위 이슈 바로 아래에 한 단계 깊게 둔다", () => {
   const row = (id: string, status: string, parent: string, fields: Partial<Issue> = {}) =>
-    ({ id, status, parent, priority: 2, createdAt: 0, closedAt: null, ...fields }) as Issue;
+    issue(id, { status, parent, ...fields });
 
   const rows = epicDescendantRows([
     row("feature-b", "open", "epic", { createdAt: 2 }),

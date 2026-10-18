@@ -4,6 +4,7 @@ import { render } from "vitest-browser-react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { graphHref } from "@/client/ui/screens/graph/graphAddress";
+import { issueDetail } from "@/shared/domain/issues/issueFixture";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { IssueDetailView } from "./IssueDetailView";
 
@@ -95,26 +96,9 @@ function renderDetail(issue: IssueDetail) {
 }
 
 function detail(fields: Pick<IssueDetail, "issueType">): IssueDetail {
-  return {
-    id: "desk-1",
+  return issueDetail("desk-1", {
     title: "연결된 이슈가 있는 이슈",
-    status: "open",
-    priority: 2,
-    assignee: null,
-    labels: [],
-    parent: null,
     dependencyCount: 1,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-    description: "",
-    design: "",
-    acceptanceCriteria: "",
-    notes: "",
-    closeReason: null,
     dependencies: [
       {
         id: "desk-2",
@@ -126,8 +110,6 @@ function detail(fields: Pick<IssueDetail, "issueType">): IssueDetail {
         awaitType: "",
       },
     ],
-    dependents: [],
-    comments: [],
     ...fields,
-  };
+  });
 }

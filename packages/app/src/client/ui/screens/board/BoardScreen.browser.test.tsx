@@ -1,15 +1,15 @@
-import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { BoardItem } from "@/shared/contract/board";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { BoardScreen } from "./BoardScreen";
 
 // 바로 작업 가능 열에 카드를 쌓아 화면 높이를 넘게 하고, 나머지 열은 비워 빈 열의 높이도 함께 잽니다.
 const ITEMS: BoardItem[] = Array.from({ length: 14 }, (_, index) => ({
   column: "ready",
-  issue: issue(`desk-${index}`, `쌓인 작업 ${index}`),
+  issue: issue(`desk-${index}`, { title: `쌓인 작업 ${index}` }),
 }));
 
 // 화면이 서버에서 읽는 보드와 주소를 읽어 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
@@ -97,24 +97,4 @@ function BoardInAppLayout() {
       <BoardScreen />
     </div>
   );
-}
-
-function issue(id: string, title: string): Issue {
-  return {
-    id,
-    title,
-    status: "open",
-    priority: 2,
-    issueType: "task",
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-  };
 }

@@ -1,10 +1,10 @@
-import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { VIEWPORT_MARGIN } from "@/client/modules/graph/domain/graphViewport";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { GraphScreen } from "./GraphScreen";
 
 let graph: GraphData = { issues: [], dependencies: [], ancestorEpics: {} };
@@ -705,29 +705,5 @@ function graphData(
     ancestorEpics: Object.fromEntries(
       Object.entries(issues).flatMap(([id, { parent }]) => (parent ? [[id, [parent]]] : [])),
     ),
-  };
-}
-
-function issue(
-  id: string,
-  { title, issueType = "task", parent, status = "open", awaitType }: IssueSeed,
-): Issue {
-  return {
-    id,
-    title,
-    status,
-    priority: 2,
-    issueType,
-    assignee: null,
-    labels: [],
-    parent: parent ?? null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-    ...(awaitType && { awaitType }),
   };
 }

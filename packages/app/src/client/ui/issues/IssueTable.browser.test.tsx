@@ -4,6 +4,7 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { IssueTable } from "./IssueTable";
 
@@ -13,8 +14,7 @@ const AREA_WIDTHS = [377, 390, 416, 436, 704, 960, 1376];
 const MIN_TITLE_WIDTH = 240;
 
 const ISSUES: Issue[] = [
-  issue({
-    id: "desk-ko",
+  issue("desk-ko", {
     title:
       "이슈를 작업 상태로 나눠 보이는 곳은 모두 같은 기준을 쓰고, 기준에는 bd 저장 상태와 의존 관계와 human 라벨을 씁니다",
     issueType: "feature",
@@ -22,13 +22,11 @@ const ISSUES: Issue[] = [
     blockedBy: ["desk-blocker"],
     dependencyCount: 1,
   }),
-  issue({
-    id: "desk-en",
+  issue("desk-en", {
     title:
       "Issues keep a long English title readable while status, priority, and assignee stay reachable",
-    issueType: "task",
   }),
-  issue({ id: "desk-blocker", title: "막는 작업", issueType: "bug", dependentCount: 1 }),
+  issue("desk-blocker", { title: "막는 작업", issueType: "bug", dependentCount: 1 }),
 ];
 
 const WRITES: IssueWrites = {
@@ -84,22 +82,4 @@ for (const width of AREA_WIDTHS) {
       }
     }
   });
-}
-
-function issue(fields: Partial<Issue> & Pick<Issue, "id" | "title" | "issueType">): Issue {
-  return {
-    status: "open",
-    priority: 2,
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-    ...fields,
-  };
 }

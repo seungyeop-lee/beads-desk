@@ -5,6 +5,11 @@ import { afterEach, beforeEach } from "vitest";
 
 export type FakeResponse = { stdout?: string; stderr?: string; code?: number };
 
+/** 저장해 둔 bd 출력 fixture를 읽습니다. */
+export async function fixture(name: string): Promise<string> {
+  return readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
+}
+
 /**
  * bd 실행을 가짜 스크립트로 대신하는 테스트 환경입니다.
  * 테스트마다 임시 디렉터리를 새로 만들고, 테스트가 끝나면 BD_BIN을 원래 값으로 되돌립니다.
@@ -58,8 +63,6 @@ export function fakeBdWorkspace(prefix: string): {
       );
     },
     useFakeBdScript: install,
-    async fixture(name) {
-      return readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
-    },
+    fixture,
   };
 }

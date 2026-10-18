@@ -1,28 +1,8 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { EpicSummary } from "@/shared/contract/epics";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { durationParts, focusStats } from "./focusStats";
-
-function issue(id: string, fields: Partial<Issue> = {}): Issue {
-  return {
-    id,
-    title: id,
-    status: "open",
-    priority: 2,
-    issueType: "task",
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-    ...fields,
-  };
-}
 
 function epic(id: string, totalChildren: number, closedChildren: number, status = "open") {
   return { epic: issue(id, { issueType: "epic", status }), totalChildren, closedChildren };

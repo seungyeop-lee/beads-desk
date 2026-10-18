@@ -1,11 +1,12 @@
-import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
+import type { IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { centerGraph } from "./centerGraph";
 import { executionOrder } from "./executionOrder";
 import { scopedIssues } from "./graphScope";
 
-const issues = ["before", "center", "after", "related", "origin", "found", "beyond"].map(
-  (id) => ({ id, issueType: "task", status: "open" }) as Issue,
+const issues = ["before", "center", "after", "related", "origin", "found", "beyond"].map((id) =>
+  issue(id),
 );
 const dependencies: IssueDependency[] = [
   { issueId: "center", dependsOnId: "before", type: "blocks", createdAt: 0 },

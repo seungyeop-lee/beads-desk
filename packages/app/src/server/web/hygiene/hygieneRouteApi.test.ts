@@ -1,5 +1,7 @@
-import { staleIssues, type Issue } from "@beads-desk/bd";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { staleIssues } from "@beads-desk/bd";
+import { beforeEach, expect, test, vi } from "vitest";
+import { expectRouteBdError, expectRouteData } from "@/server/web/http/routeApiTest";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { handleStaleIssuesRequest } from "./hygieneRouteApi";
 
 vi.mock("@beads-desk/bd", async (importOriginal) => ({
@@ -12,16 +14,8 @@ vi.mock("@/server/web/locale/requestLocale", () => ({
   requestLocale: () => Promise.resolve("ko"),
 }));
 
-const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
-
 beforeEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = "/workspace";
   vi.mocked(staleIssues).mockResolvedValue({ ok: true, value: [] });
-});
-
-afterEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = originalWorkspace;
-  vi.resetAllMocks();
 });
 
 function staleRequest(query = ""): Request {
@@ -29,14 +23,13 @@ function staleRequest(query = ""): Request {
 }
 
 test("오래 방치된 이슈는 고른 기준 일수로 따로 읽는다", async () => {
-  const stale = [{ id: "t-1" } as Issue];
+  const stale = [issue("t-1")];
   vi.mocked(staleIssues).mockResolvedValue({ ok: true, value: stale });
 
   const response = await handleStaleIssuesRequest(staleRequest("?staleDays=7"));
 
   expect(staleIssues).toHaveBeenCalledWith("/workspace", 7);
-  expect(response.headers.get("Cache-Control")).toBe("no-store");
-  expect(await response.json()).toEqual({ ok: true, data: stale });
+  await expectRouteData(response, stale);
 });
 
 test("기준 일수를 지정하지 않으면 30일로 읽는다", async () => {
@@ -58,8 +51,5 @@ test("오래 방치된 이슈를 읽지 못하면 bd의 메시지를 오류로 �
     error: { message: "boom\n", exitCode: 1 },
   });
 
-  const response = await handleStaleIssuesRequest(staleRequest());
-
-  expect(response.status).toBe(500);
-  expect(await response.json()).toEqual({ ok: false, error: "boom" });
+  await expectRouteBdError(await handleStaleIssuesRequest(staleRequest()), "boom");
 });

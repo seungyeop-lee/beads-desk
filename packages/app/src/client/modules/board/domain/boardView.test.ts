@@ -1,13 +1,14 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { BoardItem } from "@/shared/contract/board";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { boardColumns, dropOutcome, type ClosedWindow } from "./boardView";
 
 const now = new Date(2026, 9, 13, 15, 0).getTime();
 const hoursAgo = (hours: number) => now - hours * 3_600_000;
 
 function item(column: BoardItem["column"], id: string, fields: Partial<Issue> = {}): BoardItem {
-  return { column, issue: { id, priority: 2, createdAt: 0, closedAt: null, ...fields } as Issue };
+  return { column, issue: issue(id, fields) };
 }
 
 test("열마다 우선순위, 만든 시각, id 순으로 정렬한다", () => {

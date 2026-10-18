@@ -1,5 +1,5 @@
-import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import type { GraphLayout } from "./graphLayout";
 import { NODE_WIDTH } from "./graphLayout";
 import {
@@ -20,8 +20,8 @@ const withNodeOf = (layout: Omit<GraphLayout, "nodeOf">): GraphLayout => ({
 
 const layout: GraphLayout = withNodeOf({
   nodes: [
-    { issue: { id: "a" } as Issue, x: 0, y: 0, height: 140 },
-    { issue: { id: "b" } as Issue, x: 352, y: 0, height: 76 },
+    { issue: issue("a"), x: 0, y: 0, height: 140 },
+    { issue: issue("b"), x: 352, y: 0, height: 76 },
   ],
   edges: [],
   auxiliary: [],
@@ -80,7 +80,7 @@ const COLUMNS = Array.from({ length: 10 }, (_, column) => column * 352);
 const large: GraphLayout = withNodeOf({
   nodes: COLUMNS.flatMap((x, column) =>
     Array.from({ length: 8 - Math.floor(column / 2) }, (_, row) => ({
-      issue: { id: `c${column}r${row}` } as Issue,
+      issue: issue(`c${column}r${row}`),
       x,
       y: row * 160,
       height: 96,

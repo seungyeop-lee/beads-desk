@@ -6,7 +6,11 @@
   },
   "rules": {
     "nextjs/no-html-link-for-pages": "off",
-    "import/no-cycle": "error"
+    "import/no-cycle": "error",
+    "vitest/expect-expect": [
+      "error",
+      { "assertFunctionNames": ["expect", "expectRouteData", "expectRouteBdError"] }
+    ]
   },
   "env": {
     "builtin": true,

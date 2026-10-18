@@ -1,14 +1,12 @@
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { GraphData } from "@/shared/contract/graph";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { centerGraph } from "./centerGraph";
 import { ARROW_LENGTH, auxiliaryEdgeLook, hasArrow } from "./edgeKind";
 import { epicPlan } from "./epicPlan";
 import { type GraphLayout, NODE_HEIGHT, NODE_WIDTH, type Point } from "./graphLayout";
 import { type GraphLayoutInput, layoutGraph } from "./layoutGraph";
-
-const issue = (id: string, issueType = "task"): Issue =>
-  ({ id, issueType, status: "open", title: id, priority: 2, createdAt: 0 }) as Issue;
 
 /** [기다리는 이슈, 먼저 끝나야 하는 이슈, 관계]입니다. 관계를 적지 않으면 blocks입니다. */
 type Link = [string, string, IssueDependency["type"]?];
@@ -59,7 +57,7 @@ const GATES = centerInput(
       "origin",
       "found",
       ...["shared", "second", "third", "gate-before"].map((id) => `gate:${id}`),
-    ].map((id) => (id.startsWith("gate:") ? issue(id.slice(5), "gate") : issue(id))),
+    ].map((id) => (id.startsWith("gate:") ? issue(id.slice(5), { issueType: "gate" }) : issue(id))),
     [
       ["center", "before"],
       ["after", "center"],
@@ -100,9 +98,9 @@ const AUXILIARY_ONLY = centerInput(
 const EPIC = epicPlan(
   graphData(
     [
-      issue("epic", "epic"),
+      issue("epic", { issueType: "epic" }),
       ...["a", "b", "c", "d", "x", "y", "z", "w", "p", "q"].map((id) => issue(id)),
-      issue("gx", "gate"),
+      issue("gx", { issueType: "gate" }),
     ],
     [
       ["b", "a"],

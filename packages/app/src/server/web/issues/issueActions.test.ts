@@ -1,4 +1,5 @@
 import * as bd from "@beads-desk/bd";
+import type { IssueStatus } from "@beads-desk/bd/issue";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
 import type {
@@ -7,6 +8,7 @@ import type {
   LinkableDependencyType,
   Replacement,
 } from "@/shared/contract/issueActions";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import {
   addCommentAction,
   addDependencyAction,
@@ -100,13 +102,13 @@ describe("updateIssueAction", () => {
 
 describe("setIssueStatusAction", () => {
   test("저장 상태가 아닌 값은 거부한다", async () => {
-    const result = await setIssueStatusAction("demo-1", "ready" as bd.IssueStatus);
+    const result = await setIssueStatusAction("demo-1", "ready" as IssueStatus);
 
     expect(bd.setIssueStatus).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
   });
 
-  test.each<bd.IssueStatus>(["closed", "deferred"])(
+  test.each<IssueStatus>(["closed", "deferred"])(
     "%s는 사유를 받는 전용 action으로만 바꾼다",
     async (status) => {
       const result = await setIssueStatusAction("demo-1", status);
@@ -170,7 +172,7 @@ describe("closeIssueAction", () => {
   test("사유와 함께 닫고, 막힘이 풀린 이슈의 id와 제목을 돌려주며 다른 화면에 알린다", async () => {
     vi.mocked(bd.closeIssue).mockResolvedValue({
       ok: true,
-      value: [{ id: "demo-2", title: "후행", status: "open" } as bd.Issue],
+      value: [issue("demo-2", { title: "후행" })],
     });
 
     const result = await closeIssueAction("demo-1", "끝냄", false);

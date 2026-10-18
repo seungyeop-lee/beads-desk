@@ -3,10 +3,10 @@ import {
   epicStatuses,
   lintFindings,
   orphanIssues,
-  type Issue,
   type IssueRef,
 } from "@beads-desk/bd";
 import { beforeEach, expect, test, vi } from "vitest";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { readHygieneReport } from "./hygieneReport";
 
 vi.mock("@beads-desk/bd", () => ({
@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 function epic(id: string, totalChildren: number, closedChildren: number) {
-  return { epic: { id, status: "open" } as Issue, totalChildren, closedChildren };
+  return { epic: issue(id), totalChildren, closedChildren };
 }
 
 test("기준 일수와 관계없는 점검 결과를 모아 조립하고, 에픽은 하위 이슈가 모두 닫힌 것만 담는다", async () => {
@@ -35,10 +35,8 @@ test("기준 일수와 관계없는 점검 결과를 모아 조립하고, 에픽
     ],
   ];
   vi.mocked(duplicateCandidates).mockResolvedValue({ ok: true, value: duplicates });
-  vi.mocked(epicStatuses).mockResolvedValue({
-    ok: true,
-    value: [epic("e-done", 2, 2), epic("e-partly", 2, 1)],
-  });
+  const epics = [epic("e-done", 2, 2), epic("e-partly", 2, 1)];
+  vi.mocked(epicStatuses).mockResolvedValue({ ok: true, value: epics });
 
   const result = await readHygieneReport("/workspace");
 
@@ -48,7 +46,7 @@ test("기준 일수와 관계없는 점검 결과를 모아 조립하고, 에픽
       orphans: [],
       lint: [],
       duplicates,
-      closableEpics: [{ id: "e-done", status: "open" }],
+      closableEpics: [epics[0].epic],
     },
   });
 });

@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
-import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
+import type { IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { GraphData } from "@/shared/contract/graph";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { centerGraph } from "./centerGraph";
 import { epicPlan } from "./epicPlan";
 import { NODE_HEIGHT, PLAN_NODE_HEIGHT } from "./graphLayout";
@@ -33,7 +34,7 @@ test.each(CASES)("큰 그래프의 배치가 그대로다: %s", (_, input, finge
   const layout = layoutGraph(input());
   // nodeOf는 이미 담은 노드의 색인이므로 해시에서 제외하고, 노드 좌표와 꺾임점만 남깁니다.
   const json = JSON.stringify(layout, (key, value: unknown) =>
-    key === "nodeOf" ? undefined : key === "issue" ? (value as Issue).id : value,
+    key === "nodeOf" ? undefined : key === "issue" ? (value as { id: string }).id : value,
   );
   expect(createHash("sha256").update(json).digest("hex").slice(0, 16)).toBe(fingerprint);
 });
@@ -49,7 +50,7 @@ function largeGraphData(seed: number, scale: number, centerId = "t6-0"): GraphDa
   const gateCount = Math.round(12 * scale);
   const random = mulberry32(seed);
   const pick = <T>(items: T[]) => items[Math.floor(random() * items.length)]!;
-  const issues: Issue[] = [issue("epic", "epic")];
+  const issues = [issue("epic", { issueType: "epic" })];
   const dependencies: IssueDependency[] = [];
   const link = (issueId: string, dependsOnId: string, type: IssueDependency["type"] = "blocks") =>
     dependencies.push({ issueId, dependsOnId, type, createdAt: 0 });
@@ -72,7 +73,7 @@ function largeGraphData(seed: number, scale: number, centerId = "t6-0"): GraphDa
   }
   for (let at = 0; at < gateCount; at++) {
     const id = `g${at}`;
-    issues.push(issue(id, "gate"));
+    issues.push(issue(id, { issueType: "gate" }));
     const stage = Math.floor(random() * (stageCount - 2));
     link(id, pick(stages[stage]!));
     if (at % 3 === 2) link(`g${at - 1}`, id);
@@ -80,7 +81,7 @@ function largeGraphData(seed: number, scale: number, centerId = "t6-0"): GraphDa
   }
   for (let at = 0; at < 6; at++) {
     const id = `out${at}`;
-    issues.push(issue(id, at === 0 ? "gate" : "task"));
+    issues.push(issue(id, { issueType: at === 0 ? "gate" : "task" }));
     link(pick(stages[1 + Math.floor(random() * (stageCount - 1))]!), id);
   }
   for (let at = 0; at < 20; at++) {
@@ -124,10 +125,6 @@ function centerInput(data: GraphData, centerId: string): GraphLayoutInput {
 /** 제목 줄 수가 다른 카드처럼, 이슈 다섯 개에 하나꼴로 카드를 더 높게 둡니다. */
 function cardHeights({ issues }: GraphData, base: number): ReadonlyMap<string, number> {
   return new Map(issues.map(({ id }, at) => [id, base + (at % 5 === 0 ? 40 : 0)]));
-}
-
-function issue(id: string, issueType = "task"): Issue {
-  return { id, issueType, status: "open", title: id, priority: 2, createdAt: 0 } as Issue;
 }
 
 /** 실행 환경과 관계없이 같은 수열을 내는 작은 의사 난수 생성기입니다. */

@@ -1,28 +1,8 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { sortByRequestedAt } from "./humanDecisionsView";
-
-function issue(id: string, fields: Partial<Issue> = {}): Issue {
-  return {
-    id,
-    title: id,
-    status: "open",
-    priority: 2,
-    issueType: "task",
-    assignee: null,
-    labels: [],
-    parent: null,
-    dependencyCount: 0,
-    dependentCount: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    startedAt: null,
-    closedAt: null,
-    deferUntil: null,
-    ...fields,
-  };
-}
 
 function gateSummary(id: string, fields: Partial<Issue> = {}): HumanGateSummary {
   return {

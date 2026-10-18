@@ -1,31 +1,25 @@
-import { chmod, mkdtemp, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { beforeEach, expect, test } from "vitest";
+import { fakeBdWorkspace } from "@/server/infra/fakeBd";
 import { checkWorkspaceChangesNow, subscribeWorkspaceChanges } from "./workspaceChangeFeed";
 
 const POLL_INTERVAL_MS = 50;
 
+const fakeBd = fakeBdWorkspace("beads-desk-feed-");
 let workDir: string;
 let hashFile: string;
-let callLog: string;
 /** 이 파일이 있으면 가짜 bd가 실패합니다. */
 let failFlag: string;
-const originalBdBin = process.env.BD_BIN;
 
 beforeEach(async () => {
-  workDir = await realpath(await mkdtemp(join(tmpdir(), "beads-desk-feed-")));
+  workDir = fakeBd.workDir;
   hashFile = join(workDir, "hash");
-  callLog = join(workDir, "calls.log");
   failFlag = join(workDir, "fail");
   await writeHash("hash-1");
   // server mode workspace처럼 응답하고, DB hash는 파일 내용으로 돌려주는 가짜 bd입니다.
-  const fakeBd = join(workDir, "fake-bd");
-  await writeFile(
-    fakeBd,
+  await fakeBd.useFakeBdScript(
     [
-      "#!/bin/sh",
-      `echo "$*" >> "${callLog}"`,
       `[ -e "${failFlag}" ] && exit 1`,
       'case "$*" in',
       `  "--sandbox dolt show --json") echo '{"embedded":false,"database":"demo"}';;`,
@@ -34,12 +28,6 @@ beforeEach(async () => {
       "esac",
     ].join("\n"),
   );
-  await chmod(fakeBd, 0o755);
-  process.env.BD_BIN = fakeBd;
-});
-
-afterEach(() => {
-  process.env.BD_BIN = originalBdBin;
 });
 
 /**
@@ -66,7 +54,7 @@ async function waitUntil(condition: () => boolean | Promise<boolean>): Promise<v
 }
 
 async function bdCallCount(command: string): Promise<number> {
-  const log = await readFile(callLog, "utf8").catch(() => "");
+  const log = await fakeBd.callsLog().catch(() => "");
   return log.split("\n").filter((line) => line.includes(command)).length;
 }
 

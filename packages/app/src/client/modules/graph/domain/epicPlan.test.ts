@@ -1,11 +1,8 @@
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { GraphData } from "@/shared/contract/graph";
+import { issue } from "@/shared/domain/issues/issueFixture";
 import { epicPlan } from "./epicPlan";
-
-function issue(id: string, fields: Partial<Issue> = {}): Issue {
-  return { id, status: "open", issueType: "task", priority: 2, createdAt: 0, ...fields } as Issue;
-}
 
 /** [먼저 끝나야 하는 이슈, 기다리는 이슈]를 bd의 blocks 의존으로 바꿉니다. */
 function blocks(...pairs: [string, string][]): IssueDependency[] {

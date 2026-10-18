@@ -70,6 +70,8 @@ const boundaries = {
   sharedDomainTechnology: {
     regex: "^(?![./]|@/shared/domain(?:/|$)).+",
     message: "shared domain은 공통 업무 규칙만 사용하며 외부 기술과 저장 계약에 의존하지 않습니다.",
+    // type 참조는 런타임 의존이 아니므로 테스트 팩토리(`issueFixture.ts`)가 issue model type을 가져오는 것은 허용합니다.
+    allowTypeImports: true,
   },
   clientUiFromApplication: {
     regex: "^@/client/ui(?:/|$)|^(?:\\.\\./)+ui(?:/|$)",
