@@ -124,13 +124,20 @@
     appearance: none;
     cursor: pointer;
     padding-right: 1.5rem;
-    background-image:
-      linear-gradient(45deg, #0000 50%, color-mix(in oklab, currentColor 55%, #0000) 50%),
-      linear-gradient(135deg, color-mix(in oklab, currentColor 55%, #0000) 50%, #0000 50%);
-    background-position:
-      calc(100% - 0.75rem) 55%,
-      calc(100% - 0.75rem + 3px) 55%;
-    background-size: 3px 3px;
+    /*
+     * 너비 6px, 높이 3px의 역삼각형을 8px×4px 칸 하나에 conic-gradient로 그립니다.
+     * 반쪽 삼각형 두 칸을 나란히 붙이거나 경계를 딱 끊으면, select가 소수 픽셀 위치에 놓일 때 픽셀 경계에 걸린 줄이 빠져 모양이 깨집니다.
+     * 그래서 양쪽 빗변을 3deg씩 걸쳐 흐리게 해, 어느 위치에서나 같은 모양으로 보이게 합니다.
+     * 세로 위치의 0.55px은 칸 높이가 4px이어도 삼각형 윗변이 높이 3px 칸을 55%에 둘 때와 같은 자리에 오도록 더한 값입니다.
+     */
+    background-image: conic-gradient(
+      from -48deg at 4px 3px,
+      #0000,
+      color-mix(in oklab, currentColor 55%, #0000) 6deg 90deg,
+      #0000 96deg
+    );
+    background-position: calc(100% - 0.75rem + 4px) calc(55% + 0.55px);
+    background-size: 8px 4px;
     background-repeat: no-repeat;
   }
 
