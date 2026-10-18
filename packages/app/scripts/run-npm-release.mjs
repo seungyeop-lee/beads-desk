@@ -29,10 +29,12 @@ try {
 async function stagePackage() {
   const packageJson = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8"));
 
+  // `.next/server`의 sourcemap은 `next start`가 읽지 않지만 server 크기의 대부분을 차지하므로 패키지에서 뺍니다.
   for (const path of packageJson.files) {
     await cp(resolve(packageRoot, path), resolve(stageRoot, path), {
       recursive: true,
       preserveTimestamps: true,
+      filter: (source) => !source.endsWith(".map"),
     });
   }
 

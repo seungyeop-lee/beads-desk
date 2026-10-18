@@ -2,7 +2,28 @@
   "name": "@seungyeop-lee/beads-desk",
   "version": "0.0.0",
   "description": "Local web UI for Beads (bd)",
+  "keywords": [
+    "bd",
+    "beads",
+    "issue-tracker",
+    "kanban",
+    "local-first",
+    "web-ui"
+  ],
+  "homepage": "https://github.com/seungyeop-lee/beads-desk#readme",
+  "bugs": {
+    "url": "https://github.com/seungyeop-lee/beads-desk/issues"
+  },
   "license": "MIT",
+  "author": {
+    "name": "seungyeop-lee",
+    "url": "https://github.com/seungyeop-lee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seungyeop-lee/beads-desk.git",
+    "directory": "packages/app"
+  },
   "bin": {
     "bd-desk": "bin/bd-desk.js"
   },
