@@ -100,7 +100,11 @@ pnpm exec oxfmt --check CHANGELOG.md packages/app/package.json
 - `releaseNotes.test.ts`는 `CHANGELOG.md`에 새 version의 날짜가 적힌 절이 있고 본문이 비어 있지 않은지 검사합니다.
 - `oxfmt --check`는 두 파일이 `pnpm run check`의 format 검사를 통과하는지 확인합니다.
 
-하나라도 실패하면 커밋하지 않고, 바꾼 파일을 그대로 둔 채 실패한 검사와 출력을 알리고 멈춥니다.
+실패하면 원인은 5–6단계에서 쓴 내용이므로, 실패 출력을 보고 두 파일을 고친 뒤 두 명령을 모두 다시 실행합니다. 둘 다 통과하면 8단계로 넘어갑니다.
+
+- `releaseNotes.test.ts`가 실패하면 5–6단계의 규칙대로 CHANGELOG 절이나 version 값을 고칩니다.
+- `oxfmt --check`가 실패하면 `pnpm exec oxfmt CHANGELOG.md packages/app/package.json`으로 고칩니다.
+- 검사마다 한 번만 고칩니다. 한 번 고친 검사가 다시 실패하면 커밋하지 않고, 바꾼 파일을 그대로 둔 채 실패한 검사와 출력을 알리고 멈춥니다. 이때 skill을 다시 실행하려면 `git restore CHANGELOG.md packages/app/package.json`으로 두 파일을 먼저 되돌려야 한다고 함께 알립니다.
 
 ## 8. 커밋
 
