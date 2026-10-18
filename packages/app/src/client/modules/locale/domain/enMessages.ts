@@ -248,6 +248,7 @@ export const enMessages: Messages = {
     },
     kindHints: {},
     search: "Find an issue to link",
+    linkConfirm: "Link",
     linked: (id, kind) => `Linked ${id}: ${kind}`,
   },
   closeAsReplaced: {
@@ -270,6 +271,7 @@ export const enMessages: Messages = {
   issuePicker: {
     placeholder: "Search ID or title",
     empty: "No matching issues.",
+    clearSelection: "Clear selection",
   },
   labelEditor: {
     remove: (label) => `Remove label ${label}`,
@@ -380,6 +382,7 @@ export const enMessages: Messages = {
     childrenEmpty: "No child issues.",
     newChild: "New child issue",
     addExistingChild: "Add an existing issue as a child",
+    addChildConfirm: "Add as child",
     childAdded: (id, epicId) => `Added ${id} as a child of ${epicId}`,
   },
   graph: {

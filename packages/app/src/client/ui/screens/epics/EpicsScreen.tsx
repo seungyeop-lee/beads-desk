@@ -18,8 +18,8 @@ import {
   type IssueWrites,
 } from "@/client/modules/issues/application/useIssueWrites";
 import { addDependencyAction } from "@/server/web/issues/issueActions";
+import { IssueConfirmPicker } from "@/client/ui/issues/IssueConfirmPicker";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import { IssuePicker } from "@/client/ui/issues/IssuePicker";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { statusLabel, statusTone } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
@@ -194,11 +194,12 @@ function EpicDescendants({
           {messages.epics.newChild}
         </button>
         <div className="w-96 max-w-full">
-          <IssuePicker
+          <IssueConfirmPicker
             label={messages.epics.addExistingChild}
+            confirmLabel={messages.epics.addChildConfirm}
             disabled={writes.pending || !descendants}
             exclude={notChildCandidate(descendants ?? [])}
-            onPick={async (issue) => {
+            onConfirm={async (issue) => {
               const result = await writes.run(() =>
                 addDependencyAction(issue.id, epic.id, "parent-child"),
               );

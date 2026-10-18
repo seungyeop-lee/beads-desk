@@ -185,6 +185,7 @@ for (const route of ROUTES) {
         .getByRole("combobox", { name: messages.epics.addExistingChild })
         .fill("Existing candidate");
       await epic.getByRole("option", { name: new RegExp(ids.candidate!) }).click();
+      await epic.getByRole("button", { name: messages.epics.addChildConfirm }).click();
       await expect
         .poll(() => workspace.showIssue(ids.candidate!).then((issue) => issue.parent), {
           timeout: SAVE_TIMEOUT,

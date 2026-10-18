@@ -11,7 +11,7 @@ import {
 import { showToast } from "@/client/ui/designSystem/Toast";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { addDependencyAction } from "@/server/web/issues/issueActions";
-import { IssuePicker } from "../IssuePicker";
+import { IssueConfirmPicker } from "../IssueConfirmPicker";
 
 /** 지금 이슈를 기준으로 관계를 고르고, 제목이나 id로 찾은 이슈와 그 관계를 맺습니다. */
 export function RelationAddForm({ issue, writes }: { issue: IssueDetail; writes: IssueWrites }) {
@@ -45,12 +45,13 @@ export function RelationAddForm({ issue, writes }: { issue: IssueDetail; writes:
           );
         })}
       </select>
-      <IssuePicker
+      <IssueConfirmPicker
         label={messages.relations.search}
+        confirmLabel={messages.relations.linkConfirm}
         disabled={writes.pending}
         exclude={notRelationCandidate(kind, linked)}
         rank={kind === "parent" ? epicsFirst : undefined}
-        onPick={async (other) => {
+        onConfirm={async (other) => {
           const { issueId, dependsOnId, type } = dependencyToAdd(kind, issue.id, other.id);
           const result = await writes.run(() => addDependencyAction(issueId, dependsOnId, type));
           if (result.ok)

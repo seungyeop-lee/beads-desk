@@ -17,6 +17,7 @@ test("상세의 관계 맺기에서 고른 관계와 찾은 이슈로 bd에 의�
     .getByRole("listbox", { name: "연결할 이슈 찾기" })
     .getByRole("option", { name: new RegExp(blocked) })
     .click();
+  await dialog.getByRole("button", { name: "연결" }).click();
 
   // toast에는 선택지의 설명 없이 관계 이름만 나옵니다.
   await expect(page.getByText(`${blocked}을(를) 후속 이슈로 연결했습니다.`)).toBeVisible();
@@ -56,6 +57,8 @@ test("키보드만으로 후보를 골라 연결하고, 자기 자신과 이미 
   await expect(options.nth(1)).toHaveAttribute("aria-selected", "true");
   const picked = (await options.nth(1).textContent())?.includes(second) ? second : third;
   await search.press("Enter");
+  // 고르면 확인 버튼으로 포커스가 옮겨가, Enter를 한 번 더 눌러 연결합니다.
+  await page.keyboard.press("Enter");
 
   await expect
     .poll(async () => dependenciesOf(workspace, main), { timeout: SAVE_TIMEOUT })
@@ -83,6 +86,7 @@ test("bd가 관계 맺기를 거부하면 상세에 오류가 보인다", async 
     .getByRole("listbox", { name: "연결할 이슈 찾기" })
     .getByRole("option", { name: new RegExp(end) })
     .click();
+  await dialog.getByRole("button", { name: "연결" }).click();
 
   await expect(dialog.getByRole("alert")).toContainText("cycle");
 });

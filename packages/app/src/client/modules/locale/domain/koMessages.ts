@@ -254,6 +254,7 @@ export const koMessages = {
     } satisfies Record<RelationKind, string>,
     kindHints: relationKindHints,
     search: "연결할 이슈 찾기",
+    linkConfirm: "연결",
     linked: (id: string, kind: string) => `${id}을(를) ${kind}로 연결했습니다.`,
   },
   closeAsReplaced: {
@@ -277,6 +278,7 @@ export const koMessages = {
   issuePicker: {
     placeholder: "제목이나 ID로 찾기",
     empty: "맞는 이슈가 없습니다.",
+    clearSelection: "선택 취소",
   },
   labelEditor: {
     remove: (label: string) => `${label} 라벨 지우기`,
@@ -392,6 +394,7 @@ export const koMessages = {
     childrenEmpty: "하위 이슈가 없습니다.",
     newChild: "새 하위 이슈",
     addExistingChild: "기존 이슈를 하위로 넣기",
+    addChildConfirm: "하위로 넣기",
     childAdded: (id: string, epicId: string) => `${id}을(를) ${epicId}의 하위 이슈로 넣었습니다.`,
   },
   graph: {

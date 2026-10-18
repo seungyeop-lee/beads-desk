@@ -25,7 +25,7 @@ test("에픽의 새 하위 이슈는 상위 에픽을 바꿀 수 없고, 만든 
   await expect(page.getByLabel(`${epic} 진행률`)).toHaveAttribute("max", "1");
 });
 
-test("에픽에서 기존 이슈를 찾아 하위로 넣으면 하위 목록에 들어간다", async ({
+test("에픽에서 기존 이슈를 골라 확인하면 하위 목록에 들어가고, 확인 전에 취소하면 남지 않는다", async ({
   page,
   workspace,
 }) => {
@@ -35,11 +35,26 @@ test("에픽에서 기존 이슈를 찾아 하위로 넣으면 하위 목록에 
   });
 
   await page.goto("/epics");
-  await page.getByRole("combobox", { name: "기존 이슈를 하위로 넣기" }).fill("넣을 후보");
+  const search = page.getByRole("combobox", { name: "기존 이슈를 하위로 넣기" });
+  await search.fill("넣을 후보");
   await page
     .getByRole("listbox", { name: "기존 이슈를 하위로 넣기" })
     .getByRole("option", { name: new RegExp(task) })
     .click();
+
+  // 선택만으로는 등록되지 않고, 취소하면 아무 관계도 남지 않습니다.
+  await expect(page.getByRole("button", { name: "하위로 넣기" })).toBeVisible();
+  await page.getByRole("button", { name: "선택 취소" }).click();
+  await expect(search).toBeVisible();
+  // bd는 상위가 없는 이슈의 parent 필드를 아예 생략합니다.
+  expect((await workspace.showIssue(task)).parent).toBeUndefined();
+
+  await search.fill("넣을 후보");
+  await page
+    .getByRole("listbox", { name: "기존 이슈를 하위로 넣기" })
+    .getByRole("option", { name: new RegExp(task) })
+    .click();
+  await page.getByRole("button", { name: "하위로 넣기" }).click();
 
   await expect(page.getByText(`${task}을(를) ${epic}의 하위 이슈로 넣었습니다.`)).toBeVisible();
   await expect(page.getByRole("link", { name: "넣을 후보 작업" })).toBeVisible();
