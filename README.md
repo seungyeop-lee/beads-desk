@@ -40,7 +40,7 @@ A local web UI for the [Beads](https://github.com/gastownhall/beads) (`bd`) issu
 
 ### Work alongside the CLI
 
-- **Live updates**: Changes made with `bd` in the terminal, by you or an agent, appear in every open tab within a few seconds, without reloading.
+- **Live updates**: Changes made with `bd` in the terminal, by you or an agent, appear in every open tab within a few seconds, without reloading. Issues are read and changed only through the `bd` CLI. While a tab is open, the server checks for changes by comparing the Dolt database's `.dolt/noms/manifest` file in embedded mode, and the database hash from `bd sql` (`DOLT_HASHOF_DB()`) in server mode.
 
 There are also Issues, Epics, and Hygiene screens. The UI is in English and Korean and follows your browser's language. To change the language or theme, open Settings with the button to the left of New issue at the top right.
 
