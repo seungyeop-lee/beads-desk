@@ -20,3 +20,16 @@ test.each(["--version", "-v"])(
     expect(result.stdout).toBe(`${version}\n`);
   },
 );
+
+test.each(["--help", "-h"])(
+  "%s는 -h, --help와 -v, --version 옵션이 담긴 사용법을 출력하고 종료 코드 0으로 끝난다",
+  (flag) => {
+    const result = spawnSync(process.execPath, [resolve(BIN_DIR, "bd-desk.js"), flag], {
+      encoding: "utf8",
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("-h, --help");
+    expect(result.stdout).toContain("-v, --version");
+  },
+);

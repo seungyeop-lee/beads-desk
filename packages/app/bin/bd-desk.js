@@ -22,7 +22,8 @@ const USAGE = `Usage: bd-desk [start|stop|restart] [--port <number>] [--open]
 
   --port <number>  Server port. Defaults to the first free port from ${DEFAULT_PORT}.
   --open           Open the browser when the server is ready.
-  -v, --version    Print the installed bd-desk version.`;
+  -v, --version    Print the installed bd-desk version.
+  -h, --help       Print this usage.`;
 
 const require = createRequire(import.meta.url);
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");

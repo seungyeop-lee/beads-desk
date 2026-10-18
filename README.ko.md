@@ -81,6 +81,7 @@ main checkout에 `.beads`가 있는 git 저장소의 worktree에서 실행하면
 
 - `--port <번호>`: 서버 포트를 지정합니다. 지정하지 않으면 3000번부터 비어 있는 첫 포트를 씁니다. 실행 중인 서버는 `start`를 다시 실행해도 포트를 바꾸지 않으므로, 포트를 바꾸려면 `bd-desk restart --port <번호>`를 실행합니다.
 - `--open`: 서버가 준비되면 브라우저를 엽니다.
+- `--version`(또는 `-v`): 설치된 bd-desk 버전을 출력합니다.
 
 ### 여러 workspace 함께 쓰기
 

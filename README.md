@@ -81,6 +81,7 @@ In a git worktree of a repository whose main checkout has `.beads`, the worktree
 
 - `--port <number>`: Sets the server port. If omitted, the first free port starting from 3000 is used. A running server keeps its port when you run `start` again; to change it, run `bd-desk restart --port <number>`.
 - `--open`: Opens the browser once the server is ready.
+- `--version` (or `-v`): Prints the installed bd-desk version.
 
 ### Working with several workspaces
 
