@@ -14,21 +14,7 @@
 | `packages/bd`    | `@beads-desk/bd`            | `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다 |
 | `packages/promo` | `@beads-desk/promo`         | README 스크린샷과 소개 영상을 만드는 도구. 배포하지 않습니다   |
 
-`pnpm --filter promo run seed <디렉터리>`는 그 디렉터리에 git 저장소와 영어 데모 프로젝트(prefix `acme`)의 bd workspace를 만듭니다. 비어 있거나 전에 seed로 만든 디렉터리만 받고, 전에 만든 디렉터리는 비운 뒤 다시 만듭니다.
-
-`pnpm --filter promo run capture`는 임시 디렉터리 아래 `acme-web`에 데모 workspace를 새로 만들고, 마지막 app build로 서버를 띄워 영어 UI와 라이트 테마로 화면을 캡처합니다. 먼저 `pnpm run build`를 실행하고, chromium이 없으면 `pnpm run test:e2e:install`로 설치합니다. 캡처할 화면과 순서는 `packages/promo/src/capture/captureTargets.ts`의 목록에서 정합니다.
-
-- README 스크린샷은 `docs/screenshots/<이름>.png`에 저장하고 저장소에 commit합니다.
-- 소개 영상용 녹화(`<이름>.webm`)는 `packages/promo/recordings/`에 저장합니다. 이 디렉터리는 저장소에 넣지 않습니다.
-- 이미 만든 데모 workspace를 쓰려면 `--workspace <디렉터리>`를 줍니다. 화면 머리글에 디렉터리 이름이 보이므로 이름은 `acme-web`으로 둡니다. gate 응답과 카드 이동 녹화가 그 workspace의 이슈를 바꾸므로, 같은 workspace로 다시 캡처하기 전에 seed로 다시 만듭니다.
-
-`pnpm --filter promo run video`는 capture가 남긴 녹화로 Remotion을 실행해 소개 영상을 만듭니다. 먼저 capture를 실행합니다. 처음 실행할 때 Remotion이 렌더링용 Chrome Headless Shell(약 170MB)을 `packages/promo/node_modules/.remotion`에 내려받습니다. 명령이 끝나면 파일마다 길이, 해상도, frame rate, 용량을 출력합니다.
-
-- `packages/promo/out/beads-desk-intro.mp4`는 Needs human(hero), Now, 그래프, Decisions, 보드, 설치 안내를 이어 붙인 전체 영상입니다(H.264, 1600×900, 25fps).
-- `packages/promo/out/beads-desk-intro.gif`는 README 맨 위에 두는, 같은 영상을 줄인 GIF입니다(960×540, 6.25fps). GitHub 이미지 첨부 한도인 10MB를 넘으면 명령이 실패합니다.
-- `packages/promo/out/`은 저장소에 넣지 않습니다.
-- 장면 순서, 자막, 녹화에서 잘라 쓰는 구간은 `packages/promo/src/video/introTimeline.ts`에 있습니다. 구간은 녹화 시각으로 적혀 있으므로, `captureTargets.ts`에서 장면의 동작이나 pause 길이를 바꾸면 구간도 함께 고칩니다.
-- 렌더링하기 전에 구간마다 첫 frame과 마지막 frame을 구간 안쪽 1초 동안의 frame과 비교하고, 화면이 크게 다르면 장면과 경계(`fromMs`·`toMs`)를 알리며 실패합니다. 경계가 화면을 불러오는 동안에 걸렸거나 경계에서 1초 안에 장면의 동작이 있는 경우이므로, 녹화의 frame을 보고 그 경계를 옮깁니다. 목록이 빈 채로 1초 넘게 머물면, 빈 목록이 나타나고 얼마 지나지 않은 경계는 이 검사를 통과합니다.
+README 스크린샷이나 소개 영상을 만들거나 `packages/promo`를 고치기 전에 `packages/promo/AGENTS.md`를 읽습니다. seed·capture·video 명령과 출력 파일, 캡처 장면을 바꿀 때 함께 고칠 파일이 그 문서에 있습니다.
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 
@@ -124,21 +110,20 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 - 컴포넌트 테스트 설정은 `"use server"` 파일을 호출하면 실패하는 함수로 바꿔 불러오므로, Server Action을 실행해야 하는 동작은 e2e로 확인합니다.
 - 실패하면 `packages/app/.vitest/attachments/failure-screenshots`에 screenshot이 남습니다.
 
-화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면, unit test나 컴포넌트 테스트로 확인할 수 없는지 먼저 따져 본 뒤 시나리오를 추가합니다. 시나리오를 추가하는 기준과 작성 규칙, 시나리오를 바꾼 작업이 보고할 테스트 수와 실행 시간은 `packages/app/e2e/AGENTS.md`에 있습니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
+화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면, unit test나 컴포넌트 테스트로 확인할 수 없는지 먼저 따져 본 뒤 시나리오를 추가합니다. 시나리오를 추가하는 기준과 작성 규칙, 시나리오를 바꾼 작업이 보고할 테스트 수와 실행 시간, `pnpm run test:e2e`의 worker·포트·대기 출력·RAM disk 같은 실행 방식은 `packages/app/e2e/AGENTS.md`에 있습니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
 
 1. 작업하는 동안에는 `pnpm run build`로 빌드한 뒤, `packages/app`에서 `pnpm exec playwright test <spec 경로>`로 바꾼 동작을 다루는 spec만 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고칠 때마다 다시 빌드합니다.
 2. 화면을 바꿨으면 바뀐 화면을 스크린샷으로 직접 확인합니다. 화면 관련 작업의 스크린샷은 `/tmp` 폴더에 저장하고, 보고할 때 마크다운 링크로 제시합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.
 3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다.
 
-- `pnpm run test:e2e`는 app을 production build로 빌드한 뒤 시나리오를 worker 8개(RAM disk를 쓰지 않으면 4개)로 나눠 실행합니다. worker마다 3900번부터 빈 포트를 찾아 `next start`를 띄우고, 실행이 끝나면 서버를 종료합니다. 다른 프로세스가 쓰는 포트는 건너뛰므로 `next dev`가 떠 있어도 됩니다.
-- 다른 worktree의 e2e가 실행 중이면 `다른 e2e 실행(pid <번호>)이 끝나기를 기다립니다.`를 출력하고, 그 실행이 끝난 뒤 시작합니다. `pnpm run test:e2e`는 기다리는 동안 빌드도 하지 않고, 차례를 받은 뒤에 빌드합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다. 먼저 시작한 실행이 비정상으로 끝나 차례를 돌려주지 못했으면, 다음 실행은 기다리지 않고 시작합니다.
-- Playwright가 마지막에 표시하는 시간에는 빌드 없이 실행했을 때 차례를 기다린 시간이 들어갑니다. 기다렸으면 `차례를 <초> 기다렸습니다.`가 따로 출력되고, `pnpm run test:e2e`는 끝에 `e2e 대기 <초>, 빌드 <초>, 시나리오 실행 <초>`를 출력합니다.
-- macOS에서는 실행하는 동안 `/Volumes/beads-desk-e2e-<실행 pid>`에 512MB RAM disk를 붙이고, 시나리오 workspace를 그 아래에 만듭니다. 실행이 끝나면 성공·실패와 관계없이 떼어 냅니다. 실행이 비정상으로 끝나 volume이 남아 있으면 다음 실행이 뗍니다. RAM disk 없이 실행하려면 `BEADS_DESK_E2E_RAMDISK=0`을 줍니다. 디스크에서는 worker들의 bd 실행이 디스크 I/O를 함께 쓰느라 느려지므로 worker를 4개로 줄여 실행합니다.
+- worker마다 빈 포트를 찾아 서버를 따로 띄우므로, `next dev`가 떠 있어도 e2e를 실행할 수 있습니다.
+- 다른 worktree의 e2e가 실행 중이면 그 실행이 끝난 뒤에 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다.
+- macOS에서는 시나리오 workspace를 RAM disk에 만듭니다. RAM disk 없이 실행하려면 `BEADS_DESK_E2E_RAMDISK=0`을 줍니다. 이때는 디스크에서 bd 실행이 느려지므로 worker 수를 줄여 실행합니다.
 - 시나리오가 실패하면 `packages/app/test-results`에 screenshot과 trace가 남습니다. trace는 `pnpm exec playwright show-trace <trace.zip 경로>`로 엽니다.
 
 `next dev`가 실행 중일 때 `packages/bd`를 고치면, 서버를 다시 시작하기 전까지 API가 고치기 전의 코드로 bd를 실행합니다. bd 패키지를 고친 뒤 화면이나 API로 확인하려면 `next dev`를 다시 시작합니다.
 
-`next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) 개발 서버를 끄고 `packages/app/.next/dev`를 지운 뒤 다시 시작합니다. 원인은 확인하지 못했습니다. 지우기 전에 개발 서버에 연결된 브라우저 탭, `/_next/hmr` WebSocket에서 반복되는 메시지, `.next/dev` 복사본을 남깁니다. 확인 방법과 지금까지의 조사 기록은 `docs/troubleshooting.md`에 있습니다.
+`next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) `docs/troubleshooting.md`의 절차를 따릅니다. `packages/app/.next/dev`를 지우기 전에 남겨야 할 자료가 그 문서에 있습니다.
 
 배포 패키지 구성(`files`, 의존성, launcher)을 바꿨다면 저장소 밖에서 설치해 실행해 봅니다.
 
@@ -157,16 +142,9 @@ act pull_request -j package-smoke -P ubuntu-latest=catthehacker/ubuntu:act-lates
 
 - `-j`는 event와 관계없이 모든 workflow에서 그 ID의 job을 찾아 실행합니다. 그래서 `release.yml`에서 `check.yml`을 호출하는 job은 `pnpm-check`나 `package-smoke`와 겹치지 않는 `pre-publish-check`라는 ID를 씁니다.
 - workflow의 job ID나 파일 이름을 바꾸면 이 문서의 act 명령도 함께 고칩니다. `pnpm run check`의 unit test(`packages/app/scripts/actCommands.test.ts`)가 act 명령의 `-j` job ID가 workflow 중 정확히 한 곳에 있는지, `-W` 경로에 파일이 있는지, 두 workflow에 같은 job ID가 없는지 검사합니다.
-- act는 commit하지 않은 변경까지 포함해 작업 트리를 container에 복사합니다. `.gitignore`에 있는 파일(`node_modules` 등)은 복사하지 않습니다.
-- `--rm`을 빼면 job이 실패했을 때 이름이 `act-`로 시작하는 container와 volume이 남습니다.
 - Apple Silicon에서 act가 `--container-architecture linux/amd64`를 쓰라는 경고를 출력해도 이 옵션은 주지 않습니다. Docker Desktop의 containerd image store에서는 act가 amd64 이미지의 `PATH`를 읽지 못해, node로 실행하는 action이 `exec: "node": executable file not found in $PATH`로 실패합니다.
 
-act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지는 않으므로, 최종 확인은 PR의 GitHub Actions 실행 결과로 합니다.
-
-- runner 이미지가 달라 미리 설치된 패키지와 apt 저장소가 다릅니다. `playwright install --with-deps`처럼 apt로 설치하는 단계는 act에서 통과해도 GitHub에서 실패할 수 있고, 반대의 경우도 생깁니다.
-- Apple Silicon에서는 arm64 container에서 실행하므로, pnpm이 GitHub runner와 다른 플랫폼의 native 패키지를 설치합니다.
-- cache는 act에 내장된 cache server가 `~/.cache/actcache`에 저장합니다. 두 번째 실행부터 setup-node의 pnpm cache가 복원되지만, GitHub의 cache와는 공유되지 않습니다.
-- act에서는 OIDC token을 발급받을 수 없으므로, `id-token: write` 권한이 필요한 단계는 act로 확인할 수 없습니다.
+act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지는 않으므로, 최종 확인은 PR의 GitHub Actions 실행 결과로 합니다. act가 container에 복사하는 파일, `--rm`을 뺐을 때 남는 container, cache, GitHub runner와 달라지는 점은 `docs/act.md`에 있습니다.
 
 ## 릴리스
 
@@ -180,11 +158,8 @@ act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지�
 
 - 검사가 하나라도 실패하면 게시하지 않고 workflow가 실패로 끝납니다. 고친 커밋을 push하면 version이 아직 npm에 없으므로 그 커밋에서 다시 검사하고 게시합니다. main push마다 `check.yml`도 따로 실행되므로, version을 올린 커밋에서는 같은 검사가 두 번 실행됩니다.
 - 해당 절이 없거나 본문이 비어 있거나 제목이 날짜로 끝나지 않으면, workflow는 게시하기 전에 실패합니다(수동 실행은 날짜가 없으면 경고만 출력합니다). 날짜를 아직 정하지 않은 절은 `## [<version>] - Unreleased`로 적어 두고 version을 올릴 때 날짜로 바꿉니다. version이 `0.0.0`이 아니면 `pnpm run check`의 unit test(`packages/app/scripts/releaseNotes.test.ts`)도 같은 조건을 검사합니다.
-- npm 인증은 trusted publishing(OIDC)으로 합니다. npmjs.com 패키지 Settings의 trusted publisher에 저장소 `seungyeop-lee/beads-desk`와 workflow 파일 이름 `release.yml`을 적으므로, 파일 이름을 바꾸면 그 설정도 함께 바꿉니다. 패키지의 Publishing access가 bypass 2FA token을 막고 있어서 token으로는 게시할 수 없습니다.
-- trusted publisher를 새로 만들면 권한에 `npm stage publish`만 켜져 있습니다. workflow는 `npm publish`로 바로 게시하므로 direct publish도 허용합니다.
-- 새로 만든 trusted publisher는 2일 안에 그 설정으로 한 번 게시해야 검증되고, 그 전까지 화면에 `Pending validation`이 표시됩니다([npm 문서](https://docs.npmjs.com/trusted-publishers/)). 기한을 넘기면 설정이 만료되어 고칠 수 없으므로, 지우고 다시 만든 뒤 2일 안에 version을 올린 커밋을 push합니다. 그래서 trusted publisher를 다시 만들어야 하면 다음 릴리스를 push하기 직전에 만듭니다.
+- npm 인증은 trusted publishing(OIDC)으로 합니다. npmjs.com 패키지 Settings의 trusted publisher에 저장소 `seungyeop-lee/beads-desk`와 workflow 파일 이름 `release.yml`을 적으므로, 파일 이름을 바꾸면 그 설정도 함께 바꿉니다. 패키지의 Publishing access가 bypass 2FA token을 막고 있어서 token으로는 게시할 수 없습니다. trusted publisher를 다시 만들어야 하면 `docs/trusted-publisher.md`의 순서를 따릅니다.
 - `publish` job이 성공해도 npm에서 새 version이 보이기까지 몇 분 걸릴 수 있습니다. 몇 분 기다린 뒤 `npm view @seungyeop-lee/beads-desk version --prefer-online`으로 확인합니다. 저장소 밖에서 설치해 볼 때 `npm error notarget`이 나오면 로컬 npm 캐시가 오래된 것이므로 `npm install`에 `--prefer-online`을 줍니다.
-- 새 패키지를 처음 게시하면 registry에 자리표시자 version `0.0.0-stage`가 생기고, 게시한 version이 나타나기 전까지 이 자리표시자가 `latest`로 보일 수 있습니다. workflow는 `npm stage publish`가 아니라 `npm publish`를 실행하는데도 자리표시자가 생기는 원인은 확인하지 못했습니다. version이 나타난 뒤에도 자리표시자가 버전 목록에 남아 있으면, unpublish가 허용되는 게시 후 72시간 안에([npm 문서](https://docs.npmjs.com/policies/unpublish)) 패키지를 관리하는 npm 계정으로 로그인해 `npm unpublish @seungyeop-lee/beads-desk@0.0.0-stage`로 지웁니다.
 - 게시한 뒤 tag나 Release 생성이 실패하면, workflow를 다시 실행해도 version이 이미 있어서 건너뜁니다. 이때는 `node packages/app/scripts/releaseNotes.mjs <version> > <노트 파일>`로 노트를 뽑아 `gh release create v<version> --target <커밋> --title v<version> --notes-file <노트 파일>`로 직접 만듭니다. prerelease version이면 `--prerelease`도 붙입니다.
 
 prerelease도 같은 순서로 냅니다. version 뒤에 `-`로 prerelease 부분을 붙이고(예: `0.2.0-beta.1`), CHANGELOG 절 제목에도 그 version을 그대로 적습니다(`## [0.2.0-beta.1] - <YYYY-MM-DD>`). workflow는 version에 prerelease 부분이 있으면 npm에 `next` dist-tag로 게시하고 GitHub Release를 prerelease로 만듭니다. `latest`는 바뀌지 않으므로, version이나 `@next`를 지정하지 않고 설치하는 사용자는 계속 마지막 정식 version을 받습니다.
