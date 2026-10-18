@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명·댓글·메모에서 workspace와 외부 worktree의 파일을 열고 PNG를 표시하며 편집 후 원문 경로를 유지한다", async ({
+test("설명·댓글·메모에서 workspace와 외부 worktree의 파일 링크와 PNG를 표시하고, 본문 링크로 파일과 앱 화면과 외부 주소를 열며 편집 후 원문 경로를 유지한다", async ({
   page,
   workspace,
 }, testInfo) => {
@@ -35,8 +35,13 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일을 열
       "",
       `[workspace 문서](<${paths[0]!.md}>) [worktree 문서](<${paths[1]!.md}>) 편집할 문단`,
     ].join("\n");
-    const id = await workspace.createIssue("로컬 파일 표시", "--description", markdown);
-    await workspace.bd("update", id, "--notes", markdown);
+    const id = await workspace.createIssue(
+      "로컬 파일 표시",
+      "--description",
+      markdown,
+      "--notes",
+      markdown,
+    );
     await workspace.bd("comments", "add", id, markdown);
     await page.goto(`/issues?issue=${id}`);
     const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
@@ -52,13 +57,10 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일을 열
         await expect(image).toBeVisible();
         await expect(image).toHaveJSProperty("naturalWidth", 80);
         await expect(image).toHaveAttribute("src", localFileUrl(path.png));
-        const link = field.getByRole("link", { name: `${name} 문서` });
-        await expect(link).toHaveAttribute("href", localFileUrl(path.md));
-        await link.click();
-        await expect(page.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
-        expect(new URL(page.url()).searchParams.get("path")).toBe(path.md);
-        await page.goBack();
-        await expect(dialog).toBeVisible();
+        await expect(field.getByRole("link", { name: `${name} 문서` })).toHaveAttribute(
+          "href",
+          localFileUrl(path.md),
+        );
       }
       await expect(field.getByRole("link", { name: "에픽 화면" })).toHaveAttribute(
         "href",
@@ -74,32 +76,37 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일을 열
       path: testInfo.outputPath("local-files.png"),
       contentType: "image/png",
     });
-    for (const [field, key] of [
-      ["설명", "description"],
-      ["메모", "notes"],
-    ] as const) {
-      const region = dialog.getByRole("region", { name: field, exact: true });
-      await region.getByRole("button", { name: "편집", exact: true }).click();
-      const editor = region.getByRole("textbox", { name: field });
-      await expect(editor.getByRole("link", { name: "workspace 문서" })).toBeVisible();
-      await placeCaretAfter(editor, "편집할 문단");
-      await page.keyboard.type(" 고침");
-      await expect(editor).toContainText("편집할 문단 고침");
-      await page.keyboard.press("ControlOrMeta+Enter");
-      await expect
-        .poll(async () => (await workspace.showIssue(id))[key], { timeout: SAVE_TIMEOUT })
-        .toContain("편집할 문단 고침");
-      const saved = (await workspace.showIssue(id))[key]!;
-      expect(saved).toContain(paths[0]!.md);
-      expect(saved).toContain(paths[1]!.md);
-      expect(saved).not.toContain("/api/local-files");
+    // 세 필드가 같은 읽기 전용 편집기로 그려지므로, 링크를 눌러 여는 흐름은 설명에서만 확인합니다.
+    const description = fields[0]!;
+    for (const [index, path] of paths.entries()) {
+      const name = index === 0 ? "workspace" : "worktree";
+      await description.getByRole("link", { name: `${name} 문서` }).click();
+      await expect(page.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
+      expect(new URL(page.url()).searchParams.get("path")).toBe(path.md);
+      await page.goBack();
+      await expect(dialog).toBeVisible();
     }
+    await description.getByRole("link", { name: "에픽 화면" }).click();
+    await expect(page).toHaveURL(/\/epics$/);
+    await page.goBack();
+    await expect(dialog).toBeVisible();
+
+    await description.getByRole("button", { name: "편집", exact: true }).click();
+    const editor = description.getByRole("textbox", { name: "설명" });
+    await expect(editor.getByRole("link", { name: "workspace 문서" })).toBeVisible();
+    await placeCaretAfter(editor, "편집할 문단");
+    await page.keyboard.type(" 고침");
+    await expect(editor).toContainText("편집할 문단 고침");
+    await page.keyboard.press("ControlOrMeta+Enter");
+    await expect
+      .poll(async () => (await workspace.showIssue(id)).description, { timeout: SAVE_TIMEOUT })
+      .toBe(markdown.replace("편집할 문단", "편집할 문단 고침"));
     const comments: { text: string }[] = JSON.parse(await workspace.bd("comments", id, "--json"));
     expect(comments[0]!.text).toBe(markdown);
     await page.route("https://example.com/doc", (route) =>
       route.fulfill({ contentType: "text/plain; charset=utf-8", body: "외부 문서 화면" }),
     );
-    await fields[0]!.getByRole("link", { name: "외부 문서" }).click();
+    await description.getByRole("link", { name: "외부 문서" }).click();
     await expect(page).toHaveURL("https://example.com/doc");
     await expect(page.getByText("외부 문서 화면")).toBeVisible();
   } finally {

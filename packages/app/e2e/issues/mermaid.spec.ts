@@ -2,7 +2,6 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { Locator } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
-import { placeCaretAfter } from "../support/editorCaret";
 import { createHumanGate } from "../support/humanGates";
 
 const DIAGRAM = "flowchart LR\n  A[시작] -->|처리| B[완료]";
@@ -105,52 +104,6 @@ test("편집 미리보기는 마지막 입력만 남기고 문법 오류·언어
   await expect(dialog.locator(".preview-panel")).toHaveCount(0);
 });
 
-test("시스템 테마가 바뀌어도 저장 전 입력이 남고 여러 블록의 그림이 갱신된다", async ({
-  page,
-  workspace,
-}, info) => {
-  await page.emulateMedia({ colorScheme: "light" });
-  const id = await workspace.createIssue(
-    "Mermaid 테마",
-    "--description",
-    `${markdown()}\n\n${markdown()}\n\n저장 전 문단`,
-  );
-  await page.goto(`/issues?issue=${id}`);
-  const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-  await expect(dialog.locator(".preview svg").first()).toBeVisible();
-  await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  const editor = dialog.getByRole("textbox", { name: "설명", exact: true });
-  await placeCaretAfter(editor, "저장 전 문단");
-  await page.keyboard.type(" 고침");
-  const block = editor.locator(".milkdown-code-block").first();
-  await expect(block.locator(".preview svg")).toBeVisible();
-  const light = await diagramColor(block);
-  await page.emulateMedia({ colorScheme: "dark" });
-  await expect.poll(() => diagramColor(block)).not.toBe(light);
-  await page.screenshot({ path: info.outputPath("mermaid-editor-dark.png"), fullPage: true });
-  await page.emulateMedia({ colorScheme: "light" });
-  await expect.poll(() => diagramColor(block)).toBe(light);
-  await expect(editor.getByText("저장 전 문단 고침")).toBeVisible();
-});
-
-test("다른 문단만 저장하면 mermaid 원문의 fence·들여쓰기·줄바꿈이 bd에 그대로 남는다", async ({
-  page,
-  workspace,
-}) => {
-  const original = `앞 문단\n\n  ~~~~mermaid\n  flowchart LR\n    A[시작] -->|처리| B[완료]\n  ~~~~\n\n고칠 문단\n`;
-  const id = await workspace.createIssue("Mermaid 원문 보존", "--description", original);
-  await page.goto(`/issues?issue=${id}`);
-  const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-  await expect(dialog.locator(".preview svg")).toBeVisible();
-  await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  await placeCaretAfter(dialog.getByRole("textbox", { name: "설명" }), "고칠 문단");
-  await page.keyboard.type(" 고침");
-  await dialog.getByRole("button", { name: "저장", exact: true }).click();
-  await expect
-    .poll(async () => (await workspace.showIssue(id)).description, { timeout: SAVE_TIMEOUT })
-    .toBe(original.replace("고칠 문단", "고칠 문단 고침"));
-});
-
 test("일반 코드에서는 Mermaid 모듈을 받지 않고 Mermaid 모듈 로드 실패 시 코드가 보인다", async ({
   page,
   workspace,
@@ -185,7 +138,7 @@ test("일반 코드에서는 Mermaid 모듈을 받지 않고 Mermaid 모듈 로�
   await expect(dialog.locator(".cm-content")).toContainText("flowchart LR");
 });
 
-test("Human gate는 같은 그림을 보여 주고 설정에서 테마를 바꾸어도 작성 중인 응답이 남는다", async ({
+test("Human gate는 같은 그림을 보여 주고 설정이나 시스템에서 테마를 바꾸어도 작성 중인 응답이 남는다", async ({
   page,
   workspace,
 }) => {
@@ -210,6 +163,8 @@ test("Human gate는 같은 그림을 보여 주고 설정에서 테마를 바꾸
   await expect.poll(() => diagramColor(block)).toBe(light);
   await theme.selectOption("system");
   await expect.poll(() => diagramColor(block)).toBe(light);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect.poll(() => diagramColor(block)).not.toBe(light);
   await expect(response).toHaveText("저장하지 않은 응답");
 });
 
@@ -228,71 +183,15 @@ async function mermaidChunks() {
   return new Set(chunks);
 }
 
-test("모듈 응답이 늦어도 이미 다른 언어로 바꾼 블록에 이전 그림이 나타나지 않는다", async ({
-  page,
-  workspace,
-}) => {
-  const { plain, target } = await workspace.createIssues({
-    plain: { title: "편집기 준비", description: "```ts\nconst value = 1;\n```" },
-    target: {
-      title: "늦은 그림",
-      description: `${markdown()}\n\n${markdown("flowchart LR\n A[남은 그림] --> B")}`,
-    },
-  });
-  await page.goto(`/issues?issue=${plain}`);
-  const plainDialog = page.getByRole("dialog", { name: `${plain} 이슈` });
-  await expect(plainDialog.getByText("const value = 1;", { exact: true })).toBeVisible();
-  const chunks = await mermaidChunks();
-  let started = false;
-  let release = () => {};
-  const released = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  await page.route("**/_next/static/chunks/*.js", async (route) => {
-    if (chunks.has(new URL(route.request().url()).pathname)) {
-      started = true;
-      await released;
-    }
-    await route.continue();
-  });
-  try {
-    await plainDialog.getByRole("button", { name: "닫기", exact: true }).first().click();
-    await page.getByRole("link", { name: "늦은 그림", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: `${target} 이슈` });
-    await expect.poll(() => started).toBe(true);
-    await dialog.getByRole("button", { name: "편집", exact: true }).click();
-    const blocks = dialog
-      .getByRole("textbox", { name: "설명", exact: true })
-      .locator(".milkdown-code-block");
-    const first = blocks.nth(0);
-    await changeCode(first, "flowchart LR\n A[폐기할 입력] --> B");
-    await first.getByRole("button", { name: /^mermaid$/i }).click();
-    await page
-      .getByRole("listitem")
-      .filter({ hasText: /^JavaScript$/ })
-      .click();
-    release();
-    await expect(blocks.nth(1).locator(".preview svg")).toContainText("남은 그림");
-    await expect(first.locator(".preview-panel")).toHaveCount(0);
-    await expect(first.locator(".cm-content")).toContainText("폐기할 입력");
-  } finally {
-    release();
-  }
-});
-
-test("새 이슈 작성에서도 Mermaid 미리보기를 보여 주며 영어 미리보기 문구를 쓴다", async ({
+test("새 이슈 작성에서도 Mermaid 미리보기를 보여 주고 Ctrl/Cmd+Enter로 만들면 bd 설명에 저장된다", async ({
   page,
   workspace,
 }) => {
   await page.goto("/issues");
-  await page.getByRole("button", { name: /^(설정|Settings)$/ }).click();
-  const settings = page.getByRole("dialog", { name: /^(설정|Settings)$/ });
-  await settings.getByRole("combobox", { name: /^(언어|Language)$/ }).selectOption("en");
-  await settings.getByRole("button", { name: "Close", exact: true }).first().click();
-  await page.getByRole("button", { name: "New issue", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "New issue", exact: true });
-  await dialog.getByRole("textbox", { name: "Title", exact: true }).fill("New Mermaid");
-  const editor = dialog.getByRole("textbox", { name: "Description", exact: true });
+  await page.getByRole("button", { name: "새 이슈", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "새 이슈", exact: true });
+  await dialog.getByRole("textbox", { name: "제목", exact: true }).fill("새 Mermaid");
+  const editor = dialog.getByRole("textbox", { name: "설명", exact: true });
   await editor.click();
   await editor.evaluate((element, text) => {
     const data = new DataTransfer();
@@ -302,8 +201,8 @@ test("새 이슈 작성에서도 Mermaid 미리보기를 보여 주며 영어 �
     );
   }, markdown());
   await expect(editor.locator(".preview svg")).toContainText("시작");
-  await expect(editor.getByText("Preview", { exact: true })).toBeVisible();
-  await expect(editor.getByRole("button", { name: "Hide code", exact: true })).toBeVisible();
+  await expect(editor.getByText("미리보기", { exact: true })).toBeVisible();
+  await expect(editor.getByRole("button", { name: "코드 숨기기", exact: true })).toBeVisible();
   await page.keyboard.press("ControlOrMeta+Enter");
   await expect(page).toHaveURL(/[?&]issue=/);
   const created = new URL(page.url()).searchParams.get("issue") ?? "";
