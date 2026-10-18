@@ -35,7 +35,8 @@
     "typescript": "npm:@typescript/typescript6@~6.0.2",
     "typescript-eslint": "^8.71.1",
     "vitest": "^5.0.4",
-    "vitest-browser-react": "^2.3.0"
+    "vitest-browser-react": "^2.3.0",
+    "yaml": "^2.9.1"
   },
   "engines": {
     "node": ">=24"

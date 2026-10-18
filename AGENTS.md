@@ -144,6 +144,7 @@ act pull_request -j package-smoke -P ubuntu-latest=catthehacker/ubuntu:act-lates
 ```
 
 - `-j`는 event와 관계없이 모든 workflow에서 그 ID의 job을 찾아 실행합니다. 그래서 `release.yml`에서 `check.yml`을 호출하는 job은 `pnpm-check`나 `package-smoke`와 겹치지 않는 `pre-publish-check`라는 ID를 씁니다.
+- workflow의 job ID나 파일 이름을 바꾸면 이 문서의 act 명령도 함께 고칩니다. `pnpm run check`의 unit test(`packages/app/scripts/actCommands.test.ts`)가 act 명령의 `-j` job ID가 workflow 중 정확히 한 곳에 있는지, `-W` 경로에 파일이 있는지, 두 workflow에 같은 job ID가 없는지 검사합니다.
 - act는 commit하지 않은 변경까지 포함해 작업 트리를 container에 복사합니다. `.gitignore`에 있는 파일(`node_modules` 등)은 복사하지 않습니다.
 - `--rm`을 빼면 job이 실패했을 때 이름이 `act-`로 시작하는 container와 volume이 남습니다.
 - Apple Silicon에서 act가 `--container-architecture linux/amd64`를 쓰라는 경고를 출력해도 이 옵션은 주지 않습니다. Docker Desktop의 containerd image store에서는 act가 amd64 이미지의 `PATH`를 읽지 못해, node로 실행하는 action이 `exec: "node": executable file not found in $PATH`로 실패합니다.
