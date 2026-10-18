@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import {
+  byId,
   byPriorityThenCreated,
-  byStatusGroup,
   issueTree,
   type IssueTreeRow,
 } from "@/client/modules/issues/domain/issueListView";
@@ -50,7 +50,10 @@ export function notChildCandidate(descendants: readonly Issue[]): (issue: Issue)
     issue.issueType === "epic" || !canJoinHierarchy(issue) || descendantIds.has(issue.id);
 }
 
-/** 펼친 에픽의 후손 이슈를 상태 순으로 정렬하고, 하위 이슈는 상위 이슈 바로 아래에 둡니다. */
+/**
+ * 펼친 에픽의 후손 이슈를 상태나 우선순위와 관계없이 ID 오름차순으로 정렬하고, 하위 이슈는 상위 이슈 바로 아래에 둡니다.
+ * 계층 ID는 만든 순서대로 붙으므로 작업을 계획한 순서로 읽히고, 상태가 바뀌어도 행이 자리를 옮기지 않습니다.
+ */
 export function epicDescendantRows(descendants: readonly Issue[]): IssueTreeRow[] {
-  return issueTree([...descendants].sort(byStatusGroup));
+  return issueTree([...descendants].sort(byId));
 }

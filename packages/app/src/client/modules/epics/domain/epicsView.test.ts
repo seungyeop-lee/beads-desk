@@ -70,25 +70,25 @@ test("에픽에 하위로 넣을 후보에서 에픽, 결정, 이미 그 에픽�
   expect(excluded(issue("other"))).toBe(false);
 });
 
-test("에픽의 후손 이슈는 상태 순으로 정렬하되, 상태가 달라도 하위 이슈를 상위 이슈 바로 아래에 한 단계 깊게 둔다", () => {
+test("에픽의 후손 이슈는 상태와 우선순위와 관계없이 형제끼리 ID 오름차순으로 두고, 하위 이슈를 상위 이슈 바로 아래에 한 단계 깊게 둔다", () => {
   const row = (id: string, status: string, parent: string, fields: Partial<Issue> = {}) =>
     issue(id, { status, parent, ...fields });
 
   const rows = epicDescendantRows([
-    row("feature-b", "open", "epic", { createdAt: 2 }),
-    row("task-a-done", "closed", "feature-a", { closedAt: 5 }),
-    row("feature-a", "open", "epic", { createdAt: 1 }),
-    row("task-a-doing", "in_progress", "feature-a"),
-    row("task-b", "open", "feature-b"),
-    row("task-loose", "open", "epic", { createdAt: 3 }),
+    row("x.10", "open", "x", { priority: 0 }),
+    row("x.2", "closed", "x", { closedAt: 5 }),
+    row("x.1.2", "open", "x.1", { priority: 0 }),
+    row("x.1", "in_progress", "x", { priority: 4 }),
+    row("x.2.1", "blocked", "x.2"),
+    row("x.1.1", "closed", "x.1", { closedAt: 9 }),
   ]);
 
   expect(rows.map((row) => [row.issue.id, row.depth])).toEqual([
-    ["feature-a", 0],
-    ["task-a-doing", 1],
-    ["task-a-done", 1],
-    ["feature-b", 0],
-    ["task-b", 1],
-    ["task-loose", 0],
+    ["x.1", 0],
+    ["x.1.1", 1],
+    ["x.1.2", 1],
+    ["x.2", 0],
+    ["x.2.1", 1],
+    ["x.10", 0],
   ]);
 });
