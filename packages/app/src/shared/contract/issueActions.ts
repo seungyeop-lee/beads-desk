@@ -24,6 +24,9 @@ export type NewIssueInput = {
   parent: string | null;
 };
 
+/** bd가 받는 우선순위 후보입니다. 0이 가장 높습니다. */
+export const PRIORITIES = [0, 1, 2, 3, 4] as const;
+
 /** 닫은 이슈 때문에 막혀 있다가 막힘이 풀린 이슈입니다. */
 export type UnblockedIssue = { id: string; title: string };
 

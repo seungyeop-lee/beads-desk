@@ -9,8 +9,9 @@ import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { PRIORITIES } from "@/shared/contract/issueActions";
 import { IssuePicker } from "./IssuePicker";
-import { ISSUE_TYPES, PRIORITIES, priorityLabel, typeLabel, typeTone } from "./issueLabels";
+import { ISSUE_TYPES, priorityLabel, typeLabel, typeTone } from "./issueLabels";
 
 type Props = {
   onCreated: (issueId: string) => void;

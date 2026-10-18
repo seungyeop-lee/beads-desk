@@ -1,5 +1,6 @@
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { PRIORITIES, priorityLabel, priorityTone } from "../issueLabels";
+import { PRIORITIES } from "@/shared/contract/issueActions";
+import { priorityLabel, priorityTone } from "../issueLabels";
 import { useSavedValue } from "./useSavedValue";
 
 type Props = {

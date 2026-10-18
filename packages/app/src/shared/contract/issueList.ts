@@ -31,8 +31,9 @@ export function parseIssueListFilter(params: URLSearchParams): IssueListFilter |
   return statuses.every(isIssueStatus) ? { kind: "status", statuses } : null;
 }
 
-function isIssueStatus(value: string): value is IssueStatus {
-  return (ISSUE_STATUSES as readonly string[]).includes(value);
+/** 저장 상태 후보에 든 값인지 검사합니다. Server Action 입력 검사에서도 같은 정의를 씁니다. */
+export function isIssueStatus(value: unknown): value is IssueStatus {
+  return (ISSUE_STATUSES as readonly unknown[]).includes(value);
 }
 
 export function descriptionSearchPath(text: string): string {

@@ -16,35 +16,29 @@ import {
   respondToHuman,
   setIssueStatus,
   updateIssueFields,
-  type BdOutcome,
 } from "@beads-desk/bd";
-import { ISSUE_STATUSES, type IssueStatus } from "@beads-desk/bd/issue";
-import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
-import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
-import { serverMessages } from "@/server/web/locale/serverMessages";
-import type { ApiFailure, ApiResponse } from "@/shared/contract/apiResponse";
-import {
-  DEFER_PERIODS,
-  LINKABLE_DEPENDENCY_TYPES,
-  REPLACEMENTS,
-  type DeferUntil,
-  type IssueChanges,
-  type LinkableDependencyType,
-  type CloseIssueResult,
-  type NewIssueInput,
-  type Replacement,
+import type { IssueStatus } from "@beads-desk/bd/issue";
+import type { ApiResponse } from "@/shared/contract/apiResponse";
+import type {
+  CloseIssueResult,
+  DeferUntil,
+  IssueChanges,
+  LinkableDependencyType,
+  NewIssueInput,
+  Replacement,
 } from "@/shared/contract/issueActions";
-
-// Server Action은 화면을 거치지 않은 POST 요청으로도 호출되므로, TypeScript 타입과 상관없이 모든 입력을 다시 검사합니다.
-
-const TEXT_FIELDS = new Set([
-  "title",
-  "description",
-  "design",
-  "acceptanceCriteria",
-  "notes",
-  "assignee",
-]);
+import { isIssueStatus } from "@/shared/contract/issueList";
+import {
+  invalidRequest,
+  isDeferUntil,
+  isIssueChanges,
+  isLinkableDependencyType,
+  isNewIssueInput,
+  isReplacement,
+  isString,
+  write,
+  writeClose,
+} from "./issueActionGuards";
 
 export async function updateIssueAction(
   issueId: string,
@@ -91,15 +85,7 @@ export async function closeIssueAction(
   if (!isString(issueId) || !isString(reason) || typeof force !== "boolean") {
     return invalidRequest();
   }
-  const cwd = currentWorkspaceRoot();
-  const result = await closeIssue(cwd, issueId, { reason, force });
-  if (!result.ok && "closeBlocked" in result) {
-    return { ok: false, closeBlocked: true, error: result.error.message.trim() };
-  }
-  return finish(
-    cwd,
-    result.ok ? { ok: true, value: result.value.map(({ id, title }) => ({ id, title })) } : result,
-  );
+  return writeClose((cwd) => closeIssue(cwd, issueId, { reason, force }));
 }
 
 /** 이슈를 닫고 대상 이슈로 대체했거나 대상 이슈의 중복이라는 관계를 남깁니다. */
@@ -176,68 +162,4 @@ export async function respondToHumanAction(issueId: string, response: string) {
 export async function dismissHumanAction(issueId: string, reason: string) {
   if (!isString(issueId) || !isString(reason)) return invalidRequest();
   return write((cwd) => dismissHuman(cwd, issueId, reason));
-}
-
-async function write<T>(run: (cwd: string) => Promise<BdOutcome<T>>): Promise<ApiResponse<T>> {
-  const cwd = currentWorkspaceRoot();
-  return finish(cwd, await run(cwd));
-}
-
-// 쓰기가 성공하면 다음 polling 주기를 기다리지 않고 SSE로 다른 화면과 탭에 알립니다.
-async function finish<T>(cwd: string, result: BdOutcome<T>): Promise<ApiResponse<T>> {
-  if (!result.ok) return { ok: false, error: result.error.message.trim() };
-  await checkWorkspaceChangesNow(cwd);
-  return { ok: true, data: result.value };
-}
-
-async function invalidRequest(): Promise<ApiFailure> {
-  return { ok: false, error: (await serverMessages()).invalidRequest };
-}
-
-function isIssueChanges(value: unknown): value is IssueChanges {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-  return Object.entries(value).every(([field, fieldValue]) =>
-    field === "priority" ? isPriority(fieldValue) : TEXT_FIELDS.has(field) && isString(fieldValue),
-  );
-}
-
-function isNewIssueInput(value: unknown): value is NewIssueInput {
-  if (typeof value !== "object" || value === null) return false;
-  const input = value as Record<string, unknown>;
-  return (
-    isString(input.title) &&
-    (input.issueType === null || isString(input.issueType)) &&
-    (input.priority === null || isPriority(input.priority)) &&
-    isString(input.description) &&
-    Array.isArray(input.labels) &&
-    input.labels.every(isString) &&
-    (input.parent === null || isString(input.parent))
-  );
-}
-
-function isIssueStatus(value: unknown): value is IssueStatus {
-  return (ISSUE_STATUSES as readonly unknown[]).includes(value);
-}
-
-function isLinkableDependencyType(value: unknown): value is LinkableDependencyType {
-  return (LINKABLE_DEPENDENCY_TYPES as readonly unknown[]).includes(value);
-}
-
-function isDeferUntil(value: unknown): value is DeferUntil {
-  if (typeof value === "object" && value !== null) {
-    return Object.keys(value).length === 1 && isString((value as { date?: unknown }).date);
-  }
-  return (DEFER_PERIODS as readonly unknown[]).includes(value);
-}
-
-function isReplacement(value: unknown): value is Replacement {
-  return (REPLACEMENTS as readonly unknown[]).includes(value);
-}
-
-function isPriority(value: unknown): value is number {
-  return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 4;
-}
-
-function isString(value: unknown): value is string {
-  return typeof value === "string";
 }

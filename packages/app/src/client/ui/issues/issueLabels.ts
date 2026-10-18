@@ -65,9 +65,6 @@ export function typeTone(issueType: string): string {
   return TYPE_TONES[issueType] ?? "tone-none";
 }
 
-/** bd가 받는 우선순위입니다. 0이 가장 높습니다. */
-export const PRIORITIES = [0, 1, 2, 3, 4];
-
 /** 의존 관계 유형을 보는 쪽에 맞춰 부릅니다. 목록에 없는 유형은 원래 이름 그대로 보입니다. */
 export function dependencyLabel(
   messages: Messages,
