@@ -5,6 +5,7 @@ import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { GraphScreen } from "./GraphScreen";
+import { VIEWPORT_MARGIN } from "./graphViewport";
 
 let graph: GraphData = { issues: [], dependencies: [], ancestorEpics: {} };
 let address = new URLSearchParams();
@@ -251,6 +252,104 @@ test("4단계 에픽은 선후 관계 없음 목록을 접고 읽을 수 있는 
   await expand.click();
   await expect.element(panel.getByRole("link", { name: /패널 독립 작업/ })).toBeVisible();
   expect(getComputedStyle(panel.element()).width).toBe("320px");
+});
+
+/** 그래프를 끌어 옮겨 기준 위치를 화면 밖으로 보낸 뒤 확대해, 첫 화면과 다른 위치와 배율을 만듭니다. */
+async function moveAwayAndZoomIn(screen: Awaited<ReturnType<typeof renderGraph>>) {
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  const viewport = canvas.element().querySelector<HTMLElement>(".react-flow__viewport")!;
+  const before = viewport.style.transform;
+  await userEvent.dragAndDrop(canvas, canvas, {
+    sourcePosition: { x: 20, y: 20 },
+    targetPosition: { x: 620, y: 420 },
+  });
+  await canvas.getByRole("button", { name: "확대" }).click();
+  await expect.poll(() => viewport.style.transform).not.toBe(before);
+}
+
+/** 그래프 viewport의 배율입니다. React Flow는 viewport를 translate 뒤 scale로 옮깁니다. */
+function graphZoom(screen: Awaited<ReturnType<typeof renderGraph>>) {
+  const viewport = screen
+    .getByRole("region", { name: "의존 그래프" })
+    .element()
+    .querySelector<HTMLElement>(".react-flow__viewport")!;
+  return Number(/scale\(([^)]+)\)/.exec(viewport.style.transform)![1]);
+}
+
+test("선행·후속 보기에서 화면을 옮긴 뒤 기준 이슈로 이동 단추를 누르면, 배율은 그대로이고 기준 이슈 노드의 중심이 그래프 영역 중앙에 온다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph(
+    "center",
+    "focus-center",
+    graphData(
+      {
+        "focus-before": { title: "이동 선행" },
+        "focus-center": { title: "이동 기준" },
+        "focus-after": { title: "이동 후속" },
+      },
+      [
+        ["focus-center", "focus-before"],
+        ["focus-after", "focus-center"],
+      ],
+    ),
+  );
+  const flow = screen.getByRole("region", { name: "의존 그래프" }).element();
+  const node = () => flow.querySelector('.react-flow__node[data-id="focus-center"]')!;
+  await expect.poll(() => node()).toBeTruthy();
+  await moveAwayAndZoomIn(screen);
+  const zoom = graphZoom(screen);
+  const distance = () => {
+    const pane = flow.querySelector(".react-flow")!.getBoundingClientRect();
+    const box = node().getBoundingClientRect();
+    return Math.hypot(
+      box.left + box.width / 2 - (pane.left + pane.width / 2),
+      box.top + box.height / 2 - (pane.top + pane.height / 2),
+    );
+  };
+  expect(distance()).toBeGreaterThan(100);
+
+  await screen.getByRole("button", { name: "배율을 유지하고 기준 이슈로 이동" }).click();
+  await expect.poll(distance).toBeLessThan(0.5);
+  expect(graphZoom(screen)).toBe(zoom);
+});
+
+test("순서 보기에서 화면을 옮긴 뒤 진행 중 단계로 이동 단추를 누르면, 배율은 그대로이고 진행 중 단계 이름이 그래프 영역 위쪽 가운데에 온다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph(
+    "epic",
+    "focus-epic",
+    graphData(
+      {
+        "focus-epic": { title: "이동 에픽", issueType: "epic" },
+        "focus-1": { title: "이동 첫 단계", parent: "focus-epic", status: "closed" },
+        "focus-2": { title: "이동 둘째 단계", parent: "focus-epic" },
+        "focus-3": { title: "이동 셋째 단계", parent: "focus-epic" },
+      },
+      [
+        ["focus-2", "focus-1"],
+        ["focus-3", "focus-2"],
+      ],
+    ),
+  );
+  const flow = screen.getByRole("region", { name: "의존 그래프" });
+  const label = flow.getByText("2단계 · 진행 중", { exact: true });
+  await expect.element(label).toBeInTheDocument();
+  await moveAwayAndZoomIn(screen);
+  const zoom = graphZoom(screen);
+  // 단계 이름의 가로 중심은 그래프 영역 가운데에, 윗변은 위쪽 여백 아래에 와야 합니다.
+  const distance = () => {
+    const pane = flow.element().querySelector(".react-flow")!.getBoundingClientRect();
+    const box = label.element().getBoundingClientRect();
+    return Math.hypot(
+      box.left + box.width / 2 - (pane.left + pane.width / 2),
+      box.top - (pane.top + VIEWPORT_MARGIN),
+    );
+  };
+  expect(distance()).toBeGreaterThan(100);
+
+  await screen.getByRole("button", { name: "배율을 유지하고 진행 중 단계로 이동" }).click();
+  await expect.poll(distance).toBeLessThan(0.5);
+  expect(graphZoom(screen)).toBe(zoom);
 });
 
 test("패널을 펼쳐도 들어가는 짧은 에픽은 목록을 펼쳐 시작한다", async () => {

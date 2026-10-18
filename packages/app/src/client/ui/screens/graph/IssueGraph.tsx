@@ -1,6 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import {
   BaseEdge,
+  ControlButton,
   Controls,
   type EdgeProps,
   Handle,
@@ -28,7 +29,13 @@ import {
   edgeStyle,
 } from "./edgeLook";
 import { type GraphLayout, NODE_WIDTH, type Point } from "./graphLayout";
-import { initialGraphViewport, issueFocus, STAGE_LABEL_HEIGHT, stageFocus } from "./graphViewport";
+import {
+  focusViewport,
+  initialGraphViewport,
+  issueFocus,
+  STAGE_LABEL_HEIGHT,
+  stageFocus,
+} from "./graphViewport";
 import { IssueCard, type PlanMarks } from "./IssueCard";
 
 type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
@@ -99,6 +106,20 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
     return () => observer.disconnect();
   }, [initialized, planned]);
   const messages = useMessages();
+  const focusLabel = !plan
+    ? messages.graph.focusIssue
+    : plan.stages.current === null
+      ? messages.graph.focusLastStage
+      : messages.graph.focusStage;
+  const showFocus = () => {
+    const flow = flowRef.current;
+    const container = containerRef.current;
+    if (!flow || !container || !focus) return;
+    preserveViewport();
+    void flow.setViewport(
+      focusViewport(focus, container.clientWidth, container.clientHeight, flow.getZoom()),
+    );
+  };
   const markerPrefix = `edge${useId().replace(/\W/g, "")}`;
   const { nodes, edges } = useMemo(() => {
     const gates = new Set(
@@ -209,7 +230,13 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
             onZoomIn={preserveViewport}
             onZoomOut={preserveViewport}
             onFitView={preserveViewport}
-          />
+          >
+            {focus && (
+              <ControlButton onClick={showFocus} title={focusLabel} aria-label={focusLabel}>
+                <FocusIcon />
+              </ControlButton>
+            )}
+          </Controls>
           <MiniMap pannable zoomable maskStrokeWidth={2} nodeClassName={miniMapNodeClassName} />
         </ReactFlow>
       )}
@@ -253,6 +280,17 @@ function StageLabels({
         );
       })}
     </ViewportPortal>
+  );
+}
+
+/** React Flow는 조작 막대 단추의 svg를 글자색으로 채우므로, 선으로 그리는 원은 fill을 직접 꺼야 속이 비어 보입니다. */
+function FocusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M11 0h2v5h-2zM11 19h2v5h-2zM0 11h5v2H0zM19 11h5v2h-5z" />
+    </svg>
   );
 }
 
