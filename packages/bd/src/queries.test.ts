@@ -84,7 +84,7 @@ describe("listIssues", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { message: "bd가 종료 코드 2로 실패했습니다.", exitCode: 2 },
+      error: { message: "bd exited with code 2.", exitCode: 2 },
     });
   });
 
@@ -97,7 +97,7 @@ describe("listIssues", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { message: "bd 출력을 JSON으로 해석하지 못했습니다.", exitCode: 0 },
+      error: { kind: "unparsableOutput", exitCode: 0 },
     });
   });
 });
@@ -575,7 +575,7 @@ describe("previousGateRounds", () => {
   test("게이트 id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
     expect(await previousGateRounds(fakeBd.workDir, " ")).toEqual({
       ok: false,
-      error: { message: "게이트 id가 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyGateId", exitCode: null },
     });
   });
 
@@ -722,7 +722,7 @@ describe("showIssue", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyIssueId", exitCode: null },
     });
   });
 
@@ -762,7 +762,7 @@ describe("openChangeFingerprint", () => {
     });
 
     const result = await openChangeFingerprint(fakeBd.workDir);
-    if (!result.ok) throw new Error(result.error.message);
+    if (!result.ok) throw new Error(JSON.stringify(result.error));
     const before = await result.value();
     await writeFile(join(noms, "manifest"), "root-2");
 
@@ -776,7 +776,7 @@ describe("openChangeFingerprint", () => {
     });
 
     const result = await openChangeFingerprint(fakeBd.workDir);
-    if (!result.ok) throw new Error(result.error.message);
+    if (!result.ok) throw new Error(JSON.stringify(result.error));
 
     expect(await result.value()).toBe("hash-1");
   });
@@ -788,7 +788,7 @@ describe("openChangeFingerprint", () => {
     });
 
     const result = await openChangeFingerprint(fakeBd.workDir);
-    if (!result.ok) throw new Error(result.error.message);
+    if (!result.ok) throw new Error(JSON.stringify(result.error));
 
     expect(await result.value()).toBeNull();
   });
@@ -1002,11 +1002,11 @@ describe("staleIssues", () => {
 
     expect(await staleIssues(fakeBd.workDir, 0)).toMatchObject({
       ok: false,
-      error: { exitCode: null },
+      error: { kind: "invalidStaleDays", exitCode: null },
     });
     expect(await staleIssues(fakeBd.workDir, 1.5)).toMatchObject({
       ok: false,
-      error: { exitCode: null },
+      error: { kind: "invalidStaleDays", exitCode: null },
     });
   });
 });
@@ -1153,7 +1153,7 @@ describe("issueEvents", () => {
 
     expect(await issueEvents(fakeBd.workDir, " ")).toMatchObject({
       ok: false,
-      error: { exitCode: null },
+      error: { kind: "emptyIssueId", exitCode: null },
     });
   });
 });
@@ -1187,7 +1187,7 @@ describe("issueIdsByDescription", () => {
 
     expect(await issueIdsByDescription(fakeBd.workDir, "  ")).toMatchObject({
       ok: false,
-      error: { exitCode: null },
+      error: { kind: "emptyDescriptionSearch", exitCode: null },
     });
   });
 });

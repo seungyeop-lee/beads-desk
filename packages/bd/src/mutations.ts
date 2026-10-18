@@ -10,10 +10,12 @@ import {
 } from "./issue";
 import {
   inputError,
+  outputError,
   runBdChecked,
   runBdJson,
   trimmedId,
   trimmedIds,
+  type BdCommandError,
   type BdError,
   type BdOutcome,
 } from "./runBd";
@@ -37,7 +39,7 @@ export type NewIssue = {
 export async function createIssue(cwd: string, issue: NewIssue): Promise<BdOutcome<string>> {
   const title = issue.title.trim();
   if (title.length === 0) {
-    return inputError("제목이 비어 있습니다.");
+    return inputError("emptyTitle");
   }
   const args = ["create", "--json", `--title=${title}`];
   if (issue.issueType) args.push(`--type=${issue.issueType}`);
@@ -53,7 +55,7 @@ export async function createIssue(cwd: string, issue: NewIssue): Promise<BdOutco
   }
   return isRecord(result.value) && typeof result.value.id === "string"
     ? { ok: true, value: result.value.id }
-    : { ok: false, error: { message: "bd create 출력에 이슈 id가 없습니다.", exitCode: 0 } };
+    : outputError("missingCreatedIssueId");
 }
 
 /** 빈 문자열은 그 필드를 비웁니다. */
@@ -83,13 +85,13 @@ export async function updateIssueFields(
   changes: IssueFieldChanges,
 ): Promise<BdOutcome<null>> {
   if (changes.title !== undefined && changes.title.trim().length === 0) {
-    return inputError("제목이 비어 있습니다.");
+    return inputError("emptyTitle");
   }
   const flags = (Object.keys(FIELD_FLAGS) as (keyof IssueFieldChanges)[])
     .filter((field) => changes[field] !== undefined)
     .map((field) => `${FIELD_FLAGS[field]}=${changes[field]}`);
   if (flags.length === 0) {
-    return inputError("바꿀 내용이 없습니다.");
+    return inputError("noChanges");
   }
   return write(cwd, ["update", ...flags], [issueId]);
 }
@@ -130,7 +132,7 @@ export function deferIssue(
 ): Promise<BdOutcome<null>> {
   const { until } = options;
   if (typeof until === "object" && !DEFER_DATE.test(until.date)) {
-    return Promise.resolve(inputError("보류 날짜는 YYYY-MM-DD 형식이어야 합니다."));
+    return Promise.resolve(inputError("invalidDeferDate"));
   }
   const defer = typeof until === "object" ? until.date : DEFER_UNTIL[until];
   const args = ["update", "--status=deferred", `--defer=${defer}`];
@@ -146,14 +148,14 @@ export function deferIssue(
 export async function claimIssue(cwd: string, issueId: string): Promise<BdOutcome<null>> {
   const result = await write(cwd, ["update", "--claim"], [issueId]);
   // bd는 거부 사유를 첫 줄에 쓰고, 실패한 이슈 수와 같은 사유를 다시 덧붙입니다.
-  return result.ok ? result : withErrorMessage(result, result.error.message.split("\n")[0]);
+  return result.ok ? result : withErrorMessage(result, (message) => message.split("\n")[0]);
 }
 
 export type CloseOutcome =
   /** 이 이슈를 닫아 막힘이 풀린 이슈입니다. */
   | BdOutcome<Issue[]>
   /** 열린 하위 이슈나 닫히지 않은 선행 이슈가 있어 bd가 닫기를 거부했습니다. force로 다시 요청할 수 있습니다. */
-  | { ok: false; closeBlocked: true; error: BdError };
+  | { ok: false; closeBlocked: true; error: BdCommandError };
 
 const CLOSE_BLOCKED = /cannot close/i;
 
@@ -163,7 +165,7 @@ export async function closeIssue(
   issueId: string,
   options: { reason: string; force?: boolean },
 ): Promise<CloseOutcome> {
-  const id = trimmedId(issueId, "이슈 id가 비어 있습니다.");
+  const id = trimmedId(issueId, "emptyIssueId");
   if (!id.ok) return id;
   const reason = options.reason.trim();
   const args = ["close", "--json", "--suggest-next"];
@@ -172,7 +174,10 @@ export async function closeIssue(
 
   const result = await runBdJson(cwd, [...args, "--", id.value], { write: true });
   if (!result.ok) {
-    return CLOSE_BLOCKED.test(result.error.message) ? { ...result, closeBlocked: true } : result;
+    const { error } = result;
+    return "message" in error && CLOSE_BLOCKED.test(error.message)
+      ? { ok: false, closeBlocked: true, error }
+      : result;
   }
   // 막힘이 풀린 이슈가 없으면 bd는 {closed, unblocked} 대신 닫은 이슈 배열만 출력합니다.
   return {
@@ -199,7 +204,7 @@ export async function closeAsReplaced(
   replacement: Replacement,
   targetId: string,
 ): Promise<BdOutcome<null>> {
-  const target = trimmedId(targetId, "대상 이슈 id가 비어 있습니다.");
+  const target = trimmedId(targetId, "emptyTargetId");
   if (!target.ok) return target;
   const result = await write(
     cwd,
@@ -208,12 +213,12 @@ export async function closeAsReplaced(
   );
   return result.ok
     ? result
-    : withErrorMessage(result, result.error.message.replace(USAGE_AFTER_ERROR, ""));
+    : withErrorMessage(result, (message) => message.replace(USAGE_AFTER_ERROR, ""));
 }
 
 export function addComment(cwd: string, issueId: string, text: string): Promise<BdOutcome<null>> {
   if (text.trim().length === 0) {
-    return Promise.resolve(inputError("댓글이 비어 있습니다."));
+    return Promise.resolve(inputError("emptyComment"));
   }
   return write(cwd, ["comments", "add"], [issueId], [text]);
 }
@@ -242,7 +247,7 @@ export function respondToHuman(
   response: string,
 ): Promise<BdOutcome<null>> {
   if (response.trim().length === 0) {
-    return Promise.resolve(inputError("응답이 비어 있습니다."));
+    return Promise.resolve(inputError("emptyResponse"));
   }
   return runHumanCommand(cwd, "respond", issueId, [response]);
 }
@@ -266,7 +271,7 @@ function changeLabel(
 ): Promise<BdOutcome<null>> {
   const trimmed = label.trim();
   if (trimmed.length === 0) {
-    return Promise.resolve(inputError("라벨이 비어 있습니다."));
+    return Promise.resolve(inputError("emptyLabel"));
   }
   return write(cwd, ["label", action], [issueId], [trimmed]);
 }
@@ -279,7 +284,7 @@ async function runHumanCommand(
   issueId: string,
   values: string[],
 ): Promise<BdOutcome<null>> {
-  const id = trimmedId(issueId, "이슈 id가 비어 있습니다.");
+  const id = trimmedId(issueId, "emptyIssueId");
   if (!id.ok) return id;
   const shown = await runBdJson(cwd, ["show", "--json", "--", id.value]);
   if (!shown.ok) {
@@ -288,7 +293,7 @@ async function runHumanCommand(
   const record = showRecordOf(shown.value);
   const issue = parseIssue(record);
   if (!issue || !(awaitsHumanDecision(issue) || isOpenHumanGate(record))) {
-    return inputError("사람 판단을 기다리는 이슈가 아닙니다.");
+    return inputError("notAwaitingHumanDecision");
   }
   return write(cwd, ["human", action], [id.value], values);
 }
@@ -300,7 +305,7 @@ async function write(
   ids: string[],
   values: string[] = [],
 ): Promise<BdOutcome<null>> {
-  const trimmed = trimmedIds(ids, "이슈 id가 비어 있습니다.");
+  const trimmed = trimmedIds(ids, "emptyIssueId");
   if (!trimmed.ok) return trimmed;
   const result = await runBdChecked(cwd, [...command, "--", ...trimmed.value, ...values], {
     write: true,
@@ -308,10 +313,13 @@ async function write(
   return result.ok ? { ok: true, value: null } : result;
 }
 
-/** 실패 결과의 오류 메시지만 바꿉니다. bd가 거부 사유 뒤에 덧붙여 출력하는 문구를 정리할 때 씁니다. */
+/** bd가 남긴 오류 메시지만 고칩니다. bd가 거부 사유 뒤에 덧붙여 출력하는 문구를 정리할 때 씁니다. */
 function withErrorMessage(
   result: { ok: false; error: BdError },
-  message: string,
+  edit: (message: string) => string,
 ): { ok: false; error: BdError } {
-  return { ok: false, error: { ...result.error, message } };
+  const { error } = result;
+  return "message" in error
+    ? { ok: false, error: { ...error, message: edit(error.message) } }
+    : result;
 }

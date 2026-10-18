@@ -98,6 +98,18 @@ describe("updateIssueAction", () => {
     expect(checkWorkspaceChangesNow).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "no issue found" });
   });
+
+  test("bd adapter가 입력을 거부하면 오류 종류를 요청 언어의 문구로 바꿔 돌려준다", async () => {
+    vi.mocked(bd.updateIssueFields).mockResolvedValue({
+      ok: false,
+      error: { kind: "noChanges", exitCode: null },
+    });
+
+    const result = await updateIssueAction("demo-1", {});
+
+    expect(checkWorkspaceChangesNow).not.toHaveBeenCalled();
+    expect(result).toEqual({ ok: false, error: "바꿀 내용이 없습니다." });
+  });
 });
 
 describe("setIssueStatusAction", () => {

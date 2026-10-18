@@ -24,7 +24,7 @@ import {
   type IssueStatus,
   workState,
 } from "./issue";
-import { inputError, runBdJson, trimmedId, type BdOutcome } from "./runBd";
+import { inputError, outputError, runBdJson, trimmedId, type BdOutcome } from "./runBd";
 
 export type EpicStatus = {
   epic: Issue;
@@ -130,7 +130,7 @@ function ancestorEpicsOf(issues: Issue[]): Record<string, string[]> {
 
 /** 이슈의 변경 이벤트를 읽습니다. 댓글은 이벤트로 남지 않으므로 showIssue의 comments로 읽습니다. */
 export async function issueEvents(cwd: string, issueId: string): Promise<BdOutcome<IssueEvent[]>> {
-  const id = trimmedId(issueId, "이슈 id가 비어 있습니다.");
+  const id = trimmedId(issueId, "emptyIssueId");
   if (!id.ok) return id;
   const result = await runBdJson(cwd, [
     "history",
@@ -155,7 +155,7 @@ export async function issueIdsByDescription(
 ): Promise<BdOutcome<string[]>> {
   const search = text.trim();
   if (search.length === 0) {
-    return inputError("설명 검색어가 비어 있습니다.");
+    return inputError("emptyDescriptionSearch");
   }
   // --brief는 출력에서 설명 같은 본문을 빼지만 --desc-contains는 설명으로 거릅니다.
   // 검색어가 -로 시작해도 옵션으로 해석되지 않도록 = 로 붙여 넘깁니다.
@@ -233,7 +233,7 @@ export function epicDescendants(issues: Issue[], epicId: string): Issue[] {
 }
 
 export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome<IssueDetail>> {
-  const id = trimmedId(issueId, "이슈 id가 비어 있습니다.");
+  const id = trimmedId(issueId, "emptyIssueId");
   if (!id.ok) return id;
   const result = await runBdJson(cwd, [
     "show",
@@ -247,9 +247,7 @@ export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome
     return result;
   }
   const detail = parseIssueDetail(showRecordOf(result.value));
-  return detail
-    ? { ok: true, value: detail }
-    : { ok: false, error: { message: "bd show 출력에 이슈가 없습니다.", exitCode: 0 } };
+  return detail ? { ok: true, value: detail } : outputError("missingShownIssue");
 }
 
 /**
@@ -364,7 +362,7 @@ export async function previousGateRounds(
   cwd: string,
   gateId: string,
 ): Promise<BdOutcome<PreviousGateRound[]>> {
-  const id = trimmedId(gateId, "게이트 id가 비어 있습니다.");
+  const id = trimmedId(gateId, "emptyGateId");
   if (!id.ok) return id;
   const read = await readGateBlockers(cwd);
   if (!read.ok) return read;
@@ -453,7 +451,7 @@ export async function humanDecisionIssues(cwd: string): Promise<BdOutcome<HumanD
  */
 export async function staleIssues(cwd: string, days: number): Promise<BdOutcome<Issue[]>> {
   if (!Number.isInteger(days) || days < 1) {
-    return inputError("기준 일수는 1 이상의 정수여야 합니다.");
+    return inputError("invalidStaleDays");
   }
   const result = await queryIssues(cwd, [
     "stale",

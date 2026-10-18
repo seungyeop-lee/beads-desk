@@ -61,7 +61,7 @@ describe("createIssue", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { message: "제목이 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyTitle", exitCode: null },
     });
   });
 });
@@ -99,11 +99,11 @@ describe("updateIssueFields", () => {
 
     expect(await updateIssueFields(fakeBd.workDir, "demo-1", { title: " " })).toEqual({
       ok: false,
-      error: { message: "제목이 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyTitle", exitCode: null },
     });
     expect(await updateIssueFields(fakeBd.workDir, "demo-1", {})).toEqual({
       ok: false,
-      error: { message: "바꿀 내용이 없습니다.", exitCode: null },
+      error: { kind: "noChanges", exitCode: null },
     });
   });
 
@@ -169,7 +169,7 @@ describe("deferIssue", () => {
       reason: "",
     });
 
-    expect(result).toMatchObject({ ok: false });
+    expect(result).toEqual({ ok: false, error: { kind: "invalidDeferDate", exitCode: null } });
   });
 });
 
@@ -289,7 +289,7 @@ describe("closeAsReplaced", () => {
 
     expect(await closeAsReplaced(fakeBd.workDir, "demo-1", "duplicate", " ")).toEqual({
       ok: false,
-      error: { message: "대상 이슈 id가 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyTargetId", exitCode: null },
     });
   });
 });
@@ -320,19 +320,19 @@ describe("댓글, 라벨, 의존 관계, 삭제", () => {
 
     expect(await addComment(fakeBd.workDir, "demo-1", " \n")).toEqual({
       ok: false,
-      error: { message: "댓글이 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyComment", exitCode: null },
     });
     expect(await addLabel(fakeBd.workDir, "demo-1", " ")).toEqual({
       ok: false,
-      error: { message: "라벨이 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyLabel", exitCode: null },
     });
     expect(await addDependency(fakeBd.workDir, "demo-1", "", "blocks")).toEqual({
       ok: false,
-      error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyIssueId", exitCode: null },
     });
     expect(await deleteIssue(fakeBd.workDir, "")).toEqual({
       ok: false,
-      error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyIssueId", exitCode: null },
     });
   });
 });
@@ -382,7 +382,7 @@ describe("respondToHuman, dismissHuman", () => {
     });
     const rejected = {
       ok: false,
-      error: { message: "사람 판단을 기다리는 이슈가 아닙니다.", exitCode: null },
+      error: { kind: "notAwaitingHumanDecision", exitCode: null },
     };
 
     expect(await respondToHuman(fakeBd.workDir, "demo-2", "Use OAuth2")).toEqual(rejected);
@@ -396,11 +396,11 @@ describe("respondToHuman, dismissHuman", () => {
 
     expect(await respondToHuman(fakeBd.workDir, "demo-1", " \n")).toEqual({
       ok: false,
-      error: { message: "응답이 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyResponse", exitCode: null },
     });
     expect(await dismissHuman(fakeBd.workDir, " ", "")).toEqual({
       ok: false,
-      error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
+      error: { kind: "emptyIssueId", exitCode: null },
     });
   });
 });

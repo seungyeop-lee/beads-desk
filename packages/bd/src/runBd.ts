@@ -17,11 +17,33 @@ export type RunBdOptions = {
   watch?: boolean;
 };
 
-export type BdError = {
-  message: string;
-  /** 입력이 잘못되어 bd를 실행하지 않았으면 null입니다. */
-  exitCode: number | null;
-};
+/** bd가 실패하며 남긴 이유나 bd를 실행하지 못한 이유입니다. 번역하지 않은 원문을 담습니다. */
+export type BdCommandError = { message: string; exitCode: number };
+
+/**
+ * adapter가 입력이나 bd 출력을 보고 판단한 오류입니다. 문구를 담지 않으므로, 사람에게 보일 문구는 쓰는 쪽이 kind로 골라 그 언어로 씁니다.
+ * 입력이 잘못되어 bd를 실행하지 않았으면 exitCode는 null이고, bd는 성공했지만 출력을 해석하지 못했으면 0입니다.
+ */
+export type BdAdapterError = { kind: BdErrorKind; exitCode: null | 0 };
+
+export type BdErrorKind =
+  | "emptyTitle"
+  | "noChanges"
+  | "invalidDeferDate"
+  | "emptyIssueId"
+  | "emptyTargetId"
+  | "emptyGateId"
+  | "emptyComment"
+  | "emptyResponse"
+  | "emptyLabel"
+  | "notAwaitingHumanDecision"
+  | "emptyDescriptionSearch"
+  | "invalidStaleDays"
+  | "unparsableOutput"
+  | "missingCreatedIssueId"
+  | "missingShownIssue";
+
+export type BdError = BdCommandError | BdAdapterError;
 
 export type BdOutcome<T> = { ok: true; value: T } | { ok: false; error: BdError };
 
@@ -167,7 +189,7 @@ function spawnBd(args: string[], cwd: string): Promise<BdResult> {
 // cwd가 없을 때도 Node는 bd 실행 파일을 찾지 못했을 때와 같은 ENOENT를 냅니다.
 function spawnErrorMessage(error: NodeJS.ErrnoException, cwd: string): string {
   return error.code === "ENOENT" && !existsSync(cwd)
-    ? `workspace 디렉터리가 없습니다: ${cwd}`
+    ? `workspace directory does not exist: ${cwd}`
     : error.message;
 }
 
@@ -213,10 +235,7 @@ export async function runBdJson(
   try {
     return { ok: true, value: JSON.parse(result.value) };
   } catch {
-    return {
-      ok: false,
-      error: { message: "bd 출력을 JSON으로 해석하지 못했습니다.", exitCode: 0 },
-    };
+    return outputError("unparsableOutput");
   }
 }
 
@@ -225,12 +244,12 @@ export async function runBdChecked(
   cwd: string,
   args: string[],
   options: Omit<RunBdOptions, "cwd"> = {},
-): Promise<BdOutcome<string>> {
+): Promise<{ ok: true; value: string } | { ok: false; error: BdCommandError }> {
   const result = await runBd(args, { cwd, ...options });
   if (result.code !== 0) {
     const message =
       (result.stderr.trim() ? result.stderr : jsonError(result.stdout)) ??
-      `bd가 종료 코드 ${result.code}로 실패했습니다.`;
+      `bd exited with code ${result.code}.`;
     return { ok: false, error: { message, exitCode: result.code } };
   }
   return { ok: true, value: result.stdout };
@@ -247,20 +266,25 @@ function jsonError(stdout: string): string | null {
 }
 
 /** 입력이 잘못되어 bd를 실행하지 않은 오류입니다. */
-export function inputError(message: string): { ok: false; error: BdError } {
-  return { ok: false, error: { message, exitCode: null } };
+export function inputError(kind: BdErrorKind): { ok: false; error: BdAdapterError } {
+  return { ok: false, error: { kind, exitCode: null } };
+}
+
+/** bd는 성공했지만 출력에서 기대한 값을 찾지 못한 오류입니다. */
+export function outputError(kind: BdErrorKind): { ok: false; error: BdAdapterError } {
+  return { ok: false, error: { kind, exitCode: 0 } };
 }
 
 // bd는 id를 빈 값으로 받으면 마지막으로 다룬 이슈를 대상으로 삼는 명령이 있어, 빈 id는 bd를 실행하지 않고 거부합니다.
 
-/** id에서 앞뒤 공백을 제거한 값을 검사합니다. 비어 있으면 안내 문구를 담은 입력 오류를 돌려줍니다. */
-export function trimmedId(id: string, message: string): BdOutcome<string> {
+/** id에서 앞뒤 공백을 제거한 값을 검사합니다. 비어 있으면 kind로 입력 오류를 돌려줍니다. */
+export function trimmedId(id: string, kind: BdErrorKind): BdOutcome<string> {
   const trimmed = id.trim();
-  return trimmed.length > 0 ? { ok: true, value: trimmed } : inputError(message);
+  return trimmed.length > 0 ? { ok: true, value: trimmed } : inputError(kind);
 }
 
-/** id마다 앞뒤 공백을 제거한 값을 검사합니다. 하나라도 비어 있으면 입력 오류를 돌려줍니다. */
-export function trimmedIds(ids: string[], message: string): BdOutcome<string[]> {
+/** id마다 앞뒤 공백을 제거한 값을 검사합니다. 하나라도 비어 있으면 kind로 입력 오류를 돌려줍니다. */
+export function trimmedIds(ids: string[], kind: BdErrorKind): BdOutcome<string[]> {
   const trimmed = ids.map((id) => id.trim());
-  return trimmed.every((id) => id.length > 0) ? { ok: true, value: trimmed } : inputError(message);
+  return trimmed.every((id) => id.length > 0) ? { ok: true, value: trimmed } : inputError(kind);
 }

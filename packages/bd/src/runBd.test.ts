@@ -58,7 +58,7 @@ describe("runBd", () => {
     expect(result).toEqual({
       code: 127,
       stdout: "",
-      stderr: `workspace 디렉터리가 없습니다: ${missing}`,
+      stderr: `workspace directory does not exist: ${missing}`,
     });
   });
 
@@ -252,7 +252,7 @@ describe("runBdChecked", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { message: "bd가 종료 코드 2로 실패했습니다.", exitCode: 2 },
+      error: { message: "bd exited with code 2.", exitCode: 2 },
     });
   });
 });

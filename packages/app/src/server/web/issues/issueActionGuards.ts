@@ -2,7 +2,7 @@ import { type BdOutcome } from "@beads-desk/bd";
 import type { Issue } from "@beads-desk/bd/issue";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
-import { serverMessages } from "@/server/web/locale/serverMessages";
+import { bdErrorMessage, serverMessages } from "@/server/web/locale/serverMessages";
 import type { ApiFailure, ApiResponse } from "@/shared/contract/apiResponse";
 import {
   DEFER_PERIODS,
@@ -102,7 +102,7 @@ export async function writeClose(
 
 // 쓰기가 성공하면 다음 polling 주기를 기다리지 않고 SSE로 다른 화면과 탭에 알립니다.
 async function finish<T>(cwd: string, result: BdOutcome<T>): Promise<ApiResponse<T>> {
-  if (!result.ok) return { ok: false, error: result.error.message.trim() };
+  if (!result.ok) return { ok: false, error: await bdErrorMessage(result.error) };
   await checkWorkspaceChangesNow(cwd);
   return { ok: true, data: result.value };
 }

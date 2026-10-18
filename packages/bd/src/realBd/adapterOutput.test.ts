@@ -89,10 +89,11 @@ test("다른 담당자의 이슈를 가져가면 bd의 거부 사유 첫 줄만 
   await run("bd", "update", id, "--assignee", "someone-else");
 
   const result = await claimIssue(cwd, id);
-  expect(result.ok).toBe(false);
-  if (result.ok) return;
-  expect(result.error.message).toContain('already assigned to "someone-else"');
-  expect(result.error.message).not.toContain("\n");
+  expect(result).toMatchObject({
+    ok: false,
+    error: { message: expect.stringContaining('already assigned to "someone-else"') },
+  });
+  expect(result).toMatchObject({ error: { message: expect.not.stringContaining("\n") } });
 });
 
 test("순환 의존을 맺으면 bd의 거부 사유를 돌려준다", async () => {
@@ -101,9 +102,7 @@ test("순환 의존을 맺으면 bd의 거부 사유를 돌려준다", async () 
   value(await addDependency(cwd, first, second, "blocks"));
 
   const result = await addDependency(cwd, second, first, "blocks");
-  expect(result.ok).toBe(false);
-  if (result.ok) return;
-  expect(result.error.message).toContain("cycle");
+  expect(result).toMatchObject({ ok: false, error: { message: expect.stringContaining("cycle") } });
 });
 
 test("보류하면 bd가 저장한 기한과 사유를 상세에서 읽는다", async () => {
@@ -308,7 +307,7 @@ test("셸에 BD_JSON_ENVELOPE, BD_JSON, BEADS_DIR가 있어도 지정한 workspa
 });
 
 function value<T>(outcome: BdOutcome<T>): T {
-  if (!outcome.ok) throw new Error(outcome.error.message);
+  if (!outcome.ok) throw new Error(JSON.stringify(outcome.error));
   return outcome.value;
 }
 
