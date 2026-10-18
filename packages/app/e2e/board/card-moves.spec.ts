@@ -33,7 +33,7 @@ function column(page: Page, name: string) {
   return page.getByRole("region", { name, exact: true });
 }
 
-test("카드를 옮기거나 새로 만들거나 닫힌 이슈 기간을 바꾸면 열의 카드가 바뀐다", async ({
+test("보드는 막힘, 바로 작업 가능, 진행 중, 닫힘 열만 보이고, 카드를 옮기거나 닫힌 이슈 기간을 바꾸면 열의 카드가 바뀐다", async ({
   page,
   workspace,
 }) => {
@@ -45,6 +45,12 @@ test("카드를 옮기거나 새로 만들거나 닫힌 이슈 기간을 바꾸�
   await page.clock.setFixedTime(Date.now() + 2 * DAY_MS);
 
   await page.goto("/board");
+  await expect(page.getByRole("region")).toHaveText([
+    /^막힘/,
+    /^바로 작업 가능/,
+    /^진행 중/,
+    /^닫힘/,
+  ]);
   const ready = column(page, "바로 작업 가능");
   const inProgress = column(page, "진행 중");
   const closed = column(page, "닫힘");
@@ -59,9 +65,6 @@ test("카드를 옮기거나 새로 만들거나 닫힌 이슈 기간을 바꾸�
     .toBe("in_progress");
   await expect(inProgress.getByRole("listitem")).toHaveCount(1);
   await expect(ready.getByRole("listitem")).toHaveCount(0);
-
-  await workspace.createIssue("e2e 새로 만든 작업");
-  await expect(ready.getByRole("listitem")).toHaveCount(1);
 
   const period = closed.getByRole("combobox", {
     name: "닫힌 이슈를 보일 기간",

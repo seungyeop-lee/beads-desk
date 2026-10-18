@@ -2,6 +2,7 @@ import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { DecisionSummary } from "@/shared/contract/decisions";
 import { issue } from "@/shared/domain/issues/issueFixture";
@@ -56,6 +57,20 @@ for (const width of WIDTHS) {
     }
   });
 }
+
+test("대체된 결정의 행은 새 결정 표시와 함께 대체한 결정으로 가는 링크를 보인다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <DecisionsScreen />
+    </LocaleProvider>,
+  );
+
+  const retired = screen.getByRole("row", { name: new RegExp(`이전 ${KOREAN}`) });
+  await expect.element(retired).toMatchTextContent(messages.decisions.supersededBy);
+  await expect
+    .element(retired.getByRole("link", { name: "desk-ko-new", exact: true }))
+    .toHaveAttribute("href", "/decisions?issue=desk-ko-new");
+});
 
 function decision(id: string, title: string, status: string): Issue {
   return issue(id, {
