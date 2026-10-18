@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { useHygiene, useStaleIssues } from "@/client/modules/hygiene/application/useHygiene";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
@@ -19,7 +18,7 @@ import {
   type IssueRef,
   type StaleDays,
 } from "@/shared/contract/hygiene";
-import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
+import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 
 /**
  * bd의 정리 점검 결과를 점검마다 카드 하나로 보입니다. 이슈를 누르면 상세 dialog가 열립니다.
@@ -195,22 +194,20 @@ function IssueRow({ issue, href, detail }: { issue: IssueRef; href: string; deta
   const messages = useMessages();
   const title = issue.title || messages.common.untitled;
   return (
-    <div className="relative flex flex-col gap-1 px-4 py-2.5 text-sm hover:bg-base-200/60">
-      {/* 링크가 행 전체를 덮어 어디를 눌러도 이동합니다. ID 복사 단추는 relative로 링크 위에 둡니다. */}
-      <Link
-        href={href}
-        scroll={false}
-        className="absolute inset-0"
-        aria-label={`${issue.id} ${title}`}
-      />
+    <CoveredIssueRow
+      className="flex flex-col gap-1 px-4 py-2.5 text-sm hover:bg-base-200/60"
+      issueId={issue.id}
+      title={title}
+      cover={{ href }}
+    >
       <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="w-full font-medium wrap-anywhere">{title}</span>
-        <CopyIssueIdButton
+        <CoveredIssueIdButton
           issueId={issue.id}
-          className="relative shrink-0 rounded text-xs text-base-content/45"
+          className="shrink-0 rounded text-xs text-base-content/45"
         />
       </span>
       {detail && <span className="text-xs wrap-anywhere text-base-content/60">{detail}</span>}
-    </div>
+    </CoveredIssueRow>
   );
 }

@@ -13,8 +13,7 @@ type Props = {
 
 /**
  * 이슈 ID를 보이고, 누르면 전체 ID를 클립보드에 복사한 뒤 결과를 Toast로 알립니다.
- * 링크나 버튼 안에는 넣을 수 없습니다. 행 전체가 링크나 선택 버튼인 곳은 그 요소를 absolute로 행 전체에 겹치고,
- * 이 버튼에 relative를 주어 그 위에 올립니다.
+ * 링크나 버튼 안에는 넣을 수 없습니다. 행 전체가 링크나 선택 버튼인 곳은 CoveredIssueRow와 CoveredIssueIdButton을 씁니다.
  */
 export function CopyIssueIdButton({ issueId, short = false, className = "" }: Props) {
   const messages = useMessages();

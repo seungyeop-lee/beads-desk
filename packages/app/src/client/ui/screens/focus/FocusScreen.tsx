@@ -10,7 +10,7 @@ import type { WorkState } from "@/client/modules/issues/domain/workState";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { HUMAN_DECISION_TONE, workStateTone } from "@/client/ui/issues/issueLabels";
 import { WaitingOnLines } from "@/client/ui/issues/BlockerLine";
-import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
+import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
@@ -234,14 +234,13 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
   const messages = useMessages();
   const title = issue.title || messages.common.untitled;
   return (
-    <li className="relative flex flex-col gap-1 px-4 py-3 text-sm hover:bg-base-200/60">
-      {/* 링크가 행 전체를 덮어 어디를 눌러도 이동합니다. ID 복사 단추와 풍선 도움말이 있는 표시는 relative로 링크 위에 둡니다. */}
-      <Link
-        href={href}
-        scroll={false}
-        className="absolute inset-0"
-        aria-label={`${issue.id} ${title}`}
-      />
+    <CoveredIssueRow
+      as="li"
+      className="flex flex-col gap-1 px-4 py-3 text-sm hover:bg-base-200/60"
+      issueId={issue.id}
+      title={title}
+      cover={{ href }}
+    >
       <span className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:flex-nowrap">
         <span className="w-16 shrink-0 text-xs">
           <IssueTypeTag issueType={issue.issueType} />
@@ -264,13 +263,13 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
           </span>
         )}
         {issue.priority !== null && <PriorityChip priority={issue.priority} />}
-        <CopyIssueIdButton
+        <CoveredIssueIdButton
           issueId={issue.id}
           short
-          className="relative ml-auto min-w-8 shrink-0 rounded text-right text-xs whitespace-nowrap text-base-content/45"
+          className="ml-auto min-w-8 shrink-0 rounded text-right text-xs whitespace-nowrap text-base-content/45"
         />
       </span>
       {waitingOn && waitingOn.length > 0 && <WaitingOnLines blockers={waitingOn} />}
-    </li>
+    </CoveredIssueRow>
   );
 }

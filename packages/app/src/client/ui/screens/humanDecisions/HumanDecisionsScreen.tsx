@@ -27,6 +27,7 @@ import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateDecision } from "./HumanGateDecision";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
+import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 
 /** 왼쪽 목록에서 고른 항목 id를 담는 query 이름입니다. 주소에 남겨 새로고침하거나 주소를 다시 열어도 같은 항목을 보입니다. */
 const ITEM_PARAM = "item";
@@ -156,17 +157,13 @@ function PendingRow({
   const issue = item.kind === "gate" ? item.summary.gate : item.issue;
   const title = issue.title || messages.common.untitled;
   return (
-    <div
-      className={`relative flex min-w-0 w-full flex-col gap-1 px-4 py-3 text-sm ${current ? "bg-base-300/60" : "hover:bg-base-200/60"}`}
+    <CoveredIssueRow
+      className={`flex min-w-0 w-full flex-col gap-1 px-4 py-3 text-sm ${current ? "bg-base-300/60" : "hover:bg-base-200/60"}`}
+      issueId={issue.id}
+      title={title}
+      cover={{ onSelect }}
+      current={current}
     >
-      {/* 선택 단추가 행 전체를 덮어 어디를 눌러도 고릅니다. ID 복사 단추는 relative로 선택 단추 위에 둡니다. */}
-      <button
-        type="button"
-        aria-current={current ? "true" : undefined}
-        aria-label={`${issue.id} ${title}`}
-        className="absolute inset-0"
-        onClick={onSelect}
-      />
       <span className="flex w-full flex-wrap items-center gap-2">
         <span className="w-16 shrink-0 text-xs">
           <IssueTypeTag issueType={issue.issueType} />
@@ -178,13 +175,13 @@ function PendingRow({
             🕘 {item.summary.previousGateCount}
           </IssueChip>
         )}
-        <CopyIssueIdButton
+        <CoveredIssueIdButton
           issueId={issue.id}
-          className="relative ml-auto shrink-0 rounded text-right text-xs text-base-content/45"
+          className="ml-auto shrink-0 rounded text-right text-xs text-base-content/45"
         />
       </span>
       {item.kind === "gate" && <FirstBlockedLine blocks={item.summary.blocks} />}
-    </div>
+    </CoveredIssueRow>
   );
 }
 

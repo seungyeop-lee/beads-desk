@@ -17,7 +17,7 @@ import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { EdgeLegend } from "./EdgeLegend";
 import { IssueGraph } from "./IssueGraph";
 import { useGraphLayout } from "./useGraphLayout";
-import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
+import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 
 type Props = {
   data: GraphData;
@@ -189,28 +189,25 @@ function UnorderedIssueRow({
   const messages = useMessages();
   const state = workState(issue);
   return (
-    <div
-      className={`relative flex flex-col gap-1 rounded-lg px-2 py-3 text-xs transition hover:bg-base-200 ${state === "closed" ? "opacity-50" : ""}`}
+    <CoveredIssueRow
+      className={`flex flex-col gap-1 rounded-lg px-2 py-3 text-xs transition hover:bg-base-200 ${state === "closed" ? "opacity-50" : ""}`}
+      coverClassName="inset-0 rounded-lg"
+      coverTooltip={issue.id}
+      issueId={issue.id}
+      title={issue.title}
+      cover={{ href }}
     >
-      {/* 링크가 행 전체를 덮어 어디를 눌러도 이동합니다. ID 복사 단추와 풍선 도움말이 있는 표시는 relative로 링크 위에 둡니다. */}
-      <Link
-        href={href}
-        scroll={false}
-        title={issue.id}
-        aria-label={`${issue.id} ${issue.title}`}
-        className="absolute inset-0 rounded-lg"
-      />
       <span className="flex items-center gap-1.5 text-base-content/55">
         <IssueTypeTag issueType={issue.issueType} />
         <span aria-hidden>·</span>
         <span className={`tone-dot ${workStateTone(state)}`} />
         <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
-        <CopyIssueIdButton issueId={issue.id} short className="relative ml-auto shrink-0 rounded" />
+        <CoveredIssueIdButton issueId={issue.id} short className="ml-auto shrink-0 rounded" />
       </span>
       <span className="text-sm leading-snug font-medium wrap-anywhere text-base-content">
         {issue.title}
       </span>
       <WaiterCount count={waiters} className="relative self-end" />
-    </div>
+    </CoveredIssueRow>
   );
 }

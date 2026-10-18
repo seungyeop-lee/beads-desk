@@ -1,8 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import Link from "next/link";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
-import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
+import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -32,26 +31,25 @@ export function IssueCard({
   return (
     // React Flow는 끌기, 선택, 클릭 handler가 없는 노드에 pointer-events: none을 걸므로 카드에서 다시 켭니다.
     // nopan은 카드를 누를 때 그래프가 함께 끌려 움직이지 않게 하는 React Flow의 class입니다.
-    <div className="nopan pointer-events-auto relative flex size-full flex-col gap-1 rounded-lg border border-transparent bg-base-100 px-3 py-2 text-xs">
-      {/* 링크가 카드 전체를 덮어 어디를 눌러도 상세를 엽니다. 테두리와 강조는 링크에 그리고,
-          ID 복사 단추와 풍선 도움말이 있는 표시는 relative로 링크 위에 둡니다. */}
-      <Link
-        href={href}
-        scroll={false}
-        title={issue.id}
-        aria-label={`${issue.id} ${issue.title}`}
-        aria-current={center ? "true" : undefined}
-        className={`absolute -inset-px rounded-lg border border-base-300 transition hover:border-base-content/30 hover:shadow-sm aria-[current=true]:shadow-md aria-[current=true]:ring-2 aria-[current=true]:ring-primary ${plan?.outside ? "border-dashed" : ""}`}
-      />
+    // 테두리와 강조는 카드 전체를 덮는 링크에 그립니다. 카드의 투명한 테두리까지 덮도록 링크를 1px 넓힙니다.
+    <CoveredIssueRow
+      className="nopan pointer-events-auto flex size-full flex-col gap-1 rounded-lg border border-transparent bg-base-100 px-3 py-2 text-xs"
+      coverClassName={`-inset-px rounded-lg border border-base-300 transition hover:border-base-content/30 hover:shadow-sm aria-[current=true]:shadow-md aria-[current=true]:ring-2 aria-[current=true]:ring-primary ${plan?.outside ? "border-dashed" : ""}`}
+      coverTooltip={issue.id}
+      issueId={issue.id}
+      title={issue.title}
+      cover={{ href }}
+      current={center}
+    >
       <span className="flex items-center gap-1.5 text-base-content/55">
         <IssueTypeTag issueType={issue.issueType} />
         <span aria-hidden>·</span>
         <span className={`tone-dot ${workStateTone(state)}`} />
         <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
-        <CopyIssueIdButton
+        <CoveredIssueIdButton
           issueId={issue.id}
           short
-          className="nodrag relative ml-auto shrink-0 rounded"
+          className="nodrag ml-auto shrink-0 rounded"
         />
       </span>
       <span
@@ -69,6 +67,6 @@ export function IssueCard({
           <WaiterCount count={plan.waiters} className="relative ml-auto" />
         </span>
       )}
-    </div>
+    </CoveredIssueRow>
   );
 }

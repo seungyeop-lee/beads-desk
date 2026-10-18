@@ -1,7 +1,6 @@
 "use client";
 
 import type { Issue } from "@beads-desk/bd/issue";
-import Link from "next/link";
 import { useState, type DragEvent } from "react";
 import {
   acceptsDrop,
@@ -21,7 +20,7 @@ import { statusPrompts } from "@/client/ui/issues/fields/statusPrompts";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { READY_TONE, statusTone } from "@/client/ui/issues/issueLabels";
 import { BoardBlockerLine } from "@/client/ui/issues/BlockerLine";
-import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
+import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
@@ -166,30 +165,23 @@ function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {
   const messages = useMessages();
   const title = issue.title || messages.common.untitled;
   return (
-    <li className="relative flex flex-col gap-2.5 rounded-lg border border-base-300 bg-base-100 p-3 text-sm transition hover:border-base-content/25 hover:shadow-sm">
-      {/* 링크가 카드 전체를 덮어 어디를 눌러도 상세를 열고 끌 수 있습니다. ID 복사 단추는 relative로 링크 위에 두어, 눌러도 끌기가 시작되지 않습니다. */}
-      <Link
-        href={href}
-        scroll={false}
-        className="absolute inset-0 cursor-grab rounded-lg active:cursor-grabbing"
-        aria-label={`${issue.id} ${title}`}
-        onDragStart={(event) => {
-          event.dataTransfer.setData(
+    <CoveredIssueRow
+      as="li"
+      className="flex flex-col gap-2.5 rounded-lg border border-base-300 bg-base-100 p-3 text-sm transition hover:border-base-content/25 hover:shadow-sm"
+      coverClassName="inset-0 cursor-grab rounded-lg active:cursor-grabbing"
+      issueId={issue.id}
+      title={title}
+      cover={{
+        href,
+        onDragStart: (dataTransfer) => {
+          dataTransfer.setData(
             DRAG_TYPE,
             JSON.stringify({ issueId: issue.id, from: column, status: issue.status }),
           );
-          event.dataTransfer.effectAllowed = "move";
-          // 링크에는 글자가 없으므로, 끄는 동안 카드 전체의 모습을 보입니다.
-          const card = event.currentTarget.parentElement;
-          if (card) {
-            event.dataTransfer.setDragImage(
-              card,
-              event.nativeEvent.offsetX,
-              event.nativeEvent.offsetY,
-            );
-          }
-        }}
-      />
+          dataTransfer.effectAllowed = "move";
+        },
+      }}
+    >
       <span className="leading-snug font-medium break-words">{title}</span>
       {/* 보드는 막는 이슈를 id로만 보이고, 열린 human gate만 사람 확인 기다림 표시와 gate 제목으로 보입니다. */}
       <BoardBlockerLine
@@ -199,12 +191,12 @@ function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {
         <IssueTypeTag issueType={issue.issueType} />
         <HumanDecisionChip issue={issue} />
         {issue.priority !== null && <PriorityChip priority={issue.priority} />}
-        <CopyIssueIdButton
+        <CoveredIssueIdButton
           issueId={issue.id}
           short
-          className="relative ml-auto rounded text-base-content/45"
+          className="ml-auto rounded text-base-content/45"
         />
       </span>
-    </li>
+    </CoveredIssueRow>
   );
 }

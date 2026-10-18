@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { type ReactNode, useId } from "react";
 import type { LinkedIssue } from "@/client/modules/issues/domain/issueRelations";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { StatusChip } from "../IssueChip";
 import { dependencyLabel } from "../issueLabels";
-import { CopyIssueIdButton } from "../CopyIssueIdButton";
+import { CoveredIssueIdButton, CoveredIssueRow } from "../CoveredIssueRow";
 
 type Props = {
   links: LinkedIssue[];
@@ -35,25 +34,23 @@ export function DependencyList({ links, issueHref, edit, actions }: Props) {
       {links.length > 0 && (
         <ul className="flex flex-col">
           {links.map(({ side, link }) => (
-            <li
+            <CoveredIssueRow
               key={`${side}:${link.dependencyType}:${link.id}`}
-              className="group relative -mx-2 flex flex-col gap-0.5 rounded-lg px-2 py-1.5 hover:bg-base-content/5"
+              as="li"
+              className="group -mx-2 flex flex-col gap-0.5 rounded-lg px-2 py-1.5 hover:bg-base-content/5"
+              coverClassName="inset-0 rounded-lg"
+              coverTooltip={`${link.id} ${link.title}`}
+              issueId={link.id}
+              title={link.title}
+              cover={{ href: issueHref(link.id) }}
             >
-              {/* 링크가 항목 전체를 덮어 두 줄 어디를 눌러도 이동합니다. ID와 지우기 단추는 relative로 링크 위에 둡니다. */}
-              <Link
-                className="absolute inset-0 rounded-lg"
-                href={issueHref(link.id)}
-                scroll={false}
-                title={`${link.id} ${link.title}`}
-                aria-label={`${link.id} ${link.title}`}
-              />
               <div className="flex h-6 items-center gap-2">
                 <span className="shrink-0 text-xs text-base-content/50">
                   {dependencyLabel(messages, side, link.dependencyType)}
                 </span>
-                <CopyIssueIdButton
+                <CoveredIssueIdButton
                   issueId={link.id}
-                  className="relative min-w-0 truncate rounded text-xs text-base-content/55"
+                  className="min-w-0 truncate rounded text-xs text-base-content/55"
                 />
                 <span className="grow" />
                 <StatusChip status={link.status} />
@@ -70,7 +67,7 @@ export function DependencyList({ links, issueHref, edit, actions }: Props) {
                 )}
               </div>
               <span className="truncate text-sm group-hover:underline">{link.title}</span>
-            </li>
+            </CoveredIssueRow>
           ))}
         </ul>
       )}
