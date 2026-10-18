@@ -14,11 +14,7 @@ vi.mock("@/server/infra/runtime/serverRuntime", () => ({ currentWorkspaceRoot: (
 vi.mock("@/server/web/locale/requestLocale", () => ({ requestLocale: async () => "ko" }));
 
 const get = (path: string, headers?: Record<string, string>) =>
-  handleLocalFileRequest(
-    new Request(`http://localhost${localFileUrl(path)}`, {
-      headers: { Host: "localhost:3000", ...headers },
-    }),
-  );
+  handleLocalFileRequest(new Request(`http://localhost${localFileUrl(path)}`, { headers }));
 
 beforeAll(async () => {
   // fixture는 기본 허용 루트(/tmp, /var/tmp, os.tmpdir()) 밖이어야 허용 밖 접근의 403 검사가 성립하므로,
@@ -101,7 +97,6 @@ test("인코딩을 겹친 경로로 허용 범위를 벗어날 수 없다", asyn
   const response = await handleLocalFileRequest(
     new Request(
       `http://localhost/api/local-files?path=${encodeURIComponent(`${root}/../repo-other/secret.md`)}`,
-      { headers: { Host: "localhost:3000" } },
     ),
   );
   expect(response.status).toBe(403);
@@ -136,29 +131,6 @@ test("PNG를 이미지로 제공하고 HTML·SVG는 실행하지 않는 텍스�
 test("다른 사이트의 파일 요청을 거부한다", async () => {
   for (const site of ["same-site", "cross-site"])
     expect((await get(join(root, "조사 결과.md"), { "Sec-Fetch-Site": site })).status).toBe(403);
-});
-
-test.each(["localhost", "localhost:3000", "127.0.0.1:3000", "[::1]:3000"])(
-  "로컬 호스트 Host의 요청을 받아들인다: %s",
-  async (host) => {
-    expect((await get(join(root, "조사 결과.md"), { Host: host })).status).toBe(200);
-  },
-);
-
-test.each(["evil.example:3000", "localhost.evil.example"])(
-  "로컬 호스트가 아닌 Host의 요청을 거부한다: %s",
-  async (host) => {
-    const response = await get(join(root, "조사 결과.md"), { Host: host });
-    expect(response.status).toBe(403);
-    expect(await response.text()).toBe("허용 범위 밖의 파일입니다.");
-  },
-);
-
-test("Host 없는 요청을 거부한다", async () => {
-  const response = await handleLocalFileRequest(
-    new Request(`http://localhost${localFileUrl(join(root, "조사 결과.md"))}`),
-  );
-  expect(response.status).toBe(403);
 });
 
 test("git 조회가 실패하면 workspace 파일만 허용한다", async () => {

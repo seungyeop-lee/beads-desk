@@ -95,7 +95,7 @@ const ALLOWED_DEPENDENCIES: Record<Layer, AllowedDependencies> = {
 };
 
 /** Next.js가 정해진 위치에서 찾는 server entrypoint 파일입니다. app layer로 취급합니다. */
-const FRAMEWORK_ENTRYPOINTS = ["instrumentation.ts"];
+const FRAMEWORK_ENTRYPOINTS = ["instrumentation.ts", "proxy.ts"];
 
 /**
  * src 밖에서 import할 수 있는 파일입니다. launcher(`bin`)는 서버 bundle을 불러올 수 없어서,
