@@ -4,6 +4,16 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-10-18
+
+### Added
+
+- Click an issue ID on any screen to copy the full ID to the clipboard, not only in the issue table. This works on the Now, Needs human, Epics, Hygiene, Board, and Decisions screens, in graph cards, and in the issue detail and its dialogs. Where the whole row or card is a link or can be dragged, clicking the ID only copies it, and clicking anywhere else opens, selects, or drags the card as before.
+
+### Changed
+
+- **Epics** screen: an expanded epic lists its child issues in ascending ID order instead of grouping them by status. Child issues still appear right below their parent.
+
 ## [0.1.0] - 2026-10-18
 
 The first public release of beads-desk, a local web UI for the Beads (`bd`) issue tracker.
