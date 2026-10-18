@@ -1,0 +1,74 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # pnpm은 package.json의 packageManager에 적힌 버전으로 설치합니다.
+      # setup-node의 pnpm store cache가 pnpm을 실행하므로 pnpm을 먼저 설치합니다.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # 컴포넌트 테스트(pnpm run test:components)가 실제 chromium에서 실행됩니다.
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm run check
+
+  # 배포 패키지가 지원 하한인 Node 22에서 설치되고 실행되는지 확인합니다. bd는 설치하지 않으므로 서버는 띄우지 않습니다.
+  package-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Pack
+        working-directory: packages/app
+        run: |
+          pnpm run pack:local
+          mv seungyeop-lee-beads-desk-*.tgz "$RUNNER_TEMP/beads-desk.tgz"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Install with npm on Node 22
+        run: |
+          node --version
+          npm install -g --prefix "$RUNNER_TEMP/prefix" "$RUNNER_TEMP/beads-desk.tgz"
+      - name: Smoke test
+        env:
+          XDG_RUNTIME_DIR: ${{ runner.temp }}/runtime
+        run: |
+          bd_desk="$RUNNER_TEMP/prefix/bin/bd-desk"
+          package_root="$RUNNER_TEMP/prefix/lib/node_modules/@seungyeop-lee/beads-desk"
+
+          # 실행 파일이 import하는 파일이 빠졌으면 여기서 실패합니다.
+          "$bd_desk" --help
+
+          # 서버를 띄울 때 실행 파일과 같은 방식으로 찾는 next가 의존성으로 설치됐는지 확인합니다.
+          node -e 'require("node:module").createRequire(process.argv[1]).resolve("next/dist/bin/next")' "$package_root/bin/bd-desk.js"
+
+          # 모듈을 찾지 못한 오류도 종료 코드 1이므로, 실행 중인 서버가 없을 때의 종료 코드 2로 명령까지 실행됐는지 확인합니다.
+          status=0
+          "$bd_desk" stop || status=$?
+          test "$status" -eq 2
+
+          # workspace가 없는 디렉터리에서는 서버를 띄우지 않고 종료 코드 1로 끝나야 합니다.
+          empty_dir="$(mktemp -d)"
+          status=0
+          (cd "$empty_dir" && "$bd_desk" start) || status=$?
+          test "$status" -eq 1
+          test ! -e "$XDG_RUNTIME_DIR/beads-desk/server.json"
