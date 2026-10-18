@@ -1,4 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
+import { matchesQuery } from "./issueSearch";
 
 /** 이슈 찾기 입력이 한 번에 보이는 후보 수입니다. */
 export const PICKER_LIMIT = 8;
@@ -19,11 +20,7 @@ export function pickerCandidates(
   const search = query.trim().toLowerCase();
   return issues
     .filter((issue) => !exclude?.(issue))
-    .filter((issue) =>
-      search === ""
-        ? issue.status !== "closed"
-        : issue.id.toLowerCase().includes(search) || issue.title.toLowerCase().includes(search),
-    )
+    .filter((issue) => (search === "" ? issue.status !== "closed" : matchesQuery(issue, search)))
     .sort(rank)
     .slice(0, PICKER_LIMIT);
 }

@@ -1,6 +1,5 @@
-import { awaitingHuman, type Issue } from "@beads-desk/bd/issue";
+import type { Issue } from "@beads-desk/bd/issue";
 import type { EpicSummary } from "@/shared/contract/epics";
-import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { sortEpics } from "@/client/modules/epics/domain/epicsView";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { groupByWorkState, type WorkState } from "@/client/modules/issues/domain/workState";
@@ -9,8 +8,6 @@ import { groupByWorkState, type WorkState } from "@/client/modules/issues/domain
 export const NEXT_UP_LIMIT = 5;
 
 export type FocusView = {
-  /** 사람 판단을 기다리는 일의 개수입니다. 상단 탭과 판단 기다림 화면의 개수와 같습니다. */
-  awaitingHumanCount: number;
   inProgress: Issue[];
   /** 우선순위, 대기 수가 많은 순, 만든 시각 순입니다. 다음에 할 일은 앞에서 NEXT_UP_LIMIT개만 보입니다. */
   ready: Issue[];
@@ -25,11 +22,7 @@ export type FocusView = {
  * 지금 화면에 보일 이슈를 작업 상태로 나눕니다.
  * 결정은 이슈 목록의 처음 유형 선택처럼 빼서, 개수가 이슈 목록 보기 탭의 처음 개수와 같습니다.
  */
-export function focusView(
-  issues: Issue[],
-  epics: EpicSummary[],
-  humanGates: HumanGateSummary[],
-): FocusView {
+export function focusView(issues: Issue[], epics: EpicSummary[]): FocusView {
   const waiters = waiterCounts(issues);
   const groups = groupByWorkState(
     issues.filter((issue) => issue.issueType !== "decision"),
@@ -37,7 +30,6 @@ export function focusView(
   );
   const of = (state: WorkState) => groups.find((group) => group.state === state)?.issues ?? [];
   return {
-    awaitingHumanCount: awaitingHuman(humanGates, issues).count,
     inProgress: of("in_progress"),
     ready: of("ready"),
     blocked: of("blocked"),

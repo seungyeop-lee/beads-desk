@@ -38,7 +38,6 @@ test("진행 중, 바로 작업 가능, 막힘으로 나누고 결정과 보류�
       issue("done", { status: "closed" }),
     ],
     [],
-    [],
   );
 
   expect(ids(view.inProgress)).toEqual(["doing"]);
@@ -56,23 +55,7 @@ test("에픽 진행률에는 닫히지 않은 epic만 진행 중인 것부터 �
   const view = focusView(
     [],
     [summary("open", "open"), summary("done", "closed"), summary("doing", "in_progress")],
-    [],
   );
 
   expect(view.openEpics.map(({ epic }) => epic.id)).toEqual(["doing", "open"]);
-});
-
-test("판단 기다림은 열린 human gate와, 유형과 작업 상태에 상관없이 human 라벨이 붙은 닫히지 않은 이슈를 센다", () => {
-  const view = focusView(
-    [
-      issue("question", { labels: ["human"], ready: true }),
-      issue("decision", { issueType: "decision", labels: ["human"] }),
-      issue("answered", { status: "closed", labels: ["human"] }),
-      issue("plain", { ready: true }),
-    ],
-    [],
-    [{ gate: issue("gate", { issueType: "gate" }), reason: "", blocks: [], previousGateCount: 0 }],
-  );
-
-  expect(view.awaitingHumanCount).toBe(3);
 });

@@ -1,4 +1,5 @@
 import { ISSUE_STATUSES, type Issue } from "@beads-desk/bd/issue";
+import { matchesQuery } from "./issueSearch";
 
 /** 서버에서 받은 목록을 화면에서 더 좁히는 조건입니다. */
 export type IssueListRefinement = {
@@ -16,8 +17,7 @@ export function refineIssues(issues: Issue[], refinement: IssueListRefinement): 
     (issue) =>
       (refinement.types.length === 0 || refinement.types.includes(issue.issueType)) &&
       (search === "" ||
-        issue.id.toLowerCase().includes(search) ||
-        issue.title.toLowerCase().includes(search) ||
+        matchesQuery(issue, search) ||
         (refinement.descriptionMatches?.has(issue.id) ?? false)),
   );
 }

@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
+import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
 import { sortByRequestedAt } from "@/client/modules/humanDecisions/domain/humanDecisionsView";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
-import { ALL_STATUSES } from "@/shared/contract/issueList";
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
@@ -40,8 +40,9 @@ type PendingItem =
  * 오른쪽에 보이는 항목을 주소 query가 항상 가리켜 새로고침해도 유지되고, 비어 있는 묶음은 숨깁니다.
  */
 export function HumanDecisionsScreen() {
-  const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
+  const { data: issues, error, loading } = useIssueList();
   const { data: gates, error: gatesError, loading: gatesLoading } = useHumanGates();
+  const humanDecisionCount = useHumanDecisionCount();
   const messages = useMessages();
   // 한쪽만 먼저 보이면 고른 항목이 다른 쪽이 도착할 때 바뀌므로, gate 조회가 끝난 뒤(실패 포함) 함께 보입니다.
   const loaded = issues !== null && (gates !== null || gatesError !== null);
@@ -89,7 +90,7 @@ export function HumanDecisionsScreen() {
       <ScreenHeader
         title={messages.humanDecisions.title}
         tone={screenTone("/human")}
-        count={loaded ? awaiting.count : undefined}
+        count={humanDecisionCount.data ?? undefined}
         loading={loading || gatesLoading}
         help={messages.humanDecisions.description}
       />

@@ -1,7 +1,5 @@
-import {
-  selectWorkspace,
-  useWorkspaces,
-} from "@/client/modules/workspace/application/useWorkspaces";
+import { selectWorkspace } from "@/client/modules/workspace/application/selectWorkspace";
+import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspaces";
 import { FolderIcon } from "@/client/ui/designSystem/icons";
 import { useSavedValue } from "@/client/ui/issues/fields/useSavedValue";
 

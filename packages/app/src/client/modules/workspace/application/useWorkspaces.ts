@@ -1,8 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { documentMessages } from "@/client/infra/locale/documentLocale";
 import { readWorkspaces } from "@/client/infra/workspaces/workspacesApiClient";
-import { selectWorkspaceAction } from "@/server/web/workspaces/workspaceActions";
-import type { ApiResponse } from "@/shared/contract/apiResponse";
 import type { WorkspaceList } from "@/shared/contract/workspaces";
 import { shareWorkspaceRead } from "./shareWorkspaceRead";
 import type { WorkspaceReadState } from "./useWorkspaceRead";
@@ -17,13 +14,4 @@ export function useWorkspaces(): WorkspaceReadState<WorkspaceList> {
     workspaces.getSnapshot,
     workspaces.getServerSnapshot,
   );
-}
-
-/** 바꾸면 서버가 SSE로 알리고, 열려 있는 모든 화면이 새 workspace의 데이터를 다시 읽습니다. */
-export async function selectWorkspace(root: string): Promise<ApiResponse<null>> {
-  try {
-    return await selectWorkspaceAction(root);
-  } catch {
-    return { ok: false, error: documentMessages().common.requestFailed };
-  }
 }

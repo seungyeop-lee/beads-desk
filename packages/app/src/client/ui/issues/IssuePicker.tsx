@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { useId, useState, type KeyboardEvent } from "react";
-import { useIssueCandidates } from "@/client/modules/issues/application/useIssueCandidates";
+import { useIssueCandidates } from "@/client/modules/issues/application/useIssueList";
 import { pickerCandidates, type PickerOptions } from "@/client/modules/issues/domain/issuePicker";
 import { SearchIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";

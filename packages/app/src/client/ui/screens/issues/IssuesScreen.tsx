@@ -9,7 +9,6 @@ import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
-import { ALL_STATUSES } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { IssueFilterBar } from "./IssueFilterBar";
@@ -29,7 +28,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
  */
 export function IssuesScreen() {
   const [search, setSearch] = useState("");
-  const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
+  const { data: issues, error, loading } = useIssueList();
   const { address, changeFilters } = useIssueListAddress();
   const { view, dates, types } = address;
   // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.

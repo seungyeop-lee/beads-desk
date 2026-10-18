@@ -2,20 +2,12 @@
 
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { useMemo, type ReactNode } from "react";
-import { useEpics } from "@/client/modules/epics/application/useEpics";
-import { focusStats } from "@/client/modules/focus/domain/focusStats";
-import { focusView, NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
-import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
-import {
-  blockersOf,
-  humanGateTitles,
-  type Blocker,
-} from "@/client/modules/humanGates/domain/humanGateBlockers";
-import { useIssueList } from "@/client/modules/issues/application/useIssueList";
+import { type ReactNode } from "react";
+import { useFocusView } from "@/client/modules/focus/application/useFocusView";
+import { NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
+import { blockersOf, type Blocker } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
-import { ALL_STATUSES } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { HUMAN_DECISION_TONE, workStateTone } from "@/client/ui/issues/issueLabels";
 import { WaitingOnLines } from "@/client/ui/issues/BlockerLine";
@@ -40,25 +32,12 @@ const CARD_STATES = ["in_progress", "ready", "blocked"] as const satisfies WorkS
  * 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function FocusScreen() {
-  const { data: issues, error, loading } = useIssueList(ALL_STATUSES);
-  const { data: epics } = useEpics();
-  const { data: humanGates } = useHumanGates();
+  const now = useMinuteClock();
+  const { issueList, epics, humanDecisionCount, view, stats, titles, gateTitles } =
+    useFocusView(now);
+  const { error, loading } = issueList;
   const issueHref = useIssueHref();
   const messages = useMessages();
-  const view = useMemo(
-    () => (issues ? focusView(issues, epics ?? [], humanGates ?? []) : null),
-    [issues, epics, humanGates],
-  );
-  const now = useMinuteClock();
-  const stats = useMemo(
-    () => (issues ? focusStats(issues, epics ?? [], now) : null),
-    [issues, epics, now],
-  );
-  const titles = useMemo(
-    () => new Map((issues ?? []).map((issue) => [issue.id, issue.title])),
-    [issues],
-  );
-  const gateTitles = useMemo(() => humanGateTitles(humanGates ?? []), [humanGates]);
   const countOf = { in_progress: view?.inProgress, ready: view?.ready, blocked: view?.blocked };
 
   return (
@@ -83,7 +62,7 @@ export function FocusScreen() {
               href="/human"
               tone={HUMAN_DECISION_TONE}
               label={messages.humanDecisions.title}
-              count={view.awaitingHumanCount}
+              count={humanDecisionCount.data ?? undefined}
             />
           </div>
 
@@ -151,7 +130,7 @@ export function FocusScreen() {
                 ))}
               </FocusSection>
               {/* 에픽은 따로 읽으므로, 다 읽기 전에 "에픽이 없다"는 안내가 잠깐 보이지 않게 합니다. */}
-              {epics && (
+              {epics.data && (
                 <FocusSection title={messages.focus.epicProgress} empty={messages.focus.epicsEmpty}>
                   {view.openEpics.map(({ epic, totalChildren, closedChildren }) => (
                     <li key={epic.id}>
