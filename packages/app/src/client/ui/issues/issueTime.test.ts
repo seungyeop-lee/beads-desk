@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { MESSAGES } from "@/client/modules/locale/domain/messages";
-import { deferUntilLabel, formatTime } from "./issueLabels";
+import { deferUntilLabel, formatTime } from "./issueTime";
 
 test("보류 기한이 있으면 그 시각을, 없으면 무기한을 보인다", () => {
   const until = Date.parse("2026-10-16T13:04:46Z");

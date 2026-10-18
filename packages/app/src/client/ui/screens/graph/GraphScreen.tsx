@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
+import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { useGraph } from "@/client/modules/graph/application/useGraph";
 import { centerGraph } from "@/client/modules/graph/domain/centerGraph";
 import { type GraphScope } from "@/client/modules/graph/domain/graphScope";
-import { CloseIcon, HelpIcon } from "@/client/ui/designSystem/icons";
+import { CloseIcon } from "@/client/ui/designSystem/icons";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
+import { HelpTooltip } from "@/client/ui/designSystem/HelpTooltip";
+import { isTyping, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
@@ -28,14 +32,13 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
   const messages = useMessages();
   const params = useSearchParams();
   const router = useRouter();
+  const replaceQueryOnly = useQueryReplace({ queryOnly: true });
   const dialogRef = useRef<HTMLDialogElement>(null);
   const backHref = graphBackHref(scope, new URLSearchParams(params));
   const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
   const title = `${scopeTitle} · ${messages.graph.scopes[scope.kind]}`;
 
-  useEffect(() => {
-    dialogRef.current?.showModal();
-  }, []);
+  useShowModal(dialogRef);
 
   return (
     <dialog
@@ -45,13 +48,12 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
       onClose={() => router.replace(backHref, { scroll: false })}
       onCancel={(event) => {
         event.preventDefault();
-        const active = document.activeElement;
-        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+        if (isTyping()) return;
         if (params.has("issue")) {
-          const next = new URLSearchParams(params);
-          next.delete("issue");
-          next.delete("side");
-          router.replace(`?${next}`, { scroll: false });
+          replaceQueryOnly((next) => {
+            next.delete("issue");
+            next.delete("side");
+          });
         } else router.replace(backHref, { scroll: false });
       }}
     >
@@ -73,21 +75,7 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
               aria-label={messages.common.loading}
             />
           )}
-          <span className="group/help shrink-0">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm btn-square"
-              aria-label={messages.graph.help[scope.kind]}
-            >
-              <HelpIcon />
-            </button>
-            <span
-              aria-hidden
-              className="pointer-events-none invisible absolute top-16 right-5 z-10 w-max max-w-[min(32rem,calc(96vw-2.5rem))] rounded-field bg-neutral px-3 py-2 text-sm leading-snug text-neutral-content shadow-lg group-hover/help:visible group-has-focus-visible/help:visible"
-            >
-              {messages.graph.help[scope.kind]}
-            </span>
-          </span>
+          <HelpTooltip help={messages.graph.help[scope.kind]} placement="header-end" />
           <Link
             href={backHref}
             scroll={false}
@@ -99,11 +87,7 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
         </header>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
           <div className="flex @container/plan min-h-[40rem] min-w-0 shrink-0 flex-1 flex-col gap-3 p-4 xl:min-h-0 xl:shrink">
-            {error && (
-              <div role="alert" className="alert alert-error alert-soft">
-                <span>{messages.graph.loadFailed(error)}</span>
-              </div>
-            )}
+            {error && <ErrorAlert>{messages.graph.loadFailed(error)}</ErrorAlert>}
             {data &&
               (scope.kind === "epic" ? (
                 <EpicPlanGraph
@@ -124,9 +108,7 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
           <IssueDetailRoute embedded />
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button type="submit">{messages.common.close}</button>
-      </form>
+      <ModalBackdrop />
     </dialog>
   );
 }

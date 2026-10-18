@@ -17,6 +17,7 @@ import { IssueGroups } from "./IssueGroups";
 import { IssueViewTabs } from "./IssueViewTabs";
 import { useIssueListAddress } from "./useIssueListAddress";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -79,16 +80,10 @@ export function IssuesScreen() {
         onDatesChange={(next) => changeFilters({ dates: next })}
       />
 
-      {error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.issues.loadFailed(error)}</span>
-        </div>
-      )}
+      {error && <ErrorAlert>{messages.issues.loadFailed(error)}</ErrorAlert>}
 
       {description.error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.issues.descriptionSearchFailed(description.error)}</span>
-        </div>
+        <ErrorAlert>{messages.issues.descriptionSearchFailed(description.error)}</ErrorAlert>
       )}
 
       <WriteErrorAlert writes={writes} />

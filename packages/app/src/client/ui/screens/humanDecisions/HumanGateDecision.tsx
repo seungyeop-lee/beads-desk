@@ -9,8 +9,10 @@ import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { CommentTimeline } from "@/client/ui/issues/detail/CommentList";
 import { HumanGateResponse } from "@/client/ui/issues/detail/HumanGateResponse";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import { formatTime, nameTone } from "@/client/ui/issues/issueLabels";
+import { formatTime } from "@/client/ui/issues/issueTime";
+import { LabelChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
+import { LoadResult } from "@/client/ui/designSystem/LoadResult";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /** 고른 human gate의 사유를 보이고 응답하거나 응답 없이 닫으며, 이전 라운드 피드백은 응답 아래에, 막고 있는 작업은 맨 아래에 보입니다. */
@@ -60,68 +62,66 @@ function PreviousGateFeedback({ gateId }: { gateId: string }) {
   const locale = useLocale();
   const messages = useMessages();
   const issueHref = useIssueHref();
-  if (error) {
-    return (
-      <div role="alert" className="alert alert-error alert-soft">
-        <span>{messages.humanGate.previousLoadFailed(error)}</span>
-      </div>
-    );
-  }
-  if (!rounds || rounds.length === 0) {
-    return (
-      <span
-        className="loading loading-spinner loading-sm text-base-content/40"
-        aria-label={messages.humanGate.previousLoading}
-      />
-    );
-  }
   return (
-    <section
-      className="flex flex-col gap-3 text-sm"
-      aria-label={messages.humanGate.previousFeedback}
+    <LoadResult
+      state={{ data: rounds && rounds.length > 0 ? rounds : null, error }}
+      loadFailed={(failed) => messages.humanGate.previousLoadFailed(failed)}
+      waiting={
+        <span
+          className="loading loading-spinner loading-sm text-base-content/40"
+          aria-label={messages.humanGate.previousLoading}
+        />
+      }
     >
-      <h3 className="font-semibold">{messages.humanGate.previousFeedback}</h3>
-      {rounds.map(({ gate, closeReason, comments }) => (
-        <article
-          key={gate.id}
-          className="flex flex-col gap-3 rounded-box border border-base-300 px-4 py-3"
+      {(rounds) => (
+        <section
+          className="flex flex-col gap-3 text-sm"
+          aria-label={messages.humanGate.previousFeedback}
         >
-          <header className="flex flex-col gap-1.5">
-            <div className="flex flex-wrap items-baseline gap-2">
-              <h4 className="font-medium">
-                <Link href={issueHref(gate.id)} scroll={false} className="hover:underline">
-                  {gate.title || messages.common.untitled}
-                </Link>
-              </h4>
-              <span className="font-mono text-xs text-base-content/45">{gate.id}</span>
-              {gate.closedAt !== null && (
-                <span className="text-xs text-base-content/55">
-                  {messages.humanGate.roundClosed(formatTime(locale, gate.closedAt))}
-                </span>
+          <h3 className="font-semibold">{messages.humanGate.previousFeedback}</h3>
+          {rounds.map(({ gate, closeReason, comments }) => (
+            <article
+              key={gate.id}
+              className="flex flex-col gap-3 rounded-box border border-base-300 px-4 py-3"
+            >
+              <header className="flex flex-col gap-1.5">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <h4 className="font-medium">
+                    <Link href={issueHref(gate.id)} scroll={false} className="hover:underline">
+                      {gate.title || messages.common.untitled}
+                    </Link>
+                  </h4>
+                  <span className="font-mono text-xs text-base-content/45">{gate.id}</span>
+                  {gate.closedAt !== null && (
+                    <span className="text-xs text-base-content/55">
+                      {messages.humanGate.roundClosed(formatTime(locale, gate.closedAt))}
+                    </span>
+                  )}
+                </div>
+                {gate.labels.length > 0 && (
+                  <ul className="flex flex-wrap gap-1.5">
+                    {gate.labels.map((label) => (
+                      <li key={label}>
+                        <LabelChip label={label} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </header>
+              {comments.length > 0 ? (
+                <CommentTimeline comments={comments} />
+              ) : (
+                closeReason && (
+                  <p className="text-base-content/60">
+                    {messages.issueDetail.closeReason}: {closeReason}
+                  </p>
+                )
               )}
-            </div>
-            {gate.labels.length > 0 && (
-              <ul className="flex flex-wrap gap-1.5">
-                {gate.labels.map((label) => (
-                  <li key={label} className={`chip h-5 px-2 text-[11px] ${nameTone(label)}`}>
-                    {label}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </header>
-          {comments.length > 0 ? (
-            <CommentTimeline comments={comments} />
-          ) : (
-            closeReason && (
-              <p className="text-base-content/60">
-                {messages.issueDetail.closeReason}: {closeReason}
-              </p>
-            )
-          )}
-        </article>
-      ))}
-    </section>
+            </article>
+          ))}
+        </section>
+      )}
+    </LoadResult>
   );
 }
 
@@ -177,24 +177,24 @@ function BlockedIssueLine({ issue }: { issue: Issue }) {
 function BlockedIssueDescription({ issueId }: { issueId: string }) {
   const { data: issue, error } = useIssueDetail(issueId);
   const messages = useMessages();
-  if (error) {
-    return (
-      <div role="alert" className="alert alert-error alert-soft">
-        <span>{messages.issueDetail.loadFailed(error)}</span>
-      </div>
-    );
-  }
-  if (!issue) {
-    return (
-      <span
-        className="loading loading-spinner loading-sm text-base-content/40"
-        aria-label={messages.issueDetail.loading}
-      />
-    );
-  }
-  return issue.description ? (
-    <MarkdownEditor readOnly value={issue.description} />
-  ) : (
-    <p className="text-base-content/50">{messages.humanDecisions.noDescription}</p>
+  return (
+    <LoadResult
+      state={{ data: issue, error }}
+      loadFailed={(failed) => messages.issueDetail.loadFailed(failed)}
+      waiting={
+        <span
+          className="loading loading-spinner loading-sm text-base-content/40"
+          aria-label={messages.issueDetail.loading}
+        />
+      }
+    >
+      {(issue) =>
+        issue.description ? (
+          <MarkdownEditor readOnly value={issue.description} />
+        ) : (
+          <p className="text-base-content/50">{messages.humanDecisions.noDescription}</p>
+        )
+      }
+    </LoadResult>
   );
 }

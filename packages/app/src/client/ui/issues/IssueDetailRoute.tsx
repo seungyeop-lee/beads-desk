@@ -1,10 +1,11 @@
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   nextIssueDetailTrail,
   type IssueDetailLocation,
 } from "@/client/modules/issues/domain/issueDetailTrail";
 import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspaces";
+import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { readGraphScope } from "@/client/ui/screens/graph/graphAddress";
 import { IssueDetailDialog } from "./detail/IssueDetailDialog";
 
@@ -37,19 +38,18 @@ export function useIssueHref(): (issueId: string) => string {
 
 /** 주소에 이슈 id가 있으면 상세 dialog를 엽니다. useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다. */
 export function IssueDetailRoute({ embedded = false }: { embedded?: boolean }) {
-  const pathname = usePathname();
-  const router = useRouter();
+  const replaceQuery = useQueryReplace();
   const detailHref = useIssueDetailHref();
   const location = useIssueDetailLocation();
   const issueId = location?.issue ?? null;
   const currentWorkspace = useWorkspaces().data?.current ?? null;
   const searchParams = useSearchParams();
   const close = useCallback(() => {
-    const params = new URLSearchParams(searchParams);
-    params.delete(ISSUE_PARAM);
-    params.delete(SIDE_PARAM);
-    router.replace(params.size > 0 ? `${pathname}?${params}` : pathname, { scroll: false });
-  }, [router, pathname, searchParams]);
+    replaceQuery((params) => {
+      params.delete(ISSUE_PARAM);
+      params.delete(SIDE_PARAM);
+    });
+  }, [replaceQuery]);
 
   const [trail, setTrail] = useState<IssueDetailLocation[]>([]);
   const shown = trail.at(-1);

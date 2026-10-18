@@ -4,6 +4,7 @@ import { useIssueDetail } from "@/client/modules/issues/application/useIssueDeta
 import { linkedIssues } from "@/client/modules/issues/domain/issueRelations";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { statusLabel, statusTone } from "../issueLabels";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { DependencyList } from "./DependencyList";
@@ -60,9 +61,9 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
 
       <div className="flex min-h-0 grow flex-col overflow-y-auto">
         {error && !data && (
-          <div role="alert" className="alert alert-error alert-soft m-5">
-            <span className="whitespace-pre-wrap">{messages.issueDetail.loadFailed(error)}</span>
-          </div>
+          <ErrorAlert className="m-5" multiline>
+            {messages.issueDetail.loadFailed(error)}
+          </ErrorAlert>
         )}
         {data && <IssueSummary issue={data} sideHref={sideHref} />}
       </div>

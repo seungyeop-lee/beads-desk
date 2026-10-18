@@ -3,7 +3,8 @@ import { type ReactNode, useId } from "react";
 import type { LinkedIssue } from "@/client/modules/issues/domain/issueRelations";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { dependencyLabel, statusLabel, statusTone } from "../issueLabels";
+import { StatusChip } from "../IssueChip";
+import { dependencyLabel } from "../issueLabels";
 
 type Props = {
   links: LinkedIssue[];
@@ -52,9 +53,7 @@ export function DependencyList({ links, issueHref, edit, actions }: Props) {
                 <span className="min-w-0 grow truncate font-mono text-xs text-base-content/55">
                   {link.id}
                 </span>
-                <span className={`chip h-5 px-2 text-[11px] ${statusTone(link.status)}`}>
-                  {statusLabel(messages, link.status)}
-                </span>
+                <StatusChip status={link.status} />
                 {edit && (
                   <button
                     type="button"

@@ -4,7 +4,8 @@ import { useIssueCandidates } from "@/client/modules/issues/application/useIssue
 import { pickerCandidates, type PickerOptions } from "@/client/modules/issues/domain/issuePicker";
 import { SearchIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { statusLabel, statusTone, typeTone } from "./issueLabels";
+import { StatusChip } from "./IssueChip";
+import { typeTone } from "./issueLabels";
 
 type Props = PickerOptions & {
   label: string;
@@ -117,9 +118,7 @@ export function IssuePicker({ label, placeholder, disabled, onPick, exclude, ran
               <span className={`tone-dot ${typeTone(issue.issueType)}`} />
               <span className="shrink-0 font-mono text-xs text-base-content/55">{issue.id}</span>
               <span className="min-w-0 grow truncate">{issue.title}</span>
-              <span className={`chip h-5 px-2 text-[11px] ${statusTone(issue.status)}`}>
-                {statusLabel(messages, issue.status)}
-              </span>
+              <StatusChip status={issue.status} />
             </div>
           ))
         )}

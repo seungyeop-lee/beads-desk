@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useId } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateChip } from "../HumanGateChip";
-import { statusLabel, statusTone } from "../issueLabels";
+import { StatusChip } from "../IssueChip";
 
 type Props = {
   issue: IssueDetail;
@@ -41,13 +41,7 @@ export function BlockerBanner({ issue, issueHref }: Props) {
             >
               <span className="font-mono text-xs text-base-content/55">{link.id}</span> {link.title}
             </Link>
-            {isOpenHumanGateLink(link) ? (
-              <HumanGateChip />
-            ) : (
-              <span className={`chip h-5 px-2 text-[11px] ${statusTone(link.status)}`}>
-                {statusLabel(messages, link.status)}
-              </span>
-            )}
+            {isOpenHumanGateLink(link) ? <HumanGateChip /> : <StatusChip status={link.status} />}
           </li>
         ))}
       </ul>

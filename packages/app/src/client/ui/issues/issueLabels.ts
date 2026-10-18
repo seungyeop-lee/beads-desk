@@ -1,7 +1,6 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { Messages } from "@/client/modules/locale/domain/messages";
-import type { Locale } from "@/shared/contract/locale";
 
 /*
  * 아래 tone-*은 styles/components.css의 파스텔이고, tone-none은 색이 없다는 뜻입니다.
@@ -113,15 +112,4 @@ export function nameTone(name: string): string {
   let hash = 0;
   for (const char of name) hash = (hash * 31 + char.codePointAt(0)!) >>> 0;
   return NAME_TONES[hash % NAME_TONES.length];
-}
-
-export function formatTime(locale: Locale, ms: number): string {
-  return new Date(ms).toLocaleString(locale);
-}
-
-/** 보류 기한을 시각으로 보이고, 기한 없이 보류한 이슈는 무기한으로 보입니다. */
-export function deferUntilLabel(messages: Messages, locale: Locale, deferUntil: number | null) {
-  return deferUntil === null
-    ? messages.deferral.periods.indefinite
-    : formatTime(locale, deferUntil);
 }

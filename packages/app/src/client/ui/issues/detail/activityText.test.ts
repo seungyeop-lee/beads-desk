@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { MESSAGES } from "@/client/modules/locale/domain/messages";
-import { formatTime } from "../issueLabels";
+import { formatTime } from "../issueTime";
 import { activityLineText } from "./activityText";
 
 const ko = (line: Parameters<typeof activityLineText>[2]) =>

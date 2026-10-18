@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useId } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HUMAN_DECISION_TONE } from "../issueLabels";
 import { HumanGateResponse } from "./HumanGateResponse";
@@ -64,11 +65,7 @@ function HumanGateItem({
         <span className="font-mono text-xs font-normal text-base-content/55">{link.id}</span>
         {link.title || messages.common.untitled}
       </Link>
-      {error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.issueDetail.loadFailed(error)}</span>
-        </div>
-      )}
+      {error && <ErrorAlert>{messages.issueDetail.loadFailed(error)}</ErrorAlert>}
       {reason && (
         <section className="flex flex-col gap-1 text-sm" aria-label={messages.humanGate.reason}>
           <h4 className="font-semibold">{messages.humanGate.reason}</h4>

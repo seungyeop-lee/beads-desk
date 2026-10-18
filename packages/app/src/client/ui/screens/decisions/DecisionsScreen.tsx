@@ -14,6 +14,7 @@ import { StatusSelect } from "@/client/ui/issues/fields/StatusSelect";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -38,11 +39,7 @@ export function DecisionsScreen() {
         loading={loading || writes.pending}
       />
 
-      {error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.decisions.loadFailed(error)}</span>
-        </div>
-      )}
+      {error && <ErrorAlert>{messages.decisions.loadFailed(error)}</ErrorAlert>}
       <WriteErrorAlert writes={writes} />
 
       {groups && (

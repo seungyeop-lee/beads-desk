@@ -2,7 +2,8 @@ import type { IssueComment } from "@beads-desk/bd/issue";
 import { useState, type ReactNode } from "react";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
-import { formatTime, nameTone } from "../issueLabels";
+import { nameTone } from "../issueLabels";
+import { formatTime } from "../issueTime";
 
 type Props = {
   comments: IssueComment[];

@@ -80,14 +80,6 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
-export function CheckIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="m5 12 5 5L20 7" />
-    </Icon>
-  );
-}
-
 export function PencilIcon(props: IconProps) {
   return (
     <Icon {...props}>

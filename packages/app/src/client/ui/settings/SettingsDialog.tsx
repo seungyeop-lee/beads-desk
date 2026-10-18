@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { LocalePicker } from "@/client/ui/locale/LocalePicker";
 import { ThemePicker } from "@/client/ui/theme/ThemePicker";
@@ -8,10 +9,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const messages = useMessages();
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog && !dialog.open) dialog.showModal();
-  }, []);
+  useShowModal(dialogRef);
 
   return (
     <dialog
@@ -42,9 +40,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button type="submit">{messages.common.close}</button>
-      </form>
+      <ModalBackdrop />
     </dialog>
   );
 }

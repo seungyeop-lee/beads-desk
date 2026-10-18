@@ -1,11 +1,13 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
 import { canJoinHierarchy } from "@/client/modules/issues/domain/issueRelations";
 import { createIssueAction } from "@/server/web/issues/issueActions";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssuePicker } from "./IssuePicker";
 import { ISSUE_TYPES, PRIORITIES, priorityLabel, typeLabel, typeTone } from "./issueLabels";
@@ -30,10 +32,7 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
   const parent = fixedParent ?? pickedParent;
   const messages = useMessages();
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog && !dialog.open) dialog.showModal();
-  }, []);
+  useShowModal(dialogRef);
 
   const submit = async (event?: FormEvent | KeyboardEvent) => {
     event?.preventDefault();
@@ -65,11 +64,7 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
       <form className="modal-box flex max-w-2xl flex-col gap-0 p-0" onSubmit={submit}>
         <div className="flex flex-col gap-5 px-7 pt-7 pb-6">
           <h2 className="text-xl font-bold tracking-tight">{messages.newIssue.title}</h2>
-          {error && (
-            <div role="alert" className="alert alert-error alert-soft">
-              <span className="whitespace-pre-wrap">{error}</span>
-            </div>
-          )}
+          {error && <ErrorAlert multiline>{error}</ErrorAlert>}
           <label className="flex flex-col gap-1.5">
             <span className="caption">{messages.issue.title}</span>
             <input
@@ -181,9 +176,7 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
           </button>
         </div>
       </form>
-      <form method="dialog" className="modal-backdrop">
-        <button type="submit">{messages.common.close}</button>
-      </form>
+      <ModalBackdrop />
     </dialog>
   );
 }

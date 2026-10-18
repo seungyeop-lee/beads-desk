@@ -2,7 +2,7 @@
 
 import { awaitingHuman, type Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
 import { sortByRequestedAt } from "@/client/modules/humanDecisions/domain/humanDecisionsView";
@@ -11,12 +11,16 @@ import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { ALL_STATUSES } from "@/shared/contract/issueList";
+import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
+import { LoadResult } from "@/client/ui/designSystem/LoadResult";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
+import { FirstBlockedLine } from "@/client/ui/issues/BlockerLine";
 import { HumanDecisionPanel } from "@/client/ui/issues/detail/HumanDecisionPanel";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import { priorityLabel, priorityTone } from "@/client/ui/issues/issueLabels";
+import { IssueChip, PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { screenTone } from "@/client/ui/shell/screenTabs";
@@ -52,26 +56,23 @@ export function HumanDecisionsScreen() {
     ],
     [awaiting],
   );
-  const pathname = usePathname();
-  const router = useRouter();
+  const replaceQuery = useQueryReplace();
   const searchParams = useSearchParams();
   const selectedId = searchParams.get(ITEM_PARAM);
   // 처리해 닫힌 항목은 목록에서 빠지므로, 고른 항목이 없어지면 맨 위 항목을 이어서 보여 줍니다.
   const selected = pending.find((item) => item.id === selectedId) ?? pending[0];
   const select = (id: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set(ITEM_PARAM, id);
-    router.replace(`${pathname}?${params}`, { scroll: false });
+    replaceQuery((params) => params.set(ITEM_PARAM, id));
   };
   // 주소가 오른쪽에 보이는 항목과 어긋나면 고칩니다. 처음 진입해 맨 위 항목을 자동으로 보일 때와, 고른 항목이 닫혀 다른 항목으로 넘어갈 때입니다. 조회가 끝나기 전에는 목록이 비어 있을 뿐이므로 loaded일 때만 고칩니다.
   useEffect(() => {
     if (!loaded) return;
     if (selectedId === (selected?.id ?? null)) return;
-    const params = new URLSearchParams(searchParams);
-    if (selected) params.set(ITEM_PARAM, selected.id);
-    else params.delete(ITEM_PARAM);
-    router.replace(params.size > 0 ? `${pathname}?${params}` : pathname, { scroll: false });
-  }, [selectedId, loaded, selected, searchParams, pathname, router]);
+    replaceQuery((params) => {
+      if (selected) params.set(ITEM_PARAM, selected.id);
+      else params.delete(ITEM_PARAM);
+    });
+  }, [selectedId, loaded, selected, replaceQuery]);
   const groups = [
     {
       label: messages.humanDecisions.gates,
@@ -96,11 +97,7 @@ export function HumanDecisionsScreen() {
       {/* bd 실행 자체가 실패하면 두 조회가 같은 오류를 받으므로 한 번만 보입니다. */}
       {[...new Set([error, gatesError])].map(
         (message) =>
-          message && (
-            <div key={message} role="alert" className="alert alert-error alert-soft">
-              <span>{messages.issues.loadFailed(message)}</span>
-            </div>
-          ),
+          message && <ErrorAlert key={message}>{messages.issues.loadFailed(message)}</ErrorAlert>,
       )}
 
       {loaded &&
@@ -155,7 +152,6 @@ function PendingRow({
 }) {
   const messages = useMessages();
   const issue = item.kind === "gate" ? item.summary.gate : item.issue;
-  const [firstBlocked, ...restBlocked] = item.kind === "gate" ? item.summary.blocks : [];
   return (
     <button
       type="button"
@@ -170,29 +166,17 @@ function PendingRow({
         <span className="order-first w-full font-medium wrap-anywhere">
           {issue.title || messages.common.untitled}
         </span>
-        {issue.priority !== null && (
-          <span className={`chip h-5 px-2 text-[11px] ${priorityTone(issue.priority)}`}>
-            P{issue.priority} {priorityLabel(messages, issue.priority)}
-          </span>
-        )}
+        {issue.priority !== null && <PriorityChip priority={issue.priority} />}
         {item.kind === "gate" && item.summary.previousGateCount > 0 && (
-          <span
-            className="chip h-5 px-2 text-[11px]"
-            aria-label={messages.humanGate.previousRounds(item.summary.previousGateCount)}
-          >
+          <IssueChip aria-label={messages.humanGate.previousRounds(item.summary.previousGateCount)}>
             🕘 {item.summary.previousGateCount}
-          </span>
+          </IssueChip>
         )}
         <span className="ml-auto shrink-0 text-right font-mono text-xs text-base-content/45">
           {issue.id}
         </span>
       </span>
-      {firstBlocked && (
-        <span className="wrap-anywhere text-xs text-base-content/60">
-          ← {firstBlocked.title || messages.common.untitled}
-          {restBlocked.length > 0 && ` ${messages.blocking.more(restBlocked.length)}`}
-        </span>
-      )}
+      {item.kind === "gate" && <FirstBlockedLine blocks={item.summary.blocks} />}
     </button>
   );
 }
@@ -202,48 +186,46 @@ function SelectedDecision({ issueId }: { issueId: string }) {
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const messages = useMessages();
-  if (error) {
-    return (
-      <div role="alert" className="alert alert-error alert-soft">
-        <span>{messages.issueDetail.loadFailed(error)}</span>
-      </div>
-    );
-  }
-  if (!issue) {
-    return (
-      <span
-        className="loading loading-spinner loading-sm text-base-content/40"
-        aria-label={messages.issueDetail.loading}
-      />
-    );
-  }
   return (
-    <section className="surface min-w-0 flex flex-col gap-5 p-6" aria-label={issue.title}>
-      <header className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <IssueTypeTag issueType={issue.issueType} />
-          <span className="font-mono text-base-content/55">{issue.id}</span>
-          <Link
-            href={issueHref(issue.id)}
-            scroll={false}
-            className="ml-auto font-medium hover:underline"
-          >
-            {messages.humanDecisions.openDetail} →
-          </Link>
-        </div>
-        <h2 className="text-xl leading-snug font-bold">
-          {issue.title || messages.common.untitled}
-        </h2>
-      </header>
-      {issue.description ? (
-        <div className="text-sm">
-          <MarkdownEditor readOnly value={issue.description} />
-        </div>
-      ) : (
-        <p className="text-sm text-base-content/50">{messages.humanDecisions.noDescription}</p>
+    <LoadResult
+      state={{ data: issue, error }}
+      loadFailed={(failed) => messages.issueDetail.loadFailed(failed)}
+      waiting={
+        <span
+          className="loading loading-spinner loading-sm text-base-content/40"
+          aria-label={messages.issueDetail.loading}
+        />
+      }
+    >
+      {(issue) => (
+        <section className="surface min-w-0 flex flex-col gap-5 p-6" aria-label={issue.title}>
+          <header className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <IssueTypeTag issueType={issue.issueType} />
+              <span className="font-mono text-base-content/55">{issue.id}</span>
+              <Link
+                href={issueHref(issue.id)}
+                scroll={false}
+                className="ml-auto font-medium hover:underline"
+              >
+                {messages.humanDecisions.openDetail} →
+              </Link>
+            </div>
+            <h2 className="text-xl leading-snug font-bold">
+              {issue.title || messages.common.untitled}
+            </h2>
+          </header>
+          {issue.description ? (
+            <div className="text-sm">
+              <MarkdownEditor readOnly value={issue.description} />
+            </div>
+          ) : (
+            <p className="text-sm text-base-content/50">{messages.humanDecisions.noDescription}</p>
+          )}
+          <WriteErrorAlert writes={writes} />
+          <HumanDecisionPanel issue={issue} writes={writes} />
+        </section>
       )}
-      <WriteErrorAlert writes={writes} />
-      <HumanDecisionPanel issue={issue} writes={writes} />
-    </section>
+    </LoadResult>
   );
 }

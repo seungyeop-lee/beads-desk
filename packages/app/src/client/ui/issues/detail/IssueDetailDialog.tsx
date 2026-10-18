@@ -5,6 +5,8 @@ import { useIssueDetail } from "@/client/modules/issues/application/useIssueDeta
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import type { IssueDetailLocation } from "@/client/modules/issues/domain/issueDetailTrail";
 import { ChevronLeftIcon, CloseIcon } from "@/client/ui/designSystem/icons";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
+import { isTyping, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { IssueDetailView } from "./IssueDetailView";
 import { IssueSidePanel } from "./IssueSidePanel";
@@ -52,10 +54,7 @@ export function IssueDetailDialog({
     };
   }, [opening]);
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!embedded && !loading && dialog && !dialog.open) dialog.showModal();
-  }, [loading, embedded]);
+  useShowModal(dialogRef, !embedded && !loading);
 
   const close = () => {
     if (embedded) onClose();
@@ -107,10 +106,7 @@ export function IssueDetailDialog({
         onClose={onClose}
         onCancel={(event) => {
           // 입력 중에 누른 Escape는 편집 취소로만 쓰고 dialog를 닫지 않습니다.
-          const active = document.activeElement;
-          if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
-            event.preventDefault();
-          }
+          if (isTyping()) event.preventDefault();
         }}
       >
         <div
@@ -118,9 +114,7 @@ export function IssueDetailDialog({
         >
           {content}
         </div>
-        <form method="dialog" className="modal-backdrop">
-          <button type="submit">{messages.common.close}</button>
-        </form>
+        <ModalBackdrop />
       </dialog>
     </>
   );
@@ -196,13 +190,7 @@ function IssueDetailPanel({
         {(writes.error || error) && (
           <div className="flex flex-col gap-2 px-6 pt-4">
             <WriteErrorAlert writes={writes} />
-            {error && (
-              <div role="alert" className="alert alert-error alert-soft">
-                <span className="whitespace-pre-wrap">
-                  {messages.issueDetail.loadFailed(error)}
-                </span>
-              </div>
-            )}
+            {error && <ErrorAlert multiline>{messages.issueDetail.loadFailed(error)}</ErrorAlert>}
           </div>
         )}
         {issue && (

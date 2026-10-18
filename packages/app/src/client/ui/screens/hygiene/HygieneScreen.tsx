@@ -5,6 +5,7 @@ import { useId, useState, type ReactNode } from "react";
 import { useHygiene, useStaleIssues } from "@/client/modules/hygiene/application/useHygiene";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { showToast } from "@/client/ui/designSystem/Toast";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
@@ -59,12 +60,7 @@ export function HygieneScreen() {
 
       {/* 서버에 연결하지 못하면 두 조회가 같은 오류를 내므로 한 번만 보입니다. */}
       {[...new Set([error, stale.error])].map(
-        (message) =>
-          message && (
-            <div key={message} role="alert" className="alert alert-error alert-soft">
-              <span>{text.loadFailed(message)}</span>
-            </div>
-          ),
+        (message) => message && <ErrorAlert key={message}>{text.loadFailed(message)}</ErrorAlert>,
       )}
       <WriteErrorAlert writes={writes} />
 

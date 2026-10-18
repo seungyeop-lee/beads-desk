@@ -26,6 +26,7 @@ import { IssueTable } from "@/client/ui/issues/IssueTable";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ChevronRightIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { showToast } from "@/client/ui/designSystem/Toast";
@@ -64,11 +65,7 @@ export function EpicsScreen() {
         loading={loading || writes.pending}
       />
 
-      {error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.epics.loadFailed(error)}</span>
-        </div>
-      )}
+      {error && <ErrorAlert>{messages.epics.loadFailed(error)}</ErrorAlert>}
       <WriteErrorAlert writes={writes} />
       {epics?.length === 0 && <EmptyState message={messages.epics.empty} />}
 
@@ -220,11 +217,7 @@ function EpicDescendants({
           onClose={() => setCreating(false)}
         />
       )}
-      {error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.epics.childrenLoadFailed(error)}</span>
-        </div>
-      )}
+      {error && <ErrorAlert>{messages.epics.childrenLoadFailed(error)}</ErrorAlert>}
       {!descendants && !error && (
         <span className="flex items-center gap-2 text-sm text-base-content/60">
           <span className="loading loading-spinner loading-sm" />

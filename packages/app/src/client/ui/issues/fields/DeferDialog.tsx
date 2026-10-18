@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type { Deferral } from "@/client/modules/issues/application/issueEdits";
 import { earliestDeferDay } from "@/client/modules/issues/domain/issueDeferral";
+import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { DEFER_PERIODS } from "@/shared/contract/issueActions";
 import { createDialogRequest, type DialogRequest } from "./dialogRequest";
@@ -34,10 +35,7 @@ function DeferDialog({ request }: { request: DialogRequest<Deferral> }) {
   const [reason, setReason] = useState("");
   const messages = useMessages();
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog && !dialog.open) dialog.showModal();
-  }, []);
+  useShowModal(dialogRef);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -103,9 +101,7 @@ function DeferDialog({ request }: { request: DialogRequest<Deferral> }) {
           </button>
         </div>
       </form>
-      <form method="dialog" className="modal-backdrop">
-        <button type="submit">{messages.common.close}</button>
-      </form>
+      <ModalBackdrop />
     </dialog>
   );
 }

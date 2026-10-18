@@ -17,18 +17,15 @@ import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrit
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { statusPrompts } from "@/client/ui/issues/fields/statusPrompts";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import {
-  priorityLabel,
-  priorityTone,
-  READY_TONE,
-  statusTone,
-} from "@/client/ui/issues/issueLabels";
+import { READY_TONE, statusTone } from "@/client/ui/issues/issueLabels";
+import { BoardBlockerLine } from "@/client/ui/issues/BlockerLine";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
-import { HumanGateChip } from "@/client/ui/issues/HumanGateChip";
+import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { BOARD_COLUMNS, type BoardColumn } from "@/shared/contract/board";
 import { useMinuteClock } from "./useMinuteClock";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { showToast } from "@/client/ui/designSystem/Toast";
 import { screenTone } from "@/client/ui/shell/screenTabs";
@@ -90,11 +87,7 @@ export function BoardScreen() {
         help={messages.board.description}
       />
 
-      {error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.board.loadFailed(error)}</span>
-        </div>
-      )}
+      {error && <ErrorAlert>{messages.board.loadFailed(error)}</ErrorAlert>}
       <WriteErrorAlert writes={writes} />
 
       {columns && (
@@ -168,12 +161,6 @@ type CardProps = {
 
 function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {
   const messages = useMessages();
-  // 보드는 막는 이슈를 id로만 보이고, 열린 human gate만 사람 확인 기다림 표시와 gate 제목으로 보입니다.
-  const [blocker, ...restBlockers] = blockersOf(
-    issue.blockedBy ?? [],
-    humanGateTitles,
-    () => undefined,
-  );
   return (
     <li>
       <Link
@@ -191,27 +178,14 @@ function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {
         <span className="leading-snug font-medium break-words">
           {issue.title || messages.common.untitled}
         </span>
-        {blocker?.humanGate && (
-          <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-base-content/60">
-            ← <HumanGateChip />
-            <span className="min-w-0 break-words">{blocker.title || messages.common.untitled}</span>
-            {restBlockers.length > 0 && messages.blocking.more(restBlockers.length)}
-          </span>
-        )}
-        {blocker && !blocker.humanGate && (
-          <span className="text-xs text-base-content/60">
-            ← {messages.blocking.waitingOn(blocker.id)}
-            {restBlockers.length > 0 && ` ${messages.blocking.more(restBlockers.length)}`}
-          </span>
-        )}
+        {/* 보드는 막는 이슈를 id로만 보이고, 열린 human gate만 사람 확인 기다림 표시와 gate 제목으로 보입니다. */}
+        <BoardBlockerLine
+          blockers={blockersOf(issue.blockedBy ?? [], humanGateTitles, () => undefined)}
+        />
         <span className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
           <IssueTypeTag issueType={issue.issueType} />
           <HumanDecisionChip issue={issue} />
-          {issue.priority !== null && (
-            <span className={`chip h-5 px-2 text-[11px] ${priorityTone(issue.priority)}`}>
-              P{issue.priority} {priorityLabel(messages, issue.priority)}
-            </span>
-          )}
+          {issue.priority !== null && <PriorityChip priority={issue.priority} />}
           <span className="ml-auto font-mono text-base-content/45" title={issue.id}>
             {shortIssueId(issue.id)}
           </span>

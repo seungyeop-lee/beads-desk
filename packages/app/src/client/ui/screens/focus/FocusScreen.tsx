@@ -17,16 +17,13 @@ import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import { ALL_STATUSES } from "@/shared/contract/issueList";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
-import {
-  HUMAN_DECISION_TONE,
-  priorityLabel,
-  priorityTone,
-  workStateTone,
-} from "@/client/ui/issues/issueLabels";
+import { HUMAN_DECISION_TONE, workStateTone } from "@/client/ui/issues/issueLabels";
+import { WaitingOnLines } from "@/client/ui/issues/BlockerLine";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
-import { HumanGateChip } from "@/client/ui/issues/HumanGateChip";
+import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
+import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { UserIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
@@ -68,11 +65,7 @@ export function FocusScreen() {
     <main className="mx-auto flex max-w-[96rem] flex-col gap-6 px-8 pb-16">
       <ScreenHeader title={messages.focus.title} tone={screenTone("/focus")} loading={loading} />
 
-      {error && (
-        <div role="alert" className="alert alert-error alert-soft">
-          <span>{messages.issues.loadFailed(error)}</span>
-        </div>
-      )}
+      {error && <ErrorAlert>{messages.issues.loadFailed(error)}</ErrorAlert>}
 
       {view && (
         <>
@@ -288,11 +281,7 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
               <span className="truncate">{issue.assignee ?? messages.common.none}</span>
             </span>
           )}
-          {issue.priority !== null && (
-            <span className={`chip h-5 px-2 text-[11px] ${priorityTone(issue.priority)}`}>
-              P{issue.priority} {priorityLabel(messages, issue.priority)}
-            </span>
-          )}
+          {issue.priority !== null && <PriorityChip priority={issue.priority} />}
           <span
             className="ml-auto min-w-8 shrink-0 text-right font-mono text-xs whitespace-nowrap text-base-content/45"
             title={issue.id}
@@ -300,22 +289,7 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
             {shortIssueId(issue.id)}
           </span>
         </span>
-        {waitingOn?.map((blocker) =>
-          blocker.humanGate ? (
-            <span
-              key={blocker.id}
-              className="flex min-w-0 items-center gap-1.5 pl-19 text-xs text-base-content/60"
-            >
-              ←
-              <HumanGateChip />
-              <span className="truncate">{blocker.title || messages.common.untitled}</span>
-            </span>
-          ) : (
-            <span key={blocker.id} className="truncate pl-19 text-xs text-base-content/60">
-              ← {blocker.id} {blocker.title}
-            </span>
-          ),
-        )}
+        {waitingOn && waitingOn.length > 0 && <WaitingOnLines blockers={waitingOn} />}
       </Link>
     </li>
   );

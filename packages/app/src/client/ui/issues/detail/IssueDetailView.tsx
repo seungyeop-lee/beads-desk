@@ -22,7 +22,7 @@ import { StatusSelect } from "../fields/StatusSelect";
 import { TrashIcon } from "@/client/ui/designSystem/icons";
 import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
 import { ClaimButton } from "../ClaimButton";
-import { deferUntilLabel, formatTime } from "../issueLabels";
+import { formatTime, deferUntilLabel } from "../issueTime";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { BlockerBanner } from "./BlockerBanner";
 import { BODY_FIELDS } from "./bodyFields";
