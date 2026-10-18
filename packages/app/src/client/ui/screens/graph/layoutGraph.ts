@@ -235,18 +235,25 @@ function orderColumns(
         });
       }),
     );
+  // 정렬해도 노드의 열은 바뀌지 않으므로, 바로 이웃한 두 열 사이의 간선을 왼쪽 열마다 한 번만 모아 둡니다.
+  // 교차는 같은 열 쌍의 간선끼리만 생기므로 열 쌍마다 따로 세면, 큰 에픽에서도 간선 수 전체의 제곱만큼 비교하지 않습니다.
+  const adjacentByColumn = Map.groupBy(
+    pairs
+      .map((pair) => pair.toSorted((a, b) => columnOf.get(a)! - columnOf.get(b)!))
+      .filter(([a, b]) => columnOf.get(b)! - columnOf.get(a)! === 1),
+    ([a]) => columnOf.get(a)!,
+  );
   const crossings = (columns: Issue[][]) => {
     const rows = rowsOf(columns);
-    const adjacent = pairs
-      .map((pair) => pair.toSorted((a, b) => columnOf.get(a)! - columnOf.get(b)!))
-      .filter(([a, b]) => columnOf.get(b)! - columnOf.get(a)! === 1);
     let count = 0;
-    for (const [a, b] of adjacent)
-      for (const [c, d] of adjacent) {
-        if (columnOf.get(a) !== columnOf.get(c)) continue;
-        if ((rows.get(a)! - rows.get(c)!) * (rows.get(b)! - rows.get(d)!) < 0) count++;
-      }
-    return count / 2;
+    for (const adjacent of adjacentByColumn.values())
+      for (let i = 0; i < adjacent.length; i++)
+        for (let j = i + 1; j < adjacent.length; j++) {
+          const [a, b] = adjacent[i]!;
+          const [c, d] = adjacent[j]!;
+          if ((rows.get(a)! - rows.get(c)!) * (rows.get(b)! - rows.get(d)!) < 0) count++;
+        }
+    return count;
   };
 
   let columns = work.map((layer) => [...layer]);
