@@ -1,5 +1,4 @@
-import { type BdOutcome } from "@beads-desk/bd";
-import type { Issue } from "@beads-desk/bd/issue";
+import { type BdOutcome, type CloseOutcome } from "@beads-desk/bd";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
 import { bdErrorMessage, serverMessages } from "@/server/web/locale/serverMessages";
@@ -78,11 +77,6 @@ export async function write<T>(
   const cwd = currentWorkspaceRoot();
   return finish(cwd, await run(cwd));
 }
-
-/** closeIssue의 결과입니다. bd package가 실패 타입을 공개하지 않으므로, 여기서 읽는 message만 구조로 받습니다. */
-type CloseOutcome =
-  | BdOutcome<Issue[]>
-  | { ok: false; closeBlocked: true; error: { message: string } };
 
 /** 닫기 결과를 CloseIssueResult 계약으로 조립합니다. 막힘이 풀린 이슈는 화면이 쓰는 id와 제목만 남깁니다. */
 export async function writeClose(

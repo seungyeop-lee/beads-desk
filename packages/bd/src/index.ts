@@ -36,6 +36,7 @@ export {
   claimIssue,
   closeAsReplaced,
   closeIssue,
+  type CloseOutcome,
   createIssue,
   deferIssue,
   type DeferUntil,
