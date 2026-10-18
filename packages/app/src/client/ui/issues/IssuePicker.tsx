@@ -8,13 +8,15 @@ import { statusLabel, statusTone, typeTone } from "./issueLabels";
 
 type Props = PickerOptions & {
   label: string;
+  /** 검색창의 안내 문구입니다. 주지 않으면 공통 문구를 씁니다. */
+  placeholder?: string;
   disabled?: boolean;
   /** 성공하면 true를 돌려줍니다. 그때만 검색어를 비웁니다. */
   onPick: (issue: Issue) => Promise<boolean>;
 };
 
 /** 제목이나 id 일부로 이슈를 찾아 고릅니다. 후보는 입력을 처음 쓸 때 읽습니다. */
-export function IssuePicker({ label, disabled, onPick, exclude, rank }: Props) {
+export function IssuePicker({ label, placeholder, disabled, onPick, exclude, rank }: Props) {
   const messages = useMessages();
   const listId = useId();
   const [touched, setTouched] = useState(false);
@@ -65,7 +67,7 @@ export function IssuePicker({ label, disabled, onPick, exclude, rank }: Props) {
           aria-expanded={open}
           aria-controls={listId}
           aria-activedescendant={activeIssue ? optionId(activeIssue) : undefined}
-          placeholder={messages.issuePicker.placeholder}
+          placeholder={placeholder ?? messages.issuePicker.placeholder}
           disabled={disabled}
           value={query}
           onChange={(event) => {

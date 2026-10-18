@@ -394,6 +394,7 @@ export const koMessages = {
     childrenEmpty: "하위 이슈가 없습니다.",
     newChild: "새 하위 이슈",
     addExistingChild: "기존 이슈를 하위로 넣기",
+    addExistingChildPlaceholder: "하위로 넣을 기존 이슈 검색",
     addChildConfirm: "하위로 넣기",
     childAdded: (id: string, epicId: string) => `${id}을(를) ${epicId}의 하위 이슈로 넣었습니다.`,
   },

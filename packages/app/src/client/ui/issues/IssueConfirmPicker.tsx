@@ -8,6 +8,8 @@ import { typeTone } from "./issueLabels";
 
 type Props = PickerOptions & {
   label: string;
+  /** 검색창의 안내 문구입니다. 주지 않으면 공통 문구를 씁니다. */
+  placeholder?: string;
   /** 확인 버튼에 표시할 동작 문구입니다. */
   confirmLabel: string;
   disabled?: boolean;
@@ -18,6 +20,7 @@ type Props = PickerOptions & {
 /** IssuePicker로 고른 이슈를 표시 줄로 보여 주고, 확인을 누를 때만 등록을 실행합니다. */
 export function IssueConfirmPicker({
   label,
+  placeholder,
   confirmLabel,
   disabled,
   onConfirm,
@@ -42,6 +45,7 @@ export function IssueConfirmPicker({
     return (
       <IssuePicker
         label={label}
+        placeholder={placeholder}
         disabled={disabled}
         exclude={exclude}
         rank={rank}
@@ -54,8 +58,8 @@ export function IssueConfirmPicker({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="flex h-8 items-center gap-2 rounded-field border border-base-300 bg-base-100 px-3 text-sm">
+    <div className="flex items-center gap-2">
+      <span className="flex h-8 min-w-0 grow items-center gap-2 rounded-field border border-base-300 bg-base-100 px-3 text-sm">
         <span className={`tone-dot ${typeTone(picked.issueType)}`} />
         <span className="shrink-0 font-mono text-xs text-base-content/55">{picked.id}</span>
         <span className="min-w-0 grow truncate">{picked.title}</span>
@@ -71,7 +75,7 @@ export function IssueConfirmPicker({
       </span>
       <button
         type="button"
-        className="btn btn-primary btn-sm self-end"
+        className="btn btn-sm btn-ghost shrink-0 rounded-full"
         // Enter로 후보를 고른 뒤에도 이어서 Enter로 확인할 수 있게 포커스를 옮겨 둡니다.
         // dialog 안이 아니라 규칙 예외에 들지 못해 주석으로 허용합니다.
         // oxlint-disable-next-line jsx-a11y/no-autofocus

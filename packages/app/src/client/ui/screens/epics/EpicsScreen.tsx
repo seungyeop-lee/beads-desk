@@ -196,6 +196,7 @@ function EpicDescendants({
         <div className="w-96 max-w-full">
           <IssueConfirmPicker
             label={messages.epics.addExistingChild}
+            placeholder={messages.epics.addExistingChildPlaceholder}
             confirmLabel={messages.epics.addChildConfirm}
             disabled={writes.pending || !descendants}
             exclude={notChildCandidate(descendants ?? [])}
@@ -208,7 +209,6 @@ function EpicDescendants({
             }}
           />
         </div>
-        <span className="text-xs text-base-content/50">{messages.epics.addExistingChild}</span>
       </div>
       {creating && (
         <NewIssueDialog

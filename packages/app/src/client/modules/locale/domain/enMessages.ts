@@ -382,6 +382,7 @@ export const enMessages: Messages = {
     childrenEmpty: "No child issues.",
     newChild: "New child issue",
     addExistingChild: "Add an existing issue as a child",
+    addExistingChildPlaceholder: "Search an existing issue to add as a child",
     addChildConfirm: "Add as child",
     childAdded: (id, epicId) => `Added ${id} as a child of ${epicId}`,
   },
