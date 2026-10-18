@@ -36,7 +36,8 @@ const boundaries = {
     message: "server application은 web과 infra 구현에 의존하지 않습니다.",
   },
   serverTechnologyFromApplication: {
-    regex: "^node:|^next(?:/|$)|^@beads-desk/bd(?:/|$)",
+    // @beads-desk/bd는 외부 기술이 아니라 이 저장소의 bd CLI adapter이므로 application이 직접 씁니다.
+    regex: "^node:|^next(?:/|$)",
     message:
       "server application은 runtime 구현과 기술 package 대신 자신이 선언한 port에 의존합니다.",
   },
