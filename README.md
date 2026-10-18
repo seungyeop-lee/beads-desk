@@ -4,22 +4,39 @@ English | [한국어](https://github.com/seungyeop-lee/beads-desk/blob/main/READ
 
 A local web UI for the [Beads](https://github.com/steveyegge/beads) (`bd`) issue tracker. Read and edit your issues in the browser while you and your agents keep using `bd` in the terminal.
 
+[![beads-desk demo: answering a human gate in Needs human unblocks the work it held back, followed by the Now, Graph, Decisions, and Board screens](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/6dd972f29742ee8ea5d0d91ceb0245062718e0ab/docs/beads-desk-intro.gif)](https://github.com/seungyeop-lee/beads-desk/releases/download/v0.1.0/beads-desk-intro.mp4)
+
 ## Features
 
 ### See what to do now
 
 - **Now**: The start page. Shows what is in progress, what is up next, what is blocked, how far each open epic has come, and how many issues were created and closed over the last 7 days.
+
+  ![Now screen showing counts of in-progress, ready, blocked, and needs-human issues, a 7-day created and closed chart, and the in-progress and blocked lists](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/f01c0ef35da18cff8eab618a3bc0999d5e40f643/docs/screenshots/now.png)
+
 - **Needs human**: Collects the questions (issues labeled `human`) and human gates that agents handed to a person. Respond or dismiss them on this screen; your response is saved as a comment, and closing a gate unblocks the issues waiting on it.
+
+  ![Needs human screen listing two human gates and one question, with a response form for the selected gate](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/3fd01240cdbd8061fa15122d40a9f0c65bd833bd/docs/screenshots/needs-human.png)
+
 - **Decisions**: Lists `decision` issues on their own screen, split into active and closed decisions, with the decisions each one supersedes or is superseded by.
+
+  ![Decisions screen splitting active and closed decisions, with supersedes and superseded-by links](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/f01c0ef35da18cff8eab618a3bc0999d5e40f643/docs/screenshots/decisions.png)
 
 ### See how work connects
 
 - **Linked issues**: The issue detail lists the issues linked to it by relation, such as Blocked by, Blocks, Parent, Child, and Related. Click one to read it in a side panel next to the issue you are on.
+
+  ![Issue detail with a linked issue open in a side panel that lists its parent, blocked-by, and blocks issues](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/3fd01240cdbd8061fa15122d40a9f0c65bd833bd/docs/screenshots/linked-issues.png)
+
 - **Graph**: Next to Linked issues, Blocks graph opens the blocks chain around the issue, with prerequisite work on the left and dependent work on the right. For an epic, View order arranges its issues into stages by their blocks dependencies; issues in the same stage can proceed in parallel.
+
+  ![View order for an epic arranging its issues into five stages by their blocks dependencies](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/3fd01240cdbd8061fa15122d40a9f0c65bd833bd/docs/screenshots/graph.png)
 
 ### Manage the flow
 
 - **Board**: A kanban board with Blocked, Ready, In progress, and Closed columns. Drag a card to Ready, In progress, or Closed to change its status.
+
+  ![Board with Blocked, Ready, In progress, and Closed columns of issue cards](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/3fd01240cdbd8061fa15122d40a9f0c65bd833bd/docs/screenshots/board.png)
 
 ### Work alongside the CLI
 
