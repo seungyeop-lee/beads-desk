@@ -143,7 +143,7 @@ act pull_request -j pnpm-check -P ubuntu-latest=catthehacker/ubuntu:act-latest -
 act pull_request -j package-smoke -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
 ```
 
-- `-j`는 event와 관계없이 모든 workflow에서 그 ID의 job을 찾아 실행합니다. 그래서 `release.yml`에서 `check.yml`을 호출하는 job은 `pnpm-check`나 `package-smoke`와 겹치지 않는 `pre-publish-check`라는 ID를 씁니다.
+- `-j`는 event와 관계없이 모든 workflow에서 그 ID의 job을 찾아 실행합니다. 그래서 두 workflow는 같은 job ID를 쓰지 않습니다.
 - workflow의 job ID나 파일 이름을 바꾸면 이 문서의 act 명령도 함께 고칩니다. `pnpm run check`의 unit test(`packages/app/scripts/actCommands.test.ts`)가 act 명령의 `-j` job ID가 workflow 중 정확히 한 곳에 있는지, `-W` 경로에 파일이 있는지, 두 workflow에 같은 job ID가 없는지 검사합니다.
 - Apple Silicon에서 act가 `--container-architecture linux/amd64`를 쓰라는 경고를 출력해도 이 옵션은 주지 않습니다. Docker Desktop의 containerd image store에서는 act가 amd64 이미지의 `PATH`를 읽지 못해, node로 실행하는 action이 `exec: "node": executable file not found in $PATH`로 실패합니다.
 
@@ -151,7 +151,7 @@ act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지�
 
 ## 릴리스
 
-`main`에 push하면 `.github/workflows/release.yml`이 `packages/app/package.json`의 `version`을 npm에서 찾습니다. 이미 있으면 아무것도 하지 않고 끝납니다. 아직 없는 version이면 같은 커밋에서 `check.yml`의 job(`pnpm-check`, `package-smoke`)을 모두 실행하고, 모두 성공한 뒤에 빌드해서 `packages/app/scripts/run-npm-release.mjs publish`로 게시하고 `v<version>` tag와 GitHub Release를 만듭니다. 그래서 version을 올린 커밋이 곧 릴리스가 됩니다.
+`main`에 push하면 `.github/workflows/check.yml`이 그 커밋을 검사합니다. 검사가 끝나면 `.github/workflows/release.yml`이 `workflow_run`으로 실행되고, 검사가 실패했으면 아무것도 하지 않고 끝납니다. 검사가 성공했으면 그 커밋의 `packages/app/package.json` `version`을 npm에서 찾고, 이미 있으면 게시하지 않고 끝납니다. 아직 없는 version이면 검사를 다시 하지 않고 그 커밋을 빌드해서 `packages/app/scripts/run-npm-release.mjs publish`로 게시하고 `v<version>` tag와 GitHub Release를 만듭니다. 그래서 version을 올린 커밋이 곧 릴리스가 됩니다.
 
 1. 저장소 루트 `CHANGELOG.md`의 가장 최근 version 절 위에 `## [<version>] - <YYYY-MM-DD>` 절을 추가하고, 바뀐 내용을 영어로 적습니다. 이 절의 본문(다음 `## ` 제목 앞까지)이 GitHub Release의 노트가 됩니다.
 2. `packages/app/package.json`의 `version`을 같은 값으로 바꿉니다.
@@ -159,7 +159,8 @@ act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지�
 
 1–2단계와 두 파일만 담은 릴리스 커밋은 프로젝트 skill `/versionup [patch|minor|major]`(Codex에서는 `$versionup`)로 만들 수 있습니다. skill은 push하지 않으므로, 커밋을 검토한 뒤 3단계는 직접 실행합니다.
 
-- 검사가 하나라도 실패하면 게시하지 않고 workflow가 실패로 끝납니다. 고친 커밋을 push하면 version이 아직 npm에 없으므로 그 커밋에서 다시 검사하고 게시합니다. main push마다 `check.yml`도 따로 실행되므로, version을 올린 커밋에서는 같은 검사가 두 번 실행됩니다.
+- 검사가 하나라도 실패하면 `release.yml`의 job은 실행되지 않고 게시도 하지 않습니다. 고친 커밋을 push하면 version이 아직 npm에 없으므로 그 커밋의 검사가 성공한 뒤에 게시합니다.
+- `release.yml`은 main push에서 실행한 `check.yml`의 결과로만 게시합니다. PR의 검사가 끝나도 게시하지 않고, `workflow_run`은 default branch에 있는 `release.yml`로 실행되므로 PR에서 고친 `release.yml`은 main에 들어간 뒤부터 적용됩니다.
 - 해당 절이 없거나 본문이 비어 있거나 제목이 날짜로 끝나지 않으면, workflow는 게시하기 전에 실패합니다(수동 실행은 날짜가 없으면 경고만 출력합니다). 날짜를 아직 정하지 않은 절은 `## [<version>] - Unreleased`로 적어 두고 version을 올릴 때 날짜로 바꿉니다. version이 `0.0.0`이 아니면 `pnpm run check`의 unit test(`packages/app/scripts/releaseNotes.test.ts`)도 같은 조건을 검사합니다.
 - npm 인증은 trusted publishing(OIDC)으로 합니다. npmjs.com 패키지 Settings의 trusted publisher에 저장소 `seungyeop-lee/beads-desk`와 workflow 파일 이름 `release.yml`을 적으므로, 파일 이름을 바꾸면 그 설정도 함께 바꿉니다. 패키지의 Publishing access가 bypass 2FA token을 막고 있어서 token으로는 게시할 수 없습니다. trusted publisher를 다시 만들어야 하면 `docs/trusted-publisher.md`의 순서를 따릅니다.
 - `publish` job이 성공해도 npm에서 새 version이 보이기까지 몇 분 걸릴 수 있습니다. 몇 분 기다린 뒤 `npm view @seungyeop-lee/beads-desk version --prefer-online`으로 확인합니다. 저장소 밖에서 설치해 볼 때 `npm error notarget`이 나오면 로컬 npm 캐시가 오래된 것이므로 `npm install`에 `--prefer-online`을 줍니다.
@@ -167,12 +168,12 @@ act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지�
 
 prerelease도 같은 순서로 냅니다. version 뒤에 `-`로 prerelease 부분을 붙이고(예: `0.2.0-beta.1`), CHANGELOG 절 제목에도 그 version을 그대로 적습니다(`## [0.2.0-beta.1] - <YYYY-MM-DD>`). workflow는 version에 prerelease 부분이 있으면 npm에 `next` dist-tag로 게시하고 GitHub Release를 prerelease로 만듭니다. `latest`는 바뀌지 않으므로, version이나 `@next`를 지정하지 않고 설치하는 사용자는 계속 마지막 정식 version을 받습니다.
 
-`release.yml`을 고쳤으면 수동 실행(`workflow_dispatch`)으로 확인합니다. 수동 실행은 `npm publish --dry-run`까지만 실행하고 tag와 Release를 만들지 않습니다. 입력 `package`와 `version`은 npm에서 찾을 대상과 `CHANGELOG.md`에서 읽을 version을 바꾸므로, 이미 있는 version(예: `package=react`, `version=19.0.0`)과 없는 version을 넣어 두 분기를 확인합니다. act로 실행할 때는 `검증`의 act 설명을 따르되, event는 반드시 `workflow_dispatch`로 줍니다. `push` event로 실행하면 dry-run이 아니라 실제 게시를 시도합니다.
+`release.yml`을 고쳤으면 수동 실행(`workflow_dispatch`)으로 확인합니다. 수동 실행은 `check.yml`의 결과를 기다리지 않고, `npm publish --dry-run`까지만 실행하고 tag와 Release를 만들지 않습니다. 입력 `package`와 `version`은 npm에서 찾을 대상과 `CHANGELOG.md`에서 읽을 version을 바꾸므로, 이미 있는 version(예: `package=react`, `version=19.0.0`)과 없는 version을 넣어 두 분기를 확인합니다. act로 실행할 때는 `검증`의 act 설명을 따르되, event는 반드시 `workflow_dispatch`로 줍니다. `workflow_run` event로 실행하면 dry-run이 아니라 실제 게시를 시도합니다.
 
 dry-run은 입력과 관계없이 `packages/app/package.json`의 version을 게시합니다. 그래서 없는 version 분기는 `version` 입력만 바꾸면 publish job이 `You cannot publish over the previously published versions`로 실패하므로, 두 파일을 커밋하지 않고 잠시 바꿔서 확인합니다.
 
 1. `packages/app/package.json`의 `version`을 npm에 없는 version(예: 지금 version의 다음 patch)으로 바꿉니다.
-2. `CHANGELOG.md`에 같은 version의 절을 `## [<version>] - <YYYY-MM-DD>`로 추가합니다. `pre-publish-check`의 `releaseNotes.test.ts`가 날짜로 끝나는 제목을 요구하므로 `Unreleased`로 적으면 실패합니다.
+2. `CHANGELOG.md`에 같은 version의 절을 `## [<version>] - <YYYY-MM-DD>`로 추가합니다. 수동 실행은 `Unreleased`로 적어도 경고만 출력하지만, 실제 게시에서는 실패하므로 날짜를 적어 실제와 같은 조건으로 확인합니다.
 3. 아래 첫 명령의 `version`에 같은 version을 넣어 실행합니다.
 4. 실행이 끝나면 성공·실패와 관계없이 `git restore CHANGELOG.md packages/app/package.json`으로 두 파일을 원복합니다.
 
@@ -181,6 +182,25 @@ act workflow_dispatch -W .github/workflows/release.yml --input version=<1단계�
 act workflow_dispatch -W .github/workflows/release.yml --input package=react --input version=19.0.0 -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
 ```
 
-없는 version은 `pre-publish-check/check/pnpm-check`와 `pre-publish-check/check/package-smoke` job이 `Job succeeded`로 끝난 뒤, `publish` job이 `npm notice ... (dry-run)`을 출력하고 `Job succeeded`로 끝나면 통과입니다(약 2분 10초). 이미 있는 version은 `published on npm: true`를 출력한 뒤 `pre-publish-check`와 `publish` job이 실행되지 않고 끝나면 통과입니다. act는 OIDC token을 발급하지 못하므로, trusted publishing 인증은 trusted publisher를 설정한 뒤 GitHub에서 게시할 때에만 확인할 수 있습니다.
+없는 version은 `publish` job이 `npm notice ... (dry-run)`을 출력하고 `Job succeeded`로 끝나면 통과입니다(약 35초). 이미 있는 version은 `published on npm: true`를 출력한 뒤 `publish` job이 실행되지 않고 끝나면 통과입니다. act는 OIDC token을 발급하지 못하므로, trusted publishing 인증은 trusted publisher를 설정한 뒤 GitHub에서 게시할 때에만 확인할 수 있습니다.
 
 prerelease 분기는 1–4단계의 version을 npm에 없는 prerelease version(예: `0.2.1-beta.1`)으로 바꿔 같은 순서로 확인합니다. `publish` job의 npm 로그가 prerelease에서는 `with tag next`를, 정식 version에서는 `with tag latest`를 출력하면 통과입니다.
+
+check 결과로 게시 여부를 정하는 조건은 수동 실행으로 확인할 수 없습니다. 이 조건을 고쳤으면 `workflow_run` event의 payload를 파일로 만들어 act에 `-e`로 줍니다. `head_sha`에는 이미 게시한 version의 커밋 가운데 origin에 push한 커밋을 넣습니다. act는 이 커밋을 원격 저장소에서 받으므로 push하지 않은 커밋은 checkout에서 실패하고, 게시하지 않은 version의 커밋을 넣으면 실제 게시를 시도합니다.
+
+```json
+{
+  "workflow_run": {
+    "event": "push",
+    "conclusion": "success",
+    "head_sha": "<커밋>",
+    "head_branch": "main"
+  }
+}
+```
+
+```sh
+act workflow_run -W .github/workflows/release.yml -e <payload 파일> -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
+```
+
+위 payload로 실행하면 `version` job이 `HEAD is now at <커밋>`과 `published on npm: true`를 출력하고 `publish` job 없이 끝나야 통과입니다. `conclusion`을 `failure`로 바꾸거나 `event`를 `pull_request`로 바꾸면 job이 하나도 실행되지 않고 종료 코드 0으로 끝나야 통과입니다.

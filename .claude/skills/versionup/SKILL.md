@@ -127,5 +127,5 @@ git commit -m "<메시지>"
 사용자에게 아래 내용을 알립니다.
 
 - 커밋 hash와 제목, 지금 version과 새 version, 고른 단계와 그 근거가 된 커밋
-- push하지 않았다는 것. 커밋을 검토한 뒤 `main`을 push하면 `.github/workflows/release.yml`이 검사를 다시 실행하고, 통과하면 npm에 게시한 뒤 `v<새 version>` tag와 GitHub Release를 만듭니다.
+- push하지 않았다는 것. 커밋을 검토한 뒤 `main`을 push하면 `.github/workflows/check.yml`이 검사하고, 통과하면 `.github/workflows/release.yml`이 npm에 게시한 뒤 `v<새 version>` tag와 GitHub Release를 만듭니다.
 - 게시 뒤 확인할 것: `publish` job이 성공해도 npm에서 새 version이 보이기까지 몇 분 걸릴 수 있습니다. 몇 분 기다린 뒤 `npm view @seungyeop-lee/beads-desk version --prefer-online`이 새 version을 출력하는지 확인합니다.

@@ -1,11 +1,11 @@
 name: check
 
+# release.yml은 main push에서 이 workflow가 성공한 커밋만 게시하고 검사를 다시 하지 않습니다.
+# release.yml이 workflow_run으로 이 workflow의 이름(check)을 기다리므로, 이름을 바꾸면 release.yml도 함께 바꿉니다.
 on:
   pull_request:
   push:
     branches: [main]
-  # release.yml이 게시하기 전에 이 workflow를 호출하므로, 여기 있는 job이 모두 성공해야 npm에 게시합니다.
-  workflow_call:
 
 permissions:
   contents: read
