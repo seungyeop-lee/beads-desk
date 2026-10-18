@@ -130,14 +130,14 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 4. 출력된 URL의 `/api/health` 응답에서 `runtime.workspaceRoot`가 3번의 디렉터리이고 `runtime.bdVersion`이 비어 있지 않으면 정상입니다.
 5. 같은 `XDG_RUNTIME_DIR`로 `<임시 디렉터리>/bin/bd-desk stop`을 실행해 서버를 종료합니다.
 
-`.github/workflows/`를 바꿨다면 push하기 전에 [act](https://github.com/nektos/act)로 바꾼 job을 실행해 봅니다. Docker runtime이 실행 중이어야 하고 act가 설치되어 있어야 합니다(macOS는 `brew install act`). runner 이미지는 `-P`로 `catthehacker/ubuntu:act-latest`를 지정합니다. 저장소 루트에서 아래 명령을 실행해, act가 `Job succeeded`를 출력하고 종료 코드 0으로 끝나면 통과입니다. 이미지를 받은 뒤에는 `check`가 약 1분 30초, `package-smoke`가 약 1분 걸립니다.
+`.github/workflows/`를 바꿨다면 push하기 전에 [act](https://github.com/nektos/act)로 바꾼 job을 실행해 봅니다. Docker runtime이 실행 중이어야 하고 act가 설치되어 있어야 합니다(macOS는 `brew install act`). runner 이미지는 `-P`로 `catthehacker/ubuntu:act-latest`를 지정합니다. 저장소 루트에서 아래 명령을 실행해, act가 `Job succeeded`를 출력하고 종료 코드 0으로 끝나면 통과입니다. 이미지를 받은 뒤에는 `pnpm-check`가 약 1분 30초, `package-smoke`가 약 1분 걸립니다.
 
 ```sh
-act pull_request -j check -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
+act pull_request -j pnpm-check -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
 act pull_request -j package-smoke -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
 ```
 
-- `-j`는 event와 관계없이 모든 workflow에서 그 ID의 job을 찾아 실행합니다. 그래서 `release.yml`에서 `check.yml`을 호출하는 job은 `check`나 `package-smoke`와 겹치지 않는 `checks`라는 ID를 씁니다.
+- `-j`는 event와 관계없이 모든 workflow에서 그 ID의 job을 찾아 실행합니다. 그래서 `release.yml`에서 `check.yml`을 호출하는 job은 `pnpm-check`나 `package-smoke`와 겹치지 않는 `pre-publish-check`라는 ID를 씁니다.
 - act는 commit하지 않은 변경까지 포함해 작업 트리를 container에 복사합니다. `.gitignore`에 있는 파일(`node_modules` 등)은 복사하지 않습니다.
 - `--rm`을 빼면 job이 실패했을 때 이름이 `act-`로 시작하는 container와 volume이 남습니다.
 - Apple Silicon에서 act가 `--container-architecture linux/amd64`를 쓰라는 경고를 출력해도 이 옵션은 주지 않습니다. Docker Desktop의 containerd image store에서는 act가 amd64 이미지의 `PATH`를 읽지 못해, node로 실행하는 action이 `exec: "node": executable file not found in $PATH`로 실패합니다.
@@ -151,7 +151,7 @@ act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지�
 
 ## 릴리스
 
-`main`에 push하면 `.github/workflows/release.yml`이 `packages/app/package.json`의 `version`을 npm에서 찾습니다. 이미 있으면 아무것도 하지 않고 끝납니다. 아직 없는 version이면 같은 커밋에서 `check.yml`의 job(`check`, `package-smoke`)을 모두 실행하고, 모두 성공한 뒤에 빌드해서 `packages/app/scripts/run-npm-release.mjs publish`로 게시하고 `v<version>` tag와 GitHub Release를 만듭니다. 그래서 version을 올린 커밋이 곧 릴리스가 됩니다.
+`main`에 push하면 `.github/workflows/release.yml`이 `packages/app/package.json`의 `version`을 npm에서 찾습니다. 이미 있으면 아무것도 하지 않고 끝납니다. 아직 없는 version이면 같은 커밋에서 `check.yml`의 job(`pnpm-check`, `package-smoke`)을 모두 실행하고, 모두 성공한 뒤에 빌드해서 `packages/app/scripts/run-npm-release.mjs publish`로 게시하고 `v<version>` tag와 GitHub Release를 만듭니다. 그래서 version을 올린 커밋이 곧 릴리스가 됩니다.
 
 1. 저장소 루트 `CHANGELOG.md`의 가장 최근 version 절 위에 `## [<version>] - <YYYY-MM-DD>` 절을 추가하고, 바뀐 내용을 영어로 적습니다. 이 절의 본문(다음 `## ` 제목 앞까지)이 GitHub Release의 노트가 됩니다.
 2. `packages/app/package.json`의 `version`을 같은 값으로 바꿉니다.
@@ -169,4 +169,4 @@ act workflow_dispatch -W .github/workflows/release.yml --input version=<CHANGELO
 act workflow_dispatch -W .github/workflows/release.yml --input package=react --input version=19.0.0 -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
 ```
 
-없는 version은 `checks/check/check`와 `checks/check/package-smoke` job이 `Job succeeded`로 끝난 뒤, `publish` job이 `npm notice ... (dry-run)`을 출력하고 `Job succeeded`로 끝나면 통과입니다(약 2분 10초). 이미 있는 version은 `published on npm: true`를 출력한 뒤 `checks`와 `publish` job이 실행되지 않고 끝나면 통과입니다. act는 OIDC token을 발급하지 못하므로, trusted publishing 인증은 trusted publisher를 설정한 뒤 GitHub에서 게시할 때에만 확인할 수 있습니다.
+없는 version은 `pre-publish-check/check/pnpm-check`와 `pre-publish-check/check/package-smoke` job이 `Job succeeded`로 끝난 뒤, `publish` job이 `npm notice ... (dry-run)`을 출력하고 `Job succeeded`로 끝나면 통과입니다(약 2분 10초). 이미 있는 version은 `published on npm: true`를 출력한 뒤 `pre-publish-check`와 `publish` job이 실행되지 않고 끝나면 통과입니다. act는 OIDC token을 발급하지 못하므로, trusted publishing 인증은 trusted publisher를 설정한 뒤 GitHub에서 게시할 때에만 확인할 수 있습니다.

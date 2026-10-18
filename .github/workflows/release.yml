@@ -57,14 +57,14 @@ jobs:
           echo "published=$published" >> "$GITHUB_OUTPUT"
 
   # 게시할 커밋에서 check.yml의 job을 모두 다시 실행합니다. 이미 게시한 version이면 게시하지 않으므로 검사도 건너뜁니다.
-  # act의 -j는 event와 관계없이 모든 workflow에서 job ID를 찾으므로, check.yml의 job ID(check, package-smoke)와 다른 ID를 씁니다.
-  checks:
+  # act의 -j는 event와 관계없이 모든 workflow에서 job ID를 찾으므로, check.yml의 job ID(pnpm-check, package-smoke)와 다른 ID를 씁니다.
+  pre-publish-check:
     needs: version
     if: needs.version.outputs.published == 'false'
     uses: ./.github/workflows/check.yml
 
   publish:
-    needs: [version, checks]
+    needs: [version, pre-publish-check]
     if: needs.version.outputs.published == 'false'
     runs-on: ubuntu-latest
     permissions:
