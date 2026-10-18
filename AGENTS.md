@@ -167,7 +167,9 @@ act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지�
 - 검사가 하나라도 실패하면 게시하지 않고 workflow가 실패로 끝납니다. 고친 커밋을 push하면 version이 아직 npm에 없으므로 그 커밋에서 다시 검사하고 게시합니다. main push마다 `check.yml`도 따로 실행되므로, version을 올린 커밋에서는 같은 검사가 두 번 실행됩니다.
 - 해당 절이 없거나 본문이 비어 있거나 제목이 날짜로 끝나지 않으면, workflow는 게시하기 전에 실패합니다(수동 실행은 날짜가 없으면 경고만 출력합니다). 날짜를 아직 정하지 않은 절은 `## [<version>] - Unreleased`로 적어 두고 version을 올릴 때 날짜로 바꿉니다. version이 `0.0.0`이 아니면 `pnpm run check`의 unit test(`packages/app/scripts/releaseNotes.test.ts`)도 같은 조건을 검사합니다.
 - npm 인증은 trusted publishing(OIDC)으로 합니다. npmjs.com의 trusted publisher 설정에 workflow 파일 이름 `release.yml`을 적으므로, 파일 이름을 바꾸면 그 설정도 함께 바꿉니다. 첫 게시처럼 trusted publisher를 설정하기 전에는 저장소 secret `NPM_TOKEN`을 두면 OIDC 인증이 실패한 뒤 그 token으로 게시합니다. trusted publisher를 설정한 뒤 secret을 지우면 OIDC만 씁니다.
-- 게시한 뒤 tag나 Release 생성이 실패하면, workflow를 다시 실행해도 version이 이미 있어서 건너뜁니다. 이때는 `node packages/app/scripts/releaseNotes.mjs <version> > <노트 파일>`로 노트를 뽑아 `gh release create v<version> --target <커밋> --title v<version> --notes-file <노트 파일>`로 직접 만듭니다.
+- 게시한 뒤 tag나 Release 생성이 실패하면, workflow를 다시 실행해도 version이 이미 있어서 건너뜁니다. 이때는 `node packages/app/scripts/releaseNotes.mjs <version> > <노트 파일>`로 노트를 뽑아 `gh release create v<version> --target <커밋> --title v<version> --notes-file <노트 파일>`로 직접 만듭니다. prerelease version이면 `--prerelease`도 붙입니다.
+
+prerelease도 같은 순서로 냅니다. version 뒤에 `-`로 prerelease 부분을 붙이고(예: `0.2.0-beta.1`), CHANGELOG 절 제목에도 그 version을 그대로 적습니다(`## [0.2.0-beta.1] - <YYYY-MM-DD>`). workflow는 version에 prerelease 부분이 있으면 npm에 `next` dist-tag로 게시하고 GitHub Release를 prerelease로 만듭니다. `latest`는 바뀌지 않으므로, version이나 `@next`를 지정하지 않고 설치하는 사용자는 계속 마지막 정식 version을 받습니다.
 
 `release.yml`을 고쳤으면 수동 실행(`workflow_dispatch`)으로 확인합니다. 수동 실행은 `npm publish --dry-run`까지만 실행하고 tag와 Release를 만들지 않습니다. 입력 `package`와 `version`은 npm에서 찾을 대상과 `CHANGELOG.md`에서 읽을 version을 바꾸므로, 이미 있는 version(예: `package=react`, `version=19.0.0`)과 없는 version을 넣어 두 분기를 확인합니다. act로 실행할 때는 `검증`의 act 설명을 따르되, event는 반드시 `workflow_dispatch`로 줍니다. `push` event로 실행하면 dry-run이 아니라 실제 게시를 시도합니다.
 
@@ -177,3 +179,5 @@ act workflow_dispatch -W .github/workflows/release.yml --input package=react --i
 ```
 
 없는 version은 `pre-publish-check/check/pnpm-check`와 `pre-publish-check/check/package-smoke` job이 `Job succeeded`로 끝난 뒤, `publish` job이 `npm notice ... (dry-run)`을 출력하고 `Job succeeded`로 끝나면 통과입니다(약 2분 10초). 이미 있는 version은 `published on npm: true`를 출력한 뒤 `pre-publish-check`와 `publish` job이 실행되지 않고 끝나면 통과입니다. act는 OIDC token을 발급하지 못하므로, trusted publishing 인증은 trusted publisher를 설정한 뒤 GitHub에서 게시할 때에만 확인할 수 있습니다.
+
+prerelease 분기는 `version`에 npm에 없는 prerelease version(예: `0.2.0-beta.1`)을 넣어 확인합니다. CHANGELOG.md에 그 절이 없으면 노트를 읽는 단계에서 실패하므로, 확인하는 동안만 `## [<prerelease version>] - Unreleased` 절을 커밋하지 않고 추가해 둡니다. dry-run은 입력과 관계없이 `packages/app`의 version을 게시하지만 tag는 입력 version으로 정합니다. 그래서 `publish` job의 npm 로그가 prerelease 입력에서는 `with tag next`를, 정식 version 입력에서는 `with tag latest`를 출력하면 통과입니다.
