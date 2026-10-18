@@ -10,6 +10,7 @@ test("에픽의 새 하위 이슈는 상위 에픽을 바꿀 수 없고, 만든 
   await page.getByRole("button", { name: "새 하위 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: "새 이슈" });
   await expect(dialog.getByText("하위를 만들 에픽")).toBeVisible();
+  await expect(dialog.getByRole("textbox", { name: "제목" })).toBeFocused();
   await expect(dialog.getByRole("button", { name: "상위 이슈 지우기" })).toHaveCount(0);
   await expect(dialog.getByRole("combobox", { name: "상위 이슈 찾기" })).toHaveCount(0);
   await dialog.getByRole("textbox", { name: "제목" }).fill("에픽에서 만든 하위 이슈");

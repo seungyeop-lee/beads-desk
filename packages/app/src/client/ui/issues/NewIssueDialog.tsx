@@ -24,6 +24,8 @@ type Props = {
 /** Ctrl/Cmd+Enter로도 만듭니다. */
 export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // dialog 안의 요소 순서와 관계없이 제목 입력이 먼저 focus를 받습니다.
+  const titleRef = useRef<HTMLInputElement>(null);
   const { run, pending, error } = useIssueWrites();
   const [title, setTitle] = useState("");
   const [issueType, setIssueType] = useState("");
@@ -34,7 +36,7 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
   const parent = fixedParent ?? pickedParent;
   const messages = useMessages();
 
-  useShowModal(dialogRef);
+  useShowModal(dialogRef, true, titleRef);
 
   const submit = async (event?: FormEvent | KeyboardEvent) => {
     event?.preventDefault();
@@ -70,7 +72,7 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
           <label className="flex flex-col gap-1.5">
             <span className="caption">{messages.issue.title}</span>
             <input
-              autoFocus
+              ref={titleRef}
               className="input w-full text-base"
               placeholder={messages.newIssue.titlePlaceholder}
               required

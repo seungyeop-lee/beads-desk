@@ -10,6 +10,7 @@ test("새 이슈 대화상자에서 상위 이슈를 찾아 고르면 그 이슈
   await page.goto("/issues");
   await page.getByRole("button", { name: "새 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: "새 이슈" });
+  await expect(dialog.getByRole("textbox", { name: "제목" })).toBeFocused();
   await dialog.getByRole("textbox", { name: "제목" }).fill("상위가 있는 새 이슈");
 
   const search = dialog.getByRole("combobox", { name: "상위 이슈 찾기" });
