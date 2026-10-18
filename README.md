@@ -123,7 +123,7 @@ The server state file (`server.json`) and log (`server.log`) are stored in `$XDG
 
 ## Development
 
-To build, test, or contribute, see [CONTRIBUTING.md](https://github.com/seungyeop-lee/beads-desk/blob/main/CONTRIBUTING.md).
+Bug reports and feature ideas are welcome as GitHub issues; pull requests are not accepted. [CONTRIBUTING.md](https://github.com/seungyeop-lee/beads-desk/blob/main/CONTRIBUTING.md) describes how to open an issue and how to build and test the code.
 
 To install the repository's current code as the global `bd-desk`, complete the development setup in CONTRIBUTING.md, then run `pnpm run install:global` at the repository root. It installs with `pnpm add -g`, so it needs the global bin directory that `pnpm setup` creates. To remove it, run `pnpm run uninstall:global`.
 

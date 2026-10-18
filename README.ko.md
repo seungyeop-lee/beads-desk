@@ -125,7 +125,7 @@ CLI는 영어로 출력합니다.
 
 ## 개발
 
-빌드, 테스트, 기여 방법은 [CONTRIBUTING.md](https://github.com/seungyeop-lee/beads-desk/blob/main/CONTRIBUTING.md)에 있습니다.
+버그 제보와 기능 제안은 GitHub 이슈로 받고, pull request는 받지 않습니다. 이슈를 남기는 방법과 코드를 빌드하고 테스트하는 방법은 [CONTRIBUTING.md](https://github.com/seungyeop-lee/beads-desk/blob/main/CONTRIBUTING.md)에 있습니다.
 
 저장소의 현재 코드를 전역 `bd-desk`로 설치하려면 CONTRIBUTING.md의 개발 환경 준비를 마친 뒤 저장소 루트에서 `pnpm run install:global`을 실행합니다. 이 명령은 `pnpm add -g`로 설치하므로 `pnpm setup`이 만드는 전역 실행 파일 디렉터리가 있어야 합니다. 지우려면 `pnpm run uninstall:global`을 실행합니다.
 

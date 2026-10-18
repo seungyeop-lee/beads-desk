@@ -1,12 +1,18 @@
 # Contributing to beads-desk
 
-Bug reports, feature requests, and pull requests are welcome. To report a security vulnerability, follow [SECURITY.md](SECURITY.md) instead of opening an issue.
+Bug reports and feature ideas are welcome as GitHub issues. Pull requests are not accepted: the repository settings allow only collaborators to open them.
+
+## Issues
+
+- To report a bug, open a [Bug report](https://github.com/seungyeop-lee/beads-desk/issues/new?template=bug_report.yml) issue.
+- To suggest a new feature or a change, open a [Feature request](https://github.com/seungyeop-lee/beads-desk/issues/new?template=feature_request.yml) issue.
+- To report a security vulnerability, follow [SECURITY.md](SECURITY.md). Do not open a public issue for it.
+
+You can write issues in English or Korean.
 
 ## Language
 
-Code comments, test names, commit messages, [`AGENTS.md`](AGENTS.md), and `docs/` in this repository are written in Korean. You do not need to write Korean to contribute: issues and pull requests in English are welcome.
-
-`AGENTS.md` describes the repository structure, layer boundaries, and coding conventions. Read it, with a translator if needed, before changing code under `packages/`.
+Code comments, test names, commit messages, [`AGENTS.md`](AGENTS.md), and `docs/` in this repository are written in Korean. `AGENTS.md` describes the repository structure, layer boundaries, and coding conventions. Read it, with a translator if needed, before changing code under `packages/`.
 
 ## Development setup
 
@@ -40,7 +46,7 @@ If you change `packages/bd` while `pnpm run dev` is running, restart it; the ser
 
 ## Verification
 
-Run these before opening a pull request:
+Run these after changing code:
 
 | Command             | When to run                                                           | What it runs                                                                                          |
 | ------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -53,7 +59,3 @@ If `pnpm run check` fails only on formatting, run `pnpm run format` to fix it.
 ## Commit messages
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): subject`, for example `fix(app): keep the selected workspace after restart`. The scope names the affected package or area, such as `app` for `packages/app`, `bd` for `packages/bd`, or `e2e`. Omit the scope for changes that are not tied to one area, such as documentation at the repository root.
-
-## License
-
-By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).
