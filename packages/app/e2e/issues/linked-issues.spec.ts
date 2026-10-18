@@ -6,11 +6,13 @@ test("발견 관계는 상세와 옆 패널에서 현재 이슈를 기준으로 
 }) => {
   const workTitle = "발견 검사 원래 진행하던 작업";
   const discoveredTitle = "발견 검사 작업 중 새로 발견한 이슈";
-  const { work, discovered } = await workspace.createIssues({
-    work: { title: workTitle, type: "task" },
-    discovered: { title: discoveredTitle, type: "bug" },
-  });
-  await workspace.bd("dep", "add", discovered, work, "--type", "discovered-from");
+  const { work, discovered } = await workspace.createIssues(
+    {
+      work: { title: workTitle, type: "task" },
+      discovered: { title: discoveredTitle, type: "bug" },
+    },
+    [["discovered", "work", "discovered-from"]],
+  );
 
   await page.goto(`/issues?issue=${work}`);
   const workLinks = page
