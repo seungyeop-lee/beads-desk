@@ -73,7 +73,9 @@ bd-desk start --open
 
 The server runs in the background and opens the UI in your browser. It listens only on `127.0.0.1`, so the UI is reachable only from this computer. To stop it, run `bd-desk stop`.
 
-The [usage guide](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md) covers commands and options, multiple workspaces, local file links in issues, updating and uninstalling, and troubleshooting.
+To update to the latest version, run the install command again, then run `bd-desk restart` so that a running server switches to the new version. The [changelog](https://github.com/seungyeop-lee/beads-desk/blob/main/CHANGELOG.md) lists what changed in each version.
+
+The [usage guide](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md) covers commands and options, multiple workspaces, local file links in issues, uninstalling, and troubleshooting.
 
 ## Contributing
 

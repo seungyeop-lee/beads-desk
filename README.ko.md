@@ -73,7 +73,9 @@ bd-desk start --open
 
 서버가 background에서 실행되고 브라우저에 화면이 열립니다. 서버는 `127.0.0.1`에서만 요청을 받으므로 이 컴퓨터에서만 화면을 열 수 있습니다. 서버를 끄려면 `bd-desk stop`을 실행합니다.
 
-명령과 옵션, 여러 workspace 함께 쓰기, 이슈 본문의 로컬 파일 링크, 업데이트와 삭제, 문제 해결은 [사용 안내](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md)에 있습니다.
+최신 버전으로 업데이트하려면 설치 명령을 다시 실행한 뒤 `bd-desk restart`를 실행합니다. 그래야 실행 중인 서버가 새 버전으로 바뀝니다. 버전마다 바뀐 내용은 [변경 내역](https://github.com/seungyeop-lee/beads-desk/blob/main/CHANGELOG.md)에서 확인할 수 있습니다.
+
+명령과 옵션, 여러 workspace 함께 쓰기, 이슈 본문의 로컬 파일 링크, 삭제, 문제 해결은 [사용 안내](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md)에 있습니다.
 
 ## 기여
 
