@@ -230,6 +230,11 @@ export function parseIssueDetail(value: unknown): IssueDetail | null {
   };
 }
 
+/** bd show는 이슈 하나를 내놓을 때도 배열과 객체를 섞어 출력하므로, 어느 형태든 첫 레코드를 꺼냅니다. */
+export function showRecordOf(value: unknown): unknown {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 /** 의존 관계 한 건입니다. issueId가 dependsOnId에 의존합니다. blocks이면 dependsOnId를 먼저 끝내야 합니다. 시각은 epoch ms입니다. */
 export type IssueDependency = {
   issueId: string;
@@ -274,6 +279,22 @@ const DEPENDENCY_ADDED = /^Added dependency: \S+ (\S+) (\S+)$/;
 const DEPENDENCY_REMOVED = /^Removed dependency on (\S+)$/;
 const LABEL_CHANGED = /^(?:Added|Removed) label: (.+)$/s;
 
+/** 관계 문장에서 상대 이슈와 관계 유형을 꺼냅니다. 관계 문장이 아니면 null이고, 지운 문장은 bd가 유형을 남기지 않아 유형이 null입니다. */
+function dependencyOf(note: string): { dependsOnId: string; type: string | null } | null {
+  const added = DEPENDENCY_ADDED.exec(note);
+  if (added) {
+    return { dependsOnId: added[2]!, type: added[1]! };
+  }
+  const removed = DEPENDENCY_REMOVED.exec(note);
+  return removed ? { dependsOnId: removed[1]!, type: null } : null;
+}
+
+/** 라벨 문장에서 라벨을 꺼냅니다. 라벨 문장이 아니면 null입니다. */
+function labelOf(note: string): string | null {
+  const changed = LABEL_CHANGED.exec(note);
+  return changed ? changed[1]! : null;
+}
+
 /**
  * bd는 필드 변경 이벤트의 old_value에 바뀌기 전 이슈 전체를, new_value에 바뀐 필드만 JSON으로 남깁니다.
  * 관계와 라벨 변경은 JSON이 아니라 문장으로 남기므로(관계는 new_value, 라벨은 comment) 그 문장에서 값을 꺼냅니다.
@@ -282,18 +303,14 @@ export function parseIssueEvents(value: unknown): IssueEvent[] {
   return recordsOf(value).map((record) => {
     const newValue = stringOr(record.new_value, "");
     const note = newValue || stringOr(record.comment, "");
-    const added = DEPENDENCY_ADDED.exec(note);
-    const removed = DEPENDENCY_REMOVED.exec(note);
-    const label = LABEL_CHANGED.exec(note);
     const after = jsonRecord(newValue);
     const changes = after
       ? fieldChanges(jsonRecord(stringOr(record.old_value, "")) ?? {}, after)
       : [];
-    const dependency = added
-      ? { dependsOnId: added[2]!, type: added[1]! }
-      : removed
-        ? { dependsOnId: removed[1]!, type: null }
-        : null;
+    const dependency = dependencyOf(note);
+    const label = labelOf(note);
+    // 필드 변경, 관계, 라벨으로 해석한 문장은 본문으로 다시 담지 않습니다.
+    const interpreted = after !== null || dependency !== null || label !== null;
     return {
       id: stringOr(record.id, ""),
       type: stringOr(record.event_type, ""),
@@ -301,8 +318,8 @@ export function parseIssueEvents(value: unknown): IssueEvent[] {
       createdAt: timestampOr(record.created_at, 0),
       changes,
       dependency,
-      label: label ? label[1]! : null,
-      text: after || dependency || label || note === "" ? null : note,
+      label,
+      text: interpreted || note === "" ? null : note,
     };
   });
 }
@@ -340,7 +357,8 @@ function parseIssueLink(value: Record<string, unknown>): IssueLink {
   };
 }
 
-function recordsOf(value: unknown): Record<string, unknown>[] {
+/** bd는 결과가 없을 때 배열 대신 null을 출력하기도 하므로, 배열이 아니면 빈 목록으로 읽습니다. */
+export function recordsOf(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value) ? value.filter(isRecord) : [];
 }
 
@@ -348,7 +366,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function stringOr<T extends string | null>(value: unknown, fallback: T): string | T {
+export function stringOr<T extends string | null>(value: unknown, fallback: T): string | T {
   return typeof value === "string" ? value : fallback;
 }
 

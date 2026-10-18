@@ -1,7 +1,5 @@
-import { chmod, mkdtemp, realpath, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
+import { fakeBdWorkspace } from "./fakeBd";
 import {
   addComment,
   addDependency,
@@ -20,40 +18,8 @@ import {
   updateIssueFields,
 } from "./mutations";
 
-type FakeResponse = { stdout?: string; stderr?: string; code?: number };
-
-let workDir: string;
-const originalBdBin = process.env.BD_BIN;
-
-beforeEach(async () => {
-  workDir = await realpath(await mkdtemp(join(tmpdir(), "beads-desk-mutations-")));
-});
-
-afterEach(() => {
-  process.env.BD_BIN = originalBdBin;
-});
-
-/**
- * `--sandbox` 뒤의 인자 문자열이 정확히 일치할 때만 응답하는 가짜 bd를 지정합니다.
- * 일치하는 응답이 없으면 종료 코드 99로 실패합니다.
- */
-async function useFakeBd(responses: Record<string, FakeResponse>): Promise<void> {
-  const cases = await Promise.all(
-    Object.entries(responses).map(async ([args, response], index) => {
-      const stdoutFile = join(workDir, `stdout-${index}`);
-      await writeFile(stdoutFile, response.stdout ?? "");
-      const stderr = response.stderr ? `echo "${response.stderr}" >&2; ` : "";
-      return `  "--sandbox ${args}") cat "${stdoutFile}"; ${stderr}exit ${response.code ?? 0};;`;
-    }),
-  );
-  const fakeBd = join(workDir, "fake-bd");
-  await writeFile(
-    fakeBd,
-    `#!/bin/sh\ncase "$*" in\n${cases.join("\n")}\n  *) echo "unexpected: $*" >&2; exit 99;;\nesac\n`,
-  );
-  await chmod(fakeBd, 0o755);
-  process.env.BD_BIN = fakeBd;
-}
+const fakeBd = fakeBdWorkspace("beads-desk-mutations-");
+const { useFakeBd } = fakeBd;
 
 const succeeded = { ok: true, value: null };
 
@@ -64,7 +30,7 @@ describe("createIssue", () => {
         { stdout: '{"id":"demo-new","title":"-Dash title"}' },
     });
 
-    const result = await createIssue(workDir, {
+    const result = await createIssue(fakeBd.workDir, {
       title: " -Dash title ",
       issueType: "bug",
       priority: 1,
@@ -79,7 +45,11 @@ describe("createIssue", () => {
   test("고르지 않은 값은 bd 기본값을 쓰도록 넘기지 않는다", async () => {
     await useFakeBd({ "create --json --title=Plain": { stdout: '{"id":"demo-new"}' } });
 
-    const result = await createIssue(workDir, { title: "Plain", description: "", labels: [] });
+    const result = await createIssue(fakeBd.workDir, {
+      title: "Plain",
+      description: "",
+      labels: [],
+    });
 
     expect(result).toEqual({ ok: true, value: "demo-new" });
   });
@@ -87,7 +57,7 @@ describe("createIssue", () => {
   test("제목이 비어 있으면 bd를 실행하지 않는다", async () => {
     await useFakeBd({});
 
-    const result = await createIssue(workDir, { title: "  " });
+    const result = await createIssue(fakeBd.workDir, { title: "  " });
 
     expect(result).toEqual({
       ok: false,
@@ -102,7 +72,7 @@ describe("updateIssueFields", () => {
       "update --title=New --acceptance=-Done when --notes= --priority=0 --assignee= -- demo-1": {},
     });
 
-    const result = await updateIssueFields(workDir, "demo-1", {
+    const result = await updateIssueFields(fakeBd.workDir, "demo-1", {
       title: "New",
       acceptanceCriteria: "-Done when",
       notes: "",
@@ -116,7 +86,10 @@ describe("updateIssueFields", () => {
   test("본문 필드는 각각의 플래그로 넘긴다", async () => {
     await useFakeBd({ "update --description=D --design=E -- demo-1": {} });
 
-    const result = await updateIssueFields(workDir, "demo-1", { description: "D", design: "E" });
+    const result = await updateIssueFields(fakeBd.workDir, "demo-1", {
+      description: "D",
+      design: "E",
+    });
 
     expect(result).toEqual(succeeded);
   });
@@ -124,11 +97,11 @@ describe("updateIssueFields", () => {
   test("제목을 비우거나 바꿀 필드가 없으면 bd를 실행하지 않는다", async () => {
     await useFakeBd({});
 
-    expect(await updateIssueFields(workDir, "demo-1", { title: " " })).toEqual({
+    expect(await updateIssueFields(fakeBd.workDir, "demo-1", { title: " " })).toEqual({
       ok: false,
       error: { message: "제목이 비어 있습니다.", exitCode: null },
     });
-    expect(await updateIssueFields(workDir, "demo-1", {})).toEqual({
+    expect(await updateIssueFields(fakeBd.workDir, "demo-1", {})).toEqual({
       ok: false,
       error: { message: "바꿀 내용이 없습니다.", exitCode: null },
     });
@@ -137,7 +110,7 @@ describe("updateIssueFields", () => {
   test("bd가 실패하면 stderr를 오류로 돌려준다", async () => {
     await useFakeBd({ "update --title=New -- demo-zzz": { stderr: "no issue found", code: 1 } });
 
-    const result = await updateIssueFields(workDir, "demo-zzz", { title: "New" });
+    const result = await updateIssueFields(fakeBd.workDir, "demo-zzz", { title: "New" });
 
     expect(result).toEqual({ ok: false, error: { message: "no issue found\n", exitCode: 1 } });
   });
@@ -147,13 +120,13 @@ describe("setIssueStatus", () => {
   test("보류가 아닌 상태로 바꾸면 보류 기한을 함께 지운다", async () => {
     await useFakeBd({ "update --status=in_progress --defer= -- demo-1": {} });
 
-    expect(await setIssueStatus(workDir, "demo-1", "in_progress")).toEqual(succeeded);
+    expect(await setIssueStatus(fakeBd.workDir, "demo-1", "in_progress")).toEqual(succeeded);
   });
 
   test("보류로 바꾸면 보류 기한을 그대로 둔다", async () => {
     await useFakeBd({ "update --status=deferred -- demo-1": {} });
 
-    expect(await setIssueStatus(workDir, "demo-1", "deferred")).toEqual(succeeded);
+    expect(await setIssueStatus(fakeBd.workDir, "demo-1", "deferred")).toEqual(succeeded);
   });
 });
 
@@ -165,15 +138,17 @@ describe("deferIssue", () => {
     });
 
     expect(
-      await deferIssue(workDir, "demo-1", { until: "tomorrow", reason: " API 열림 대기 " }),
+      await deferIssue(fakeBd.workDir, "demo-1", { until: "tomorrow", reason: " API 열림 대기 " }),
     ).toEqual(succeeded);
-    expect(await deferIssue(workDir, "demo-2", { until: "week", reason: " " })).toEqual(succeeded);
+    expect(await deferIssue(fakeBd.workDir, "demo-2", { until: "week", reason: " " })).toEqual(
+      succeeded,
+    );
   });
 
   test("무기한이면 이미 정해 둔 기한도 지운다", async () => {
     await useFakeBd({ "update --status=deferred --defer= -- demo-1": {} });
 
-    expect(await deferIssue(workDir, "demo-1", { until: "indefinite", reason: "" })).toEqual(
+    expect(await deferIssue(fakeBd.workDir, "demo-1", { until: "indefinite", reason: "" })).toEqual(
       succeeded,
     );
   });
@@ -182,14 +157,17 @@ describe("deferIssue", () => {
     await useFakeBd({ "update --status=deferred --defer=2026-12-01 -- demo-1": {} });
 
     expect(
-      await deferIssue(workDir, "demo-1", { until: { date: "2026-12-01" }, reason: "" }),
+      await deferIssue(fakeBd.workDir, "demo-1", { until: { date: "2026-12-01" }, reason: "" }),
     ).toEqual(succeeded);
   });
 
   test("날짜 자리에 YYYY-MM-DD가 아닌 표기가 오면 bd를 실행하지 않고 거부한다", async () => {
     await useFakeBd({});
 
-    const result = await deferIssue(workDir, "demo-1", { until: { date: "+1m" }, reason: "" });
+    const result = await deferIssue(fakeBd.workDir, "demo-1", {
+      until: { date: "+1m" },
+      reason: "",
+    });
 
     expect(result).toMatchObject({ ok: false });
   });
@@ -199,7 +177,7 @@ describe("claimIssue", () => {
   test("담당자 지정과 진행 중 전환을 claim 한 번으로 한다", async () => {
     await useFakeBd({ "update --claim -- demo-1": {} });
 
-    expect(await claimIssue(workDir, "demo-1")).toEqual(succeeded);
+    expect(await claimIssue(fakeBd.workDir, "demo-1")).toEqual(succeeded);
   });
 
   test("이미 다른 사람에게 지정된 이슈라 bd가 거부하면 첫 줄의 거부 사유만 돌려준다", async () => {
@@ -211,7 +189,7 @@ describe("claimIssue", () => {
       },
     });
 
-    expect(await claimIssue(workDir, "demo-1")).toEqual({
+    expect(await claimIssue(fakeBd.workDir, "demo-1")).toEqual({
       ok: false,
       error: { message: "Error updating demo-1: issue already claimed by other", exitCode: 1 },
     });
@@ -229,7 +207,7 @@ describe("closeIssue", () => {
       },
     });
 
-    const result = await closeIssue(workDir, "demo-1", { reason: "-끝냄" });
+    const result = await closeIssue(fakeBd.workDir, "demo-1", { reason: "-끝냄" });
 
     expect(result.ok && result.value.map(({ id, title }) => ({ id, title }))).toEqual([
       { id: "demo-2", title: "후행" },
@@ -241,7 +219,10 @@ describe("closeIssue", () => {
       "close --json --suggest-next -- demo-1": { stdout: '[{"id":"demo-1","status":"closed"}]' },
     });
 
-    expect(await closeIssue(workDir, "demo-1", { reason: "  " })).toEqual({ ok: true, value: [] });
+    expect(await closeIssue(fakeBd.workDir, "demo-1", { reason: "  " })).toEqual({
+      ok: true,
+      value: [],
+    });
   });
 
   test("열린 하위 이슈나 선행 이슈 때문에 닫지 못하면 그 사실을 알린다", async () => {
@@ -252,7 +233,7 @@ describe("closeIssue", () => {
       },
     });
 
-    const result = await closeIssue(workDir, "demo-1", { reason: "" });
+    const result = await closeIssue(fakeBd.workDir, "demo-1", { reason: "" });
 
     expect(result).toEqual({
       ok: false,
@@ -266,7 +247,7 @@ describe("closeIssue", () => {
       "close --json --suggest-next --force --reason=강제 -- demo-1": { stdout: "[]" },
     });
 
-    expect(await closeIssue(workDir, "demo-1", { reason: "강제", force: true })).toEqual({
+    expect(await closeIssue(fakeBd.workDir, "demo-1", { reason: "강제", force: true })).toEqual({
       ok: true,
       value: [],
     });
@@ -280,8 +261,12 @@ describe("closeAsReplaced", () => {
       "duplicate --of=demo-3 -- demo-1": {},
     });
 
-    expect(await closeAsReplaced(workDir, "demo-1", "supersede", " demo-2 ")).toEqual(succeeded);
-    expect(await closeAsReplaced(workDir, "demo-1", "duplicate", "demo-3")).toEqual(succeeded);
+    expect(await closeAsReplaced(fakeBd.workDir, "demo-1", "supersede", " demo-2 ")).toEqual(
+      succeeded,
+    );
+    expect(await closeAsReplaced(fakeBd.workDir, "demo-1", "duplicate", "demo-3")).toEqual(
+      succeeded,
+    );
   });
 
   test("bd가 거부하면 오류 뒤에 붙는 명령 도움말을 빼고 오류만 돌려준다", async () => {
@@ -293,7 +278,7 @@ describe("closeAsReplaced", () => {
       },
     });
 
-    expect(await closeAsReplaced(workDir, "demo-1", "supersede", "demo-1")).toEqual({
+    expect(await closeAsReplaced(fakeBd.workDir, "demo-1", "supersede", "demo-1")).toEqual({
       ok: false,
       error: { message: "Error: cannot mark an issue as superseded by itself", exitCode: 1 },
     });
@@ -302,7 +287,7 @@ describe("closeAsReplaced", () => {
   test("대상 이슈 id가 비어 있으면 bd를 실행하지 않는다", async () => {
     await useFakeBd({});
 
-    expect(await closeAsReplaced(workDir, "demo-1", "duplicate", " ")).toEqual({
+    expect(await closeAsReplaced(fakeBd.workDir, "demo-1", "duplicate", " ")).toEqual({
       ok: false,
       error: { message: "대상 이슈 id가 비어 있습니다.", exitCode: null },
     });
@@ -320,30 +305,32 @@ describe("댓글, 라벨, 의존 관계, 삭제", () => {
       "delete --force -- demo-1": {},
     });
 
-    expect(await addComment(workDir, "demo-1", "- bullet")).toEqual(succeeded);
-    expect(await addLabel(workDir, "demo-1", " -ui ")).toEqual(succeeded);
-    expect(await removeLabel(workDir, "demo-1", "ui")).toEqual(succeeded);
-    expect(await addDependency(workDir, "demo-1", "demo-2", "parent-child")).toEqual(succeeded);
-    expect(await removeDependency(workDir, "demo-1", "demo-2")).toEqual(succeeded);
-    expect(await deleteIssue(workDir, "demo-1")).toEqual(succeeded);
+    expect(await addComment(fakeBd.workDir, "demo-1", "- bullet")).toEqual(succeeded);
+    expect(await addLabel(fakeBd.workDir, "demo-1", " -ui ")).toEqual(succeeded);
+    expect(await removeLabel(fakeBd.workDir, "demo-1", "ui")).toEqual(succeeded);
+    expect(await addDependency(fakeBd.workDir, "demo-1", "demo-2", "parent-child")).toEqual(
+      succeeded,
+    );
+    expect(await removeDependency(fakeBd.workDir, "demo-1", "demo-2")).toEqual(succeeded);
+    expect(await deleteIssue(fakeBd.workDir, "demo-1")).toEqual(succeeded);
   });
 
   test("빈 댓글, 빈 라벨, 빈 id는 bd를 실행하지 않는다", async () => {
     await useFakeBd({});
 
-    expect(await addComment(workDir, "demo-1", " \n")).toEqual({
+    expect(await addComment(fakeBd.workDir, "demo-1", " \n")).toEqual({
       ok: false,
       error: { message: "댓글이 비어 있습니다.", exitCode: null },
     });
-    expect(await addLabel(workDir, "demo-1", " ")).toEqual({
+    expect(await addLabel(fakeBd.workDir, "demo-1", " ")).toEqual({
       ok: false,
       error: { message: "라벨이 비어 있습니다.", exitCode: null },
     });
-    expect(await addDependency(workDir, "demo-1", "", "blocks")).toEqual({
+    expect(await addDependency(fakeBd.workDir, "demo-1", "", "blocks")).toEqual({
       ok: false,
       error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
     });
-    expect(await deleteIssue(workDir, "")).toEqual({
+    expect(await deleteIssue(fakeBd.workDir, "")).toEqual({
       ok: false,
       error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
     });
@@ -364,9 +351,11 @@ describe("respondToHuman, dismissHuman", () => {
       "human dismiss -- demo-1": {},
     });
 
-    expect(await respondToHuman(workDir, "demo-1", "Use OAuth2")).toEqual(succeeded);
-    expect(await dismissHuman(workDir, "demo-1", " No longer applicable ")).toEqual(succeeded);
-    expect(await dismissHuman(workDir, "demo-1", " ")).toEqual(succeeded);
+    expect(await respondToHuman(fakeBd.workDir, "demo-1", "Use OAuth2")).toEqual(succeeded);
+    expect(await dismissHuman(fakeBd.workDir, "demo-1", " No longer applicable ")).toEqual(
+      succeeded,
+    );
+    expect(await dismissHuman(fakeBd.workDir, "demo-1", " ")).toEqual(succeeded);
   });
 
   test("열린 human gate는 human 라벨이 없어도 bd human 명령으로 닫는다", async () => {
@@ -376,8 +365,8 @@ describe("respondToHuman, dismissHuman", () => {
       "human dismiss -- g-1": {},
     });
 
-    expect(await respondToHuman(workDir, "g-1", "done")).toEqual(succeeded);
-    expect(await dismissHuman(workDir, "g-1", "")).toEqual(succeeded);
+    expect(await respondToHuman(fakeBd.workDir, "g-1", "done")).toEqual(succeeded);
+    expect(await dismissHuman(fakeBd.workDir, "g-1", "")).toEqual(succeeded);
   });
 
   test("human 라벨이 없거나 닫힌 이슈, 사람이 닫지 않는 gate에는 bd human 명령을 실행하지 않는다", async () => {
@@ -396,20 +385,20 @@ describe("respondToHuman, dismissHuman", () => {
       error: { message: "사람 판단을 기다리는 이슈가 아닙니다.", exitCode: null },
     };
 
-    expect(await respondToHuman(workDir, "demo-2", "Use OAuth2")).toEqual(rejected);
-    expect(await dismissHuman(workDir, "demo-3", "")).toEqual(rejected);
-    expect(await respondToHuman(workDir, "g-2", "done")).toEqual(rejected);
-    expect(await dismissHuman(workDir, "g-3", "")).toEqual(rejected);
+    expect(await respondToHuman(fakeBd.workDir, "demo-2", "Use OAuth2")).toEqual(rejected);
+    expect(await dismissHuman(fakeBd.workDir, "demo-3", "")).toEqual(rejected);
+    expect(await respondToHuman(fakeBd.workDir, "g-2", "done")).toEqual(rejected);
+    expect(await dismissHuman(fakeBd.workDir, "g-3", "")).toEqual(rejected);
   });
 
   test("빈 응답과 빈 id는 bd를 실행하지 않는다", async () => {
     await useFakeBd({});
 
-    expect(await respondToHuman(workDir, "demo-1", " \n")).toEqual({
+    expect(await respondToHuman(fakeBd.workDir, "demo-1", " \n")).toEqual({
       ok: false,
       error: { message: "응답이 비어 있습니다.", exitCode: null },
     });
-    expect(await dismissHuman(workDir, " ", "")).toEqual({
+    expect(await dismissHuman(fakeBd.workDir, " ", "")).toEqual({
       ok: false,
       error: { message: "이슈 id가 비어 있습니다.", exitCode: null },
     });

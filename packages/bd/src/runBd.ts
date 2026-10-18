@@ -250,3 +250,17 @@ function jsonError(stdout: string): string | null {
 export function inputError(message: string): { ok: false; error: BdError } {
   return { ok: false, error: { message, exitCode: null } };
 }
+
+// bd는 id를 빈 값으로 받으면 마지막으로 다룬 이슈를 대상으로 삼는 명령이 있어, 빈 id는 bd를 실행하지 않고 거부합니다.
+
+/** id에서 앞뒤 공백을 제거한 값을 검사합니다. 비어 있으면 안내 문구를 담은 입력 오류를 돌려줍니다. */
+export function trimmedId(id: string, message: string): BdOutcome<string> {
+  const trimmed = id.trim();
+  return trimmed.length > 0 ? { ok: true, value: trimmed } : inputError(message);
+}
+
+/** id마다 앞뒤 공백을 제거한 값을 검사합니다. 하나라도 비어 있으면 입력 오류를 돌려줍니다. */
+export function trimmedIds(ids: string[], message: string): BdOutcome<string[]> {
+  const trimmed = ids.map((id) => id.trim());
+  return trimmed.every((id) => id.length > 0) ? { ok: true, value: trimmed } : inputError(message);
+}

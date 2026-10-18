@@ -1,7 +1,7 @@
-import { chmod, mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
+import { fakeBdWorkspace } from "./fakeBd";
 import { parseIssues, type Issue } from "./issue";
 import {
   boardIssues,
@@ -25,44 +25,15 @@ import {
   withWorkSignals,
 } from "./queries";
 
-type FakeResponse = { stdout?: string; stderr?: string; code?: number };
+const fakeBd = fakeBdWorkspace("beads-desk-queries-");
+const { useFakeBd, fixture } = fakeBd;
 
-let workDir: string;
-const originalBdBin = process.env.BD_BIN;
-
-beforeEach(async () => {
-  workDir = await realpath(await mkdtemp(join(tmpdir(), "beads-desk-queries-")));
-});
-
-afterEach(() => {
-  process.env.BD_BIN = originalBdBin;
-});
-
-async function fixture(name: string): Promise<string> {
-  return readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
-}
-
-/**
- * `--sandbox` 뒤의 인자 문자열이 정확히 일치할 때만 응답하는 가짜 bd를 지정합니다.
- * 일치하는 응답이 없으면 종료 코드 99로 실패합니다.
- */
-async function useFakeBd(responses: Record<string, FakeResponse>): Promise<void> {
-  const cases = await Promise.all(
-    Object.entries(responses).map(async ([args, response], index) => {
-      const stdoutFile = join(workDir, `stdout-${index}`);
-      await writeFile(stdoutFile, response.stdout ?? "");
-      const stderr = response.stderr ? `echo "${response.stderr}" >&2; ` : "";
-      return `  "--sandbox ${args}") cat "${stdoutFile}"; ${stderr}exit ${response.code ?? 0};;`;
-    }),
-  );
-  const fakeBd = join(workDir, "fake-bd");
-  await writeFile(
-    fakeBd,
-    `#!/bin/sh\ncase "$*" in\n${cases.join("\n")}\n  *) echo "unexpected: $*" >&2; exit 99;;\nesac\n`,
-  );
-  await chmod(fakeBd, 0o755);
-  process.env.BD_BIN = fakeBd;
-}
+// 가짜 bd는 `--sandbox` 뒤의 인자 전체를 하나의 문자열로 비교하므로, 여러 describe가 쓰는 인자 문자열을 상수로 묶습니다.
+const LIST_OPEN_ARGS = "list --json --tree=false --limit 0";
+const LIST_ALL_ARGS = "list --json --tree=false --all --limit 0";
+const LIST_GATES_ARGS = "list --json --tree=false --type=gate --all --limit 0";
+const READY_ARGS = "ready --limit 0 --json";
+const BLOCKED_ARGS = "blocked --json";
 
 describe("listIssues", () => {
   test("지정한 상태의 이슈를 개수 제한 없이 조회한다", async () => {
@@ -72,7 +43,7 @@ describe("listIssues", () => {
       },
     });
 
-    const result = await listIssues(workDir, ["open", "in_progress"]);
+    const result = await listIssues(fakeBd.workDir, ["open", "in_progress"]);
 
     expect(result.ok && result.value.map((issue) => issue.id)).toEqual([
       "demo-x2e",
@@ -84,12 +55,12 @@ describe("listIssues", () => {
 
   test("상태를 지정하지 않으면 pinned, hooked, 사용자 정의 상태까지 모든 이슈를 조회한다", async () => {
     await useFakeBd({
-      "list --json --tree=false --all --limit 0": {
+      [LIST_ALL_ARGS]: {
         stdout: "[]",
       },
     });
 
-    const result = await listIssues(workDir, []);
+    const result = await listIssues(fakeBd.workDir, []);
 
     expect(result).toEqual({ ok: true, value: [] });
   });
@@ -99,7 +70,7 @@ describe("listIssues", () => {
       "list --json --tree=false --status open --limit 0": { stderr: "boom", code: 2 },
     });
 
-    const result = await listIssues(workDir, ["open"]);
+    const result = await listIssues(fakeBd.workDir, ["open"]);
 
     expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 2 } });
   });
@@ -109,7 +80,7 @@ describe("listIssues", () => {
       "list --json --tree=false --status open --limit 0": { code: 2 },
     });
 
-    const result = await listIssues(workDir, ["open"]);
+    const result = await listIssues(fakeBd.workDir, ["open"]);
 
     expect(result).toEqual({
       ok: false,
@@ -122,7 +93,7 @@ describe("listIssues", () => {
       "list --json --tree=false --status open --limit 0": { stdout: "not json" },
     });
 
-    const result = await listIssues(workDir, ["open"]);
+    const result = await listIssues(fakeBd.workDir, ["open"]);
 
     expect(result).toEqual({
       ok: false,
@@ -135,7 +106,7 @@ describe("readyIssues", () => {
   test("바로 작업할 수 있는 이슈를 개수 제한 없이 조회하고, 작업 단위가 아닌 decision과 epic은 뺀다", async () => {
     const issue = (id: string, issue_type: string) => ({ id, status: "open", issue_type });
     await useFakeBd({
-      "ready --limit 0 --json": {
+      [READY_ARGS]: {
         stdout: JSON.stringify([
           issue("task", "task"),
           issue("decision", "decision"),
@@ -145,24 +116,21 @@ describe("readyIssues", () => {
       },
     });
 
-    const result = await readyIssues(workDir);
+    const result = await readyIssues(fakeBd.workDir);
 
     expect(result.ok && result.value.map((issue) => issue.id)).toEqual(["task", "feature"]);
   });
 });
 
 describe("withWorkSignals", () => {
-  const blockedArgs = "blocked --json";
-  const readyArgs = "ready --limit 0 --json";
-
   test("막힌 이슈에는 막고 있는 이슈 id를, bd ready에 든 이슈에는 ready를 채운다", async () => {
     await useFakeBd({
-      [blockedArgs]: {
+      [BLOCKED_ARGS]: {
         stdout: JSON.stringify([
           { id: "waiting", status: "open", blocked_by: ["first", "second"] },
         ]),
       },
-      [readyArgs]: { stdout: JSON.stringify([{ id: "free", status: "open" }]) },
+      [READY_ARGS]: { stdout: JSON.stringify([{ id: "free", status: "open" }]) },
     });
     const listed = [
       { id: "waiting", status: "open" },
@@ -170,7 +138,10 @@ describe("withWorkSignals", () => {
       { id: "doing", status: "in_progress" },
     ].map((fields) => ({ ...fields, title: fields.id }) as Issue);
 
-    const result = await withWorkSignals(workDir, Promise.resolve({ ok: true, value: listed }));
+    const result = await withWorkSignals(
+      fakeBd.workDir,
+      Promise.resolve({ ok: true, value: listed }),
+    );
 
     expect(
       result.ok && result.value.map(({ id, blockedBy, ready }) => ({ id, blockedBy, ready })),
@@ -183,25 +154,25 @@ describe("withWorkSignals", () => {
 
   test("목록 조회가 실패하면 그 오류를, bd blocked나 bd ready가 실패하면 그 오류를 돌려준다", async () => {
     await useFakeBd({
-      [blockedArgs]: { stderr: "boom", code: 1 },
-      [readyArgs]: { stdout: "[]" },
+      [BLOCKED_ARGS]: { stderr: "boom", code: 1 },
+      [READY_ARGS]: { stdout: "[]" },
     });
     const listError = { ok: false as const, error: { message: "list failed", exitCode: 1 } };
 
-    expect(await withWorkSignals(workDir, Promise.resolve(listError))).toEqual(listError);
-    expect(await withWorkSignals(workDir, Promise.resolve({ ok: true, value: [] }))).toEqual({
-      ok: false,
-      error: { message: "boom\n", exitCode: 1 },
-    });
+    expect(await withWorkSignals(fakeBd.workDir, Promise.resolve(listError))).toEqual(listError);
+    expect(await withWorkSignals(fakeBd.workDir, Promise.resolve({ ok: true, value: [] }))).toEqual(
+      {
+        ok: false,
+        error: { message: "boom\n", exitCode: 1 },
+      },
+    );
   });
 });
 
 describe("epicStatuses", () => {
-  const listAll = "list --json --tree=false --all --limit 0";
-
   test("모든 이슈를 한 번에 읽어 epic마다 직접 하위 이슈와 닫힌 하위 이슈를 센다", async () => {
     await useFakeBd({
-      [listAll]: {
+      [LIST_ALL_ARGS]: {
         stdout: JSON.stringify([
           { id: "e-1", issue_type: "epic", status: "open" },
           { id: "e-1.1", status: "closed", parent: "e-1" },
@@ -215,7 +186,7 @@ describe("epicStatuses", () => {
       },
     });
 
-    const result = await epicStatuses(workDir);
+    const result = await epicStatuses(fakeBd.workDir);
 
     expect(
       result.ok &&
@@ -229,16 +200,16 @@ describe("epicStatuses", () => {
   });
 
   test("bd가 실패하면 오류를 돌려준다", async () => {
-    await useFakeBd({ [listAll]: { stderr: "boom", code: 1 } });
+    await useFakeBd({ [LIST_ALL_ARGS]: { stderr: "boom", code: 1 } });
 
-    const result = await epicStatuses(workDir);
+    const result = await epicStatuses(fakeBd.workDir);
 
     expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
   });
 });
 
 describe("decisionRecords", () => {
-  const listDecisions = "list --json --tree=false --all --limit 0 --type=decision";
+  const listDecisions = `${LIST_ALL_ARGS} --type=decision`;
 
   test("모든 상태의 decision을 읽고, 대체된 decision에는 대체한 이슈를 붙인다", async () => {
     await useFakeBd({
@@ -258,7 +229,7 @@ describe("decisionRecords", () => {
       },
     });
 
-    const result = await decisionRecords(workDir);
+    const result = await decisionRecords(fakeBd.workDir);
 
     expect(
       result.ok && result.value.map((record) => [record.decision.id, record.supersededBy]),
@@ -271,19 +242,16 @@ describe("decisionRecords", () => {
   test("bd가 실패하면 오류를 돌려준다", async () => {
     await useFakeBd({ [listDecisions]: { stderr: "boom", code: 1 } });
 
-    const result = await decisionRecords(workDir);
+    const result = await decisionRecords(fakeBd.workDir);
 
     expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
   });
 });
 
 describe("humanGates", () => {
-  const listGates = "list --json --tree=false --type=gate --all --limit 0";
-  const listOpen = "list --json --tree=false --limit 0";
-
   test("열린 human gate만 읽고, 막고 있는 이슈와 이전 라운드 수를 blocks 의존 관계에서 찾는다", async () => {
     await useFakeBd({
-      [listGates]: {
+      [LIST_GATES_ARGS]: {
         stdout: JSON.stringify([
           {
             id: "g-1",
@@ -304,7 +272,7 @@ describe("humanGates", () => {
           { id: "g-old", issue_type: "gate", await_type: "human", status: "closed" },
         ]),
       },
-      [listOpen]: {
+      [LIST_OPEN_ARGS]: {
         stdout: JSON.stringify([
           {
             id: "t-1",
@@ -343,7 +311,7 @@ describe("humanGates", () => {
       },
     });
 
-    const result = await humanGates(workDir);
+    const result = await humanGates(fakeBd.workDir);
 
     expect(
       result.ok &&
@@ -361,14 +329,14 @@ describe("humanGates", () => {
 
   test("gate가 여러 작업을 막으면 그 작업 전부를 막았던 닫힌 gate만 이전 라운드로 센다", async () => {
     await useFakeBd({
-      [listGates]: {
+      [LIST_GATES_ARGS]: {
         stdout: JSON.stringify([
           { id: "g-1", issue_type: "gate", await_type: "human", status: "open" },
           { id: "g-both", issue_type: "gate", await_type: "human", status: "closed" },
           { id: "g-one", issue_type: "gate", await_type: "human", status: "closed" },
         ]),
       },
-      [listOpen]: {
+      [LIST_OPEN_ARGS]: {
         stdout: JSON.stringify([
           {
             id: "t-1",
@@ -391,7 +359,7 @@ describe("humanGates", () => {
       },
     });
 
-    const result = await humanGates(workDir);
+    const result = await humanGates(fakeBd.workDir);
 
     expect(
       result.ok && result.value.map(({ gate, previousGateCount }) => [gate.id, previousGateCount]),
@@ -400,7 +368,7 @@ describe("humanGates", () => {
 
   test("bd gate create가 만든 설명 형식이 아니면 설명 전체를 사유로 읽는다", async () => {
     await useFakeBd({
-      [listGates]: {
+      [LIST_GATES_ARGS]: {
         stdout: JSON.stringify([
           {
             id: "g-1",
@@ -411,18 +379,21 @@ describe("humanGates", () => {
           },
         ]),
       },
-      [listOpen]: { stdout: "[]" },
+      [LIST_OPEN_ARGS]: { stdout: "[]" },
     });
 
-    const result = await humanGates(workDir);
+    const result = await humanGates(fakeBd.workDir);
 
     expect(result.ok && result.value[0]?.reason).toBe("배포 전에 확인해 주세요");
   });
 
   test("조회가 하나라도 실패하면 오류를 돌려준다", async () => {
-    await useFakeBd({ [listGates]: { stdout: "[]" }, [listOpen]: { stderr: "boom", code: 1 } });
+    await useFakeBd({
+      [LIST_GATES_ARGS]: { stdout: "[]" },
+      [LIST_OPEN_ARGS]: { stderr: "boom", code: 1 },
+    });
 
-    expect(await humanGates(workDir)).toEqual({
+    expect(await humanGates(fakeBd.workDir)).toEqual({
       ok: false,
       error: { message: "boom\n", exitCode: 1 },
     });
@@ -430,12 +401,9 @@ describe("humanGates", () => {
 });
 
 describe("previousGateRounds", () => {
-  const listGates = "list --json --tree=false --type=gate --all --limit 0";
-  const listOpen = "list --json --tree=false --limit 0";
-
   test("같은 작업을 막았던 닫힌 gate를 간선이 생긴 순으로 읽어 코멘트와 닫은 사유를 돌려준다", async () => {
     await useFakeBd({
-      [listGates]: {
+      [LIST_GATES_ARGS]: {
         stdout: JSON.stringify([
           { id: "g-cur", issue_type: "gate", await_type: "human", status: "open" },
           {
@@ -451,7 +419,7 @@ describe("previousGateRounds", () => {
           { id: "g-timer", issue_type: "gate", await_type: "timer", status: "closed" },
         ]),
       },
-      [listOpen]: {
+      [LIST_OPEN_ARGS]: {
         stdout: JSON.stringify([
           {
             id: "t-1",
@@ -525,7 +493,7 @@ describe("previousGateRounds", () => {
       },
     });
 
-    const result = await previousGateRounds(workDir, "g-cur");
+    const result = await previousGateRounds(fakeBd.workDir, "g-cur");
 
     expect(
       result.ok &&
@@ -546,14 +514,14 @@ describe("previousGateRounds", () => {
     // bd가 간선 시각을 초 단위로 저장하므로 같은 초에 시작한 라운드는 정렬 동률이다.
     // 두 목록 모두 g-old2를 먼저 나오게 해, 입력 순서가 아니라 동률 규칙이 순서를 정함을 확인한다.
     await useFakeBd({
-      [listGates]: {
+      [LIST_GATES_ARGS]: {
         stdout: JSON.stringify([
           { id: "g-cur", issue_type: "gate", await_type: "human", status: "open" },
           { id: "g-old2", issue_type: "gate", await_type: "human", status: "closed" },
           { id: "g-old1", issue_type: "gate", await_type: "human", status: "closed" },
         ]),
       },
-      [listOpen]: {
+      [LIST_OPEN_ARGS]: {
         stdout: JSON.stringify([
           {
             id: "t-1",
@@ -599,13 +567,13 @@ describe("previousGateRounds", () => {
       },
     });
 
-    const result = await previousGateRounds(workDir, "g-cur");
+    const result = await previousGateRounds(fakeBd.workDir, "g-cur");
 
     expect(result.ok && result.value.map(({ gate }) => gate.id)).toEqual(["g-old1", "g-old2"]);
   });
 
   test("게이트 id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
-    expect(await previousGateRounds(workDir, " ")).toEqual({
+    expect(await previousGateRounds(fakeBd.workDir, " ")).toEqual({
       ok: false,
       error: { message: "게이트 id가 비어 있습니다.", exitCode: null },
     });
@@ -613,28 +581,28 @@ describe("previousGateRounds", () => {
 
   test("막는 작업이 없거나 알 수 없는 gate는 이전 라운드가 없다", async () => {
     await useFakeBd({
-      [listGates]: {
+      [LIST_GATES_ARGS]: {
         stdout: JSON.stringify([
           { id: "g-old", issue_type: "gate", await_type: "human", status: "closed" },
         ]),
       },
-      [listOpen]: { stdout: "[]" },
+      [LIST_OPEN_ARGS]: { stdout: "[]" },
     });
 
-    const result = await previousGateRounds(workDir, "g-cur");
+    const result = await previousGateRounds(fakeBd.workDir, "g-cur");
 
     expect(result).toEqual({ ok: true, value: [] });
   });
 
   test("이전 라운드 상세 조회가 실패하면 오류를 돌려준다", async () => {
     await useFakeBd({
-      [listGates]: {
+      [LIST_GATES_ARGS]: {
         stdout: JSON.stringify([
           { id: "g-cur", issue_type: "gate", await_type: "human", status: "open" },
           { id: "g-old", issue_type: "gate", await_type: "human", status: "closed" },
         ]),
       },
-      [listOpen]: {
+      [LIST_OPEN_ARGS]: {
         stdout: JSON.stringify([
           {
             id: "t-1",
@@ -659,7 +627,7 @@ describe("previousGateRounds", () => {
       "show --json --include-comments --include-dependents -- g-old": { stderr: "boom", code: 1 },
     });
 
-    expect(await previousGateRounds(workDir, "g-cur")).toEqual({
+    expect(await previousGateRounds(fakeBd.workDir, "g-cur")).toEqual({
       ok: false,
       error: { message: "boom\n", exitCode: 1 },
     });
@@ -667,12 +635,12 @@ describe("previousGateRounds", () => {
 });
 
 describe("humanDecisionIssues", () => {
-  const listGates = "list --json --tree=false --type=gate --limit 0";
+  const openGateListArgs = "list --json --tree=false --type=gate --limit 0";
   const listLabeled = "list --json --tree=false --label human --limit 0";
 
   test("열린 human gate와 human 라벨이 붙은 이슈만 읽는다", async () => {
     await useFakeBd({
-      [listGates]: {
+      [openGateListArgs]: {
         stdout: JSON.stringify([
           { id: "g-1", issue_type: "gate", await_type: "human", status: "open" },
           { id: "g-2", issue_type: "gate", await_type: "timer", status: "open" },
@@ -684,16 +652,19 @@ describe("humanDecisionIssues", () => {
       },
     });
 
-    const result = await humanDecisionIssues(workDir);
+    const result = await humanDecisionIssues(fakeBd.workDir);
 
     expect(result.ok && result.value.gates.map(({ id }) => id)).toEqual(["g-1"]);
     expect(result.ok && result.value.labeled.map(({ id }) => id)).toEqual(["q-1"]);
   });
 
   test("조회가 하나라도 실패하면 오류를 돌려준다", async () => {
-    await useFakeBd({ [listGates]: { stdout: "[]" }, [listLabeled]: { stderr: "boom", code: 1 } });
+    await useFakeBd({
+      [openGateListArgs]: { stdout: "[]" },
+      [listLabeled]: { stderr: "boom", code: 1 },
+    });
 
-    expect(await humanDecisionIssues(workDir)).toEqual({
+    expect(await humanDecisionIssues(fakeBd.workDir)).toEqual({
       ok: false,
       error: { message: "boom\n", exitCode: 1 },
     });
@@ -738,7 +709,7 @@ describe("showIssue", () => {
       },
     });
 
-    const result = await showIssue(workDir, "demo-865.1");
+    const result = await showIssue(fakeBd.workDir, "demo-865.1");
 
     expect(result.ok && result.value.comments.length).toBe(1);
     expect(result.ok && result.value.dependents.length).toBe(1);
@@ -747,7 +718,7 @@ describe("showIssue", () => {
   test("id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {
     await useFakeBd({});
 
-    const result = await showIssue(workDir, " ");
+    const result = await showIssue(fakeBd.workDir, " ");
 
     expect(result).toEqual({
       ok: false,
@@ -763,7 +734,7 @@ describe("showIssue", () => {
       },
     });
 
-    const result = await showIssue(workDir, "demo-zzz");
+    const result = await showIssue(fakeBd.workDir, "demo-zzz");
 
     expect(result).toEqual({
       ok: false,
@@ -777,20 +748,20 @@ describe("openChangeFingerprint", () => {
   const hashQuery = "sql SELECT DOLT_HASHOF_DB() AS h --json";
 
   test("embedded mode에서는 Dolt manifest 내용을 읽는다", async () => {
-    const noms = join(workDir, "embeddeddolt", "demo", ".dolt", "noms");
+    const noms = join(fakeBd.workDir, "embeddeddolt", "demo", ".dolt", "noms");
     await mkdir(noms, { recursive: true });
     await writeFile(join(noms, "manifest"), "root-1");
     await useFakeBd({
       [doltShow]: {
         stdout: JSON.stringify({
           embedded: true,
-          data_dir: join(workDir, "embeddeddolt"),
+          data_dir: join(fakeBd.workDir, "embeddeddolt"),
           database: "demo",
         }),
       },
     });
 
-    const result = await openChangeFingerprint(workDir);
+    const result = await openChangeFingerprint(fakeBd.workDir);
     if (!result.ok) throw new Error(result.error.message);
     const before = await result.value();
     await writeFile(join(noms, "manifest"), "root-2");
@@ -804,7 +775,7 @@ describe("openChangeFingerprint", () => {
       [hashQuery]: { stdout: JSON.stringify([{ h: "hash-1" }]) },
     });
 
-    const result = await openChangeFingerprint(workDir);
+    const result = await openChangeFingerprint(fakeBd.workDir);
     if (!result.ok) throw new Error(result.error.message);
 
     expect(await result.value()).toBe("hash-1");
@@ -816,7 +787,7 @@ describe("openChangeFingerprint", () => {
       [hashQuery]: { stderr: "boom", code: 1 },
     });
 
-    const result = await openChangeFingerprint(workDir);
+    const result = await openChangeFingerprint(fakeBd.workDir);
     if (!result.ok) throw new Error(result.error.message);
 
     expect(await result.value()).toBeNull();
@@ -825,7 +796,7 @@ describe("openChangeFingerprint", () => {
   test("Dolt 설정을 읽지 못하면 오류를 돌려준다", async () => {
     await useFakeBd({ [doltShow]: { stderr: "no beads workspace", code: 1 } });
 
-    const result = await openChangeFingerprint(workDir);
+    const result = await openChangeFingerprint(fakeBd.workDir);
 
     expect(result).toEqual({
       ok: false,
@@ -835,16 +806,10 @@ describe("openChangeFingerprint", () => {
 });
 
 describe("boardIssues", () => {
-  const boardArgs = {
-    all: "list --json --tree=false --all --limit 0",
-    ready: "ready --limit 0 --json",
-    blocked: "blocked --json",
-  };
-
   test("상태로 열을 정하고, 열림 이슈는 bd ready와 bd blocked 결과로 나누며, 어느 열에도 맞지 않는 이슈는 뺀다", async () => {
     const issue = (id: string, status: string) => ({ id, status });
     await useFakeBd({
-      [boardArgs.all]: {
+      [LIST_ALL_ARGS]: {
         stdout: JSON.stringify([
           issue("ready", "open"),
           issue("dep-blocked", "open"),
@@ -859,8 +824,8 @@ describe("boardIssues", () => {
           issue("open-unknown", "open"),
         ]),
       },
-      [boardArgs.ready]: { stdout: JSON.stringify([issue("ready", "open")]) },
-      [boardArgs.blocked]: {
+      [READY_ARGS]: { stdout: JSON.stringify([issue("ready", "open")]) },
+      [BLOCKED_ARGS]: {
         stdout: JSON.stringify([
           issue("dep-blocked", "open"),
           issue("doing-blocked", "in_progress"),
@@ -868,7 +833,7 @@ describe("boardIssues", () => {
       },
     });
 
-    const result = await boardIssues(workDir);
+    const result = await boardIssues(fakeBd.workDir);
 
     expect(
       result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
@@ -885,7 +850,7 @@ describe("boardIssues", () => {
   test("human 라벨이 붙은 열림·진행 중 이슈는 어느 열에도 넣지 않고, 닫혔거나 막힌 것은 그 열에 넣는다", async () => {
     const issue = (id: string, status: string) => ({ id, status, labels: ["human"] });
     await useFakeBd({
-      [boardArgs.all]: {
+      [LIST_ALL_ARGS]: {
         stdout: JSON.stringify([
           issue("question", "open"),
           issue("asking", "in_progress"),
@@ -894,11 +859,11 @@ describe("boardIssues", () => {
           issue("dep-blocked", "open"),
         ]),
       },
-      [boardArgs.ready]: { stdout: JSON.stringify([issue("question", "open")]) },
-      [boardArgs.blocked]: { stdout: JSON.stringify([issue("dep-blocked", "open")]) },
+      [READY_ARGS]: { stdout: JSON.stringify([issue("question", "open")]) },
+      [BLOCKED_ARGS]: { stdout: JSON.stringify([issue("dep-blocked", "open")]) },
     });
 
-    const result = await boardIssues(workDir);
+    const result = await boardIssues(fakeBd.workDir);
 
     expect(
       result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
@@ -907,28 +872,28 @@ describe("boardIssues", () => {
 
   test("막힘 열의 이슈에는 bd blocked가 알려 준 막고 있는 이슈 id를 붙인다", async () => {
     await useFakeBd({
-      [boardArgs.all]: { stdout: JSON.stringify([{ id: "waiting", status: "open" }]) },
-      [boardArgs.ready]: { stdout: "[]" },
-      [boardArgs.blocked]: {
+      [LIST_ALL_ARGS]: { stdout: JSON.stringify([{ id: "waiting", status: "open" }]) },
+      [READY_ARGS]: { stdout: "[]" },
+      [BLOCKED_ARGS]: {
         stdout: JSON.stringify([{ id: "waiting", status: "open", blocked_by: ["first"] }]),
       },
     });
 
-    const result = await boardIssues(workDir);
+    const result = await boardIssues(fakeBd.workDir);
 
     expect(result.ok && result.value.map(({ issue }) => issue.blockedBy)).toEqual([["first"]]);
   });
 
   test("보류 이슈는 bd blocked에 나와도 막힘 열을 비롯한 어느 열에도 넣지 않는다", async () => {
     await useFakeBd({
-      [boardArgs.all]: {
+      [LIST_ALL_ARGS]: {
         stdout: JSON.stringify([
           { id: "later", status: "deferred" },
           { id: "waiting", status: "open" },
         ]),
       },
-      [boardArgs.ready]: { stdout: "[]" },
-      [boardArgs.blocked]: {
+      [READY_ARGS]: { stdout: "[]" },
+      [BLOCKED_ARGS]: {
         stdout: JSON.stringify([
           { id: "later", status: "deferred", blocked_by: ["first"] },
           { id: "waiting", status: "open", blocked_by: ["first"] },
@@ -936,7 +901,7 @@ describe("boardIssues", () => {
       },
     });
 
-    const result = await boardIssues(workDir);
+    const result = await boardIssues(fakeBd.workDir);
 
     expect(
       result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
@@ -946,7 +911,7 @@ describe("boardIssues", () => {
   test("decision과 epic은 상태와 관계없이 어느 열에도 넣지 않는다", async () => {
     const issue = (id: string, status: string, issue_type: string) => ({ id, status, issue_type });
     await useFakeBd({
-      [boardArgs.all]: {
+      [LIST_ALL_ARGS]: {
         stdout: JSON.stringify([
           issue("task", "open", "task"),
           issue("open-decision", "open", "decision"),
@@ -956,7 +921,7 @@ describe("boardIssues", () => {
           issue("feature", "open", "feature"),
         ]),
       },
-      [boardArgs.ready]: {
+      [READY_ARGS]: {
         stdout: JSON.stringify([
           issue("task", "open", "task"),
           issue("open-decision", "open", "decision"),
@@ -964,10 +929,10 @@ describe("boardIssues", () => {
           issue("feature", "open", "feature"),
         ]),
       },
-      [boardArgs.blocked]: { stdout: "[]" },
+      [BLOCKED_ARGS]: { stdout: "[]" },
     });
 
-    const result = await boardIssues(workDir);
+    const result = await boardIssues(fakeBd.workDir);
 
     expect(
       result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
@@ -977,7 +942,7 @@ describe("boardIssues", () => {
   test("막힌 decision과 epic도 막힘 열에 넣지 않는다", async () => {
     const issue = (id: string, status: string, issue_type: string) => ({ id, status, issue_type });
     await useFakeBd({
-      [boardArgs.all]: {
+      [LIST_ALL_ARGS]: {
         stdout: JSON.stringify([
           issue("task", "open", "task"),
           issue("dep-decision", "open", "decision"),
@@ -985,8 +950,8 @@ describe("boardIssues", () => {
           issue("marked-epic", "blocked", "epic"),
         ]),
       },
-      [boardArgs.ready]: { stdout: "[]" },
-      [boardArgs.blocked]: {
+      [READY_ARGS]: { stdout: "[]" },
+      [BLOCKED_ARGS]: {
         stdout: JSON.stringify([
           { ...issue("task", "open", "task"), blocked_by: ["first"] },
           { ...issue("dep-decision", "open", "decision"), blocked_by: ["first"] },
@@ -995,7 +960,7 @@ describe("boardIssues", () => {
       },
     });
 
-    const result = await boardIssues(workDir);
+    const result = await boardIssues(fakeBd.workDir);
 
     expect(
       result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
@@ -1004,12 +969,12 @@ describe("boardIssues", () => {
 
   test("조회가 하나라도 실패하면 열을 잘못 나누지 않도록 오류를 돌려준다", async () => {
     await useFakeBd({
-      [boardArgs.all]: { stdout: "[]" },
-      [boardArgs.ready]: { stdout: "[]" },
-      [boardArgs.blocked]: { stderr: "boom", code: 1 },
+      [LIST_ALL_ARGS]: { stdout: "[]" },
+      [READY_ARGS]: { stdout: "[]" },
+      [BLOCKED_ARGS]: { stderr: "boom", code: 1 },
     });
 
-    const result = await boardIssues(workDir);
+    const result = await boardIssues(fakeBd.workDir);
 
     expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
   });
@@ -1027,7 +992,7 @@ describe("staleIssues", () => {
       },
     });
 
-    const result = await staleIssues(workDir, 14);
+    const result = await staleIssues(fakeBd.workDir, 14);
 
     expect(result.ok && result.value.map((issue) => issue.id)).toEqual(["t-1"]);
   });
@@ -1035,15 +1000,21 @@ describe("staleIssues", () => {
   test("기준 일수가 1 이상의 정수가 아니면 bd를 실행하지 않고 거부한다", async () => {
     await useFakeBd({});
 
-    expect(await staleIssues(workDir, 0)).toMatchObject({ ok: false, error: { exitCode: null } });
-    expect(await staleIssues(workDir, 1.5)).toMatchObject({ ok: false, error: { exitCode: null } });
+    expect(await staleIssues(fakeBd.workDir, 0)).toMatchObject({
+      ok: false,
+      error: { exitCode: null },
+    });
+    expect(await staleIssues(fakeBd.workDir, 1.5)).toMatchObject({
+      ok: false,
+      error: { exitCode: null },
+    });
   });
 });
 
 describe("dependencyGraph", () => {
   const signals = {
-    "blocked --json": { stdout: JSON.stringify([{ id: "b", status: "open", blocked_by: ["a"] }]) },
-    "ready --limit 0 --json": { stdout: JSON.stringify([{ id: "a", status: "open" }]) },
+    [BLOCKED_ARGS]: { stdout: JSON.stringify([{ id: "b", status: "open", blocked_by: ["a"] }]) },
+    [READY_ARGS]: { stdout: JSON.stringify([{ id: "a", status: "open" }]) },
   };
   const listed = JSON.stringify([
     { id: "a", status: "open" },
@@ -1059,11 +1030,11 @@ describe("dependencyGraph", () => {
 
   test("모든 상태의 이슈와 그 의존 관계를 모든 유형으로 한 번에 읽고, 작업 상태를 정하는 값을 채운다", async () => {
     await useFakeBd({
-      "list --json --tree=false --all --limit 0 --include-gates": { stdout: listed },
+      [`${LIST_ALL_ARGS} --include-gates`]: { stdout: listed },
       ...signals,
     });
 
-    const result = await dependencyGraph(workDir);
+    const result = await dependencyGraph(fakeBd.workDir);
 
     expect(result.ok && result.value.dependencies).toEqual([
       { issueId: "b", dependsOnId: "a", type: "blocks", createdAt: 0 },
@@ -1082,7 +1053,7 @@ describe("dependencyGraph", () => {
       { id: "pr", status: "open", issue_type: "gate", await_type: "gh:pr" },
     ];
     await useFakeBd({
-      "list --json --tree=false --all --limit 0 --include-gates": {
+      [`${LIST_ALL_ARGS} --include-gates`]: {
         stdout: JSON.stringify([
           ...gates,
           {
@@ -1099,7 +1070,7 @@ describe("dependencyGraph", () => {
       ...signals,
     });
 
-    const result = await dependencyGraph(workDir);
+    const result = await dependencyGraph(fakeBd.workDir);
 
     expect(result.ok && result.value.issues).toEqual(
       expect.arrayContaining([
@@ -1124,7 +1095,7 @@ describe("dependencyGraph", () => {
 
   test("닫힌 상위 이슈를 거쳐 닿는 에픽까지 가까운 것부터 소속으로 담는다", async () => {
     await useFakeBd({
-      "list --json --tree=false --all --limit 0 --include-gates": {
+      [`${LIST_ALL_ARGS} --include-gates`]: {
         stdout: JSON.stringify([
           { id: "outer", status: "open", issue_type: "epic" },
           { id: "inner", status: "open", issue_type: "epic", parent: "outer" },
@@ -1136,7 +1107,7 @@ describe("dependencyGraph", () => {
       ...signals,
     });
 
-    const result = await dependencyGraph(workDir);
+    const result = await dependencyGraph(fakeBd.workDir);
 
     expect(result.ok && result.value.ancestorEpics).toEqual({
       inner: ["outer"],
@@ -1147,7 +1118,7 @@ describe("dependencyGraph", () => {
 
   test("상위 관계가 순환해도 소속을 정하다 멈춘다", async () => {
     await useFakeBd({
-      "list --json --tree=false --all --limit 0 --include-gates": {
+      [`${LIST_ALL_ARGS} --include-gates`]: {
         stdout: JSON.stringify([
           { id: "x", status: "open", issue_type: "epic", parent: "y" },
           { id: "y", status: "open", issue_type: "epic", parent: "x" },
@@ -1156,7 +1127,7 @@ describe("dependencyGraph", () => {
       ...signals,
     });
 
-    const result = await dependencyGraph(workDir);
+    const result = await dependencyGraph(fakeBd.workDir);
 
     expect(result.ok && result.value.ancestorEpics).toEqual({ x: ["y"], y: ["x"] });
   });
@@ -1172,7 +1143,7 @@ describe("issueEvents", () => {
       },
     });
 
-    const result = await issueEvents(workDir, " demo-1 ");
+    const result = await issueEvents(fakeBd.workDir, " demo-1 ");
 
     expect(result.ok && result.value.map((event) => event.type)).toEqual(["created"]);
   });
@@ -1180,7 +1151,10 @@ describe("issueEvents", () => {
   test("이슈 id가 비어 있으면 bd를 실행하지 않고 거부한다", async () => {
     await useFakeBd({});
 
-    expect(await issueEvents(workDir, " ")).toMatchObject({ ok: false, error: { exitCode: null } });
+    expect(await issueEvents(fakeBd.workDir, " ")).toMatchObject({
+      ok: false,
+      error: { exitCode: null },
+    });
   });
 });
 
@@ -1195,7 +1169,7 @@ describe("issueIdsByDescription", () => {
       },
     });
 
-    const result = await issueIdsByDescription(workDir, " session token ");
+    const result = await issueIdsByDescription(fakeBd.workDir, " session token ");
 
     expect(result).toEqual({ ok: true, value: ["t-1", "t-2"] });
   });
@@ -1205,13 +1179,13 @@ describe("issueIdsByDescription", () => {
       "list --json --tree=false --all --brief --limit 0 --desc-contains=--all": { stdout: "[]" },
     });
 
-    expect(await issueIdsByDescription(workDir, "--all")).toEqual({ ok: true, value: [] });
+    expect(await issueIdsByDescription(fakeBd.workDir, "--all")).toEqual({ ok: true, value: [] });
   });
 
   test("검색어가 비어 있으면 bd를 실행하지 않고 거부한다", async () => {
     await useFakeBd({});
 
-    expect(await issueIdsByDescription(workDir, "  ")).toMatchObject({
+    expect(await issueIdsByDescription(fakeBd.workDir, "  ")).toMatchObject({
       ok: false,
       error: { exitCode: null },
     });
@@ -1234,7 +1208,7 @@ describe("orphanIssues", () => {
       },
     });
 
-    const result = await orphanIssues(workDir);
+    const result = await orphanIssues(fakeBd.workDir);
 
     expect(result).toEqual({
       ok: true,
@@ -1253,7 +1227,7 @@ describe("orphanIssues", () => {
   test("결과가 없을 때 bd가 출력하는 null은 빈 목록으로 읽는다", async () => {
     await useFakeBd({ "orphans --json": { stdout: "null\n" } });
 
-    expect(await orphanIssues(workDir)).toEqual({ ok: true, value: [] });
+    expect(await orphanIssues(fakeBd.workDir)).toEqual({ ok: true, value: [] });
   });
 });
 
@@ -1277,7 +1251,7 @@ describe("lintFindings", () => {
       },
     });
 
-    const result = await lintFindings(workDir);
+    const result = await lintFindings(fakeBd.workDir);
 
     expect(result).toEqual({
       ok: true,
@@ -1297,7 +1271,7 @@ describe("lintFindings", () => {
       "lint --json": { stdout: JSON.stringify({ total: 0, issues: 0, results: null }) },
     });
 
-    expect(await lintFindings(workDir)).toEqual({ ok: true, value: [] });
+    expect(await lintFindings(fakeBd.workDir)).toEqual({ ok: true, value: [] });
   });
 });
 
@@ -1324,7 +1298,7 @@ describe("duplicateCandidates", () => {
       },
     });
 
-    const result = await duplicateCandidates(workDir);
+    const result = await duplicateCandidates(fakeBd.workDir);
 
     expect(result).toEqual({
       ok: true,

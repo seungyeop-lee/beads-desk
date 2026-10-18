@@ -13,6 +13,9 @@ import {
   parseIssueDetail,
   parseIssueEvents,
   parseIssues,
+  recordsOf,
+  showRecordOf,
+  stringOr,
   type Issue,
   type IssueComment,
   type IssueDependency,
@@ -21,7 +24,7 @@ import {
   type IssueStatus,
   workState,
 } from "./issue";
-import { inputError, runBdJson, type BdOutcome } from "./runBd";
+import { inputError, runBdJson, trimmedId, type BdOutcome } from "./runBd";
 
 export type EpicStatus = {
   epic: Issue;
@@ -127,11 +130,17 @@ function ancestorEpicsOf(issues: Issue[]): Record<string, string[]> {
 
 /** 이슈의 변경 이벤트를 읽습니다. 댓글은 이벤트로 남지 않으므로 showIssue의 comments로 읽습니다. */
 export async function issueEvents(cwd: string, issueId: string): Promise<BdOutcome<IssueEvent[]>> {
-  const id = issueId.trim();
-  if (id.length === 0) {
-    return inputError("이슈 id가 비어 있습니다.");
-  }
-  const result = await runBdJson(cwd, ["history", "--events", "--json", "--limit", "0", "--", id]);
+  const id = trimmedId(issueId, "이슈 id가 비어 있습니다.");
+  if (!id.ok) return id;
+  const result = await runBdJson(cwd, [
+    "history",
+    "--events",
+    "--json",
+    "--limit",
+    "0",
+    "--",
+    id.value,
+  ]);
   return result.ok ? { ok: true, value: parseIssueEvents(result.value) } : result;
 }
 
@@ -224,23 +233,20 @@ export function epicDescendants(issues: Issue[], epicId: string): Issue[] {
 }
 
 export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome<IssueDetail>> {
-  const id = issueId.trim();
-  // bd show는 id가 없으면 마지막으로 다룬 이슈를 보여 줍니다.
-  if (id.length === 0) {
-    return inputError("이슈 id가 비어 있습니다.");
-  }
+  const id = trimmedId(issueId, "이슈 id가 비어 있습니다.");
+  if (!id.ok) return id;
   const result = await runBdJson(cwd, [
     "show",
     "--json",
     "--include-comments",
     "--include-dependents",
     "--",
-    id,
+    id.value,
   ]);
   if (!result.ok) {
     return result;
   }
-  const detail = parseIssueDetail(Array.isArray(result.value) ? result.value[0] : result.value);
+  const detail = parseIssueDetail(showRecordOf(result.value));
   return detail
     ? { ok: true, value: detail }
     : { ok: false, error: { message: "bd show 출력에 이슈가 없습니다.", exitCode: 0 } };
@@ -277,48 +283,66 @@ export async function decisionRecords(cwd: string): Promise<BdOutcome<DecisionRe
   if (!result.ok) {
     return result;
   }
-  const records = Array.isArray(result.value) ? result.value : [];
   return {
     ok: true,
-    value: records.flatMap((record) => {
+    value: recordsOf(result.value).flatMap((record) => {
       const decision = parseIssue(record);
       return decision ? [{ decision, supersededBy: supersedingIssue(record) }] : [];
     }),
   };
 }
 
-/**
- * 열린 human gate와 각 gate가 막고 있는 닫히지 않은 이슈를 읽습니다.
- * bd list는 --all을 주어도 gate를 돌려주지 않아 --type=gate로 따로 읽습니다.
- * gate 출력에는 막고 있는 이슈 id가 없으므로, 닫히지 않은 이슈의 blocks 의존 관계에서 찾습니다.
- * gate 목록은 --all로 닫힌 gate까지 읽어 각 gate의 이전 라운드 수를 셉니다.
- */
-export async function humanGates(cwd: string): Promise<BdOutcome<HumanGate[]>> {
+/** gate 목록(--all이므로 닫힌 gate 포함)과 열린 이슈, 그 이슈들이 남긴 blocks 간선입니다. */
+type GateBlockers = {
+  gateRecords: Record<string, unknown>[];
+  openIssues: Issue[];
+  blockers: IssueDependency[];
+};
+
+/** gate 목록과 열린 이슈를 함께 읽어, gate가 막고 있는 이슈를 찾는 데 필요한 값을 모읍니다. bd list는 --all을 주어도 gate를 돌려주지 않아 gate는 따로 읽습니다. */
+async function readGateBlockers(cwd: string): Promise<BdOutcome<GateBlockers>> {
   const [gates, open] = await Promise.all([
     runBdJson(cwd, ALL_GATE_LIST_ARGS),
     runBdJson(cwd, OPEN_LIST_ARGS),
   ]);
   if (!gates.ok) return gates;
   if (!open.ok) return open;
+  return {
+    ok: true,
+    value: {
+      gateRecords: recordsOf(gates.value),
+      openIssues: parseIssues(open.value),
+      blockers: parseIssueDependencies(open.value).filter(({ type }) => type === "blocks"),
+    },
+  };
+}
 
-  const gateRecords = recordsOf(gates.value);
-  const openById = new Map(parseIssues(open.value).map((issue) => [issue.id, issue]));
-  const blockers = parseIssueDependencies(open.value).filter(({ type }) => type === "blocks");
-  const closedGates = gateRecords.filter(isClosedGate);
+/** blockers 간선에서 gate가 막고 있는 이슈 id를 모읍니다. */
+function blockedIdsOf(gateId: string, blockers: IssueDependency[]): string[] {
+  return blockers.filter(({ dependsOnId }) => dependsOnId === gateId).map(({ issueId }) => issueId);
+}
+
+/**
+ * 열린 human gate와 각 gate가 막고 있는 닫히지 않은 이슈를 읽습니다.
+ * gate 출력에는 막고 있는 이슈 id가 없으므로, 닫히지 않은 이슈의 blocks 의존 관계에서 찾습니다.
+ */
+export async function humanGates(cwd: string): Promise<BdOutcome<HumanGate[]>> {
+  const read = await readGateBlockers(cwd);
+  if (!read.ok) return read;
+  const { gateRecords, openIssues, blockers } = read.value;
+  const openById = new Map(openIssues.map((issue) => [issue.id, issue]));
   return {
     ok: true,
     value: gateRecords.filter(isOpenHumanGate).flatMap((record) => {
       const gate = parseIssue(record);
       if (!gate) return [];
-      const blockedIds = blockers
-        .filter(({ dependsOnId }) => dependsOnId === gate.id)
-        .map(({ issueId }) => issueId);
+      const blockedIds = blockedIdsOf(gate.id, blockers);
       return [
         {
           gate,
-          reason: humanGateReason(textOf(record.description)),
+          reason: humanGateReason(stringOr(record.description, "")),
           blocks: blockedIds.flatMap((id) => openById.get(id) ?? []),
-          previousGateCount: previousGateRoundsOf(blockedIds, blockers, closedGates).length,
+          previousGateCount: previousGateRoundsOf(blockedIds, blockers, gateRecords).length,
         },
       ];
     }),
@@ -340,39 +364,23 @@ export async function previousGateRounds(
   cwd: string,
   gateId: string,
 ): Promise<BdOutcome<PreviousGateRound[]>> {
-  const id = gateId.trim();
-  if (id.length === 0) {
-    return inputError("게이트 id가 비어 있습니다.");
-  }
-  const [gates, open] = await Promise.all([
-    runBdJson(cwd, ALL_GATE_LIST_ARGS),
-    runBdJson(cwd, OPEN_LIST_ARGS),
-  ]);
-  if (!gates.ok) return gates;
-  if (!open.ok) return open;
-
-  const blockers = parseIssueDependencies(open.value).filter(({ type }) => type === "blocks");
-  const blockedIds = blockers
-    .filter(({ dependsOnId }) => dependsOnId === id)
-    .map(({ issueId }) => issueId);
-  const previous = previousGateRoundsOf(blockedIds, blockers, recordsOf(gates.value));
+  const id = trimmedId(gateId, "게이트 id가 비어 있습니다.");
+  if (!id.ok) return id;
+  const read = await readGateBlockers(cwd);
+  if (!read.ok) return read;
+  const { gateRecords, blockers } = read.value;
+  const previous = previousGateRoundsOf(blockedIdsOf(id.value, blockers), blockers, gateRecords);
   const details = await Promise.all(previous.map((round) => showIssue(cwd, round.gate.id)));
-  for (const detail of details) {
+  const rounds: PreviousGateRound[] = [];
+  for (const [index, detail] of details.entries()) {
     if (!detail.ok) return detail;
+    rounds.push({
+      gate: previous[index]!.gate,
+      closeReason: detail.value.closeReason,
+      comments: detail.value.comments,
+    });
   }
-  return {
-    ok: true,
-    value: previous.map((round, index) => {
-      const detail = details[index];
-      return detail?.ok
-        ? {
-            gate: round.gate,
-            closeReason: detail.value.closeReason,
-            comments: detail.value.comments,
-          }
-        : { gate: round.gate, closeReason: null, comments: [] };
-    }),
-  };
+  return { ok: true, value: rounds };
 }
 
 /** gate가 닫혔는지 bd JSON 레코드로 확인합니다. await 유형은 따지지 않습니다. */
@@ -478,11 +486,11 @@ export async function orphanIssues(cwd: string): Promise<BdOutcome<OrphanIssue[]
   return {
     ok: true,
     value: recordsOf(result.value).map((orphan) => ({
-      id: textOf(orphan.issue_id),
-      title: textOf(orphan.title),
-      status: textOf(orphan.status),
-      latestCommit: textOf(orphan.latest_commit),
-      latestCommitMessage: textOf(orphan.latest_commit_message),
+      id: stringOr(orphan.issue_id, ""),
+      title: stringOr(orphan.title, ""),
+      status: stringOr(orphan.status, ""),
+      latestCommit: stringOr(orphan.latest_commit, ""),
+      latestCommitMessage: stringOr(orphan.latest_commit_message, ""),
     })),
   };
 }
@@ -504,9 +512,9 @@ export async function lintFindings(cwd: string): Promise<BdOutcome<LintFinding[]
   return {
     ok: true,
     value: recordsOf(isRecord(result.value) ? result.value.results : null).map((finding) => ({
-      id: textOf(finding.id),
-      title: textOf(finding.title),
-      issueType: textOf(finding.type),
+      id: stringOr(finding.id, ""),
+      title: stringOr(finding.title, ""),
+      issueType: stringOr(finding.type, ""),
       missing: Array.isArray(finding.missing)
         ? finding.missing.filter((section) => typeof section === "string")
         : [],
@@ -532,30 +540,16 @@ export async function duplicateCandidates(cwd: string): Promise<BdOutcome<[Issue
   return {
     ok: true,
     value: recordsOf(isRecord(result.value) ? result.value.pairs : null).map((pair) => [
-      { id: textOf(pair.issue_a_id), title: textOf(pair.issue_a_title) },
-      { id: textOf(pair.issue_b_id), title: textOf(pair.issue_b_title) },
+      { id: stringOr(pair.issue_a_id, ""), title: stringOr(pair.issue_a_title, "") },
+      { id: stringOr(pair.issue_b_id, ""), title: stringOr(pair.issue_b_title, "") },
     ]),
   };
 }
 
-// 점검 명령은 결과가 없으면 배열 대신 null을 출력하기도 하므로, 배열이 아니면 빈 목록으로 읽습니다.
-function recordsOf(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter(isRecord) : [];
-}
-
-function textOf(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
+/** decision 레코드의 supersedes 관계에서 이 decision을 대체한 이슈 id를 꺼냅니다. 대체되지 않았으면 null입니다. */
 function supersedingIssue(record: unknown): string | null {
-  const dependencies =
-    isRecord(record) && Array.isArray(record.dependencies) ? record.dependencies : [];
-  const supersedes = dependencies.find(
-    (dependency) => isRecord(dependency) && dependency.type === "supersedes",
-  );
-  return isRecord(supersedes) && typeof supersedes.depends_on_id === "string"
-    ? supersedes.depends_on_id
-    : null;
+  const supersedes = parseIssueDependencies([record]).find(({ type }) => type === "supersedes");
+  return supersedes?.dependsOnId || null;
 }
 
 /**

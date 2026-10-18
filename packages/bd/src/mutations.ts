@@ -4,10 +4,19 @@ import {
   isRecord,
   parseIssue,
   parseIssues,
+  showRecordOf,
   type Issue,
   type IssueStatus,
 } from "./issue";
-import { inputError, runBdChecked, runBdJson, type BdError, type BdOutcome } from "./runBd";
+import {
+  inputError,
+  runBdChecked,
+  runBdJson,
+  trimmedId,
+  trimmedIds,
+  type BdError,
+  type BdOutcome,
+} from "./runBd";
 
 // 모든 쓰기 명령은 값을 `--flag=값`으로, id와 본문은 `--` 뒤에 넘깁니다.
 // 그래야 -로 시작하는 제목, 댓글, 라벨을 bd가 플래그로 해석하지 않습니다.
@@ -137,9 +146,7 @@ export function deferIssue(
 export async function claimIssue(cwd: string, issueId: string): Promise<BdOutcome<null>> {
   const result = await write(cwd, ["update", "--claim"], [issueId]);
   // bd는 거부 사유를 첫 줄에 쓰고, 실패한 이슈 수와 같은 사유를 다시 덧붙입니다.
-  return result.ok
-    ? result
-    : { ok: false, error: { ...result.error, message: result.error.message.split("\n")[0] } };
+  return result.ok ? result : withErrorMessage(result, result.error.message.split("\n")[0]);
 }
 
 export type CloseOutcome =
@@ -156,16 +163,14 @@ export async function closeIssue(
   issueId: string,
   options: { reason: string; force?: boolean },
 ): Promise<CloseOutcome> {
-  const id = issueId.trim();
-  if (id.length === 0) {
-    return inputError("이슈 id가 비어 있습니다.");
-  }
+  const id = trimmedId(issueId, "이슈 id가 비어 있습니다.");
+  if (!id.ok) return id;
   const reason = options.reason.trim();
   const args = ["close", "--json", "--suggest-next"];
   if (options.force) args.push("--force");
   if (reason) args.push(`--reason=${reason}`);
 
-  const result = await runBdJson(cwd, [...args, "--", id], { write: true });
+  const result = await runBdJson(cwd, [...args, "--", id.value], { write: true });
   if (!result.ok) {
     return CLOSE_BLOCKED.test(result.error.message) ? { ...result, closeBlocked: true } : result;
   }
@@ -194,21 +199,16 @@ export async function closeAsReplaced(
   replacement: Replacement,
   targetId: string,
 ): Promise<BdOutcome<null>> {
-  const target = targetId.trim();
-  if (target.length === 0) {
-    return inputError("대상 이슈 id가 비어 있습니다.");
-  }
+  const target = trimmedId(targetId, "대상 이슈 id가 비어 있습니다.");
+  if (!target.ok) return target;
   const result = await write(
     cwd,
-    [replacement, `${REPLACEMENT_FLAGS[replacement]}=${target}`],
+    [replacement, `${REPLACEMENT_FLAGS[replacement]}=${target.value}`],
     [issueId],
   );
   return result.ok
     ? result
-    : {
-        ok: false,
-        error: { ...result.error, message: result.error.message.replace(USAGE_AFTER_ERROR, "") },
-      };
+    : withErrorMessage(result, result.error.message.replace(USAGE_AFTER_ERROR, ""));
 }
 
 export function addComment(cwd: string, issueId: string, text: string): Promise<BdOutcome<null>> {
@@ -279,21 +279,18 @@ async function runHumanCommand(
   issueId: string,
   values: string[],
 ): Promise<BdOutcome<null>> {
-  const id = issueId.trim();
-  // bd show는 id가 없으면 마지막으로 다룬 이슈를 보여 줍니다.
-  if (id.length === 0) {
-    return inputError("이슈 id가 비어 있습니다.");
-  }
-  const shown = await runBdJson(cwd, ["show", "--json", "--", id]);
+  const id = trimmedId(issueId, "이슈 id가 비어 있습니다.");
+  if (!id.ok) return id;
+  const shown = await runBdJson(cwd, ["show", "--json", "--", id.value]);
   if (!shown.ok) {
     return shown;
   }
-  const record: unknown = Array.isArray(shown.value) ? shown.value[0] : shown.value;
+  const record = showRecordOf(shown.value);
   const issue = parseIssue(record);
   if (!issue || !(awaitsHumanDecision(issue) || isOpenHumanGate(record))) {
     return inputError("사람 판단을 기다리는 이슈가 아닙니다.");
   }
-  return write(cwd, ["human", action], [id], values);
+  return write(cwd, ["human", action], [id.value], values);
 }
 
 /** 빈 id가 있으면 bd를 실행하지 않습니다. values는 id 뒤에 그대로 넘깁니다. */
@@ -303,13 +300,18 @@ async function write(
   ids: string[],
   values: string[] = [],
 ): Promise<BdOutcome<null>> {
-  const trimmed = ids.map((id) => id.trim());
-  // update처럼 id가 없으면 마지막으로 다룬 이슈를 고치는 명령이 있습니다.
-  if (trimmed.some((id) => id.length === 0)) {
-    return inputError("이슈 id가 비어 있습니다.");
-  }
-  const result = await runBdChecked(cwd, [...command, "--", ...trimmed, ...values], {
+  const trimmed = trimmedIds(ids, "이슈 id가 비어 있습니다.");
+  if (!trimmed.ok) return trimmed;
+  const result = await runBdChecked(cwd, [...command, "--", ...trimmed.value, ...values], {
     write: true,
   });
   return result.ok ? { ok: true, value: null } : result;
+}
+
+/** 실패 결과의 오류 메시지만 바꿉니다. bd가 거부 사유 뒤에 덧붙여 출력하는 문구를 정리할 때 씁니다. */
+function withErrorMessage(
+  result: { ok: false; error: BdError },
+  message: string,
+): { ok: false; error: BdError } {
+  return { ok: false, error: { ...result.error, message } };
 }
