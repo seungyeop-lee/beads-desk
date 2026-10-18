@@ -91,7 +91,7 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
   - 외부 문서: `README.md`, `USAGE.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, `.github/ISSUE_TEMPLATE/`의 issue template
   - `bd-desk` CLI와 배포 스크립트(`packages/app/bin/`, `packages/app/scripts/`)가 출력하는 문구. 터미널 언어를 감지하지 않고 영어로만 출력합니다.
 - 한국어로 씁니다.
-  - 코드 주석, 테스트 이름, 커밋 메시지, 모든 디렉터리의 `AGENTS.md`, `docs/`
+  - 코드 주석, 테스트 이름, 커밋 메시지, 모든 디렉터리의 `AGENTS.md`, `docs/`, `.claude/skills/`의 프로젝트 skill
   - `README.ko.md`와 `USAGE.ko.md`. 각각 `README.md`와 `USAGE.md`의 한국어 미러이므로, 영어 문서를 고치면 같은 내용으로 함께 고칩니다.
 - 한국어와 영어로 함께 씁니다.
   - 웹 UI 문구. Server Action, Route API, `packages/bd`가 화면에 전달하는 오류도 포함합니다. 문구를 넣을 사전은 "소스 구조" 절에 있습니다.
@@ -99,6 +99,10 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 커밋 메시지는 Conventional Commits 형식(`type(scope): 제목`)을 따릅니다.
 
 코드 주석에는 bd 이슈 ID를 적지 않고, 지켜야 할 규칙이나 이유를 문장으로 적습니다. `.beads/`는 저장소에 들어가지 않아서, 저장소나 npm 패키지로 코드를 읽는 사람은 그 ID로 내용을 찾을 수 없습니다.
+
+## 프로젝트 skill
+
+프로젝트 skill은 `.claude/skills/<이름>/SKILL.md`에 둡니다. 저장소 루트의 `.agents/skills`는 `../.claude/skills`를 가리키는 심볼릭 링크라서, Claude Code와 Codex가 같은 skill을 읽습니다. 사용자가 직접 불러야 하는 skill은 frontmatter에 `disable-model-invocation: true`를 두고, Codex용으로 skill 폴더의 `agents/openai.yaml`에 `policy.allow_implicit_invocation: false`를 둡니다.
 
 ## 워크트리 작업
 
@@ -171,6 +175,8 @@ act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지�
 1. 저장소 루트 `CHANGELOG.md`의 가장 최근 version 절 위에 `## [<version>] - <YYYY-MM-DD>` 절을 추가하고, 바뀐 내용을 영어로 적습니다. 이 절의 본문(다음 `## ` 제목 앞까지)이 GitHub Release의 노트가 됩니다.
 2. `packages/app/package.json`의 `version`을 같은 값으로 바꿉니다.
 3. 두 변경을 `main`에 push합니다.
+
+1–2단계와 두 파일만 담은 릴리스 커밋은 프로젝트 skill `/versionup [patch|minor|major]`(Codex에서는 `$versionup`)로 만들 수 있습니다. skill은 push하지 않으므로, 커밋을 검토한 뒤 3단계는 직접 실행합니다.
 
 - 검사가 하나라도 실패하면 게시하지 않고 workflow가 실패로 끝납니다. 고친 커밋을 push하면 version이 아직 npm에 없으므로 그 커밋에서 다시 검사하고 게시합니다. main push마다 `check.yml`도 따로 실행되므로, version을 올린 커밋에서는 같은 검사가 두 번 실행됩니다.
 - 해당 절이 없거나 본문이 비어 있거나 제목이 날짜로 끝나지 않으면, workflow는 게시하기 전에 실패합니다(수동 실행은 날짜가 없으면 경고만 출력합니다). 날짜를 아직 정하지 않은 절은 `## [<version>] - Unreleased`로 적어 두고 version을 올릴 때 날짜로 바꿉니다. version이 `0.0.0`이 아니면 `pnpm run check`의 unit test(`packages/app/scripts/releaseNotes.test.ts`)도 같은 조건을 검사합니다.
