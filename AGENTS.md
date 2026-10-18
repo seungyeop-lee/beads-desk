@@ -28,6 +28,7 @@
 - `packages/promo/out/beads-desk-intro.gif`는 README 맨 위에 두는, 같은 영상을 줄인 GIF입니다(960×540, 6.25fps). GitHub 이미지 첨부 한도인 10MB를 넘으면 명령이 실패합니다.
 - `packages/promo/out/`은 저장소에 넣지 않습니다.
 - 장면 순서, 자막, 녹화에서 잘라 쓰는 구간은 `packages/promo/src/video/introTimeline.ts`에 있습니다. 구간은 녹화 시각으로 적혀 있으므로, `captureTargets.ts`에서 장면의 동작이나 pause 길이를 바꾸면 구간도 함께 고칩니다.
+- 렌더링하기 전에 구간마다 첫 frame과 마지막 frame을 구간 안쪽 1초 동안의 frame과 비교하고, 화면이 크게 다르면 장면과 경계(`fromMs`·`toMs`)를 알리며 실패합니다. 경계가 화면을 불러오는 동안에 걸렸거나 경계에서 1초 안에 장면의 동작이 있는 경우이므로, 녹화의 frame을 보고 그 경계를 옮깁니다. 목록이 빈 채로 1초 넘게 머물면, 빈 목록이 나타나고 얼마 지나지 않은 경계는 이 검사를 통과합니다.
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 

@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition, type RenderMediaOptions } from "@remotion/renderer";
 import { INTRO_ID, SHOTS } from "./introTimeline.ts";
+import { findLoadingBoundaries } from "./loadingBoundaries.ts";
+import { openRecordingFrames } from "./recordingFrames.ts";
 
 const PACKAGE_DIR = fileURLToPath(new URL("../../", import.meta.url));
 /** 캡처 명령이 녹화를 저장하는 곳입니다. 영상은 이 디렉터리를 public 디렉터리로 삼아 녹화를 읽습니다. */
@@ -33,6 +35,21 @@ const missing = [...new Set(SHOTS.map((shot) => `${shot.recording}.webm`))].filt
 if (missing.length > 0) {
   throw new Error(
     `${RECORDING_DIR}에 ${missing.join(", ")}이 없습니다. 먼저 pnpm --filter promo run capture로 화면을 녹화합니다.`,
+  );
+}
+
+// 경계가 로딩 중인 화면에 걸리면 영상에 빈 목록이나 바뀌기 전 표시가 섞이므로, 렌더링하기 전에 멈춥니다.
+const recordingFrames = await openRecordingFrames(RECORDING_DIR);
+const loadingBoundaries = await findLoadingBoundaries(SHOTS, recordingFrames.read).finally(() =>
+  recordingFrames.close(),
+);
+if (loadingBoundaries.length > 0) {
+  throw new Error(
+    [
+      "녹화 구간의 경계가 화면을 불러오는 동안이나 장면의 동작 바로 앞뒤에 걸렸습니다.",
+      ...loadingBoundaries.map((problem) => `- ${problem}`),
+      "녹화의 frame을 보고, introTimeline.ts의 SHOTS에서 fromMs는 화면을 다 그린 뒤로, toMs는 화면이 바뀌기 전으로 옮깁니다.",
+    ].join("\n"),
   );
 }
 
