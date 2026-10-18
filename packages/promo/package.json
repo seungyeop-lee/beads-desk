@@ -2,6 +2,11 @@
   "name": "@beads-desk/promo",
   "private": true,
   "type": "module",
+  "exports": {
+    "./seed/acmeProject": "./src/seed/acmeProject.ts",
+    "./seed/isolatedBdEnv": "./src/seed/isolatedBdEnv.ts",
+    "./seed/seedWorkspace": "./src/seed/seedWorkspace.ts"
+  },
   "scripts": {
     "seed": "node src/seed/seed.ts",
     "capture": "node src/capture/capture.ts",

@@ -17,6 +17,11 @@ const boundaries = {
     regex: "^@/|^@seungyeop-lee/beads-desk(?:/|$)|^(?:\\.\\./)+app(?:/|$)",
     message: "promo package는 app의 코드와 테스트 helper에 의존하지 않습니다.",
   },
+  playgroundPackage: {
+    // app은 next dev process로 띄우므로 코드를 import할 일이 없고, e2e helper를 import하면 테스트를 고칠 때 수동 테스트 환경이 함께 깨집니다.
+    regex: "^@/|^@seungyeop-lee/beads-desk(?:/|$)|^(?:\\.\\./)+app(?:/|$)",
+    message: "playground package는 app의 코드와 테스트 helper에 의존하지 않습니다.",
+  },
   bdServerPackage: {
     regex: "^@beads-desk/bd(?:$|/(?!issue$))",
     message:
@@ -162,6 +167,10 @@ export default defineConfig([
   {
     files: ["packages/promo/**/*.{ts,tsx}"],
     rules: restrict(boundaries.promoPackage),
+  },
+  {
+    files: ["packages/playground/**/*.ts"],
+    rules: restrict(boundaries.playgroundPackage),
   },
   {
     files: ["packages/app/src/server/**/*.{ts,tsx}"],

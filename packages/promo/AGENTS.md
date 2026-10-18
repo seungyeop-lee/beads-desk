@@ -6,6 +6,8 @@ README 스크린샷과 소개 영상을 만드는 명령입니다. seed로 데�
 
 `pnpm --filter promo run seed <디렉터리>`는 그 디렉터리에 git 저장소와 영어 데모 프로젝트(prefix `acme`)의 bd workspace를 만듭니다. 비어 있거나 전에 seed로 만든 디렉터리만 받고, 전에 만든 디렉터리는 비운 뒤 다시 만듭니다.
 
+`packages/playground`의 수동 테스트 환경도 acme 데이터(`src/seed/acmeProject.ts`)와 workspace를 만드는 `src/seed/seedWorkspace.ts`를 가져다 씁니다. 두 파일이나 `package.json`의 `exports`를 바꾸면 `pnpm playground`를 실행해 함께 확인합니다.
+
 ## capture: 화면 캡처와 녹화
 
 `pnpm --filter promo run capture`는 임시 디렉터리 아래 `acme-web`에 데모 workspace를 새로 만들고, 마지막 app build로 서버를 띄워 영어 UI와 라이트 테마로 화면을 캡처합니다. 먼저 `pnpm run build`를 실행하고, chromium이 없으면 `pnpm run test:e2e:install`로 설치합니다. 캡처할 화면과 순서는 `packages/promo/src/capture/captureTargets.ts`의 목록에서 정합니다.

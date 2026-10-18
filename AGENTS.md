@@ -8,13 +8,16 @@
 
 ## 패키지 구성
 
-| 경로             | 패키지                      | 역할                                                           |
-| ---------------- | --------------------------- | -------------------------------------------------------------- |
-| `packages/app`   | `@seungyeop-lee/beads-desk` | npm으로 배포하는 Next.js 앱과 `bd-desk` 실행 명령              |
-| `packages/bd`    | `@beads-desk/bd`            | `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다 |
-| `packages/promo` | `@beads-desk/promo`         | README 스크린샷과 소개 영상을 만드는 도구. 배포하지 않습니다   |
+| 경로                  | 패키지                      | 역할                                                                                     |
+| --------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| `packages/app`        | `@seungyeop-lee/beads-desk` | npm으로 배포하는 Next.js 앱과 `bd-desk` 실행 명령                                        |
+| `packages/bd`         | `@beads-desk/bd`            | `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다                           |
+| `packages/promo`      | `@beads-desk/promo`         | README 스크린샷과 소개 영상을 만드는 도구. 배포하지 않습니다                             |
+| `packages/playground` | `@beads-desk/playground`    | 테스트 데이터를 담은 workspace로 `next dev`를 띄우는 수동 테스트 환경. 배포하지 않습니다 |
 
 README 스크린샷이나 소개 영상을 만들거나 `packages/promo`를 고치기 전에 `packages/promo/AGENTS.md`를 읽습니다. seed·capture·video 명령과 출력 파일, 캡처 장면을 바꿀 때 함께 고칠 파일이 그 문서에 있습니다.
+
+화면을 직접 조작해 보거나 데이터가 있어야 드러나는 버그를 재현할 때는 `pnpm playground`로 테스트 데이터 workspace와 개발 서버를 띄웁니다. 실행 옵션, 데이터에 든 경계 사례, 데이터를 더하는 방법은 `packages/playground/AGENTS.md`에 있습니다.
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 

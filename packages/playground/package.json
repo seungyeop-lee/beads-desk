@@ -1,0 +1,13 @@
+{
+  "name": "@beads-desk/playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/start.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@beads-desk/promo": "workspace:*",
+    "@typescript/native": "npm:typescript@^7.0.2"
+  }
+}
