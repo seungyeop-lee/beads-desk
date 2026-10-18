@@ -147,3 +147,24 @@ act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지�
 - Apple Silicon에서는 arm64 container에서 실행하므로, pnpm이 GitHub runner와 다른 플랫폼의 native 패키지를 설치합니다.
 - cache는 act에 내장된 cache server가 `~/.cache/actcache`에 저장합니다. 두 번째 실행부터 setup-node의 pnpm cache가 복원되지만, GitHub의 cache와는 공유되지 않습니다.
 - act에서는 OIDC token을 발급받을 수 없으므로, `id-token: write` 권한이 필요한 단계는 act로 확인할 수 없습니다.
+
+## 릴리스
+
+`main`에 push하면 `.github/workflows/release.yml`이 `packages/app/package.json`의 `version`을 npm에서 찾습니다. 아직 없는 version이면 빌드해서 `packages/app/scripts/run-npm-release.mjs publish`로 게시하고 `v<version>` tag와 GitHub Release를 만들며, 이미 있으면 아무것도 하지 않고 끝납니다. 그래서 version을 올린 커밋이 곧 릴리스가 됩니다.
+
+1. 저장소 루트 `CHANGELOG.md`의 가장 최근 version 절 위에 `## [<version>] - <YYYY-MM-DD>` 절을 추가하고, 바뀐 내용을 영어로 적습니다. 이 절의 본문(다음 `## ` 제목 앞까지)이 GitHub Release의 노트가 됩니다.
+2. `packages/app/package.json`의 `version`을 같은 값으로 바꿉니다.
+3. 두 변경을 `main`에 push합니다.
+
+- 해당 절이 없거나 본문이 비어 있거나 제목이 날짜로 끝나지 않으면, workflow는 게시하기 전에 실패합니다(수동 실행은 날짜가 없으면 경고만 출력합니다). 날짜를 아직 정하지 않은 절은 `## [<version>] - Unreleased`로 적어 두고 version을 올릴 때 날짜로 바꿉니다. version이 `0.0.0`이 아니면 `pnpm run check`의 unit test(`packages/app/scripts/releaseNotes.test.ts`)도 같은 조건을 검사합니다.
+- npm 인증은 trusted publishing(OIDC)으로 합니다. npmjs.com의 trusted publisher 설정에 workflow 파일 이름 `release.yml`을 적으므로, 파일 이름을 바꾸면 그 설정도 함께 바꿉니다. 첫 게시처럼 trusted publisher를 설정하기 전에는 저장소 secret `NPM_TOKEN`을 두면 OIDC 인증이 실패한 뒤 그 token으로 게시합니다. trusted publisher를 설정한 뒤 secret을 지우면 OIDC만 씁니다.
+- 게시한 뒤 tag나 Release 생성이 실패하면, workflow를 다시 실행해도 version이 이미 있어서 건너뜁니다. 이때는 `node packages/app/scripts/releaseNotes.mjs <version> > <노트 파일>`로 노트를 뽑아 `gh release create v<version> --target <커밋> --title v<version> --notes-file <노트 파일>`로 직접 만듭니다.
+
+`release.yml`을 고쳤으면 수동 실행(`workflow_dispatch`)으로 확인합니다. 수동 실행은 `npm publish --dry-run`까지만 실행하고 tag와 Release를 만들지 않습니다. 입력 `package`와 `version`은 npm에서 찾을 대상과 `CHANGELOG.md`에서 읽을 version을 바꾸므로, 이미 있는 version(예: `package=react`, `version=19.0.0`)과 없는 version을 넣어 두 분기를 확인합니다. act로 실행할 때는 `검증`의 act 설명을 따르되, event는 반드시 `workflow_dispatch`로 줍니다. `push` event로 실행하면 dry-run이 아니라 실제 게시를 시도합니다.
+
+```sh
+act workflow_dispatch -W .github/workflows/release.yml --input version=<CHANGELOG.md에 있는 version> -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
+act workflow_dispatch -W .github/workflows/release.yml --input package=react --input version=19.0.0 -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
+```
+
+없는 version은 `publish` job이 `npm notice ... (dry-run)`을 출력하고 `Job succeeded`로 끝나면 통과입니다(약 30초). 이미 있는 version은 `published on npm: true`를 출력한 뒤 `publish` job이 실행되지 않고 끝나면 통과입니다. act는 OIDC token을 발급하지 못하므로, trusted publishing 인증은 trusted publisher를 설정한 뒤 GitHub에서 게시할 때에만 확인할 수 있습니다.

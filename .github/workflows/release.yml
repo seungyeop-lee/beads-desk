@@ -1,0 +1,98 @@
+name: release
+
+# npm trusted publisher 설정에 이 파일 이름(release.yml)을 적으므로, 이름을 바꾸면 npmjs.com의 설정도 함께 바꿉니다.
+on:
+  push:
+    branches: [main]
+  # 수동 실행은 npm 게시와 tag·Release 생성을 건너뛰는 dry-run입니다.
+  # 입력은 npm에서 찾을 package·version과 CHANGELOG.md에서 읽을 version만 바꾸고, 게시 dry-run은 packages/app을 그대로 씁니다.
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package name to look up on npm (default is the name in packages/app/package.json)
+        type: string
+      version:
+        description: Version to look up on npm and read from CHANGELOG.md (default is the version in packages/app/package.json)
+        type: string
+
+# 같은 version을 두 번 게시하지 않게 push 실행은 하나씩 차례로 실행합니다.
+# 수동 dry-run이 기다리던 push 실행을 밀어내 취소하지 않도록 group을 event별로 나눕니다.
+concurrency:
+  group: release-${{ github.event_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.lookup.outputs.version }}
+      published: ${{ steps.lookup.outputs.published }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Look up the version on npm
+        id: lookup
+        env:
+          INPUT_PACKAGE: ${{ inputs.package }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          package="${INPUT_PACKAGE:-$(node -p 'require("./packages/app/package.json").name')}"
+          version="${INPUT_VERSION:-$(node -p 'require("./packages/app/package.json").version')}"
+
+          # 패키지가 아직 없을 때와 version만 없을 때 모두 npm view가 E404로 실패하므로, 둘 다 게시하지 않은 version으로 봅니다.
+          # 그 밖의 실패(네트워크 오류 등)는 게시 여부를 알 수 없으므로 workflow를 실패시킵니다.
+          if output="$(npm view "$package@$version" version 2>"$RUNNER_TEMP/npm-view.log")"; then
+            published="$([ -n "$output" ] && echo true || echo false)"
+          elif grep -q 'E404' "$RUNNER_TEMP/npm-view.log"; then
+            published=false
+          else
+            cat "$RUNNER_TEMP/npm-view.log" >&2
+            exit 1
+          fi
+
+          echo "$package@$version published on npm: $published"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: version
+    if: needs.version.outputs.published == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # tag와 GitHub Release 생성
+      id-token: write # npm trusted publishing(OIDC)
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      # npm 문서의 권장대로 게시하는 빌드에서는 dependency cache를 쓰지 않습니다.
+      # Node 24에 들어 있는 npm은 trusted publishing에 필요한 11.5.1 이상입니다.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      # 절이 없거나 제목에 날짜가 없으면 게시하기 전에 여기서 실패합니다. dry-run은 날짜가 없어도 경고만 출력합니다.
+      - name: Read release notes from CHANGELOG.md
+        run: |
+          node packages/app/scripts/releaseNotes.mjs "$VERSION" ${{ github.event_name != 'push' && '--allow-undated' || '' }} > "$RUNNER_TEMP/release-notes.md"
+          cat "$RUNNER_TEMP/release-notes.md"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      # npm은 OIDC로 먼저 인증하고, 실패하면 ~/.npmrc의 token을 씁니다.
+      # 첫 게시처럼 trusted publisher를 설정하기 전에는 NPM_TOKEN secret을 두고, 설정한 뒤 secret을 지우면 OIDC만 남습니다.
+      - name: Publish to npm
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm --version
+          if [ -n "$NPM_TOKEN" ]; then
+            echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > ~/.npmrc
+          fi
+          node packages/app/scripts/run-npm-release.mjs publish ${{ github.event_name != 'push' && '--dry-run' || '' }}
+      - name: Create the tag and GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
