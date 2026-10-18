@@ -24,7 +24,7 @@
 - `.github/workflows/`를 고칠 때: `.github/AGENTS.md`
 - 릴리스가 게시되지 않았거나 prerelease를 낼 때: `docs/release.md`
 
-하위 디렉터리에 `AGENTS.md`를 새로 만들면 옆에 `@AGENTS.md` 한 줄만 담은 `CLAUDE.md`를 두고, 이 목록에 그 문서를 읽을 작업을 적습니다. Claude Code는 하위 디렉터리의 `AGENTS.md`를 직접 읽지 않고 `CLAUDE.md`만 읽습니다.
+하위 디렉터리에 `AGENTS.md`를 새로 만들면 이 목록에 그 문서를 읽을 작업을 적습니다. 저장소에는 `CLAUDE.md`나 `CLAUDE.local.md`를 만들지 않습니다. 작업 디렉터리나 그 위 디렉터리에 이 파일이 하나라도 있으면 Claude Code가 `AGENTS.md`를 읽지 않습니다.
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 
