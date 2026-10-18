@@ -16,6 +16,12 @@
 
 `pnpm --filter promo run seed <디렉터리>`는 그 디렉터리에 git 저장소와 영어 데모 프로젝트(prefix `acme`)의 bd workspace를 만듭니다. 비어 있거나 전에 seed로 만든 디렉터리만 받고, 전에 만든 디렉터리는 비운 뒤 다시 만듭니다.
 
+`pnpm --filter promo run capture`는 임시 디렉터리 아래 `acme-web`에 데모 workspace를 새로 만들고, 마지막 app build로 서버를 띄워 영어 UI와 라이트 테마로 화면을 캡처합니다. 먼저 `pnpm run build`를 실행하고, chromium이 없으면 `pnpm run test:e2e:install`로 설치합니다. 캡처할 화면과 순서는 `packages/promo/src/capture/captureTargets.ts`의 목록에서 정합니다.
+
+- README 스크린샷은 `docs/screenshots/<이름>.png`에 저장하고 저장소에 commit합니다.
+- 소개 영상용 녹화(`<이름>.webm`)와, 녹화 중에 실행한 bd 명령과 그 시각을 담은 `captureLog.json`은 `packages/promo/recordings/`에 저장합니다. 이 디렉터리는 저장소에 넣지 않습니다. `captureLog.json`의 형식은 `packages/promo/src/capture/captureLog.ts`에 있습니다.
+- 이미 만든 데모 workspace를 쓰려면 `--workspace <디렉터리>`를 줍니다. 화면 머리글에 디렉터리 이름이 보이므로 이름은 `acme-web`으로 둡니다. 실시간 반영 장면이 그 workspace의 이슈를 바꾸므로, 같은 workspace로 다시 캡처하기 전에 seed로 다시 만듭니다.
+
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 
 저장소에서 개발할 때는 Node 24 이상을 씁니다. nvm을 쓰면 저장소 루트에서 `nvm use`로 `.nvmrc`의 버전을 고릅니다. `packages/app`의 `engines`(Node 22 이상)는 사용자가 배포 패키지를 설치할 때의 조건이므로 함께 올리지 않습니다.

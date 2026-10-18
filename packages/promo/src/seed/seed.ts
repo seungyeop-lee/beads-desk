@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { ACME_PREFIX, acmeIssues, addCliActivity, toImportRecord } from "./acmeProject.ts";
+import { isolatedBdEnv } from "./isolatedBdEnv.ts";
 
 /** seed가 만든 디렉터리에 남기는 표시입니다. 이 파일이 있는 디렉터리만 지우고 다시 만듭니다. */
 const SEED_MARKER = ".beads-desk-promo-seed";
@@ -18,7 +19,7 @@ const workspace = resolve(process.env.INIT_CWD ?? process.cwd(), target);
 prepareDirectory(workspace);
 const home = mkdtempSync(join(tmpdir(), "beads-desk-promo-home-"));
 try {
-  const env = isolatedEnv(home);
+  const env = isolatedBdEnv(home);
   const run = (command: string, args: string[], input?: string) =>
     execFileSync(command, args, { cwd: workspace, env, input, encoding: "utf8" });
   const bd = (...args: string[]) => run("bd", args);
@@ -48,27 +49,4 @@ function prepareDirectory(path: string): void {
   mkdirSync(path, { recursive: true });
   // seed가 중간에 실패해도 다시 실행할 수 있도록 git과 bd를 만들기 전에 남깁니다.
   writeFileSync(join(path, SEED_MARKER), "");
-}
-
-/**
- * bd는 사용자 단위 설정 파일(`~/.config/bd/config.yaml` 등)과 BD_*, BEADS_* 환경 변수를 읽습니다.
- * 실행한 사람의 설정이 섞이면 쓰기를 거부하거나, BEADS_DIR처럼 DB 위치를 정하는 변수 때문에 이 디렉터리가 아닌 다른 DB에 쓸 수 있습니다.
- * 그래서 빈 HOME을 주고 BD_*, BEADS_* 환경 변수를 뺍니다.
- * git 작성자와 bd actor도 정해 두어, 실행한 사람의 이름이 데모 데이터에 남지 않게 합니다.
- */
-function isolatedEnv(home: string): NodeJS.ProcessEnv {
-  const inherited = Object.entries(process.env).filter(
-    ([name]) => !name.startsWith("BD_") && !name.startsWith("BEADS_"),
-  );
-  return {
-    ...Object.fromEntries(inherited),
-    HOME: home,
-    XDG_CONFIG_HOME: join(home, ".config"),
-    DO_NOT_TRACK: "1",
-    BEADS_ACTOR: "sam",
-    GIT_AUTHOR_NAME: "Acme Team",
-    GIT_AUTHOR_EMAIL: "team@acme.example",
-    GIT_COMMITTER_NAME: "Acme Team",
-    GIT_COMMITTER_EMAIL: "team@acme.example",
-  };
 }

@@ -4,9 +4,11 @@
   "type": "module",
   "scripts": {
     "seed": "node src/seed/seed.ts",
+    "capture": "node src/capture/capture.ts",
     "typecheck": "tsc --noEmit -p ."
   },
   "devDependencies": {
-    "@typescript/native": "npm:typescript@^7.0.2"
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "playwright": "^1.64.0"
   }
 }

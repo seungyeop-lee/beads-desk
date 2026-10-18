@@ -296,6 +296,9 @@ importers:
       '@typescript/native':
         specifier: npm:typescript@^7.0.2
         version: typescript@7.0.2
+      playwright:
+        specifier: ^1.64.0
+        version: 1.64.0
 
 packages:
 
