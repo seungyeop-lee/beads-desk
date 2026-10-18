@@ -238,7 +238,7 @@ function GraphLink({ scope, label }: { scope: GraphScope; label: string }) {
   const graphHref = useGraphHref();
   return (
     <Link
-      className="link text-xs text-base-content/60 link-hover"
+      className="btn btn-sm rounded-full border-base-300 bg-base-100 text-sm font-medium shadow-none hover:border-base-content/30"
       href={graphHref(scope)}
       scroll={false}
     >
