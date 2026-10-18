@@ -9,11 +9,8 @@ import {
   type ClosedWindow,
 } from "@/client/modules/board/domain/boardView";
 import { useBoard } from "@/client/modules/board/application/useBoard";
-import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
-import {
-  blockersOf,
-  type HumanGateTitles,
-} from "@/client/modules/humanGates/domain/humanGateBlockers";
+import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
+import { blockersOf, type GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { statusPrompts } from "@/client/ui/issues/fields/statusPrompts";
@@ -51,7 +48,7 @@ const DRAG_TYPE = "application/x-beads-desk-card";
  */
 export function BoardScreen() {
   const { data: items, error, loading } = useBoard();
-  const humanGateTitles = useHumanGateTitles();
+  const gateTitles = useGateTitles();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const [closedWindow, setClosedWindow] = useState<ClosedWindow>("today");
@@ -140,7 +137,7 @@ export function BoardScreen() {
                     issue={issue}
                     column={column}
                     href={issueHref(issue.id)}
-                    humanGateTitles={humanGateTitles}
+                    gateTitles={gateTitles}
                   />
                 ))}
               </ul>
@@ -158,10 +155,10 @@ type CardProps = {
   issue: Issue;
   column: BoardColumn;
   href: string;
-  humanGateTitles: HumanGateTitles;
+  gateTitles: GateTitles;
 };
 
-function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {
+function BoardCard({ issue, column, href, gateTitles }: CardProps) {
   const messages = useMessages();
   const title = issue.title || messages.common.untitled;
   return (
@@ -184,9 +181,7 @@ function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {
     >
       <span className="leading-snug font-medium break-words">{title}</span>
       {/* 보드는 막는 이슈를 id로만 보이고, 열린 human gate만 사람 확인 기다림 표시와 gate 제목으로 보입니다. */}
-      <BoardBlockerLine
-        blockers={blockersOf(issue.blockedBy ?? [], humanGateTitles, () => undefined)}
-      />
+      <BoardBlockerLine blockers={blockersOf(issue.blockedBy ?? [], gateTitles, () => undefined)} />
       <span className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
         <IssueTypeTag issueType={issue.issueType} />
         <HumanDecisionChip issue={issue} />

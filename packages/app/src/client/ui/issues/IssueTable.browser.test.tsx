@@ -45,7 +45,7 @@ for (const width of AREA_WIDTHS) {
             issues={ISSUES}
             issueHref={(id) => `/issues?issue=${id}`}
             writes={WRITES}
-            humanGateTitles={new Map()}
+            gateTitles={new Map()}
           />
         </div>
       </LocaleProvider>,

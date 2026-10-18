@@ -11,6 +11,7 @@ export {
   lintFindings,
   listIssues,
   openChangeFingerprint,
+  openGates,
   orphanIssues,
   previousGateRounds,
   type PreviousGateRound,

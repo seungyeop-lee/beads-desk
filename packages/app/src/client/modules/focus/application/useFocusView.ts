@@ -4,8 +4,8 @@ import { useEpics } from "@/client/modules/epics/application/useEpics";
 import { focusStats, type FocusStats } from "@/client/modules/focus/domain/focusStats";
 import { focusView, type FocusView } from "@/client/modules/focus/domain/focusView";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
-import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
-import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
+import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import type { WorkspaceReadState } from "@/client/modules/workspace/application/useWorkspaceRead";
 import type { EpicSummary } from "@/shared/contract/epics";
@@ -23,13 +23,13 @@ export function useFocusView(now: number): {
   stats: FocusStats | null;
   /** 이슈 id마다 제목입니다. 막힘 표시에 상대 이슈 이름을 보입니다. */
   titles: ReadonlyMap<string, string>;
-  /** 열린 human gate의 id마다 제목입니다. */
-  gateTitles: HumanGateTitles;
+  /** 열린 gate의 id마다 제목과 human gate인지입니다. */
+  gateTitles: GateTitles;
 } {
   const issueList = useIssueList();
   const epics = useEpics();
   const humanDecisionCount = useHumanDecisionCount();
-  const gateTitles = useHumanGateTitles();
+  const gateTitles = useGateTitles();
   const issues = issueList.data;
   const view = useMemo(
     () => (issues ? focusView(issues, epics.data ?? []) : null),

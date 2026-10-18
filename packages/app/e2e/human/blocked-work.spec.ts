@@ -62,7 +62,7 @@ test("열린 gate 목록을 받기 전에는 human gate에 막힌 작업에 다�
 
   // 화면마다 열린 gate 목록 응답을 붙잡아 두고, 이슈 목록만 받은 상태의 막힘 표시를 확인한 뒤 풀어 줍니다.
   let heldGates = Promise.resolve();
-  await page.route("**/api/human-gates", async (route) => {
+  await page.route("**/api/gates", async (route) => {
     await heldGates;
     await route.continue();
   });

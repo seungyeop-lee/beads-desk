@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { useState } from "react";
-import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import type { WorkState, WorkStateGroup } from "@/client/modules/issues/domain/workState";
 import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
@@ -13,7 +13,7 @@ type Props = {
   groups: WorkStateGroup[];
   /** 막고 있는 이슈의 제목을 찾을 전체 목록입니다. 선행 이슈가 다른 묶음에 있어도 제목을 보입니다. */
   titleSource: Issue[];
-  humanGateTitles: HumanGateTitles;
+  gateTitles: GateTitles;
   waiters: ReadonlyMap<string, number>;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
@@ -23,7 +23,7 @@ type Props = {
 export function IssueGroups({
   groups,
   titleSource,
-  humanGateTitles,
+  gateTitles,
   waiters,
   issueHref,
   writes,
@@ -76,7 +76,7 @@ export function IssueGroups({
                 issueHref={issueHref}
                 writes={writes}
                 titleSource={titleSource}
-                humanGateTitles={humanGateTitles}
+                gateTitles={gateTitles}
                 waiters={waiters}
                 hideHeader={group.state !== headerGroup}
               />

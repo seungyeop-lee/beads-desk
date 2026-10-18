@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   blockersOf,
   type Blocker,
-  type HumanGateTitles,
+  type GateTitles,
 } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateChip } from "./HumanGateChip";
@@ -19,7 +19,7 @@ type Props = {
   blockedBy: string[];
   /** 표에 없는 이슈면 undefined를 돌려줍니다. 그때는 id만 보입니다. */
   titleOf: (issueId: string) => string | undefined;
-  humanGateTitles: HumanGateTitles;
+  gateTitles: GateTitles;
   issueHref: (issueId: string) => string;
 };
 
@@ -27,9 +27,9 @@ type Props = {
  * 의존 관계 때문에 막힌 이슈가 무엇을 기다리는지 한 줄로 보여 줍니다. 첫 번째 선행 이슈의 상세를 바로 열 수 있습니다.
  * 열린 human gate가 막고 있으면 그 gate를 먼저 보이고, 누르면 막힌 이슈의 상세를 엽니다. 상세에서 gate를 바로 승인할 수 있습니다.
  */
-export function BlockerLine({ issueId, blockedBy, titleOf, humanGateTitles, issueHref }: Props) {
+export function BlockerLine({ issueId, blockedBy, titleOf, gateTitles, issueHref }: Props) {
   const messages = useMessages();
-  const [first, ...rest] = blockersOf(blockedBy, humanGateTitles, titleOf);
+  const [first, ...rest] = blockersOf(blockedBy, gateTitles, titleOf);
   if (!first) return null;
   const title = first.title || messages.common.untitled;
   return (

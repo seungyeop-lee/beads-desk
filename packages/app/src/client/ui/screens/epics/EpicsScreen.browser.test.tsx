@@ -17,8 +17,8 @@ vi.mock("@/client/modules/epics/application/useEpics", () => ({
   useEpics: () => ({ data: EPICS, error: null, loading: false }),
   useEpicDescendants: () => ({ data: null, error: null, loading: true }),
 }));
-vi.mock("@/client/modules/humanGates/application/useHumanGateTitles", () => ({
-  useHumanGateTitles: () => new Map(),
+vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
+  useGateTitles: () => new Map(),
 }));
 vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
   IssueDetailRoute: () => null,

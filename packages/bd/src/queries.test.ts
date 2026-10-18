@@ -17,6 +17,7 @@ import {
   lintFindings,
   listIssues,
   openChangeFingerprint,
+  openGates,
   orphanIssues,
   previousGateRounds,
   readyIssues,
@@ -668,6 +669,35 @@ describe("humanDecisionIssues", () => {
       ok: false,
       error: { message: "boom\n", exitCode: 1 },
     });
+  });
+});
+
+describe("openGates", () => {
+  test("human gate와 다른 종류의 gate를 함께 읽고, 닫힌 gate는 뺀다", async () => {
+    await useFakeBd({
+      "list --json --tree=false --type=gate --limit 0": {
+        stdout: JSON.stringify([
+          { id: "g-1", title: "Review", issue_type: "gate", await_type: "human", status: "open" },
+          {
+            id: "g-2",
+            title: "Wait 72 hours",
+            issue_type: "gate",
+            await_type: "timer",
+            status: "open",
+          },
+          { id: "g-3", title: "Old", issue_type: "gate", await_type: "human", status: "closed" },
+        ]),
+      },
+    });
+
+    const result = await openGates(fakeBd.workDir);
+
+    expect(
+      result.ok && result.value.map(({ id, title, awaitType }) => [id, title, awaitType]),
+    ).toEqual([
+      ["g-1", "Review", "human"],
+      ["g-2", "Wait 72 hours", "timer"],
+    ]);
   });
 });
 

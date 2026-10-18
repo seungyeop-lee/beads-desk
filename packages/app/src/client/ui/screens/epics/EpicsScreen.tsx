@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
-import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
-import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
+import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
 import {
   epicDescendantRows,
   notChildCandidate,
@@ -41,7 +41,7 @@ import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
  */
 export function EpicsScreen() {
   const { data, error, loading } = useEpics();
-  const humanGateTitles = useHumanGateTitles();
+  const gateTitles = useGateTitles();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const [expanded, setExpanded] = useState<ReadonlySet<string> | null>(null);
@@ -76,7 +76,7 @@ export function EpicsScreen() {
           summary={summary}
           expanded={open.has(summary.epic.id)}
           onToggle={() => toggle(summary.epic.id)}
-          humanGateTitles={humanGateTitles}
+          gateTitles={gateTitles}
           issueHref={issueHref}
           writes={writes}
         />
@@ -91,19 +91,12 @@ type SectionProps = {
   summary: EpicSummary;
   expanded: boolean;
   onToggle: () => void;
-  humanGateTitles: HumanGateTitles;
+  gateTitles: GateTitles;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 };
 
-function EpicSection({
-  summary,
-  expanded,
-  onToggle,
-  humanGateTitles,
-  issueHref,
-  writes,
-}: SectionProps) {
+function EpicSection({ summary, expanded, onToggle, gateTitles, issueHref, writes }: SectionProps) {
   const { epic, totalChildren, closedChildren } = summary;
   const graphHref = useGraphHref();
   const percent = totalChildren === 0 ? 0 : Math.round((closedChildren / totalChildren) * 100);
@@ -156,7 +149,7 @@ function EpicSection({
       {expanded && (
         <EpicDescendants
           epic={epic}
-          humanGateTitles={humanGateTitles}
+          gateTitles={gateTitles}
           issueHref={issueHref}
           writes={writes}
         />
@@ -167,12 +160,12 @@ function EpicSection({
 
 function EpicDescendants({
   epic,
-  humanGateTitles,
+  gateTitles,
   issueHref,
   writes,
 }: {
   epic: Issue;
-  humanGateTitles: HumanGateTitles;
+  gateTitles: GateTitles;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 }) {
@@ -230,7 +223,7 @@ function EpicDescendants({
       {descendants && (
         <IssueTable
           tree={epicDescendantRows(descendants)}
-          humanGateTitles={humanGateTitles}
+          gateTitles={gateTitles}
           waiters={waiters}
           issueHref={issueHref}
           writes={writes}

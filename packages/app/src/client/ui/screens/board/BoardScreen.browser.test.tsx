@@ -16,8 +16,8 @@ const ITEMS: BoardItem[] = Array.from({ length: 14 }, (_, index) => ({
 vi.mock("@/client/modules/board/application/useBoard", () => ({
   useBoard: () => ({ data: ITEMS, error: null, loading: false }),
 }));
-vi.mock("@/client/modules/humanGates/application/useHumanGateTitles", () => ({
-  useHumanGateTitles: () => new Map(),
+vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
+  useGateTitles: () => new Map(),
 }));
 vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({
   useIssueWrites: () => ({

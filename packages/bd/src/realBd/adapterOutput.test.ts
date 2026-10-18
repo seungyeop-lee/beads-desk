@@ -19,6 +19,7 @@ import {
   issueEvents,
   lintFindings,
   listIssues,
+  openGates,
   orphanIssues,
   previousGateRounds,
   readyIssues,
@@ -195,6 +196,38 @@ test("그래프는 상태·await 유형과 무관하게 gate를 읽고 일반 �
   for (const issues of [ordinary, board, ready]) {
     expect(issues.some(({ id }) => gates.includes(id))).toBe(false);
   }
+});
+
+test("열린 gate는 await 유형과 무관하게 제목과 함께 읽고, 닫힌 gate는 뺀다", async () => {
+  const task = value(await createIssue(cwd, { title: "timer gate 후속 작업" }));
+  const gate = async (type: string, title: string) =>
+    JSON.parse(
+      await run(
+        "bd",
+        "gate",
+        "create",
+        "--type",
+        type,
+        "--blocks",
+        task,
+        "--timeout",
+        "72h",
+        "--title",
+        title,
+        "--json",
+      ),
+    ).id as string;
+  const timer = await gate("timer", "72시간 대기");
+  const resolved = await gate("human", "이미 응답한 확인");
+  await run("bd", "gate", "resolve", resolved, "--reason", "확인 완료");
+
+  const gates = value(await openGates(cwd));
+  expect(gates).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ id: timer, title: "72시간 대기", awaitType: "timer" }),
+    ]),
+  );
+  expect(gates.map(({ id }) => id)).not.toContain(resolved);
 });
 
 test("bd history 이벤트에서 상태 변경과 관계 추가를 읽는다", async () => {

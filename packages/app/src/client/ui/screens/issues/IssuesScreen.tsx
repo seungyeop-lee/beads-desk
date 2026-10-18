@@ -4,7 +4,7 @@ import { useDeferredValue, useMemo, useState } from "react";
 import { useDescriptionMatches } from "@/client/modules/issues/application/useDescriptionMatches";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
+import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
@@ -54,7 +54,7 @@ export function IssuesScreen() {
   const viewIssues = view
     ? (groups.find((group) => group.state === view)?.issues ?? [])
     : groups.flatMap((group) => group.issues);
-  const humanGateTitles = useHumanGateTitles();
+  const gateTitles = useGateTitles();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const messages = useMessages();
@@ -94,14 +94,14 @@ export function IssuesScreen() {
             issueHref={issueHref}
             writes={writes}
             titleSource={issues}
-            humanGateTitles={humanGateTitles}
+            gateTitles={gateTitles}
             waiters={waiters}
           />
         ) : (
           <IssueGroups
             groups={groups}
             titleSource={issues}
-            humanGateTitles={humanGateTitles}
+            gateTitles={gateTitles}
             waiters={waiters}
             issueHref={issueHref}
             writes={writes}

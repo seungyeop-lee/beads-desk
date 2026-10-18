@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { memo, useMemo, useState, type ReactNode } from "react";
-import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/domain/issueListView";
@@ -32,8 +32,8 @@ type Props = (
   emptyMessage?: string;
   /** 막고 있는 이슈의 제목을 찾을 목록입니다. 없으면 표의 이슈에서 찾습니다. */
   titleSource?: Issue[];
-  /** 열린 human gate의 id와 제목입니다. bd list가 gate를 돌려주지 않아 따로 받습니다. */
-  humanGateTitles: HumanGateTitles;
+  /** 열린 gate의 id마다 제목과 human gate인지입니다. bd list가 gate를 돌려주지 않아 따로 받습니다. */
+  gateTitles: GateTitles;
   /** 이슈 id마다 대기 수입니다. 없으면 대기 수를 보이지 않습니다. */
   waiters?: ReadonlyMap<string, number>;
   /** 묶음마다 표를 나눠 보일 때, 첫 표가 아니면 열 이름을 감춥니다. 열 너비는 그대로 맞춥니다. */
@@ -48,7 +48,7 @@ export const IssueTable = memo(function IssueTable({
   writes,
   emptyMessage,
   titleSource,
-  humanGateTitles,
+  gateTitles,
   waiters,
   hideHeader,
 }: Props) {
@@ -104,7 +104,7 @@ export const IssueTable = memo(function IssueTable({
               }
               issueHref={issueHref}
               titleOf={(id) => titles.get(id)}
-              humanGateTitles={humanGateTitles}
+              gateTitles={gateTitles}
               waiters={waiters?.get(row.issue.id) ?? 0}
               writes={writes}
             />
@@ -129,20 +129,12 @@ type RowProps = {
   issueHref: (issueId: string) => string;
   /** 막고 있는 이슈의 제목을 표에서 찾습니다. */
   titleOf: (issueId: string) => string | undefined;
-  humanGateTitles: HumanGateTitles;
+  gateTitles: GateTitles;
   waiters: number;
   writes: IssueWrites;
 };
 
-function IssueRow({
-  issue,
-  outline,
-  issueHref,
-  titleOf,
-  humanGateTitles,
-  waiters,
-  writes,
-}: RowProps) {
+function IssueRow({ issue, outline, issueHref, titleOf, gateTitles, waiters, writes }: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
   const messages = useMessages();
@@ -182,7 +174,7 @@ function IssueRow({
               issueId={issue.id}
               blockedBy={issue.blockedBy}
               titleOf={titleOf}
-              humanGateTitles={humanGateTitles}
+              gateTitles={gateTitles}
               issueHref={issueHref}
             />
           )}

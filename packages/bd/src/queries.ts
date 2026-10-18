@@ -297,6 +297,16 @@ type GateBlockers = {
   blockers: IssueDependency[];
 };
 
+/** 열린 gate 목록입니다. bd list는 --type=gate를 주어야 gate를 돌려줍니다. */
+const OPEN_GATE_LIST_ARGS = [
+  "list",
+  "--json",
+  "--tree=false",
+  "--type=gate",
+  "--limit",
+  LIST_LIMIT,
+];
+
 /** gate 목록과 열린 이슈를 함께 읽어, gate가 막고 있는 이슈를 찾는 데 필요한 값을 모읍니다. bd list는 --all을 주어도 gate를 돌려주지 않아 gate는 따로 읽습니다. */
 async function readGateBlockers(cwd: string): Promise<BdOutcome<GateBlockers>> {
   const [gates, open] = await Promise.all([
@@ -421,7 +431,7 @@ function previousGateRoundsOf(
  */
 export async function humanDecisionIssues(cwd: string): Promise<BdOutcome<HumanDecisionIssues>> {
   const [gates, labeled] = await Promise.all([
-    runBdJson(cwd, ["list", "--json", "--tree=false", "--type=gate", "--limit", LIST_LIMIT]),
+    runBdJson(cwd, OPEN_GATE_LIST_ARGS),
     queryIssues(cwd, [
       "list",
       "--json",
@@ -443,6 +453,17 @@ export async function humanDecisionIssues(cwd: string): Promise<BdOutcome<HumanD
       labeled: labeled.value,
     },
   };
+}
+
+/**
+ * human gate와 timer, gh:run, gh:pr gate를 가리지 않고 닫히지 않은 gate를 모두 읽습니다.
+ * bd list는 gate를 돌려주지 않으므로, 이슈가 gate에 막혔을 때 gate 제목은 이 목록에서 찾습니다.
+ */
+export async function openGates(cwd: string): Promise<BdOutcome<Issue[]>> {
+  const result = await queryIssues(cwd, OPEN_GATE_LIST_ARGS);
+  return result.ok
+    ? { ok: true, value: result.value.filter((gate) => gate.status !== "closed") }
+    : result;
 }
 
 /**
