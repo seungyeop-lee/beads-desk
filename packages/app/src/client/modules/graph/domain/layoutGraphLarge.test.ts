@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { centerGraph } from "@/client/modules/graph/domain/centerGraph";
-import { epicPlan } from "@/client/modules/graph/domain/epicPlan";
 import type { GraphData } from "@/shared/contract/graph";
+import { centerGraph } from "./centerGraph";
+import { epicPlan } from "./epicPlan";
 import { NODE_HEIGHT, PLAN_NODE_HEIGHT } from "./graphLayout";
 import { type GraphLayoutInput, layoutGraph } from "./layoutGraph";
 
@@ -31,8 +31,9 @@ const CASES: [name: string, input: () => GraphLayoutInput, fingerprint: string][
 
 test.each(CASES)("큰 그래프의 배치가 그대로다: %s", (_, input, fingerprint) => {
   const layout = layoutGraph(input());
+  // nodeOf는 이미 담은 노드의 색인이므로 해시에서 제외하고, 노드 좌표와 꺾임점만 남깁니다.
   const json = JSON.stringify(layout, (key, value: unknown) =>
-    key === "issue" ? (value as Issue).id : value,
+    key === "nodeOf" ? undefined : key === "issue" ? (value as Issue).id : value,
   );
   expect(createHash("sha256").update(json).digest("hex").slice(0, 16)).toBe(fingerprint);
 });

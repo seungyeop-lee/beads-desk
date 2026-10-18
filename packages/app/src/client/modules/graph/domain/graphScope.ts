@@ -11,14 +11,22 @@ export type GraphScope = { kind: "epic" | "center"; id: string };
  * 범위에 드는 이슈를 고릅니다. 범위를 여는 이슈 자신은 에픽 보기에서는 빼고, 이슈 중심 보기에서는 담습니다.
  * 두 보기 모두 어디까지 진행했는지 보이도록 닫힌 이슈도 담습니다.
  */
+export function scopedIssues(data: GraphData, scope: GraphScope): Issue[];
+/**
+ * 이슈 중심 보기에서 이미 blockingChainIssues로 계산한 blocks 사슬을 넘기면 같은 사슬을 다시 구하지 않습니다.
+ */
+export function scopedIssues(data: GraphData, scope: GraphScope, chain: Issue[]): Issue[];
 export function scopedIssues(
   { issues, dependencies, ancestorEpics }: GraphData,
   scope: GraphScope,
+  chain?: Issue[],
 ): Issue[] {
   if (scope.kind === "epic") {
     return issues.filter((issue) => ancestorEpics[issue.id]?.includes(scope.id));
   }
-  const selected = new Set(blockingChainIssues(issues, dependencies, scope.id).map(({ id }) => id));
+  const selected = new Set(
+    (chain ?? blockingChainIssues(issues, dependencies, scope.id)).map(({ id }) => id),
+  );
   for (const { issueId, dependsOnId, type } of dependencies) {
     if (type !== "related" && type !== "discovered-from") continue;
     if (issueId === scope.id) selected.add(dependsOnId);

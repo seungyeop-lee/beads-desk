@@ -1,11 +1,11 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import type { AuxiliaryEdge } from "@/client/modules/graph/domain/centerGraph";
+import type { AuxiliaryEdge } from "./centerGraph";
 import {
   type ExecutionOrder,
   type OrderComponent,
   type OrderEdge,
   workLayers,
-} from "@/client/modules/graph/domain/executionOrder";
+} from "./executionOrder";
 import type { GraphLayout } from "./graphLayout";
 import { routeGrid } from "./gridRoutes";
 
@@ -75,13 +75,15 @@ export function layoutGraph({
       ),
     ],
   });
+  const nodes = cells.map(({ issue, column, row }) => ({
+    issue,
+    x: routes.columns[column - left]!,
+    y: routes.rows[row - up]!,
+    height: heights.get(issue.id) ?? nodeHeight,
+  }));
   return {
-    nodes: cells.map(({ issue, column, row }) => ({
-      issue,
-      x: routes.columns[column - left]!,
-      y: routes.rows[row - up]!,
-      height: heights.get(issue.id) ?? nodeHeight,
-    })),
+    nodes,
+    nodeOf: new Map(nodes.map((node) => [node.issue.id, node])),
     edges: blocks.map((edge, index) => ({ ...edge, points: routes.points[index]! })),
     auxiliary: auxiliaryEdges.map((edge, index) => ({
       ...edge,

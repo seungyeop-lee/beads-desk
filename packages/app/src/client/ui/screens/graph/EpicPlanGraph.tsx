@@ -2,6 +2,11 @@ import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { epicPlan } from "@/client/modules/graph/domain/epicPlan";
+import {
+  graphBounds,
+  INITIAL_MIN_ZOOM,
+  VIEWPORT_MARGIN,
+} from "@/client/modules/graph/domain/graphViewport";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
@@ -11,7 +16,6 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { EdgeLegend } from "./EdgeLegend";
-import { graphBounds, INITIAL_MIN_ZOOM, VIEWPORT_MARGIN } from "./graphViewport";
 import { IssueGraph } from "./IssueGraph";
 import { useGraphLayout } from "./useGraphLayout";
 
@@ -27,7 +31,7 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
   const plan = useMemo(() => epicPlan(data, epicId), [data, epicId]);
   // 대기 수는 다른 화면과 같은 값을 보이도록 에픽 밖 이슈까지 담은 전체 목록으로 셉니다.
   const waiters = useMemo(() => waiterCounts(data.issues), [data]);
-  const { layout, measurement, ready } = useGraphLayout(plan.order, true);
+  const { layout, edgeLooks, measurement, ready } = useGraphLayout(plan.order, true);
   const graphPlan = useMemo(
     () => ({ stages: plan.stages, outside: plan.outside, waiters }),
     [plan, waiters],
@@ -82,14 +86,20 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
         </div>
       )}
 
-      <EdgeLegend layout={layout} />
+      <EdgeLegend edgeLooks={edgeLooks} />
 
       <div
         className={`flex min-h-0 flex-1 gap-4 ${panelExpanded ? "flex-col @2xl/plan:flex-row" : "flex-col"}`}
       >
         <div ref={graphContainerRef} className="flex min-h-0 min-w-0 flex-1">
           {layout.nodes.length > 0 ? (
-            <IssueGraph ready={ready} layout={layout} issueHref={issueHref} plan={graphPlan} />
+            <IssueGraph
+              ready={ready}
+              layout={layout}
+              edgeLooks={edgeLooks}
+              issueHref={issueHref}
+              plan={graphPlan}
+            />
           ) : (
             <p className="flex-1 self-start rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
               {messages.graph.empty.epic}

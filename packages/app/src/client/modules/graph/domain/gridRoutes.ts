@@ -1,4 +1,4 @@
-import { ARROW_LENGTH } from "./edgeLook";
+import { ARROW_LENGTH } from "./edgeKind";
 import { NODE_WIDTH, type Point } from "./graphLayout";
 
 /** 격자의 한 칸에 놓인 노드입니다. column과 row는 0부터 세고, 한 칸에는 노드 하나만 둡니다. */

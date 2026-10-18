@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import type { AuxiliaryEdge } from "@/client/modules/graph/domain/centerGraph";
-import type { OrderEdge } from "@/client/modules/graph/domain/executionOrder";
+import type { AuxiliaryEdge } from "./centerGraph";
+import type { OrderEdge } from "./executionOrder";
 
 export const NODE_WIDTH = 280;
 export const NODE_HEIGHT = 76;
@@ -18,10 +18,12 @@ export type PlacedAuxiliaryEdge = AuxiliaryEdge & { points: Point[] };
 /**
  * 화면 좌표와 실제 높이가 정해진 노드와, 노드를 피해 지나는 간선입니다.
  * edges는 blocks 간선이고 auxiliary는 관련·발견 간선입니다. columns는 열마다 왼쪽 끝의 x 좌표입니다.
+ * nodeOf는 이슈 id로 노드를 곧장 찾는 맵으로, 간선이 잇는 양 끝 이슈를 선형 탐색 없이 구하는 데 씁니다.
  */
 export type GraphLayout = {
   nodes: PlacedIssue[];
   edges: PlacedEdge[];
   auxiliary: PlacedAuxiliaryEdge[];
   columns: number[];
+  nodeOf: ReadonlyMap<string, PlacedIssue>;
 };

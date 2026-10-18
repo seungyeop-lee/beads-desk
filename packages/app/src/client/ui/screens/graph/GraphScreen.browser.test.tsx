@@ -2,10 +2,10 @@ import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { VIEWPORT_MARGIN } from "@/client/modules/graph/domain/graphViewport";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { GraphScreen } from "./GraphScreen";
-import { VIEWPORT_MARGIN } from "./graphViewport";
 
 let graph: GraphData = { issues: [], dependencies: [], ancestorEpics: {} };
 let address = new URLSearchParams();

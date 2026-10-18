@@ -1,9 +1,9 @@
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { centerGraph } from "@/client/modules/graph/domain/centerGraph";
-import { epicPlan } from "@/client/modules/graph/domain/epicPlan";
 import type { GraphData } from "@/shared/contract/graph";
-import { ARROW_LENGTH, auxiliaryEdgeLook, hasArrow } from "./edgeLook";
+import { centerGraph } from "./centerGraph";
+import { ARROW_LENGTH, auxiliaryEdgeLook, hasArrow } from "./edgeKind";
+import { epicPlan } from "./epicPlan";
 import { type GraphLayout, NODE_HEIGHT, NODE_WIDTH, type Point } from "./graphLayout";
 import { type GraphLayoutInput, layoutGraph } from "./layoutGraph";
 
@@ -298,7 +298,13 @@ test("blocks 관계 없이 관련·발견 관계만 있어도 기준 이슈를 �
       .toSorted(),
   ).toEqual(["found-1", "found-2", "hub", "note-1", "note-2", "note-3", "origin"]);
   const empty = centerInput(graphData([issue("alone")], []), "alone", {});
-  expect(layoutGraph(empty)).toEqual({ nodes: [], edges: [], auxiliary: [], columns: [] });
+  expect(layoutGraph(empty)).toEqual({
+    nodes: [],
+    edges: [],
+    auxiliary: [],
+    columns: [],
+    nodeOf: new Map(),
+  });
 });
 
 function overlap([a, b]: [number, number], [c, d]: [number, number]) {

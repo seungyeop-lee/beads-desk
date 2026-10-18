@@ -1,6 +1,6 @@
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { scopedIssues } from "./graphScope";
+import { blockingChainIssues, scopedIssues } from "./graphScope";
 
 function issue(id: string, fields: Partial<Issue> = {}): Issue {
   return { id, status: "open", issueType: "task", ...fields } as Issue;
@@ -115,4 +115,20 @@ test("blocks가 순환해도 끝난다", () => {
   };
 
   expect(ids(scopedIssues(data, { kind: "center", id: "a" }))).toEqual(["a", "b"]);
+});
+
+test("이미 계산한 blocks 사슬을 넘기면 사슬을 다시 구하지 않고 같은 이슈를 돌려준다", () => {
+  const data = {
+    issues: ["a", "b", "center", "d", "related"].map((id) => issue(id)),
+    dependencies: [
+      ...blocks(["b", "a"], ["center", "b"], ["d", "center"]),
+      { issueId: "related", dependsOnId: "center", type: "related", createdAt: 0 },
+    ],
+    ancestorEpics: {},
+  };
+  const chain = blockingChainIssues(data.issues, data.dependencies, "center");
+
+  expect(ids(scopedIssues(data, { kind: "center", id: "center" }, chain))).toEqual(
+    ids(scopedIssues(data, { kind: "center", id: "center" })),
+  );
 });

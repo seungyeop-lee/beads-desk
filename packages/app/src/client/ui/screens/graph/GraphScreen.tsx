@@ -134,14 +134,24 @@ function BlockingChainGraph({
       },
     };
   }, [data, scope]);
-  const { layout, measurement, ready } = useGraphLayout(graph.order, false, graph.auxiliary);
+  const { layout, edgeLooks, measurement, ready } = useGraphLayout(
+    graph.order,
+    false,
+    graph.auxiliary,
+  );
   return (
     <>
       {measurement}
       {layout.nodes.length > 0 ? (
         <>
-          <EdgeLegend layout={layout} auxiliary={graph.auxiliary.edges} />
-          <IssueGraph layout={layout} ready={ready} issueHref={issueHref} centerId={scope.id} />
+          <EdgeLegend edgeLooks={edgeLooks} auxiliary={graph.auxiliary.edges} />
+          <IssueGraph
+            layout={layout}
+            edgeLooks={edgeLooks}
+            ready={ready}
+            issueHref={issueHref}
+            centerId={scope.id}
+          />
         </>
       ) : (
         <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">

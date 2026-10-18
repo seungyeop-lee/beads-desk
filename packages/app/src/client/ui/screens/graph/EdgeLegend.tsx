@@ -1,9 +1,9 @@
 import { useId } from "react";
 import type { AuxiliaryEdge } from "@/client/modules/graph/domain/centerGraph";
+import { type EdgeLook, edgeKindsIn } from "@/client/modules/graph/domain/edgeKind";
 import { HelpTooltip } from "@/client/ui/designSystem/HelpTooltip";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { EdgeMarkers, edgeKindsIn, edgeMarkerId, edgeStyle } from "./edgeLook";
-import type { GraphLayout } from "./graphLayout";
+import { EdgeMarkers, edgeMarkerId, edgeStyle } from "./edgeLook";
 
 const SAMPLE = { width: 32, height: 12 };
 
@@ -12,15 +12,15 @@ const SAMPLE = { width: 32, height: 12 };
  * 문구는 짧게 두고 자세한 설명은 항목마다 붙인 ? 아이콘의 툴팁으로 보입니다. 툴팁은 범례 아래에 범례의 왼쪽 끝부터 띄웁니다.
  */
 export function EdgeLegend({
-  layout,
+  edgeLooks,
   auxiliary = [],
 }: {
-  layout: GraphLayout;
+  edgeLooks: readonly EdgeLook[];
   auxiliary?: readonly AuxiliaryEdge[];
 }) {
   const messages = useMessages();
   const idPrefix = `legend${useId().replace(/\W/g, "")}`;
-  const kinds = edgeKindsIn(layout, auxiliary);
+  const kinds = edgeKindsIn(edgeLooks, auxiliary);
   if (kinds.length === 0) return null;
   return (
     <div

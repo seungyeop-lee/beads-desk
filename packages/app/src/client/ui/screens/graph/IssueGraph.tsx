@@ -11,32 +11,28 @@ import {
   type Edge,
   type Node,
   type NodeProps,
-  type ReactFlowInstance,
   ViewportPortal,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
+import { type EdgeLook, auxiliaryEdgeLook } from "@/client/modules/graph/domain/edgeKind";
 import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
-import { workState } from "@/client/modules/issues/domain/workState";
-import { workStateTone } from "@/client/ui/issues/issueLabels";
-import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import {
-  auxiliaryEdgeLook,
-  blocksEdgeLook,
-  type EdgeLook,
-  EdgeMarkers,
-  edgeMarkerId,
-  edgeStyle,
-} from "./edgeLook";
-import { type GraphLayout, NODE_WIDTH, type Point } from "./graphLayout";
+  type GraphLayout,
+  NODE_WIDTH,
+  type Point,
+} from "@/client/modules/graph/domain/graphLayout";
 import {
-  focusViewport,
-  initialGraphViewport,
   issueFocus,
   STAGE_LABEL_HEIGHT,
   stageFocus,
-} from "./graphViewport";
+} from "@/client/modules/graph/domain/graphViewport";
+import { workState } from "@/client/modules/issues/domain/workState";
+import { workStateTone } from "@/client/ui/issues/issueLabels";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { EdgeMarkers, edgeMarkerId, edgeStyle } from "./edgeLook";
 import { IssueCard, type PlanMarks } from "./IssueCard";
+import { useGraphViewport } from "./useGraphViewport";
 
 type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
 type IssueNode = Node<IssueNodeData, "issue">;
@@ -52,6 +48,8 @@ export type GraphPlan = {
 
 type Props = {
   layout: GraphLayout;
+  /** layout.edges와 순서가 같은 blocks 간선 표현입니다. 그래프와 범례가 같은 값을 쓰도록 useGraphLayout이 한 번만 계산해 넘깁니다. */
+  edgeLooks: readonly EdgeLook[];
   ready?: boolean;
   issueHref: (issueId: string) => string;
   plan?: GraphPlan;
@@ -63,9 +61,8 @@ type Props = {
  * 배치 엔진이 정한 노드 좌표와 간선 꺾임점을 React Flow로 그립니다. 경로는 여기서 계산하지 않습니다.
  * 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다.
  */
-export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: Props) {
+export function IssueGraph({ layout, edgeLooks, issueHref, plan, centerId, ready = true }: Props) {
   const containerRef = useRef<HTMLElement>(null);
-  const flowRef = useRef<ReactFlowInstance<IssueNode, GraphEdge> | null>(null);
   const focus = useMemo(
     () =>
       plan
@@ -75,51 +72,21 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
           : issueFocus(layout, centerId),
     [layout, plan, centerId],
   );
-  const viewRef = useRef({ layout, focus });
-  const viewportChosen = useRef(false);
-  const preserveViewport = () => {
-    viewportChosen.current = true;
-  };
-  useLayoutEffect(() => {
-    viewRef.current = { layout, focus };
-  }, [layout, focus]);
+  const planned = !!plan;
+  const { onInit, preserveViewport, showFocus } = useGraphViewport<IssueNode, GraphEdge>(
+    containerRef,
+    layout,
+    focus,
+    planned,
+  );
   const [initialized, setInitialized] = useState(false);
   if (ready && !initialized) setInitialized(true);
-  const planned = !!plan;
-  useLayoutEffect(() => {
-    const container = containerRef.current;
-    if (!container || !initialized) return;
-    const center = () => {
-      if (viewportChosen.current) return;
-      void flowRef.current?.setViewport(
-        initialGraphViewport(
-          viewRef.current.layout,
-          container.clientWidth,
-          container.clientHeight,
-          planned,
-          viewRef.current.focus,
-        ),
-      );
-    };
-    const observer = new ResizeObserver(center);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [initialized, planned]);
   const messages = useMessages();
   const focusLabel = !plan
     ? messages.graph.focusIssue
     : plan.stages.current === null
       ? messages.graph.focusLastStage
       : messages.graph.focusStage;
-  const showFocus = () => {
-    const flow = flowRef.current;
-    const container = containerRef.current;
-    if (!flow || !container || !focus) return;
-    preserveViewport();
-    void flow.setViewport(
-      focusViewport(focus, container.clientWidth, container.clientHeight, flow.getZoom()),
-    );
-  };
   const markerPrefix = `edge${useId().replace(/\W/g, "")}`;
   const { nodes, edges } = useMemo(() => {
     const gates = new Set(
@@ -142,8 +109,8 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
         },
       })),
       edges: [
-        ...layout.edges.map(({ from, to, points }): GraphEdge => {
-          const look = blocksEdgeLook(layout, { from, to });
+        ...layout.edges.map(({ from, to, points }, index): GraphEdge => {
+          const look = edgeLooks[index]!;
           // 이슈 중심 보기는 gate와 이어진 간선을 대기 조건으로 읽어 줍니다. 에픽 계획 보기는 실행 순서로 읽습니다.
           const condition = !plan && [from, to].some((id) => gates.has(id));
           return {
@@ -175,7 +142,7 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
         }),
       ],
     };
-  }, [layout, issueHref, plan, centerId, messages, markerPrefix]);
+  }, [layout, edgeLooks, issueHref, plan, centerId, messages, markerPrefix]);
 
   return (
     <section
@@ -194,19 +161,7 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
           edges={edges}
           nodeTypes={NODE_TYPES}
           edgeTypes={EDGE_TYPES}
-          onInit={(instance) => {
-            flowRef.current = instance;
-            const container = containerRef.current!;
-            void instance.setViewport(
-              initialGraphViewport(
-                layout,
-                container.clientWidth,
-                container.clientHeight,
-                planned,
-                focus,
-              ),
-            );
-          }}
+          onInit={onInit}
           onMoveStart={(event) => {
             if (event) preserveViewport();
           }}

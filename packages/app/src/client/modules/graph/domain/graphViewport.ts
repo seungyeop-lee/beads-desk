@@ -1,4 +1,4 @@
-import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
+import type { StageProgress } from "./epicPlan";
 import type { GraphLayout } from "./graphLayout";
 import { NODE_WIDTH } from "./graphLayout";
 

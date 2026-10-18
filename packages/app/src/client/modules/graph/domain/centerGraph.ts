@@ -8,7 +8,7 @@ export type AuxiliaryEdge = { from: string; to: string; type: "related" | "disco
 export function centerGraph(data: GraphData, centerId: string) {
   const chain = blockingChainIssues(data.issues, data.dependencies, centerId);
   const chainIds = new Set(chain.map(({ id }) => id));
-  const issues = scopedIssues(data, { kind: "center", id: centerId });
+  const issues = scopedIssues(data, { kind: "center", id: centerId }, chain);
   const ids = new Set(issues.map(({ id }) => id));
   const seen = new Set<string>();
   const auxiliary: AuxiliaryEdge[] = data.dependencies.flatMap(({ issueId, dependsOnId, type }) => {

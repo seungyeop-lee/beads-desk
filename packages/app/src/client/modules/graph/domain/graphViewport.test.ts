@@ -12,7 +12,13 @@ import {
   stageFocus,
 } from "./graphViewport";
 
-const layout: GraphLayout = {
+/** 배치 결과가 nodeOf를 함께 돌려주므로, 직접 만드는 배치에도 같은 맵을 채웁니다. */
+const withNodeOf = (layout: Omit<GraphLayout, "nodeOf">): GraphLayout => ({
+  ...layout,
+  nodeOf: new Map(layout.nodes.map((node) => [node.issue.id, node])),
+});
+
+const layout: GraphLayout = withNodeOf({
   nodes: [
     { issue: { id: "a" } as Issue, x: 0, y: 0, height: 140 },
     { issue: { id: "b" } as Issue, x: 352, y: 0, height: 76 },
@@ -20,7 +26,7 @@ const layout: GraphLayout = {
   edges: [],
   auxiliary: [],
   columns: [0, 352],
-};
+});
 
 test.each([
   [900, 600],
@@ -71,7 +77,7 @@ test("blocks 간선과 관련·발견 간선의 꺾임점도 초기 보기 범�
 
 /** 열 10개와 행 8개로 0.75배에서도 900×600 화면보다 가로세로 모두 큰 그래프입니다. 왼쪽 열일수록 노드가 많습니다. */
 const COLUMNS = Array.from({ length: 10 }, (_, column) => column * 352);
-const large: GraphLayout = {
+const large: GraphLayout = withNodeOf({
   nodes: COLUMNS.flatMap((x, column) =>
     Array.from({ length: 8 - Math.floor(column / 2) }, (_, row) => ({
       issue: { id: `c${column}r${row}` } as Issue,
@@ -83,7 +89,7 @@ const large: GraphLayout = {
   edges: [],
   auxiliary: [],
   columns: COLUMNS,
-};
+});
 
 /** 그래프 좌표의 사각형이 첫 화면 안에 모두 들어가는지 봅니다. */
 function onScreen(
