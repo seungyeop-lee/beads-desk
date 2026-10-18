@@ -1,21 +1,11 @@
 import { issueEvents, showIssue } from "@beads-desk/bd";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
-import type { ApiResponse } from "@/shared/contract/apiResponse";
+import { respondBdOutcome } from "@/server/web/http/routeResponse";
 
 export async function handleIssueDetailRequest(issueId: string): Promise<Response> {
-  const result = await showIssue(currentWorkspaceRoot(), issueId);
-  return result.ok
-    ? respond({ ok: true, data: result.value }, 200)
-    : respond({ ok: false, error: result.error.message.trim() }, 500);
+  return respondBdOutcome(await showIssue(currentWorkspaceRoot(), issueId));
 }
 
 export async function handleIssueHistoryRequest(issueId: string): Promise<Response> {
-  const result = await issueEvents(currentWorkspaceRoot(), issueId);
-  return result.ok
-    ? respond({ ok: true, data: result.value }, 200)
-    : respond({ ok: false, error: result.error.message.trim() }, 500);
-}
-
-function respond<T>(body: ApiResponse<T>, status: number): Response {
-  return Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
+  return respondBdOutcome(await issueEvents(currentWorkspaceRoot(), issueId));
 }

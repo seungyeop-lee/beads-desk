@@ -2,6 +2,7 @@ import { runBd } from "@beads-desk/bd";
 import { isAbsolute } from "node:path";
 // launcher(`bin/bd-desk.js`)와 같은 규칙으로 workspace를 찾도록 launcher가 쓰는 파일을 그대로 씁니다.
 import { findWorkspaceRoot } from "../../../../bin/workspaceRoot.js";
+import { globalState } from "@/server/infra/globalState/globalState";
 
 export type ServerRuntime = {
   /** bd를 실행할 현재 workspace 디렉터리입니다. */
@@ -13,11 +14,7 @@ export type ServerRuntime = {
 
 type RuntimeState = ServerRuntime & { changeListeners: Set<() => void> };
 
-// instrumentation과 route handler는 이 module을 서로 다른 사본으로 불러옵니다.
-// module 변수는 공유되지 않으므로 process 전역에 둡니다.
 const RUNTIME_KEY = Symbol.for("beads-desk.serverRuntime");
-
-type RuntimeHolder = { [RUNTIME_KEY]?: RuntimeState };
 
 export async function startServerRuntime(): Promise<void> {
   const runtime = runtimeState();
@@ -79,18 +76,16 @@ function notifyChange(runtime: RuntimeState): void {
 }
 
 function runtimeState(): RuntimeState {
-  const holder = globalThis as RuntimeHolder;
-  if (!holder[RUNTIME_KEY]) {
+  return globalState(RUNTIME_KEY, () => {
     const launchRoot = launchWorkspaceRoot();
     const workspaceRoot = findWorkspaceRoot(launchRoot) ?? launchRoot;
-    holder[RUNTIME_KEY] = {
+    return {
       workspaceRoot,
       workspaces: [workspaceRoot],
       bdVersion: null,
       changeListeners: new Set(),
     };
-  }
-  return holder[RUNTIME_KEY];
+  });
 }
 
 // launcher가 사용자가 명령을 실행한 디렉터리를 넘깁니다. `next dev`로 직접 띄우면 서버의 cwd를 씁니다.

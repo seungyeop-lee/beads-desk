@@ -1,11 +1,11 @@
 import { epicDescendants, epicStatuses, listIssues, withWorkSignals } from "@beads-desk/bd";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
-import type { ApiResponse } from "@/shared/contract/apiResponse";
+import { respondBdOutcome, respondJson } from "@/server/web/http/routeResponse";
 import type { EpicDescendants } from "@/shared/contract/epics";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 
 export async function handleEpicsRequest(): Promise<Response> {
-  return respond(await epicStatuses(currentWorkspaceRoot()));
+  return respondBdOutcome(await epicStatuses(currentWorkspaceRoot()));
 }
 
 /**
@@ -15,7 +15,7 @@ export async function handleEpicsRequest(): Promise<Response> {
 export async function handleEpicDescendantsRequest(epicId: string): Promise<Response> {
   const cwd = currentWorkspaceRoot();
   const result = await withWorkSignals(cwd, listIssues(cwd, []));
-  if (!result.ok) return respond(result);
+  if (!result.ok) return respondBdOutcome(result);
 
   const issues = epicDescendants(result.value, epicId);
   const counts = waiterCounts(result.value);
@@ -25,17 +25,6 @@ export async function handleEpicDescendantsRequest(epicId: string): Promise<Resp
       return count ? [[issue.id, count]] : [];
     }),
   );
-  return respond<EpicDescendants>({ ok: true, value: { issues, waiters } });
-}
-
-function respond<T>(
-  result: { ok: true; value: T } | { ok: false; error: { message: string } },
-): Response {
-  const body: ApiResponse<T> = result.ok
-    ? { ok: true, data: result.value }
-    : { ok: false, error: result.error.message.trim() };
-  return Response.json(body, {
-    status: result.ok ? 200 : 500,
-    headers: { "Cache-Control": "no-store" },
-  });
+  const descendants: EpicDescendants = { issues, waiters };
+  return respondJson({ ok: true, data: descendants });
 }

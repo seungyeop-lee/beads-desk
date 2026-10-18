@@ -1,4 +1,5 @@
 import { openChangeFingerprint, type ChangeFingerprint } from "@beads-desk/bd";
+import { globalState } from "@/server/infra/globalState/globalState";
 
 type Listener = () => void;
 
@@ -19,9 +20,7 @@ const DEFAULT_POLL_INTERVAL_MS = 2_000;
 const FEEDS_KEY = Symbol.for("beads-desk.workspaceChangeFeeds");
 
 function feeds(): Map<string, Feed> {
-  const holder = globalThis as { [FEEDS_KEY]?: Map<string, Feed> };
-  holder[FEEDS_KEY] ??= new Map();
-  return holder[FEEDS_KEY];
+  return globalState(FEEDS_KEY, () => new Map<string, Feed>());
 }
 
 /**

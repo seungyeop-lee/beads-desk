@@ -97,12 +97,17 @@ export function createDaemon({
         await terminate(running.pid);
 
         // 그사이 지워진 workspace는 건너뜁니다. 남은 것이 없으면 이전 현재 workspace로 띄웁니다.
-        const [first = list.current, ...rest] = list.workspaces.filter(isWorkspaceRoot);
+        const existing = [];
+        const missing = [];
+        for (const workspace of list.workspaces) {
+          (isWorkspaceRoot(workspace) ? existing : missing).push(workspace);
+        }
+        const [first = list.current, ...rest] = existing;
         const server = await launch(first, port ?? running.port);
         for (const workspace of rest) {
           await registerWorkspace(server.url, workspace, false);
         }
-        for (const workspace of list.workspaces.filter((root) => !isWorkspaceRoot(root))) {
+        for (const workspace of missing) {
           print(`workspace를 찾지 못해 다시 등록하지 않았습니다: ${workspace}`);
         }
         const current = isWorkspaceRoot(list.current)
@@ -247,9 +252,13 @@ function signalGroup(pid, signal) {
   }
 }
 
-function isAlive(pid) {
+/**
+ * pid(음수면 process group)가 살아 있는지 확인합니다.
+ * process가 존재해도 신호를 보낼 권한이 없으면 EPERM이 나므로 살아 있는 것으로 봅니다.
+ */
+function isAlive(target) {
   try {
-    process.kill(pid, 0);
+    process.kill(target, 0);
     return true;
   } catch (error) {
     return error.code === "EPERM";
@@ -261,13 +270,8 @@ function isAlive(pid) {
  * 상태 파일의 pid를 다른 process가 재사용하고 있으면 그 pid의 group이 없으므로 서버가 아닌 것으로 봅니다.
  */
 function isServerAlive(pid) {
-  if (process.platform === "win32") return isAlive(pid);
-  try {
-    process.kill(-pid, 0);
-    return true;
-  } catch (error) {
-    return error.code === "EPERM";
-  }
+  // windows에는 process group이 없으므로 pid로 확인합니다.
+  return isAlive(process.platform === "win32" ? pid : -pid);
 }
 
 /** cwd에서 bd가 쓰는 workspace 디렉터리를 찾고, 없으면 실패합니다. */
@@ -281,17 +285,11 @@ function isWorkspaceRoot(root) {
   return findWorkspaceRoot(root) === root;
 }
 
-async function isHealthy(url) {
-  try {
-    return (await fetch(`${url}/api/health`)).ok;
-  } catch {
-    return false;
-  }
-}
-
+/** 서버 상태 본문을 읽어 돌려줍니다. 서버가 응답하지 않으면 null을 돌려줍니다. */
 async function readHealth(url) {
   try {
-    return await (await fetch(`${url}/api/health`)).json();
+    const response = await fetch(`${url}/api/health`);
+    return response.ok ? await response.json() : null;
   } catch {
     return null;
   }
@@ -301,7 +299,7 @@ async function waitForServer(url, pid) {
   const deadline = Date.now() + SERVER_READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
     if (!isAlive(pid)) throw new Error("서버가 준비되기 전에 종료됐습니다.");
-    if (await isHealthy(url)) return;
+    if ((await readHealth(url)) !== null) return;
     await sleep(250);
   }
   throw new Error("서버가 준비되기를 기다리다 시간이 초과됐습니다.");

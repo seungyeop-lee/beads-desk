@@ -3,7 +3,7 @@ import { ISSUE_STATUSES, type IssueStatus } from "@beads-desk/bd/issue";
 export const ISSUE_LIST_PATH = "/api/issues";
 
 /** 설명에 검색어가 든 이슈의 id 목록을 돌려주는 경로입니다. /api/issues/[id]와 겹치지 않도록 따로 둡니다. */
-export const ISSUE_SEARCH_PATH = "/api/issue-search";
+const ISSUE_SEARCH_PATH = "/api/issue-search";
 
 /**
  * 이슈 목록 조회 조건입니다.

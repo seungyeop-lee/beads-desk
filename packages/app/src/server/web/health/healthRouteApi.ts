@@ -1,5 +1,6 @@
 import { getServerRuntime } from "@/server/infra/runtime/serverRuntime";
+import { respondJson } from "@/server/web/http/routeResponse";
 
 export function handleHealthRequest(): Response {
-  return Response.json({ runtime: getServerRuntime() });
+  return respondJson({ runtime: getServerRuntime() });
 }
