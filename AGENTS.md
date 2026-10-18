@@ -118,7 +118,7 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 
 - worker마다 빈 포트를 찾아 서버를 따로 띄우므로, `next dev`가 떠 있어도 e2e를 실행할 수 있습니다.
 - 다른 worktree의 e2e가 실행 중이면 그 실행이 끝난 뒤에 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다.
-- macOS에서는 시나리오 workspace를 RAM disk에 만듭니다. RAM disk 없이 실행하려면 `BEADS_DESK_E2E_RAMDISK=0`을 줍니다. 이때는 디스크에서 bd 실행이 느려지므로 worker 수를 줄여 실행합니다.
+- macOS에서는 시나리오 workspace를 RAM disk에 만듭니다. RAM disk 없이 실행하려면 `BEADS_DESK_E2E_RAMDISK=0`을 줍니다. 이때는 디스크에서 bd 실행이 느려지므로 `playwright.config.ts`가 worker를 자동으로 4개로 줄입니다. worker 수를 따로 지정할 필요는 없습니다.
 - 시나리오가 실패하면 `packages/app/test-results`에 screenshot과 trace가 남습니다. trace는 `pnpm exec playwright show-trace <trace.zip 경로>`로 엽니다.
 
 `next dev`가 실행 중일 때 `packages/bd`를 고치면, 서버를 다시 시작하기 전까지 API가 고치기 전의 코드로 bd를 실행합니다. bd 패키지를 고친 뒤 화면이나 API로 확인하려면 `next dev`를 다시 시작합니다.
