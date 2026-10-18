@@ -132,12 +132,9 @@ const EPIC_INPUT: GraphLayoutInput = {
 
 const FIXTURES = { GATES, AUXILIARY_ONLY, EPIC: EPIC_INPUT };
 
-/**
- * fixture마다 허용하는 간선 교차 수의 상한으로, 배치를 바꾼 결과 교차가 늘면 실패합니다.
- * GATES에 남은 교차는 기준 이슈 아래 gate에서 기준 이슈로 돌아 올라가는 선이 그 사이 gate에서 오른쪽으로 나가는 선을 감싸서 생깁니다.
- */
+/** fixture마다 허용하는 간선 교차 수의 상한으로, 배치를 바꾼 결과 교차가 늘면 실패합니다. */
 const MAX_CROSSINGS: Record<keyof typeof FIXTURES, number> = {
-  GATES: 2,
+  GATES: 0,
   AUXILIARY_ONLY: 0,
   EPIC: 0,
 };

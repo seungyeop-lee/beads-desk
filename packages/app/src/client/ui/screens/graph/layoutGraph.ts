@@ -110,6 +110,9 @@ function componentColumns(component: OrderComponent): Issue[][] {
  * gate가 막는 작업 가운데 가장 왼쪽 작업에 붙이고, gate끼리 이어져 있으면 그 끝에서 기다리는 작업을 봅니다.
  * 막는 작업이 없으면 gate를 막는 작업 가운데 가장 오른쪽 작업에, 그것도 없으면 gate를 거쳐 이어진 가장 가까운 작업에 붙입니다.
  * 작업에 가까운 gate부터 위에 두어, gate끼리 이어지는 선이 바로 위아래로 이어지게 합니다.
+ * 다만 붙인 작업과 그 아래 gate가 아닌 이슈를 막는 gate는 맨 아래로 내리고, 같은 작업 아래에서 그 gate를 막는 gate도 함께 내립니다.
+ * 같은 열에서 위로 되돌아가는 선과 다른 열로 나가는 선이 모두 열 오른쪽 틈을 지나므로, 나가는 선이 위에 있으면
+ * 그 아래 gate에서 되돌아가는 선과 교차합니다.
  */
 function gateStacks(component: OrderComponent, work: Issue[][]): Map<string, Issue[]> {
   const columnOf = new Map(work.flatMap((layer, at) => layer.map(({ id }) => [id, at] as const)));
@@ -146,6 +149,7 @@ function gateStacks(component: OrderComponent, work: Issue[][]): Map<string, Iss
     ids.reduce((best, id) => (better(columnOf.get(id)!, columnOf.get(best)!) ? id : best));
 
   const stacks = new Map<string, { gate: Issue; waits: boolean }[]>();
+  const anchorOf = new Map<string, string>();
   const gates = component.layers.flat().filter(({ id }) => isGate(id));
   for (const gate of gates) {
     const waiting = reachedWork(gate.id, forward);
@@ -157,13 +161,30 @@ function gateStacks(component: OrderComponent, work: Issue[][]): Map<string, Iss
           ? pick(blockers, (a, b) => a > b)
           : reachedWork(gate.id, both)[0]!;
     stacks.set(anchor, [...(stacks.get(anchor) ?? []), { gate, waits: waiting.length > 0 }]);
+    anchorOf.set(gate.id, anchor);
   }
+  /** gate가 직접, 또는 같은 작업 아래의 gate를 거쳐 그 작업과 아래 gate가 아닌 이슈를 막는지입니다. */
+  const leavesStack = (start: string) => {
+    const anchor = anchorOf.get(start);
+    const seen = new Set([start]);
+    for (const queue = [start]; queue.length > 0;)
+      for (const to of forward.get(queue.pop()!) ?? []) {
+        if ((anchorOf.get(to) ?? to) !== anchor) return true;
+        if (anchorOf.has(to) && !seen.has(to)) {
+          seen.add(to);
+          queue.push(to);
+        }
+      }
+    return false;
+  };
   return new Map(
     [...stacks].map(([anchor, stack]) => [
       anchor,
       stack
+        .map((entry) => ({ ...entry, leaves: leavesStack(entry.gate.id) }))
         .toSorted(
           (a, b) =>
+            Number(a.leaves) - Number(b.leaves) ||
             Number(b.waits) - Number(a.waits) ||
             (a.waits
               ? layerOf.get(b.gate.id)! - layerOf.get(a.gate.id)!
