@@ -1,0 +1,12 @@
+{
+  "name": "@beads-desk/promo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "node src/seed/seed.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@typescript/native": "npm:typescript@^7.0.2"
+  }
+}

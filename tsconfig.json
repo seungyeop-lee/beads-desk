@@ -1,4 +1,8 @@
 {
   "files": [],
-  "references": [{ "path": "./packages/app" }, { "path": "./packages/bd" }]
+  "references": [
+    { "path": "./packages/app" },
+    { "path": "./packages/bd" },
+    { "path": "./packages/promo" }
+  ]
 }

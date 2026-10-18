@@ -8,10 +8,13 @@
 
 ## 패키지 구성
 
-| 경로           | 패키지                      | 역할                                                           |
-| -------------- | --------------------------- | -------------------------------------------------------------- |
-| `packages/app` | `@seungyeop-lee/beads-desk` | npm으로 배포하는 Next.js 앱과 `bd-desk` 실행 명령              |
-| `packages/bd`  | `@beads-desk/bd`            | `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다 |
+| 경로             | 패키지                      | 역할                                                           |
+| ---------------- | --------------------------- | -------------------------------------------------------------- |
+| `packages/app`   | `@seungyeop-lee/beads-desk` | npm으로 배포하는 Next.js 앱과 `bd-desk` 실행 명령              |
+| `packages/bd`    | `@beads-desk/bd`            | `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다 |
+| `packages/promo` | `@beads-desk/promo`         | README 스크린샷과 소개 영상을 만드는 도구. 배포하지 않습니다   |
+
+`pnpm --filter promo run seed <디렉터리>`는 그 디렉터리에 git 저장소와 영어 데모 프로젝트(prefix `acme`)의 bd workspace를 만듭니다. 비어 있거나 전에 seed로 만든 디렉터리만 받고, 전에 만든 디렉터리는 비운 뒤 다시 만듭니다.
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 
