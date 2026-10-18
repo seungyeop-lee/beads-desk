@@ -67,7 +67,7 @@ test("beads workspace가 아니거나 본문이 잘못되면 400으로 거부한
   const malformed = await register({ path: 3 });
 
   expect(notWorkspace.status).toBe(400);
-  expect((await notWorkspace.json()).error).toBe(`beads workspace를 찾지 못했습니다: ${plain}`);
+  expect((await notWorkspace.json()).error).toBe(`No beads workspace found: ${plain}`);
   expect(malformed.status).toBe(400);
 });
 

@@ -49,11 +49,11 @@ export function createDaemon({
         const running = await runningServer();
         if (running) {
           const list = await registerWorkspace(running.url, root, true);
-          print(`이미 실행 중인 서버에서 workspace를 바꿨습니다: ${list.current}`);
+          print(`Switched the running server to workspace: ${list.current}`);
           print(`URL: ${running.url}`);
           if (port && port !== running.port) {
             print(
-              `서버가 ${running.port}번 포트에서 실행 중이라 지정한 포트(${port})를 적용하지 않았습니다. 포트를 바꾸려면 다음 명령을 실행하세요: bd-desk restart --port ${port}`,
+              `The server is already running on port ${running.port}, so port ${port} was not applied. To change the port, run: bd-desk restart --port ${port}`,
             );
           }
           if (open) openBrowser(running.url);
@@ -62,7 +62,7 @@ export function createDaemon({
         const server = await launch(root, port);
         print(`workspace: ${root}`);
         print(`URL: ${server.url}`);
-        print("종료하려면 bd-desk stop을 실행하세요.");
+        print("To stop the server, run: bd-desk stop");
         if (open) openBrowser(server.url);
         return 0;
       }),
@@ -73,11 +73,11 @@ export function createDaemon({
         const state = readState();
         if (!state || !isServerAlive(state.pid)) {
           rmSync(statePath, { force: true });
-          print("실행 중인 beads-desk 서버가 없습니다.");
+          print("No beads-desk server is running.");
           return 2;
         }
         await terminate(state.pid);
-        print("서버를 종료했습니다.");
+        print("Server stopped.");
         return 0;
       }),
 
@@ -87,7 +87,7 @@ export function createDaemon({
         const running = await runningServer();
         if (!running) {
           const root = workspaceRootOf(process.cwd());
-          print("실행 중인 서버가 없어 새로 시작합니다.");
+          print("No server is running. Starting a new one.");
           const server = await launch(root, port);
           print(`URL: ${server.url}`);
           if (open) openBrowser(server.url);
@@ -108,7 +108,7 @@ export function createDaemon({
           await registerWorkspace(server.url, workspace, false);
         }
         for (const workspace of missing) {
-          print(`workspace를 찾지 못해 다시 등록하지 않았습니다: ${workspace}`);
+          print(`Workspace not found, so it was not registered again: ${workspace}`);
         }
         const current = isWorkspaceRoot(list.current)
           ? (await registerWorkspace(server.url, list.current, true)).current
@@ -123,11 +123,11 @@ export function createDaemon({
   /** 서버를 background로 시작하고, 요청을 받을 수 있을 때까지 기다립니다. */
   async function launch(workspaceRoot, requestedPort) {
     if (requestedPort && !(await isPortAvailable(requestedPort))) {
-      throw new Error(`${requestedPort}번 포트가 사용 중입니다.`);
+      throw new Error(`Port ${requestedPort} is already in use.`);
     }
     const port = requestedPort ?? (await findAvailablePort(defaultPort));
     if (!requestedPort && port !== defaultPort) {
-      print(`${defaultPort}번 포트가 사용 중이라 ${port}번 포트로 시작합니다.`);
+      print(`Port ${defaultPort} is already in use. Starting on port ${port}.`);
     }
 
     const url = `http://${HOST}:${port}`;
@@ -149,11 +149,11 @@ export function createDaemon({
       await waitForServer(url, server.pid);
     } catch (error) {
       await terminate(server.pid);
-      throw new Error(`${error.message} 로그: ${logPath}`, { cause: error });
+      throw new Error(`${error.message} Log: ${logPath}`, { cause: error });
     }
     if ((await readHealth(url))?.runtime?.bdVersion === null) {
       print(
-        "경고: 서버가 bd를 실행하지 못했습니다. bd가 PATH에 있는지 확인하거나 BD_BIN으로 경로를 지정하세요.",
+        "Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.",
       );
     }
     return { url, port };
@@ -171,7 +171,7 @@ export function createDaemon({
       await waitForServer(state.url, state.pid);
     } catch (error) {
       throw new Error(
-        `실행 중인 서버(pid ${state.pid})가 응답하지 않습니다. bd-desk stop으로 종료한 뒤 다시 시작하세요.`,
+        `The running server (pid ${state.pid}) is not responding. Stop it with bd-desk stop, then start again.`,
         { cause: error },
       );
     }
@@ -231,7 +231,7 @@ export function createDaemon({
         continue;
       }
       if (Date.now() > deadline) {
-        throw new Error("다른 bd-desk 명령이 끝나기를 기다리다 시간이 초과됐습니다.");
+        throw new Error("Timed out waiting for another bd-desk command to finish.");
       }
       await sleep(100);
     }
@@ -277,7 +277,7 @@ function isServerAlive(pid) {
 /** cwd에서 bd가 쓰는 workspace 디렉터리를 찾고, 없으면 실패합니다. */
 function workspaceRootOf(cwd) {
   const root = findWorkspaceRoot(cwd);
-  if (!root) throw new Error(`beads workspace를 찾지 못했습니다: ${cwd}`);
+  if (!root) throw new Error(`No beads workspace found: ${cwd}`);
   return root;
 }
 
@@ -298,11 +298,11 @@ async function readHealth(url) {
 async function waitForServer(url, pid) {
   const deadline = Date.now() + SERVER_READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    if (!isAlive(pid)) throw new Error("서버가 준비되기 전에 종료됐습니다.");
+    if (!isAlive(pid)) throw new Error("The server exited before it was ready.");
     if ((await readHealth(url)) !== null) return;
     await sleep(250);
   }
-  throw new Error("서버가 준비되기를 기다리다 시간이 초과됐습니다.");
+  throw new Error("Timed out waiting for the server to be ready.");
 }
 
 async function registerWorkspace(url, path, select) {
@@ -326,7 +326,7 @@ async function findAvailablePort(startPort) {
   for (let attempt = 0; attempt < MAX_PORT_ATTEMPTS; attempt += 1) {
     if (await isPortAvailable(startPort + attempt)) return startPort + attempt;
   }
-  throw new Error("사용 가능한 로컬 포트를 찾지 못했습니다.");
+  throw new Error("No free local port found.");
 }
 
 /**

@@ -9,7 +9,7 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const [command, ...args] = process.argv.slice(2);
 
 if (!command) {
-  console.error("npm 명령(pack 또는 publish)을 지정해 주세요.");
+  console.error("Specify an npm command (pack or publish).");
   process.exit(1);
 }
 

@@ -264,7 +264,7 @@ test("beads workspace가 아닌 디렉터리에서는 서버를 띄우지 않는
   await mkdir(plain);
 
   await expect(commands.start({ cwd: plain, open: false })).rejects.toThrow(
-    `beads workspace를 찾지 못했습니다: ${plain}`,
+    `No beads workspace found: ${plain}`,
   );
 
   expect(await startedPids()).toEqual([]);
@@ -277,7 +277,7 @@ test("설정이나 DB 파일이 없는 .beads만 있는 디렉터리에서는 �
   await mkdir(join(home, ".beads", "shared-server"), { recursive: true });
 
   await expect(commands.start({ cwd: home, open: false })).rejects.toThrow(
-    `beads workspace를 찾지 못했습니다: ${home}`,
+    `No beads workspace found: ${home}`,
   );
 
   expect(await startedPids()).toEqual([]);
@@ -317,7 +317,7 @@ test("서버가 bd를 실행하지 못하면 시작은 하되 경고를 출력�
 
   expect(await commands.start({ cwd: first, open: false })).toBe(0);
 
-  expect(printed).toContainEqual(expect.stringContaining("bd를 실행하지 못했습니다"));
+  expect(printed).toContainEqual(expect.stringContaining("could not run bd"));
   await commands.stop();
 });
 
@@ -349,7 +349,7 @@ test.each([
       expect(await commands.start({ cwd: first, open: false })).toBe(0);
 
       expect((await serverState()).port).toBe(busy + 1);
-      expect(printed).toContain(`${busy}번 포트가 사용 중이라 ${busy + 1}번 포트로 시작합니다.`);
+      expect(printed).toContain(`Port ${busy} is already in use. Starting on port ${busy + 1}.`);
       await commands.stop();
     } finally {
       other.close();
@@ -365,7 +365,7 @@ test("다른 서버가 IPv6로 쓰고 있는 포트를 지정하면 서버를 �
 
   try {
     await expect(commands.start({ cwd: first, port: busy, open: false })).rejects.toThrow(
-      `${busy}번 포트가 사용 중입니다.`,
+      `Port ${busy} is already in use.`,
     );
 
     expect(await startedPids()).toEqual([]);

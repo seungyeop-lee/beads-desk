@@ -11,15 +11,17 @@ import { createDaemon } from "./daemon.js";
 const HOST = "127.0.0.1";
 const DEFAULT_PORT = 3000;
 
-const USAGE = `사용법: bd-desk [start|stop|restart] [--port <번호>] [--open]
+const USAGE = `Usage: bd-desk [start|stop|restart] [--port <number>] [--open]
 
-  start    서버를 background로 시작합니다. 명령을 생략하면 start입니다.
-           이미 실행 중이면 지금 디렉터리를 workspace로 등록해 현재 workspace로 바꿉니다.
-  stop     실행 중인 서버를 종료합니다.
-  restart  같은 포트로 다시 시작하고, 등록한 workspace와 현재 workspace를 이어받습니다.
+  start    Start the server in the background. This is the default command.
+           If the server is already running, register the current directory
+           as a workspace and switch to it.
+  stop     Stop the running server.
+  restart  Restart on the same port, keeping the registered workspaces
+           and the current workspace.
 
-  --port <번호>  서버 포트입니다. 지정하지 않으면 ${DEFAULT_PORT}번부터 비어 있는 포트를 씁니다.
-  --open        서버가 준비되면 브라우저를 엽니다.`;
+  --port <number>  Server port. Defaults to the first free port from ${DEFAULT_PORT}.
+  --open           Open the browser when the server is ready.`;
 
 const require = createRequire(import.meta.url);
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -35,7 +37,7 @@ if (!options) {
   process.exit(1);
 }
 if (!existsSync(resolve(packageRoot, ".next", "BUILD_ID"))) {
-  console.error("빌드 결과물을 찾지 못했습니다. 패키지를 다시 설치해 주세요.");
+  console.error("Build output not found. Reinstall the package.");
   process.exit(1);
 }
 
@@ -101,6 +103,6 @@ function openBrowser(url) {
         : ["xdg-open", [url]];
   spawn(command, commandArgs, { detached: true, stdio: "ignore" })
     // 브라우저를 여는 명령이 없는 환경(예: xdg-open이 없는 Linux)에서도 서버는 이미 떠 있으므로 실패로 끝내지 않습니다.
-    .on("error", () => console.log(`브라우저를 열지 못했습니다. 위 URL을 직접 여세요.`))
+    .on("error", () => console.log("Could not open the browser. Open the URL above manually."))
     .unref();
 }
