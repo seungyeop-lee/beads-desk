@@ -129,3 +129,21 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 3. bd workspace 디렉터리에서 `XDG_RUNTIME_DIR=<다른 임시 디렉터리> <임시 디렉터리>/bin/bd-desk start`를 실행합니다. `XDG_RUNTIME_DIR`을 따로 주어야 평소에 쓰는 서버의 상태 파일을 건드리지 않습니다.
 4. 출력된 URL의 `/api/health` 응답에서 `runtime.workspaceRoot`가 3번의 디렉터리이고 `runtime.bdVersion`이 비어 있지 않으면 정상입니다.
 5. 같은 `XDG_RUNTIME_DIR`로 `<임시 디렉터리>/bin/bd-desk stop`을 실행해 서버를 종료합니다.
+
+`.github/workflows/`를 바꿨다면 push하기 전에 [act](https://github.com/nektos/act)로 바꾼 job을 실행해 봅니다. Docker runtime이 실행 중이어야 하고 act가 설치되어 있어야 합니다(macOS는 `brew install act`). runner 이미지는 `-P`로 `catthehacker/ubuntu:act-latest`를 지정합니다. 저장소 루트에서 아래 명령을 실행해, act가 `Job succeeded`를 출력하고 종료 코드 0으로 끝나면 통과입니다. 이미지를 받은 뒤에는 `check`가 약 1분 30초, `package-smoke`가 약 1분 걸립니다.
+
+```sh
+act pull_request -j check -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
+act pull_request -j package-smoke -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
+```
+
+- act는 commit하지 않은 변경까지 포함해 작업 트리를 container에 복사합니다. `.gitignore`에 있는 파일(`node_modules` 등)은 복사하지 않습니다.
+- `--rm`을 빼면 job이 실패했을 때 이름이 `act-`로 시작하는 container와 volume이 남습니다.
+- Apple Silicon에서 act가 `--container-architecture linux/amd64`를 쓰라는 경고를 출력해도 이 옵션은 주지 않습니다. Docker Desktop의 containerd image store에서는 act가 amd64 이미지의 `PATH`를 읽지 못해, node로 실행하는 action이 `exec: "node": executable file not found in $PATH`로 실패합니다.
+
+act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지는 않으므로, 최종 확인은 PR의 GitHub Actions 실행 결과로 합니다.
+
+- runner 이미지가 달라 미리 설치된 패키지와 apt 저장소가 다릅니다. `playwright install --with-deps`처럼 apt로 설치하는 단계는 act에서 통과해도 GitHub에서 실패할 수 있고, 반대의 경우도 생깁니다.
+- Apple Silicon에서는 arm64 container에서 실행하므로, pnpm이 GitHub runner와 다른 플랫폼의 native 패키지를 설치합니다.
+- cache는 act에 내장된 cache server가 `~/.cache/actcache`에 저장합니다. 두 번째 실행부터 setup-node의 pnpm cache가 복원되지만, GitHub의 cache와는 공유되지 않습니다.
+- act에서는 OIDC token을 발급받을 수 없으므로, `id-token: write` 권한이 필요한 단계는 act로 확인할 수 없습니다.
