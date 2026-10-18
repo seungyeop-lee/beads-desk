@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # release.yml이 게시하기 전에 이 workflow를 호출하므로, 여기 있는 job이 모두 성공해야 npm에 게시합니다.
+  workflow_call:
 
 permissions:
   contents: read
