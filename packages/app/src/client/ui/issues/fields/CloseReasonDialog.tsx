@@ -22,10 +22,12 @@ export function CloseReasonDialogHost() {
 
 function CloseReasonDialog({ request }: { request: DialogRequest<string> }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // 머리글의 ID 복사 단추보다 사유 입력이 먼저 focus를 받습니다.
+  const reasonRef = useRef<HTMLInputElement>(null);
   const [reason, setReason] = useState("");
   const messages = useMessages();
 
-  useShowModal(dialogRef);
+  useShowModal(dialogRef, true, reasonRef);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -50,7 +52,7 @@ function CloseReasonDialog({ request }: { request: DialogRequest<string> }) {
         <label className="flex flex-col gap-1.5">
           <span className="caption">{messages.closeIssue.reason}</span>
           <input
-            autoFocus
+            ref={reasonRef}
             className="input w-full"
             placeholder={messages.closeIssue.reasonPlaceholder}
             value={reason}

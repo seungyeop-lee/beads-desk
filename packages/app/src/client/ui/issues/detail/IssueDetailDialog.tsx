@@ -1,6 +1,6 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import type { IssueDetailLocation } from "@/client/modules/issues/domain/issueDetailTrail";
@@ -39,6 +39,8 @@ export function IssueDetailDialog({
   const { issue: issueId, side } = location;
   const sideHref = (sideId: string) => detailHref({ issue: issueId, side: sideId });
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // 열 때는 머리글의 ID 복사 단추가 아니라 닫기 단추가 focus를 받아, 바로 Enter를 누르면 dialog가 닫힙니다.
+  const closeRef = useRef<HTMLButtonElement>(null);
   const { data, error, loading } = useIssueDetail(issueId);
   const [lastIssue, setLastIssue] = useState<IssueDetail | null>(null);
   if (data && data !== lastIssue) setLastIssue(data);
@@ -55,7 +57,7 @@ export function IssueDetailDialog({
     };
   }, [opening]);
 
-  useShowModal(dialogRef, !embedded && !loading);
+  useShowModal(dialogRef, !embedded && !loading, closeRef);
 
   const close = () => {
     if (embedded) onClose();
@@ -74,6 +76,7 @@ export function IssueDetailDialog({
         sideHref={sideHref}
         onDeleted={close}
         onClose={close}
+        closeRef={closeRef}
       />
       {side && (
         <IssueSidePanel
@@ -132,6 +135,7 @@ type PanelProps = {
   sideHref: (issueId: string) => string;
   onDeleted: () => void;
   onClose: () => void;
+  closeRef: RefObject<HTMLButtonElement | null>;
 };
 
 function IssueDetailPanel({
@@ -144,6 +148,7 @@ function IssueDetailPanel({
   sideHref,
   onDeleted,
   onClose,
+  closeRef,
 }: PanelProps) {
   const writes = useIssueWrites();
   const messages = useMessages();
@@ -178,6 +183,7 @@ function IssueDetailPanel({
         )}
         <div className="ml-auto">
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             className="btn btn-ghost btn-sm btn-square text-base-content/60"

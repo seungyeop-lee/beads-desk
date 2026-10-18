@@ -1,12 +1,22 @@
 import { useEffect, type RefObject } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
-/** dialog를 그린 뒤 열어야 하는 조건이 바뀔 때마다 확인해 열고, 이미 열려 있으면 다시 열지 않습니다. */
-export function useShowModal(ref: RefObject<HTMLDialogElement | null>, enabled = true) {
+/**
+ * dialog를 그린 뒤 열어야 하는 조건이 바뀔 때마다 확인해 열고, 이미 열려 있으면 다시 열지 않습니다.
+ * 열면 브라우저가 dialog 안에서 처음 나오는 focus 가능한 요소에 focus를 둡니다. 다른 요소가 focus를 받아야 하면
+ * initialFocus로 그 요소를 줍니다. React의 autoFocus는 dialog가 열리기 전에 실행되어 효과가 없습니다.
+ */
+export function useShowModal(
+  ref: RefObject<HTMLDialogElement | null>,
+  enabled = true,
+  initialFocus?: RefObject<HTMLElement | null>,
+) {
   useEffect(() => {
     const dialog = ref.current;
-    if (enabled && dialog && !dialog.open) dialog.showModal();
-  }, [ref, enabled]);
+    if (!enabled || !dialog || dialog.open) return;
+    dialog.showModal();
+    initialFocus?.current?.focus();
+  }, [ref, enabled, initialFocus]);
 }
 
 /** 지금 초점이 글자 입력에 있으면 true입니다. Escape를 편집 취소로만 쓰고 dialog를 닫지 않을 때 씁니다. */

@@ -82,6 +82,25 @@ test("지금 화면 행, 보드 카드, 상세 머리글의 ID를 누르면 전�
   await expect(dialog).toBeVisible();
 });
 
+test("상세 dialog를 열면 머리글의 ID 복사 단추가 아니라 닫기 단추에 focus가 있어 Enter로 닫히고, ID 복사 단추에는 Shift+Tab으로 간다", async ({
+  page,
+  workspace,
+}) => {
+  const work = await workspace.createIssue("e2e 상세를 열 작업");
+  const dialog = page.getByRole("dialog", { name: `${work} 이슈` });
+
+  await page.goto("/issues");
+  await page.getByRole("link", { name: "e2e 상세를 열 작업", exact: true }).click();
+  await expect(dialog).toBeVisible();
+  // dialog 밖을 눌러 닫는 영역도 이름이 "닫기"인 단추라, 머리글의 닫기 단추는 앞의 것입니다.
+  await expect(dialog.getByRole("button", { name: "닫기", exact: true }).first()).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.getByRole("button", { name: `${work} ID 복사` })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeHidden();
+});
+
 /** 단추를 누르면 클립보드에 id가 들어가고 복사 Toast가 하나 더 뜨는지 확인합니다. 같은 id를 연달아 복사해도 Toast 수로 구분합니다. */
 async function expectCopies(page: Page, button: Locator, id: string) {
   await page.evaluate(() => navigator.clipboard.writeText(""));

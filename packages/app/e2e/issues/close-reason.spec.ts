@@ -10,6 +10,7 @@ test("상세에서 닫힘을 고르면 사유를 묻고, 입력한 사유로 닫
   const detail = page.getByRole("dialog", { name: `${id} 이슈`, exact: true });
   await detail.getByLabel("상태", { exact: true }).selectOption("closed");
   const closing = page.getByRole("dialog", { name: "이슈 닫기" });
+  await expect(closing.getByRole("textbox", { name: "닫는 사유" })).toBeFocused();
   await closing.getByRole("textbox", { name: "닫는 사유" }).fill("e2e로 확인함");
   await closing.getByRole("button", { name: "이슈 닫기" }).click();
 

@@ -10,6 +10,7 @@ test("상세에서 보류를 고르면 기한과 사유를 묻고, 내일까지 
   const detail = page.getByRole("dialog", { name: `${id} 이슈`, exact: true });
   await detail.getByLabel("상태", { exact: true }).selectOption("deferred");
   const deferring = page.getByRole("dialog", { name: "이슈 보류" });
+  await expect(deferring.getByRole("combobox", { name: "보류 기한" })).toBeFocused();
   await expect(deferring.getByRole("combobox", { name: "보류 기한" })).toHaveValue("tomorrow");
   await deferring.getByRole("textbox", { name: "보류 사유" }).fill("API 열림 대기");
   await deferring.getByRole("button", { name: "보류" }).click();

@@ -30,13 +30,15 @@ export function DeferDialogHost() {
 
 function DeferDialog({ request }: { request: DialogRequest<Deferral> }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // 머리글의 ID 복사 단추보다 기한 선택이 먼저 focus를 받습니다.
+  const untilRef = useRef<HTMLSelectElement>(null);
   const [choice, setChoice] = useState<UntilChoice>("tomorrow");
   const [earliestDay] = useState(() => earliestDeferDay(Date.now()));
   const [date, setDate] = useState(earliestDay);
   const [reason, setReason] = useState("");
   const messages = useMessages();
 
-  useShowModal(dialogRef);
+  useShowModal(dialogRef, true, untilRef);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -61,7 +63,7 @@ function DeferDialog({ request }: { request: DialogRequest<Deferral> }) {
         <label className="flex flex-col gap-1.5">
           <span className="caption">{messages.deferral.until}</span>
           <select
-            autoFocus
+            ref={untilRef}
             className="select w-full"
             value={choice}
             onChange={(event) => setChoice(event.target.value as UntilChoice)}
