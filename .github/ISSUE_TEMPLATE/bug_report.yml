@@ -1,0 +1,71 @@
+name: Bug report
+description: Report something in beads-desk that does not work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the same problem happens when you run `bd` directly in the terminal, report it to [Beads](https://github.com/steveyegge/beads) instead. To report a security vulnerability, follow [SECURITY.md](https://github.com/seungyeop-lee/beads-desk/blob/main/SECURITY.md) and do not open a public issue.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Describe what you saw, including any error message on the screen or in the terminal.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `bd-desk start --open` in a beads workspace
+        2. Open ...
+        3. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: bd-desk-version
+    attributes:
+      label: bd-desk version
+      description: Run `npm ls -g @seungyeop-lee/beads-desk` (or `pnpm list -g @seungyeop-lee/beads-desk` if you installed it with pnpm). If you built it from the repository, give the commit hash from `git rev-parse --short HEAD`.
+    validations:
+      required: true
+  - type: input
+    id: bd-version
+    attributes:
+      label: bd version
+      description: Output of `bd --version`.
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Output of `node --version`.
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: Name and version, for example macOS 15.5 or Ubuntu 24.04.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Name and version, if the problem is on the screen.
+  - type: textarea
+    id: server-log
+    attributes:
+      label: Relevant part of server.log
+      description: |
+        The log is at `$XDG_RUNTIME_DIR/beads-desk/server.log`. If `XDG_RUNTIME_DIR` is not set, it is at `beads-desk/server.log` in the OS temporary directory (`$TMPDIR` on macOS). Paste the lines from around the time the problem happened, and remove issue titles, paths, or other data you do not want to make public.
+      render: text
