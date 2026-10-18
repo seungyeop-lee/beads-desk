@@ -1,7 +1,7 @@
 import type { Locator } from "@playwright/test";
 
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
-import { commentTexts, createHumanGate } from "../support/humanGates";
+import { commentTexts, createHumanGate, expectRowGoneWhenNotified } from "../support/humanGates";
 
 /** 상세 카드 직속 섹션의 접근 가능한 이름을 DOM 순서대로 모읍니다. 응답 섹션은 제목(h3)이 접근 가능한 이름입니다. */
 function directSectionNames(decision: Locator) {
@@ -40,6 +40,11 @@ test("human gate는 막고 있는 작업과 함께 판단 기다림 화면에 �
   await decision.getByRole("textbox", { name: "응답", exact: true }).click();
   await page.keyboard.type("버튼 색을 바꿔 주세요");
   await decision.getByRole("button", { name: "응답하고 닫기" }).click();
+  await expectRowGoneWhenNotified(
+    page,
+    `${gate}에 응답하고 닫았습니다`,
+    page.getByRole("button", { name: new RegExp(`Review: ${work}`) }),
+  );
 
   await expect
     .poll(() => workspace.showIssue(gate).then((issue) => issue.close_reason), {
@@ -63,6 +68,11 @@ test("human 라벨이 붙은 human gate를 응답 없이 닫으면 적은 사유
   await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
   await decision.getByRole("textbox", { name: "닫는 사유" }).fill("작업을 그만둠");
   await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
+  await expectRowGoneWhenNotified(
+    page,
+    `${gate}을(를) 응답 없이 닫았습니다`,
+    page.getByRole("button", { name: new RegExp(`Review: ${work}`) }),
+  );
 
   await expect
     .poll(() => workspace.showIssue(gate).then((issue) => issue.close_reason), {

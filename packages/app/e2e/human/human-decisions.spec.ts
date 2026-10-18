@@ -1,5 +1,5 @@
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
-import { createHumanGate } from "../support/humanGates";
+import { createHumanGate, expectRowGoneWhenNotified } from "../support/humanGates";
 
 test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가서 응답하면, 이슈가 닫히고 응답 댓글이 남는다", async ({
   page,
@@ -24,6 +24,11 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
   await decision.getByRole("textbox", { name: "응답", exact: true }).click();
   await page.keyboard.type("OAuth2로 진행해 주세요");
   await decision.getByRole("button", { name: "응답하고 닫기" }).click();
+  await expectRowGoneWhenNotified(
+    page,
+    `${question}에 응답하고 닫았습니다`,
+    page.getByRole("button", { name: /인증 방식을 정해 주세요/ }),
+  );
 
   await expect
     .poll(() => workspace.showIssue(question).then((issue) => issue.status), {
@@ -57,13 +62,17 @@ test("응답 없이 닫는 동안에는 응답 편집기가 감춰지고 취소�
   await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
   await decision.getByRole("textbox", { name: "닫는 사유" }).fill("요구 사항이 바뀜");
   await decision.getByRole("button", { name: "응답 없이 닫기" }).click();
+  await expectRowGoneWhenNotified(
+    page,
+    `${stale}을(를) 응답 없이 닫았습니다`,
+    page.getByRole("button", { name: /더는 필요 없는 질문/ }),
+  );
 
   await expect
     .poll(() => workspace.showIssue(stale).then((issue) => issue.close_reason), {
       timeout: SAVE_TIMEOUT,
     })
     .toBe("Dismissed: 요구 사항이 바뀜");
-  await expect(page.getByRole("button", { name: /더는 필요 없는 질문/ })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "남은 질문" })).toBeVisible();
 });
 

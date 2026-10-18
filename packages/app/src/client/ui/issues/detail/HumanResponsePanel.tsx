@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { dismissHumanAction, respondToHumanAction } from "@/server/web/issues/issueActions";
 import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
@@ -24,18 +24,20 @@ export function HumanResponsePanel({ issueId, writes, title, body, placeholder }
   const [response, setResponse] = useState("");
   // null이면 닫는 사유 입력란을 닫아 둔 상태입니다.
   const [dismissReason, setDismissReason] = useState<string | null>(null);
+  const [closed, toastWhenRemoved] = useToastWhenRemoved();
+  const locked = writes.pending || closed;
 
-  // Ctrl/Cmd+Enter는 비활성화된 버튼을 거치지 않으므로 여기서도 처리 중인지 확인합니다.
+  // Ctrl/Cmd+Enter는 비활성화된 버튼을 거치지 않으므로 여기서도 버튼이 막혀 있는지 확인합니다.
   const respond = async () => {
-    if (writes.pending || !response.trim()) return;
+    if (locked || !response.trim()) return;
     if ((await writes.run(() => respondToHumanAction(issueId, response))).ok) {
-      showToast(messages.humanDecision.responded(issueId));
+      toastWhenRemoved(messages.humanDecision.responded(issueId));
     }
   };
 
   const dismiss = async (reason: string) => {
     if ((await writes.run(() => dismissHumanAction(issueId, reason))).ok) {
-      showToast(messages.humanDecision.dismissed(issueId));
+      toastWhenRemoved(messages.humanDecision.dismissed(issueId));
     }
   };
 
@@ -71,7 +73,7 @@ export function HumanResponsePanel({ issueId, writes, title, body, placeholder }
           <button
             type="button"
             className="btn btn-ghost btn-sm"
-            disabled={writes.pending}
+            disabled={locked}
             onClick={() => setDismissReason("")}
           >
             {messages.humanDecision.dismiss}
@@ -79,7 +81,7 @@ export function HumanResponsePanel({ issueId, writes, title, body, placeholder }
           <button
             type="button"
             className="btn btn-primary btn-sm"
-            disabled={writes.pending || !response.trim()}
+            disabled={locked || !response.trim()}
             onClick={() => void respond()}
           >
             {messages.humanDecision.respond}
@@ -107,11 +109,42 @@ export function HumanResponsePanel({ issueId, writes, title, body, placeholder }
           >
             {messages.common.cancel}
           </button>
-          <button type="submit" className="btn btn-sm" disabled={writes.pending}>
+          <button type="submit" className="btn btn-sm" disabled={locked}>
             {messages.humanDecision.confirmDismiss}
           </button>
         </form>
       )}
     </section>
   );
+}
+
+/**
+ * 응답하거나 닫은 이슈는 화면이 서버 알림으로 다시 조회한 뒤에야 목록과 상세에서 빠지고, 그때 이 패널도 화면에서 사라집니다.
+ * 쓰기가 끝나자마자 알리면 닫았다고 알린 이슈가 한동안 그대로 보이므로, 패널이 사라질 때 알립니다.
+ * 패널이 사라질 때까지는 closed를 true로 돌려줘, 이미 닫은 이슈에 다시 응답하거나 닫지 못하도록 버튼을 막게 합니다.
+ */
+function useToastWhenRemoved(): [closed: boolean, toastWhenRemoved: (message: string) => void] {
+  const [closed, setClosed] = useState(false);
+  const mounted = useRef(false);
+  const pendingMessage = useRef<string | null>(null);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (pendingMessage.current !== null) showToast(pendingMessage.current);
+    };
+  }, []);
+
+  const toastWhenRemoved = (message: string) => {
+    // 쓰기를 기다리는 동안 다른 항목으로 옮겨 패널이 이미 사라졌으면 바로 알립니다.
+    if (!mounted.current) {
+      showToast(message);
+      return;
+    }
+    pendingMessage.current = message;
+    setClosed(true);
+  };
+
+  return [closed, toastWhenRemoved];
 }
