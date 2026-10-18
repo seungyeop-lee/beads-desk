@@ -22,6 +22,7 @@ export type GraphLayoutInput = {
 };
 
 type Cell = { issue: Issue; column: number; row: number };
+type Spot = Pick<Cell, "column" | "row">;
 
 /** 열 안 순서를 이웃의 평균 위치로 다시 정렬하는 횟수입니다. 오른쪽으로 한 번, 왼쪽으로 한 번씩 번갈아 셉니다. */
 const ORDER_SWEEPS = 8;
@@ -50,12 +51,12 @@ export function layoutGraph({
     );
     top += Math.max(...columns.map((column) => column.length));
   }
-  const auxiliaryEdges = auxiliary ? placeAuxiliary(cells, auxiliary) : [];
+  const blocks = order.components.flatMap(({ edges }) => edges);
+  const auxiliaryEdges = auxiliary ? placeAuxiliary(cells, auxiliary, blocks) : [];
 
   const left = Math.min(0, ...cells.map(({ column }) => column));
   const up = Math.min(0, ...cells.map(({ row }) => row));
   const cellOf = new Map(cells.map((cell) => [cell.issue.id, cell]));
-  const blocks = order.components.flatMap(({ edges }) => edges);
   const routes = routeGrid({
     nodes: cells.map(({ issue, column, row }) => ({
       id: issue.id,
@@ -259,64 +260,98 @@ function orderColumns(
 
 /**
  * 체인 밖 관련·발견 이슈를 연결된 노드에 가장 가까운 빈 칸에 둡니다. 발견 이슈는 발견한 작업보다 한 열 오른쪽에 두어,
- * 발견 간선이 blocks처럼 왼쪽에서 오른쪽으로 읽히게 합니다. 그릴 수 있는 관련·발견 간선을 돌려줍니다.
+ * 발견 간선이 blocks처럼 왼쪽에서 오른쪽으로 읽히게 합니다. 가장 가까운 빈 칸이 여럿이면 이미 놓인 간선과 덜 교차하는 칸을 고르고,
+ * 교차 수까지 같으면 후보 순서를 따릅니다. 그릴 수 있는 관련·발견 간선을 돌려줍니다.
  */
 function placeAuxiliary(
   cells: Cell[],
   { center, issues, edges }: NonNullable<GraphLayoutInput["auxiliary"]>,
+  blocks: OrderEdge[],
 ): AuxiliaryEdge[] {
   if (edges.length === 0) return [];
   if (cells.length === 0 && center) cells.push({ issue: center, column: 0, row: 0 });
   const cellOf = new Map(cells.map((cell) => [cell.issue.id, cell]));
   const taken = new Set(cells.map(({ column, row }) => `${column}:${row}`));
+  const placed: OrderEdge[] = [...blocks];
   for (const issue of issues) {
-    const edge = edges.find(
+    const links = edges.filter(
       ({ from, to }) =>
         (from === issue.id && cellOf.has(to)) || (to === issue.id && cellOf.has(from)),
     );
+    const edge = links[0];
     const anchor = edge
       ? cellOf.get(edge.from === issue.id ? edge.to : edge.from)!
       : center && cellOf.get(center.id);
     if (!anchor) continue;
-    const candidates =
+    const free = (
       edge?.type === "discovered-from"
         ? columnCandidates(anchor, edge.to === issue.id ? 1 : -1, cells.length)
-        : nearbyCandidates(anchor, cells.length);
-    const { column, row } = candidates.find(
-      (candidate) => !taken.has(`${candidate.column}:${candidate.row}`),
-    )!;
+        : nearbyCandidates(anchor, cells.length)
+    ).filter((candidate) => !taken.has(`${candidate.column}:${candidate.row}`));
+    const crossingsAt = (candidate: Spot) =>
+      links.reduce((sum, { from, to }) => {
+        const other = cellOf.get(from === issue.id ? to : from)!;
+        return sum + placed.filter((line) => crosses(candidate, other, line, cellOf)).length;
+      }, 0);
+    const { column, row } = free
+      .filter(({ distance }) => distance === free[0]!.distance)
+      .map((candidate) => ({ ...candidate, crossings: crossingsAt(candidate) }))
+      .reduce((best, candidate) => (candidate.crossings < best.crossings ? candidate : best));
     const cell = { issue, column, row };
     cells.push(cell);
     cellOf.set(issue.id, cell);
     taken.add(`${column}:${row}`);
+    placed.push(...links);
   }
   return edges.filter(({ from, to }) => cellOf.has(from) && cellOf.has(to));
 }
 
-/** anchor의 왼쪽(-1)이나 오른쪽(1) 열에서 anchor와 같은 행부터 가까운 행 순서이고, 거리가 같으면 아래 행이 먼저입니다. */
+/**
+ * 칸 a와 b를 잇는 간선이 이미 놓인 간선 line과 교차하는지를, 두 간선을 칸 사이의 곧은 선으로 보고 판단합니다.
+ * 실제 경로는 틈을 따라 꺾이지만, 배치를 고르는 단계에서는 경로가 아직 없으므로 곧은 선으로 어림합니다.
+ * 끝을 함께 쓰거나 한 직선 위에 겹치는 선은 교차로 보지 않습니다.
+ */
+function crosses(a: Spot, b: Spot, line: OrderEdge, cellOf: ReadonlyMap<string, Cell>) {
+  const [c, d] = [cellOf.get(line.from), cellOf.get(line.to)];
+  if (!c || !d) return false;
+  const side = (p: Spot, q: Spot, r: Spot) =>
+    Math.sign((q.column - p.column) * (r.row - p.row) - (q.row - p.row) * (r.column - p.column));
+  return side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0;
+}
+
+/**
+ * anchor의 왼쪽(-1)이나 오른쪽(1) 열에서 anchor와 같은 행부터 가까운 행 순서이고, 거리가 같으면 아래 행이 먼저입니다.
+ * distance는 anchor와 떨어진 행 수입니다.
+ */
 function columnCandidates({ column, row }: Cell, side: 1 | -1, reach: number) {
   return Array.from({ length: 2 * reach + 1 }, (_, at) => ({
     column: column + side,
     row: row + (at % 2 === 1 ? (at + 1) / 2 : -at / 2),
+    distance: Math.ceil(at / 2),
   }));
 }
 
-/** anchor 둘레의 칸을 가까운 순서로 돌려줍니다. 거리가 같으면 같은 열, 아래, 오른쪽이 먼저입니다. */
+/**
+ * anchor 둘레의 칸을 가까운 순서로 돌려줍니다. 거리가 같으면 같은 열, 아래, 오른쪽이 먼저입니다.
+ * distance는 열 하나를 행 COLUMN_DISTANCE개로 보고 잰 거리입니다.
+ */
 function nearbyCandidates({ column, row }: Cell, reach: number) {
   const span = reach + 1;
   return Array.from({ length: 2 * COLUMN_DISTANCE + 1 }, (_, dc) => dc - COLUMN_DISTANCE)
     .flatMap((dc) =>
-      Array.from({ length: 2 * span + 1 }, (_, dr) => dr - span).map((dr) => ({ dc, dr })),
+      Array.from({ length: 2 * span + 1 }, (_, dr) => dr - span).map((dr) => ({
+        dc,
+        dr,
+        distance: COLUMN_DISTANCE * Math.abs(dc) + Math.abs(dr),
+      })),
     )
     .filter(({ dc, dr }) => dc !== 0 || dr !== 0)
     .toSorted(
       (a, b) =>
-        COLUMN_DISTANCE * Math.abs(a.dc) +
-          Math.abs(a.dr) -
-          (COLUMN_DISTANCE * Math.abs(b.dc) + Math.abs(b.dr)) ||
+        a.distance - b.distance ||
         Math.abs(a.dc) - Math.abs(b.dc) ||
         Number(a.dr < 0) - Number(b.dr < 0) ||
         Number(a.dc < 0) - Number(b.dc < 0),
     )
-    .map(({ dc, dr }) => ({ column: column + dc, row: row + dr }));
+    .map(({ dc, dr, distance }) => ({ column: column + dc, row: row + dr, distance }));
 }
