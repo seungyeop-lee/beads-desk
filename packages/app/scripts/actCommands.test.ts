@@ -15,7 +15,7 @@ const workflows = readdirSync(new URL(WORKFLOW_DIR, REPO_ROOT))
     return { path, jobIds: Object.keys(workflow.jobs) };
   });
 
-const actCommands = readFileSync(new URL("AGENTS.md", REPO_ROOT), "utf8")
+const actCommands = readFileSync(new URL(".github/AGENTS.md", REPO_ROOT), "utf8")
   .split("\n")
   .filter((line) => line.startsWith("act "));
 
@@ -29,8 +29,8 @@ function workflowsWithJob(jobId: string): string[] {
   return workflows.filter((workflow) => workflow.jobIds.includes(jobId)).map(({ path }) => path);
 }
 
-// AGENTS.md의 act 명령은 손으로 적어 두므로, workflow에서 job ID나 파일 이름을 바꾸면 아무 job도 실행하지 않는 명령이 남습니다.
-test("AGENTS.md의 act -j job ID는 workflow 중 정확히 한 곳에 있다", () => {
+// .github/AGENTS.md의 act 명령은 손으로 적어 두므로, workflow에서 job ID나 파일 이름을 바꾸면 아무 job도 실행하지 않는 명령이 남습니다.
+test(".github/AGENTS.md의 act -j job ID는 workflow 중 정확히 한 곳에 있다", () => {
   const jobIds = optionValues("-j");
   expect(jobIds).not.toEqual([]);
 
@@ -40,7 +40,7 @@ test("AGENTS.md의 act -j job ID는 workflow 중 정확히 한 곳에 있다", (
   expect(misplaced).toEqual([]);
 });
 
-test("AGENTS.md의 act -W 경로에 workflow 파일이 있다", () => {
+test(".github/AGENTS.md의 act -W 경로에 workflow 파일이 있다", () => {
   const missing = optionValues("-W").filter((path) => !existsSync(new URL(path, REPO_ROOT)));
   expect(missing).toEqual([]);
 });

@@ -8,16 +8,23 @@
 
 ## 패키지 구성
 
-| 경로                  | 패키지                      | 역할                                                                                     |
-| --------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
-| `packages/app`        | `@seungyeop-lee/beads-desk` | npm으로 배포하는 Next.js 앱과 `bd-desk` 실행 명령                                        |
-| `packages/bd`         | `@beads-desk/bd`            | `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다                           |
-| `packages/promo`      | `@beads-desk/promo`         | README 스크린샷과 소개 영상을 만드는 도구. 배포하지 않습니다                             |
-| `packages/playground` | `@beads-desk/playground`    | 테스트 데이터를 담은 workspace로 `next dev`를 띄우는 수동 테스트 환경. 배포하지 않습니다 |
+- `packages/app`(`@seungyeop-lee/beads-desk`): npm으로 배포하는 Next.js 앱과 `bd-desk` 실행 명령
+- `packages/bd`(`@beads-desk/bd`): `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다
+- `packages/promo`(`@beads-desk/promo`): README 스크린샷과 소개 영상을 만드는 도구. 배포하지 않습니다
+- `packages/playground`(`@beads-desk/playground`): 테스트 데이터를 담은 workspace로 `next dev`를 띄우는 수동 테스트 환경. 배포하지 않습니다
 
-README 스크린샷이나 소개 영상을 만들거나 `packages/promo`를 고치기 전에 `packages/promo/AGENTS.md`를 읽습니다. seed·capture·video 명령과 출력 파일, 캡처 장면을 바꿀 때 함께 고칠 파일이 그 문서에 있습니다.
+아래 작업을 시작하기 전에 해당 문서를 읽습니다.
 
-화면을 직접 조작해 보거나 데이터가 있어야 드러나는 버그를 재현할 때는 `pnpm playground`로 테스트 데이터 workspace와 개발 서버를 띄웁니다. 실행 옵션, 데이터에 든 경계 사례, 데이터를 더하는 방법은 `packages/playground/AGENTS.md`에 있습니다.
+- README 스크린샷이나 소개 영상을 만들거나 `packages/promo`를 고칠 때: `packages/promo/AGENTS.md`
+- 화면을 직접 조작해 보거나 데이터가 있어야 드러나는 버그를 재현할 때(`pnpm playground`로 테스트 데이터 workspace와 개발 서버를 띄웁니다): `packages/playground/AGENTS.md`
+- `packages/bd`를 고치거나 bd를 업데이트했을 때: `packages/bd/AGENTS.md`
+- launcher(`packages/app/bin`)나 배포 패키지 구성(`files`, 의존성)을 바꿀 때: `packages/app/bin/AGENTS.md`
+- 컴포넌트 테스트(`*.browser.test.tsx`)를 쓰거나 고칠 때: `packages/app/src/client/ui/AGENTS.md`
+- e2e 시나리오를 추가하거나 고칠 때, `pnpm run test:e2e`의 실행 방식을 알아볼 때: `packages/app/e2e/AGENTS.md`
+- `.github/workflows/`를 고칠 때: `.github/AGENTS.md`
+- 릴리스가 게시되지 않았거나 prerelease를 낼 때: `docs/release.md`
+
+하위 디렉터리에 `AGENTS.md`를 새로 만들면 옆에 `@AGENTS.md` 한 줄만 담은 `CLAUDE.md`를 두고, 이 목록에 그 문서를 읽을 작업을 적습니다. Claude Code는 하위 디렉터리의 `AGENTS.md`를 직접 읽지 않고 `CLAUDE.md`만 읽습니다.
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 
@@ -25,13 +32,7 @@ README 스크린샷이나 소개 영상을 만들거나 `packages/promo`를 고�
 
 ## 실행 구조
 
-`bd-desk start`(`packages/app/bin/bd-desk.js`, 명령을 생략해도 같음)는 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 background process group으로 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
-
-- workspace는 bd와 같은 기준으로 찾습니다. 지금 디렉터리부터 git 저장소 최상위까지 설정이나 DB 파일이 있는 `.beads`를 찾고, git worktree라 찾지 못했으면 main 저장소의 `.beads`를 확인해 worktree 최상위 디렉터리를 workspace로 씁니다. 이 규칙은 `packages/app/bin/workspaceRoot.js` 한 곳에 있고, launcher와 서버가 함께 import합니다. launcher는 서버 bundle을 불러올 수 없으므로, 둘이 같은 규칙을 써야 하는 코드는 `bin`에 plain JS로 두고 패키지 `files`에도 넣습니다. launcher 실행 파일과 상대 경로 import로 연결된 파일이 `package.json`의 `files`에 포함됐는지는 `packages/app/bin/packageFiles.test.ts`가 검사하며, 누락되면 `pnpm run check`가 실패합니다. 서버에서 import할 수 있는 `bin` 파일은 `architecture.test.ts`의 `LAUNCHER_MODULES`에 등록합니다.
-- workspace를 찾지 못하면 서버를 띄우거나 바꾸지 않고 종료 코드 1로 끝납니다.
-- 서버가 이미 실행 중이면 새로 띄우지 않고, `POST /api/workspaces`로 지금 디렉터리를 등록해 현재 workspace로 바꿉니다.
-- `stop`은 서버가 응답하지 않아도 process group 전체를 종료합니다. 상태 파일의 pid가 서버의 process group 리더가 아니면(pid가 재사용된 경우) 종료하지 않고 상태 파일만 지웁니다.
-- `stop`과 `restart`는 `$XDG_RUNTIME_DIR/beads-desk`(없으면 OS 임시 디렉터리 아래 `beads-desk`)의 `server.json`에서 pid와 포트를 읽습니다. 서버 로그는 같은 디렉터리의 `server.log`에 쌓입니다.
+`bd-desk start`는 패키지에 포함된 `.next` 빌드로 `next start`를 background에서 실행하고, 명령을 실행한 디렉터리에서 찾은 bd workspace를 서버에 전달합니다. 서버가 이미 실행 중이면 새로 띄우지 않고 그 workspace를 현재 workspace로 바꿉니다.
 
 서버 전체에서 하나만 있어야 하는 상태는 `globalThis`에 둡니다. instrumentation과 route handler는 같은 module을 서로 다른 사본으로 불러오기 때문에 module 변수로는 상태를 공유할 수 없습니다.
 
@@ -43,21 +44,19 @@ README 스크린샷이나 소개 영상을 만들거나 `packages/promo`를 고�
 
 Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 코드를 쓰기 전에 `packages/app/node_modules/next/dist/docs/`에서 해당 문서를 확인합니다.
 
-`packages/app/src`는 실행 위치에 따라 `app`, `client`, `server`, `shared`로 나누고, 각각을 다시 layer로 나눕니다.
+`packages/app/src`는 실행 위치에 따라 `app`, `client`, `server`, `shared`로 나누고, 각각을 다시 layer로 나눕니다. 경로마다 두는 것은 아래와 같습니다.
 
-| 경로                                         | 두는 것                                                                                      |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `app/(client)`                               | 화면 route의 `page.tsx`와 `layout.tsx`. 화면 자체는 `client/ui/screens`에 두고 조립만 합니다 |
-| `app/(server)`                               | Route Handler. `server/web`의 `*RouteApi.ts`만 호출합니다                                    |
-| `client/ui`                                  | 화면, component, 스타일                                                                      |
-| `client/modules/<기능>/application`          | 기능 상태와 조회·갱신 순서. React hook을 포함합니다                                          |
-| `client/modules/<기능>/domain`               | 정렬·필터처럼 외부 통로 없이 성립하는 규칙                                                   |
-| `client/infra`                               | HTTP, SSE 같은 browser 통로                                                                  |
-| `server/web`                                 | Route API와 Server Action. 입력 검사와 응답 변환을 여기서 끝냅니다                           |
-| `server/modules/<기능>/{application,domain}` | bd 호출을 넘어서는 업무 규칙이 생길 때 만듭니다                                              |
-| `server/infra`                               | 서버 전역 상태와 외부 기술 연결                                                              |
-| `shared/contract`                            | client와 server가 주고받는 API 경로와 요청·응답 형태                                         |
-| `shared/domain`                              | client와 server가 함께 쓰는 업무 규칙                                                        |
+- `app/(client)`: 화면 route의 `page.tsx`와 `layout.tsx`. 화면 자체는 `client/ui/screens`에 두고 조립만 합니다
+- `app/(server)`: Route Handler. `server/web`의 `*RouteApi.ts`만 호출합니다
+- `client/ui`: 화면, component, 스타일
+- `client/modules/<기능>/application`: 기능 상태와 조회·갱신 순서. React hook을 포함합니다
+- `client/modules/<기능>/domain`: 정렬·필터처럼 외부 통로 없이 성립하는 규칙
+- `client/infra`: HTTP, SSE 같은 browser 통로
+- `server/web`: Route API와 Server Action. 입력 검사와 응답 변환을 여기서 끝냅니다
+- `server/modules/<기능>/{application,domain}`: bd 호출을 넘어서는 업무 규칙이 생길 때 만듭니다
+- `server/infra`: 서버 전역 상태와 외부 기술 연결
+- `shared/contract`: client와 server가 주고받는 API 경로와 요청·응답 형태
+- `shared/domain`: client와 server가 함께 쓰는 업무 규칙
 
 - 읽기는 client infra → `/api/...` Route Handler → `server/web/*RouteApi.ts` → `@beads-desk/bd` 순서로 연결합니다. bd 호출을 넘어서는 조립이 필요한 읽기는 그 사이에서 `server/modules/<기능>/application`이 조립합니다.
 - 쓰기는 `server/web`의 Server Action(`*Action.ts`, `*Actions.ts`)으로 처리합니다. client는 server에서 이 파일만 import합니다. Server Action은 쓰기가 성공하면 `checkWorkspaceChangesNow`를 호출해, 다음 polling 주기를 기다리지 않고 변경을 알립니다. client는 쓰기 결과로 화면 데이터를 직접 고치지 않고 이 알림으로 다시 조회합니다.
@@ -104,103 +103,28 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 
 `pnpm run check`가 typecheck, lint, format 검사, unit test, 컴포넌트 테스트를 차례로 실행합니다. lefthook이 pre-commit에서 staged 파일의 format과 lint를, pre-push에서 `pnpm run check`를 실행합니다. hook은 `pnpm install` 때 설치됩니다.
 
-`packages/bd`의 unit test는 저장해 둔 bd 출력으로 해석을 확인하므로, 설치된 bd의 출력 형식이 바뀌어도 통과합니다. bd를 업데이트했거나 `packages/bd`의 출력 해석을 고쳤다면 `pnpm run test:bd`를 실행합니다. 이 명령은 임시 디렉터리에 bd workspace를 만들고 설치된 bd로 adapter를 실행합니다(`packages/bd/src/realBd`, 약 15초). bd가 설치되어 있어야 하며, `pnpm run check`와 hook에서는 실행되지 않습니다.
+아래 확인은 `pnpm run check`와 hook에서 실행되지 않으므로, 조건에 해당하면 따로 실행합니다. 절차는 각 문서에 있습니다.
 
-컴포넌트의 가로 넘침, 줄 수, 경계 좌표처럼 CSS 배치로 정해지는 결과는 컴포넌트 테스트로 검사합니다. 컴포넌트 옆에 `*.browser.test.tsx`로 두면 `pnpm run test:components`가 Vitest Browser Mode로 실제 chromium에서 실행합니다(`packages/app/vitest.browser.config.ts`, 약 1초이고 Vite 캐시가 없으면 약 3초). bd와 서버 없이 실행되지만 chromium이 설치되어 있어야 합니다(`pnpm run test:e2e:install`).
+- bd를 업데이트했거나 `packages/bd`의 출력 해석을 고쳤으면 `pnpm run test:bd`를 실행합니다(`packages/bd/AGENTS.md`).
+- 배포 패키지 구성(`files`, 의존성, launcher)을 바꿨으면 저장소 밖에서 설치해 실행해 봅니다(`packages/app/bin/AGENTS.md`).
+- `.github/workflows/`를 바꿨으면 push하기 전에 act로 바꾼 job을 실행해 봅니다(`.github/AGENTS.md`).
 
-- 고정 데이터로 렌더링하고, class 이름이 아니라 실제 너비에서 잰 크기와 좌표를 검사합니다.
-- 화면 단위로 렌더링할 때는 서버에서 읽는 hook(`useDecisions` 등)과 `IssueDetailRoute`를 `vi.mock`으로 바꿉니다. `next/navigation` hook을 쓰는 컴포넌트는 `next/navigation`도 `vi.mock`으로 바꿉니다. `next/link`는 그대로 렌더링됩니다.
-- 컴포넌트 테스트 설정은 `"use server"` 파일을 호출하면 실패하는 함수로 바꿔 불러오므로, Server Action을 실행해야 하는 동작은 e2e로 확인합니다.
-- 실패하면 `packages/app/.vitest/attachments/failure-screenshots`에 screenshot이 남습니다.
+컴포넌트의 가로 넘침, 줄 수, 경계 좌표처럼 CSS 배치로 정해지는 결과는 컴포넌트 테스트(`*.browser.test.tsx`)로 검사합니다.
 
-화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면, unit test나 컴포넌트 테스트로 확인할 수 없는지 먼저 따져 본 뒤 시나리오를 추가합니다. 시나리오를 추가하는 기준과 작성 규칙, 시나리오를 바꾼 작업이 보고할 테스트 수와 실행 시간, `pnpm run test:e2e`의 worker·포트·대기 출력·RAM disk 같은 실행 방식은 `packages/app/e2e/AGENTS.md`에 있습니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
+화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e도 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면, unit test나 컴포넌트 테스트로 확인할 수 없는지 먼저 따져 본 뒤 시나리오를 추가합니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
 
 1. 작업하는 동안에는 `pnpm run build`로 빌드한 뒤, `packages/app`에서 `pnpm exec playwright test <spec 경로>`로 바꾼 동작을 다루는 spec만 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고칠 때마다 다시 빌드합니다.
 2. 화면을 바꿨으면 바뀐 화면을 스크린샷으로 직접 확인합니다. 화면 관련 작업의 스크린샷은 `/tmp` 폴더에 저장하고, 보고할 때 마크다운 링크로 제시합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.
-3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다.
-
-- worker마다 빈 포트를 찾아 서버를 따로 띄우므로, `next dev`가 떠 있어도 e2e를 실행할 수 있습니다.
-- 다른 worktree의 e2e가 실행 중이면 그 실행이 끝난 뒤에 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다.
-- macOS에서는 시나리오 workspace를 RAM disk에 만듭니다. RAM disk 없이 실행하려면 `BEADS_DESK_E2E_RAMDISK=0`을 줍니다. 이때는 디스크에서 bd 실행이 느려지므로 `playwright.config.ts`가 worker를 자동으로 4개로 줄입니다. worker 수를 따로 지정할 필요는 없습니다.
-- 시나리오가 실패하면 `packages/app/test-results`에 screenshot과 trace가 남습니다. trace는 `pnpm exec playwright show-trace <trace.zip 경로>`로 엽니다.
-
-`next dev`가 실행 중일 때 `packages/bd`를 고치면, 서버를 다시 시작하기 전까지 API가 고치기 전의 코드로 bd를 실행합니다. bd 패키지를 고친 뒤 화면이나 API로 확인하려면 `next dev`를 다시 시작합니다.
+3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다. 다른 worktree의 e2e가 실행 중이면 그 실행이 끝난 뒤에 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다.
 
 `next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) `docs/troubleshooting.md`의 절차를 따릅니다. `packages/app/.next/dev`를 지우기 전에 남겨야 할 자료가 그 문서에 있습니다.
 
-배포 패키지 구성(`files`, 의존성, launcher)을 바꿨다면 저장소 밖에서 설치해 실행해 봅니다.
-
-1. `packages/app`에서 `pnpm run pack:local`을 실행해 현재 디렉터리에 tarball을 만듭니다.
-2. `npm install -g --prefix <임시 디렉터리> <tarball 경로>`로 설치합니다.
-3. bd workspace 디렉터리에서 `XDG_RUNTIME_DIR=<다른 임시 디렉터리> <임시 디렉터리>/bin/bd-desk start`를 실행합니다. `XDG_RUNTIME_DIR`을 따로 주어야 평소에 쓰는 서버의 상태 파일을 건드리지 않습니다.
-4. 출력된 URL의 `/api/health` 응답에서 `runtime.workspaceRoot`가 3번의 디렉터리이고 `runtime.bdVersion`이 비어 있지 않으면 정상입니다.
-5. 같은 `XDG_RUNTIME_DIR`로 `<임시 디렉터리>/bin/bd-desk stop`을 실행해 서버를 종료합니다.
-
-`.github/workflows/`를 바꿨다면 push하기 전에 [act](https://github.com/nektos/act)로 바꾼 job을 실행해 봅니다. Docker runtime이 실행 중이어야 하고 act가 설치되어 있어야 합니다(macOS는 `brew install act`). runner 이미지는 `-P`로 `catthehacker/ubuntu:act-latest`를 지정합니다. 저장소 루트에서 아래 명령을 실행해, act가 `Job succeeded`를 출력하고 종료 코드 0으로 끝나면 통과입니다. 이미지를 받은 뒤에는 `pnpm-check`가 약 1분 30초, `package-smoke`가 약 1분 걸립니다.
-
-```sh
-act pull_request -j pnpm-check -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
-act pull_request -j package-smoke -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
-```
-
-- `-j`는 event와 관계없이 모든 workflow에서 그 ID의 job을 찾아 실행합니다. 그래서 두 workflow는 같은 job ID를 쓰지 않습니다.
-- workflow의 job ID나 파일 이름을 바꾸면 이 문서의 act 명령도 함께 고칩니다. `pnpm run check`의 unit test(`packages/app/scripts/actCommands.test.ts`)가 act 명령의 `-j` job ID가 workflow 중 정확히 한 곳에 있는지, `-W` 경로에 파일이 있는지, 두 workflow에 같은 job ID가 없는지 검사합니다.
-- Apple Silicon에서 act가 `--container-architecture linux/amd64`를 쓰라는 경고를 출력해도 이 옵션은 주지 않습니다. Docker Desktop의 containerd image store에서는 act가 amd64 이미지의 `PATH`를 읽지 못해, node로 실행하는 action이 `exec: "node": executable file not found in $PATH`로 실패합니다.
-
-act의 결과가 GitHub-hosted runner(x64 `ubuntu-latest`)의 결과와 같지는 않으므로, 최종 확인은 PR의 GitHub Actions 실행 결과로 합니다. act가 container에 복사하는 파일, `--rm`을 뺐을 때 남는 container, cache, GitHub runner와 달라지는 점은 `docs/act.md`에 있습니다.
-
 ## 릴리스
 
-`main`에 push하면 `.github/workflows/check.yml`이 그 커밋을 검사합니다. 검사가 끝나면 `.github/workflows/release.yml`이 `workflow_run`으로 실행되고, 검사가 실패했으면 아무것도 하지 않고 끝납니다. 검사가 성공했으면 그 커밋의 `packages/app/package.json` `version`을 npm에서 찾고, 이미 있으면 게시하지 않고 끝납니다. 아직 없는 version이면 검사를 다시 하지 않고 그 커밋을 빌드해서 `packages/app/scripts/run-npm-release.mjs publish`로 게시하고 `v<version>` tag와 GitHub Release를 만듭니다. 그래서 version을 올린 커밋이 곧 릴리스가 됩니다.
+`packages/app/package.json`의 `version`을 올린 커밋을 `main`에 push하면, 그 커밋의 검사(`check.yml`)가 성공한 뒤 `release.yml`이 npm에 게시하고 `v<version>` tag와 GitHub Release를 만듭니다. 그 version이 이미 npm에 있으면 게시하지 않습니다.
 
 1. 저장소 루트 `CHANGELOG.md`의 가장 최근 version 절 위에 `## [<version>] - <YYYY-MM-DD>` 절을 추가하고, 바뀐 내용을 영어로 적습니다. 이 절의 본문(다음 `## ` 제목 앞까지)이 GitHub Release의 노트가 됩니다.
 2. `packages/app/package.json`의 `version`을 같은 값으로 바꿉니다.
 3. 두 변경을 `main`에 push합니다.
 
 1–2단계와 두 파일만 담은 릴리스 커밋은 프로젝트 skill `/versionup [patch|minor|major]`(Codex에서는 `$versionup`)로 만들 수 있습니다. skill은 push하지 않으므로, 커밋을 검토한 뒤 3단계는 직접 실행합니다.
-
-- 검사가 하나라도 실패하면 `release.yml`의 job은 실행되지 않고 게시도 하지 않습니다. 고친 커밋을 push하면 version이 아직 npm에 없으므로 그 커밋의 검사가 성공한 뒤에 게시합니다.
-- `release.yml`은 main push에서 실행한 `check.yml`의 결과로만 게시합니다. PR의 검사가 끝나도 게시하지 않고, `workflow_run`은 default branch에 있는 `release.yml`로 실행되므로 PR에서 고친 `release.yml`은 main에 들어간 뒤부터 적용됩니다.
-- 해당 절이 없거나 본문이 비어 있거나 제목이 날짜로 끝나지 않으면, workflow는 게시하기 전에 실패합니다(수동 실행은 날짜가 없으면 경고만 출력합니다). 날짜를 아직 정하지 않은 절은 `## [<version>] - Unreleased`로 적어 두고 version을 올릴 때 날짜로 바꿉니다. version이 `0.0.0`이 아니면 `pnpm run check`의 unit test(`packages/app/scripts/releaseNotes.test.ts`)도 같은 조건을 검사합니다.
-- npm 인증은 trusted publishing(OIDC)으로 합니다. npmjs.com 패키지 Settings의 trusted publisher에 저장소 `seungyeop-lee/beads-desk`와 workflow 파일 이름 `release.yml`을 적으므로, 파일 이름을 바꾸면 그 설정도 함께 바꿉니다. 패키지의 Publishing access가 bypass 2FA token을 막고 있어서 token으로는 게시할 수 없습니다. trusted publisher를 다시 만들어야 하면 `docs/trusted-publisher.md`의 순서를 따릅니다.
-- `publish` job이 성공해도 npm에서 새 version이 보이기까지 몇 분 걸릴 수 있습니다. 몇 분 기다린 뒤 `npm view @seungyeop-lee/beads-desk version --prefer-online`으로 확인합니다. 저장소 밖에서 설치해 볼 때 `npm error notarget`이 나오면 로컬 npm 캐시가 오래된 것이므로 `npm install`에 `--prefer-online`을 줍니다.
-- 게시한 뒤 tag나 Release 생성이 실패하면, workflow를 다시 실행해도 version이 이미 있어서 건너뜁니다. 이때는 `node packages/app/scripts/releaseNotes.mjs <version> > <노트 파일>`로 노트를 뽑아 `gh release create v<version> --target <커밋> --title v<version> --notes-file <노트 파일>`로 직접 만듭니다. prerelease version이면 `--prerelease`도 붙입니다.
-
-prerelease도 같은 순서로 냅니다. version 뒤에 `-`로 prerelease 부분을 붙이고(예: `0.2.0-beta.1`), CHANGELOG 절 제목에도 그 version을 그대로 적습니다(`## [0.2.0-beta.1] - <YYYY-MM-DD>`). workflow는 version에 prerelease 부분이 있으면 npm에 `next` dist-tag로 게시하고 GitHub Release를 prerelease로 만듭니다. `latest`는 바뀌지 않으므로, version이나 `@next`를 지정하지 않고 설치하는 사용자는 계속 마지막 정식 version을 받습니다.
-
-`release.yml`을 고쳤으면 수동 실행(`workflow_dispatch`)으로 확인합니다. 수동 실행은 `check.yml`의 결과를 기다리지 않고, `npm publish --dry-run`까지만 실행하고 tag와 Release를 만들지 않습니다. 입력 `package`와 `version`은 npm에서 찾을 대상과 `CHANGELOG.md`에서 읽을 version을 바꾸므로, 이미 있는 version(예: `package=react`, `version=19.0.0`)과 없는 version을 넣어 두 분기를 확인합니다. act로 실행할 때는 `검증`의 act 설명을 따르되, event는 반드시 `workflow_dispatch`로 줍니다. `workflow_run` event로 실행하면 dry-run이 아니라 실제 게시를 시도합니다.
-
-dry-run은 입력과 관계없이 `packages/app/package.json`의 version을 게시합니다. 그래서 없는 version 분기는 `version` 입력만 바꾸면 publish job이 `You cannot publish over the previously published versions`로 실패하므로, 두 파일을 커밋하지 않고 잠시 바꿔서 확인합니다.
-
-1. `packages/app/package.json`의 `version`을 npm에 없는 version(예: 지금 version의 다음 patch)으로 바꿉니다.
-2. `CHANGELOG.md`에 같은 version의 절을 `## [<version>] - <YYYY-MM-DD>`로 추가합니다. 수동 실행은 `Unreleased`로 적어도 경고만 출력하지만, 실제 게시에서는 실패하므로 날짜를 적어 실제와 같은 조건으로 확인합니다.
-3. 아래 첫 명령의 `version`에 같은 version을 넣어 실행합니다.
-4. 실행이 끝나면 성공·실패와 관계없이 `git restore CHANGELOG.md packages/app/package.json`으로 두 파일을 원복합니다.
-
-```sh
-act workflow_dispatch -W .github/workflows/release.yml --input version=<1단계의 version> -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
-act workflow_dispatch -W .github/workflows/release.yml --input package=react --input version=19.0.0 -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
-```
-
-없는 version은 `publish` job이 `npm notice ... (dry-run)`을 출력하고 `Job succeeded`로 끝나면 통과입니다(약 35초). 이미 있는 version은 `published on npm: true`를 출력한 뒤 `publish` job이 실행되지 않고 끝나면 통과입니다. act는 OIDC token을 발급하지 못하므로, trusted publishing 인증은 trusted publisher를 설정한 뒤 GitHub에서 게시할 때에만 확인할 수 있습니다.
-
-prerelease 분기는 1–4단계의 version을 npm에 없는 prerelease version(예: `0.2.1-beta.1`)으로 바꿔 같은 순서로 확인합니다. `publish` job의 npm 로그가 prerelease에서는 `with tag next`를, 정식 version에서는 `with tag latest`를 출력하면 통과입니다.
-
-check 결과로 게시 여부를 정하는 조건은 수동 실행으로 확인할 수 없습니다. 이 조건을 고쳤으면 `workflow_run` event의 payload를 파일로 만들어 act에 `-e`로 줍니다. `head_sha`에는 이미 게시한 version의 커밋 가운데 origin에 push한 커밋을 넣습니다. act는 이 커밋을 원격 저장소에서 받으므로 push하지 않은 커밋은 checkout에서 실패하고, 게시하지 않은 version의 커밋을 넣으면 실제 게시를 시도합니다.
-
-```json
-{
-  "workflow_run": {
-    "event": "push",
-    "conclusion": "success",
-    "head_sha": "<커밋>",
-    "head_branch": "main"
-  }
-}
-```
-
-```sh
-act workflow_run -W .github/workflows/release.yml -e <payload 파일> -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
-```
-
-위 payload로 실행하면 `version` job이 `HEAD is now at <커밋>`과 `published on npm: true`를 출력하고 `publish` job 없이 끝나야 통과입니다. `conclusion`을 `failure`로 바꾸거나 `event`를 `pull_request`로 바꾸면 job이 하나도 실행되지 않고 종료 코드 0으로 끝나야 통과입니다.

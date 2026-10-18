@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # versionup
 
-`main`에 push하기만 하면 `.github/workflows/release.yml`이 게시하도록, `CHANGELOG.md`와 `packages/app/package.json`의 version을 올린 릴리스 커밋 하나를 만듭니다. 릴리스 규칙은 `AGENTS.md` "릴리스" 절과 `release.yml`에 있고, 이 skill은 그 절의 1–2단계를 대신 실행합니다. 이 skill이 그 둘과 어긋나는 곳을 발견하면 skill에 맞추지 말고 멈춘 뒤 어긋난 곳을 사용자에게 알립니다.
+`main`에 push하기만 하면 `.github/workflows/release.yml`이 게시하도록, `CHANGELOG.md`와 `packages/app/package.json`의 version을 올린 릴리스 커밋 하나를 만듭니다. 릴리스 규칙은 루트 `AGENTS.md` "릴리스" 절, `docs/release.md`, `release.yml`에 있고, 이 skill은 "릴리스" 절의 1–2단계를 대신 실행합니다. 이 skill이 그 셋과 어긋나는 곳을 발견하면 skill에 맞추지 말고 멈춘 뒤 어긋난 곳을 사용자에게 알립니다.
 
 **이 skill은 push, npm 게시, tag와 GitHub Release 생성을 하지 않습니다.** 사용자가 커밋을 검토한 뒤 직접 push합니다.
 
@@ -28,7 +28,7 @@ disable-model-invocation: true
 1. `git branch --show-current`가 `main`을 출력합니다.
 2. `git status --porcelain`이 아무것도 출력하지 않습니다.
 3. `node -p 'require("./packages/app/package.json").version'`으로 읽은 지금 version에 prerelease 부분(`-` 뒤)이 없습니다.
-4. 마지막 릴리스의 tag `v<지금 version>`이 있습니다. `git rev-parse -q --verify refs/tags/v<지금 version>`이 실패하면 `git fetch --tags`로 받아 온 뒤 다시 확인합니다. 그래도 없으면 멈추고, 지난 릴리스가 게시되지 않았거나 tag 생성이 실패했을 수 있다고 알립니다. 게시는 됐는데 tag가 없으면 `AGENTS.md` "릴리스" 절에 tag와 Release를 직접 만드는 방법이 있습니다.
+4. 마지막 릴리스의 tag `v<지금 version>`이 있습니다. `git rev-parse -q --verify refs/tags/v<지금 version>`이 실패하면 `git fetch --tags`로 받아 온 뒤 다시 확인합니다. 그래도 없으면 멈추고, 지난 릴리스가 게시되지 않았거나 tag 생성이 실패했을 수 있다고 알립니다. 게시는 됐는데 tag가 없으면 `docs/release.md`에 tag와 Release를 직접 만드는 방법이 있습니다.
 5. `pnpm run check`가 통과합니다. 1–4가 모두 맞을 때 마지막으로 실행합니다. 실패하면 실패한 검사와 출력을 알리고, 아직 아무 파일도 바꾸지 않았으므로 문제를 고쳐 커밋한 뒤 skill을 바로 다시 실행하면 된다고 안내합니다.
 
 ## 3. 올릴 단계 정하기

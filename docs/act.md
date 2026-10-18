@@ -1,6 +1,6 @@
 # act 실행 특성과 GitHub runner와 다른 점
 
-act로 실행할 명령과 통과 기준은 저장소 루트 `AGENTS.md`의 "검증" 절에 있습니다.
+act로 실행할 명령과 통과 기준은 `.github/AGENTS.md`에 있습니다.
 
 ## 실행 동작
 
