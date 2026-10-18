@@ -3,3 +3,5 @@ packages:
 
 allowBuilds:
   lefthook: true
+  # Remotion bundler가 쓰는 esbuild는 platform별 binary package를 함께 설치하므로, 설치 검사 script를 실행하지 않아도 동작합니다.
+  esbuild: false

@@ -22,6 +22,13 @@
 - 소개 영상용 녹화(`<이름>.webm`)와, 녹화 중에 실행한 bd 명령과 그 시각을 담은 `captureLog.json`은 `packages/promo/recordings/`에 저장합니다. 이 디렉터리는 저장소에 넣지 않습니다. `captureLog.json`의 형식은 `packages/promo/src/capture/captureLog.ts`에 있습니다.
 - 이미 만든 데모 workspace를 쓰려면 `--workspace <디렉터리>`를 줍니다. 화면 머리글에 디렉터리 이름이 보이므로 이름은 `acme-web`으로 둡니다. 실시간 반영 장면이 그 workspace의 이슈를 바꾸므로, 같은 workspace로 다시 캡처하기 전에 seed로 다시 만듭니다.
 
+`pnpm --filter promo run video`는 capture가 남긴 녹화와 `captureLog.json`으로 Remotion을 실행해 소개 영상을 만듭니다. 먼저 capture를 실행합니다. 처음 실행할 때 Remotion이 렌더링용 Chrome Headless Shell(약 170MB)을 `packages/promo/node_modules/.remotion`에 내려받습니다. 명령이 끝나면 파일마다 길이, 해상도, frame rate, 용량을 출력합니다.
+
+- `packages/promo/out/beads-desk-intro.mp4`는 hero, Now, 그래프, 보드, Needs human, 설치 안내를 이어 붙인 전체 영상입니다(H.264, 1600×900, 25fps).
+- `packages/promo/out/beads-desk-intro.gif`는 README 맨 위에 두는 hero 장면만의 영상입니다(960×540, 12.5fps). GitHub 이미지 첨부 한도인 10MB를 넘으면 명령이 실패합니다.
+- `packages/promo/out/`은 저장소에 넣지 않습니다.
+- 장면 순서, 자막, 녹화에서 잘라 쓰는 구간과 확대할 곳은 `packages/promo/src/video/introTimeline.ts`에 있습니다. 구간은 녹화 시각으로 적혀 있으므로, `captureTargets.ts`에서 장면의 동작이나 pause 길이를 바꾸면 구간도 함께 고칩니다.
+
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
 
 저장소에서 개발할 때는 Node 24 이상을 씁니다. nvm을 쓰면 저장소 루트에서 `nvm use`로 `.nvmrc`의 버전을 고릅니다. `packages/app`의 `engines`(Node 22 이상)는 사용자가 배포 패키지를 설치할 때의 조건이므로 함께 올리지 않습니다.

@@ -36,5 +36,6 @@ playwright-report/
 # Vitest Browser Mode 실패 screenshot
 .vitest/
 
-# 소개 영상용 원본 녹화(pnpm --filter promo run capture)
+# 소개 영상용 원본 녹화(pnpm --filter promo run capture)와 만든 영상(pnpm --filter promo run video)
 packages/promo/recordings/
+packages/promo/out/

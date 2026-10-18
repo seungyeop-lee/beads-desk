@@ -160,7 +160,7 @@ export default defineConfig([
     rules: restrict(boundaries.bdPackage),
   },
   {
-    files: ["packages/promo/**/*.ts"],
+    files: ["packages/promo/**/*.{ts,tsx}"],
     rules: restrict(boundaries.promoPackage),
   },
   {
