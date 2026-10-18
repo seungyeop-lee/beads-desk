@@ -88,8 +88,6 @@ export const enMessages: Messages = {
   },
   issueTable: {
     empty: "No issues match the filters.",
-    copyId: "Copy ID",
-    copyIdOf: (id) => `Copy ID ${id}`,
     statusOf: (id) => `Status of ${id}`,
     priorityOf: (id) => `Priority of ${id}`,
     dependencyCounts: (dependencies, dependents) =>
@@ -139,6 +137,8 @@ export const enMessages: Messages = {
     responsePlaceholder: "Write what you checked or what to change",
   },
   copyId: {
+    label: "Copy ID",
+    labelOf: (id) => `Copy ID ${id}`,
     copied: (id) => `Copied ID: ${id}`,
     failed: (id) => `Could not copy ID: ${id}`,
   },

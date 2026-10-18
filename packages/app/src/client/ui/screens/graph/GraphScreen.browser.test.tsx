@@ -668,7 +668,11 @@ test("닫힌 카드와 에픽 밖 카드는 흐리게 하지 않고, 닫힌 카�
     ),
   );
   const canvas = screen.getByRole("region", { name: "의존 그래프" });
-  const card = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
+  // 링크는 카드 위에 겹친 빈 요소라, 흐림과 제목 글자는 링크를 감싼 카드에서 확인합니다.
+  const card = (title: string) =>
+    page.elementLocator(
+      canvas.getByRole("link", { name: new RegExp(title) }).element().parentElement!,
+    );
   await expect.element(card("에픽 밖 카드")).toBeVisible();
   expect(
     ["닫힌 카드", "에픽 밖 카드"].map((title) => getComputedStyle(card(title).element()).opacity),

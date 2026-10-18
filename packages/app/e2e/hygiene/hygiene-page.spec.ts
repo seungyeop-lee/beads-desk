@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { answerNextConfirm } from "../support/confirmDialog";
 
@@ -16,7 +16,7 @@ test("권장 섹션이 빠진 bug와 거의 같은 이슈 두 개는 각각 권�
 
   await page.goto("/hygiene");
   const lint = card(page, "권장 섹션이 빠진 이슈");
-  await expect(lint.getByRole("link", { name: new RegExp(bug) })).toContainText(
+  await expect(issueRow(lint, bug)).toContainText(
     "빠진 섹션: Steps to Reproduce, Acceptance Criteria",
   );
   const duplicates = card(page, "중복 후보");
@@ -59,9 +59,7 @@ test("열린 이슈의 id를 메시지에 넣어 커밋하면 커밋에 언급�
 
   await page.goto("/hygiene");
   const orphans = card(page, "커밋에 언급됐지만 열린 이슈");
-  await expect(orphans.getByRole("link", { name: new RegExp(orphan) })).toContainText(
-    `fix: 재설정 링크 고침 (${orphan})`,
-  );
+  await expect(issueRow(orphans, orphan)).toContainText(`fix: 재설정 링크 고침 (${orphan})`);
 });
 
 test("오래 방치된 이슈의 기준 일수를 바꾸면 그 카드만 새 기준으로 다시 읽고, 다른 카드의 목록은 그대로 보인다", async ({
@@ -87,4 +85,11 @@ test("오래 방치된 이슈의 기준 일수를 바꾸면 그 카드만 새 �
 
 function card(page: Page, title: string) {
   return page.getByRole("region", { name: title, exact: true });
+}
+
+/** 링크는 행 위에 겹친 빈 요소라, 행에 보이는 글자는 링크를 품은 목록 항목에서 확인합니다. */
+function issueRow(card: Locator, id: string) {
+  return card
+    .getByRole("listitem")
+    .filter({ has: card.page().getByRole("link", { name: new RegExp(id) }) });
 }

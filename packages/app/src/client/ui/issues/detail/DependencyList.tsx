@@ -5,6 +5,7 @@ import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { StatusChip } from "../IssueChip";
 import { dependencyLabel } from "../issueLabels";
+import { CopyIssueIdButton } from "../CopyIssueIdButton";
 
 type Props = {
   links: LinkedIssue[];
@@ -38,7 +39,7 @@ export function DependencyList({ links, issueHref, edit, actions }: Props) {
               key={`${side}:${link.dependencyType}:${link.id}`}
               className="group relative -mx-2 flex flex-col gap-0.5 rounded-lg px-2 py-1.5 hover:bg-base-content/5"
             >
-              {/* 링크가 항목 전체를 덮어 두 줄 어디를 눌러도 이동합니다. 지우기 단추는 relative로 링크 위에 둡니다. */}
+              {/* 링크가 항목 전체를 덮어 두 줄 어디를 눌러도 이동합니다. ID와 지우기 단추는 relative로 링크 위에 둡니다. */}
               <Link
                 className="absolute inset-0 rounded-lg"
                 href={issueHref(link.id)}
@@ -50,9 +51,11 @@ export function DependencyList({ links, issueHref, edit, actions }: Props) {
                 <span className="shrink-0 text-xs text-base-content/50">
                   {dependencyLabel(messages, side, link.dependencyType)}
                 </span>
-                <span className="min-w-0 grow truncate font-mono text-xs text-base-content/55">
-                  {link.id}
-                </span>
+                <CopyIssueIdButton
+                  issueId={link.id}
+                  className="relative min-w-0 truncate rounded text-xs text-base-content/55"
+                />
+                <span className="grow" />
                 <StatusChip status={link.status} />
                 {edit && (
                   <button

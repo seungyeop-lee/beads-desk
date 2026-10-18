@@ -1,8 +1,8 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
+import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -11,7 +11,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 export type PlanMarks = { outside: boolean; waiters: number };
 
 /**
- * 그래프의 이슈 카드입니다. 카드 전체가 상세 dialog를 여는 링크이고, 감싸는 요소의 크기를 채웁니다.
+ * 그래프의 이슈 카드입니다. 카드 전체가 상세 dialog를 여는 링크이고, 감싸는 요소의 크기를 채웁니다. ID를 누르면 복사합니다.
  * 유형과 작업 상태의 색과 이름은 다른 화면과 같은 기준을 따릅니다.
  * 카드 전체는 흐리게 하지 않습니다. 닫힌 이슈는 제목 글자만 흐리게, 에픽 밖 이슈는 점선 테두리로 구분합니다.
  * 이슈 중심 보기의 기준 이슈(center)는 잉크 색 테두리로 둘러 표시합니다. 파스텔은 작업 상태와 유형이 쓰므로 강조에 쓰지 않습니다.
@@ -30,21 +30,29 @@ export function IssueCard({
   const messages = useMessages();
   const state = workState(issue);
   return (
-    // React Flow는 끌기, 선택, 클릭 handler가 없는 노드에 pointer-events: none을 걸므로 링크에서 다시 켭니다.
-    // nopan은 링크를 누를 때 그래프가 함께 끌려 움직이지 않게 하는 React Flow의 class입니다.
-    <Link
-      href={href}
-      scroll={false}
-      title={issue.id}
-      aria-current={center ? "true" : undefined}
-      className={`nopan pointer-events-auto flex size-full flex-col gap-1 rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-xs transition hover:border-base-content/30 hover:shadow-sm aria-[current=true]:shadow-md aria-[current=true]:ring-2 aria-[current=true]:ring-primary ${plan?.outside ? "border-dashed" : ""}`}
-    >
+    // React Flow는 끌기, 선택, 클릭 handler가 없는 노드에 pointer-events: none을 걸므로 카드에서 다시 켭니다.
+    // nopan은 카드를 누를 때 그래프가 함께 끌려 움직이지 않게 하는 React Flow의 class입니다.
+    <div className="nopan pointer-events-auto relative flex size-full flex-col gap-1 rounded-lg border border-transparent bg-base-100 px-3 py-2 text-xs">
+      {/* 링크가 카드 전체를 덮어 어디를 눌러도 상세를 엽니다. 테두리와 강조는 링크에 그리고,
+          ID 복사 단추와 풍선 도움말이 있는 표시는 relative로 링크 위에 둡니다. */}
+      <Link
+        href={href}
+        scroll={false}
+        title={issue.id}
+        aria-label={`${issue.id} ${issue.title}`}
+        aria-current={center ? "true" : undefined}
+        className={`absolute -inset-px rounded-lg border border-base-300 transition hover:border-base-content/30 hover:shadow-sm aria-[current=true]:shadow-md aria-[current=true]:ring-2 aria-[current=true]:ring-primary ${plan?.outside ? "border-dashed" : ""}`}
+      />
       <span className="flex items-center gap-1.5 text-base-content/55">
         <IssueTypeTag issueType={issue.issueType} />
         <span aria-hidden>·</span>
         <span className={`tone-dot ${workStateTone(state)}`} />
         <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
-        <span className="ml-auto shrink-0 font-mono">{shortIssueId(issue.id)}</span>
+        <CopyIssueIdButton
+          issueId={issue.id}
+          short
+          className="nodrag relative ml-auto shrink-0 rounded"
+        />
       </span>
       <span
         className={`text-sm leading-snug wrap-anywhere whitespace-pre-wrap font-medium ${state === "closed" ? "text-base-content/65" : "text-base-content"}`}
@@ -53,10 +61,14 @@ export function IssueCard({
       </span>
       {plan && (
         <span className="mt-auto flex items-center gap-1.5 text-base-content/55">
-          {plan.outside && <span title={messages.graph.outsideHint}>{messages.graph.outside}</span>}
-          <WaiterCount count={plan.waiters} className="ml-auto" />
+          {plan.outside && (
+            <span className="relative" title={messages.graph.outsideHint}>
+              {messages.graph.outside}
+            </span>
+          )}
+          <WaiterCount count={plan.waiters} className="relative ml-auto" />
         </span>
       )}
-    </Link>
+    </div>
   );
 }

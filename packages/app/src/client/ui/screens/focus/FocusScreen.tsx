@@ -6,11 +6,11 @@ import { type ReactNode } from "react";
 import { useFocusView } from "@/client/modules/focus/application/useFocusView";
 import { NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
 import { blockersOf, type Blocker } from "@/client/modules/humanGates/domain/humanGateBlockers";
-import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { HUMAN_DECISION_TONE, workStateTone } from "@/client/ui/issues/issueLabels";
 import { WaitingOnLines } from "@/client/ui/issues/BlockerLine";
+import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
@@ -232,44 +232,45 @@ type RowProps = {
 
 function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
   const messages = useMessages();
+  const title = issue.title || messages.common.untitled;
   return (
-    <li>
+    <li className="relative flex flex-col gap-1 px-4 py-3 text-sm hover:bg-base-200/60">
+      {/* 링크가 행 전체를 덮어 어디를 눌러도 이동합니다. ID 복사 단추와 풍선 도움말이 있는 표시는 relative로 링크 위에 둡니다. */}
       <Link
         href={href}
         scroll={false}
-        className="flex flex-col gap-1 px-4 py-3 text-sm hover:bg-base-200/60"
-      >
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:flex-nowrap">
-          <span className="w-16 shrink-0 text-xs">
-            <IssueTypeTag issueType={issue.issueType} />
-          </span>
-          <span className="min-w-0 grow basis-[calc(100%-5rem)] truncate font-medium sm:basis-0">
-            {issue.title || messages.common.untitled}
-          </span>
-          <HumanDecisionChip issue={issue} />
-          <WaiterCount count={waiters} />
-          {/* 바로 앞의 대기 수와 이어 "1개 대기 없음"처럼 읽히지 않도록 담당자 앞에 아이콘을 붙입니다.
-              칸 폭을 고정하면 우선순위와 멀어지고 제목이 쓸 폭이 줄어들므로, 글자와 아이콘만큼만 차지하게 둡니다. */}
-          {showAssignee && (
-            <span
-              className="flex max-w-36 shrink-0 items-center gap-0.5 text-xs text-base-content/60"
-              title={`${messages.issue.assignee}: ${issue.assignee ?? messages.common.none}`}
-            >
-              <UserIcon className="size-3 shrink-0" />
-              <span className="sr-only">{messages.issue.assignee}</span>
-              <span className="truncate">{issue.assignee ?? messages.common.none}</span>
-            </span>
-          )}
-          {issue.priority !== null && <PriorityChip priority={issue.priority} />}
-          <span
-            className="ml-auto min-w-8 shrink-0 text-right font-mono text-xs whitespace-nowrap text-base-content/45"
-            title={issue.id}
-          >
-            {shortIssueId(issue.id)}
-          </span>
+        className="absolute inset-0"
+        aria-label={`${issue.id} ${title}`}
+      />
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:flex-nowrap">
+        <span className="w-16 shrink-0 text-xs">
+          <IssueTypeTag issueType={issue.issueType} />
         </span>
-        {waitingOn && waitingOn.length > 0 && <WaitingOnLines blockers={waitingOn} />}
-      </Link>
+        <span className="min-w-0 grow basis-[calc(100%-5rem)] truncate font-medium sm:basis-0">
+          {title}
+        </span>
+        <HumanDecisionChip issue={issue} />
+        <WaiterCount count={waiters} className="relative" />
+        {/* 바로 앞의 대기 수와 이어 "1개 대기 없음"처럼 읽히지 않도록 담당자 앞에 아이콘을 붙입니다.
+            칸 폭을 고정하면 우선순위와 멀어지고 제목이 쓸 폭이 줄어들므로, 글자와 아이콘만큼만 차지하게 둡니다. */}
+        {showAssignee && (
+          <span
+            className="relative flex max-w-36 shrink-0 items-center gap-0.5 text-xs text-base-content/60"
+            title={`${messages.issue.assignee}: ${issue.assignee ?? messages.common.none}`}
+          >
+            <UserIcon className="size-3 shrink-0" />
+            <span className="sr-only">{messages.issue.assignee}</span>
+            <span className="truncate">{issue.assignee ?? messages.common.none}</span>
+          </span>
+        )}
+        {issue.priority !== null && <PriorityChip priority={issue.priority} />}
+        <CopyIssueIdButton
+          issueId={issue.id}
+          short
+          className="relative ml-auto min-w-8 shrink-0 rounded text-right text-xs whitespace-nowrap text-base-content/45"
+        />
+      </span>
+      {waitingOn && waitingOn.length > 0 && <WaitingOnLines blockers={waitingOn} />}
     </li>
   );
 }

@@ -19,6 +19,7 @@ import {
   type IssueRef,
   type StaleDays,
 } from "@/shared/contract/hygiene";
+import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
 /**
  * bd의 정리 점검 결과를 점검마다 카드 하나로 보입니다. 이슈를 누르면 상세 dialog가 열립니다.
@@ -45,7 +46,7 @@ export function HygieneScreen() {
 
   const issueRow = (issue: IssueRef, detail?: ReactNode) => (
     <li key={issue.id}>
-      <IssueLink issue={issue} href={issueHref(issue.id)} detail={detail} />
+      <IssueRow issue={issue} href={issueHref(issue.id)} detail={detail} />
     </li>
   );
 
@@ -95,7 +96,7 @@ export function HygieneScreen() {
           {data?.duplicates.map((pair) => (
             <li key={pair.map((issue) => issue.id).join(" ")} className="flex flex-col gap-1 py-2">
               {pair.map((issue) => (
-                <IssueLink key={issue.id} issue={issue} href={issueHref(issue.id)} />
+                <IssueRow key={issue.id} issue={issue} href={issueHref(issue.id)} />
               ))}
               <span className="flex flex-wrap gap-2 px-4 py-1">
                 {[pair, pair.toReversed()].map(([duplicate, canonical]) => (
@@ -190,21 +191,26 @@ function HygieneCard({ title, hint, empty, action, children }: CardProps) {
   );
 }
 
-function IssueLink({ issue, href, detail }: { issue: IssueRef; href: string; detail?: ReactNode }) {
+function IssueRow({ issue, href, detail }: { issue: IssueRef; href: string; detail?: ReactNode }) {
   const messages = useMessages();
+  const title = issue.title || messages.common.untitled;
   return (
-    <Link
-      href={href}
-      scroll={false}
-      className="flex flex-col gap-1 px-4 py-2.5 text-sm hover:bg-base-200/60"
-    >
+    <div className="relative flex flex-col gap-1 px-4 py-2.5 text-sm hover:bg-base-200/60">
+      {/* 링크가 행 전체를 덮어 어디를 눌러도 이동합니다. ID 복사 단추는 relative로 링크 위에 둡니다. */}
+      <Link
+        href={href}
+        scroll={false}
+        className="absolute inset-0"
+        aria-label={`${issue.id} ${title}`}
+      />
       <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="w-full font-medium wrap-anywhere">
-          {issue.title || messages.common.untitled}
-        </span>
-        <span className="shrink-0 font-mono text-xs text-base-content/45">{issue.id}</span>
+        <span className="w-full font-medium wrap-anywhere">{title}</span>
+        <CopyIssueIdButton
+          issueId={issue.id}
+          className="relative shrink-0 rounded text-xs text-base-content/45"
+        />
       </span>
       {detail && <span className="text-xs wrap-anywhere text-base-content/60">{detail}</span>}
-    </Link>
+    </div>
   );
 }

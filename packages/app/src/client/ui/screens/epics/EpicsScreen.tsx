@@ -7,7 +7,6 @@ import { useMemo, useState } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
 import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
-import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import {
   epicDescendantRows,
   notChildCandidate,
@@ -34,6 +33,7 @@ import { showToast } from "@/client/ui/designSystem/Toast";
 import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
 /**
  * epic마다 하위 이슈 진행률을 보여 주고, 펼친 epic은 하위 이슈를 목록처럼 바로 고칠 수 있게 보여 줍니다.
@@ -120,9 +120,11 @@ function EpicSection({
         >
           <ChevronRightIcon className={`transition-transform ${expanded ? "rotate-90" : ""}`} />
         </button>
-        <span className="w-12 shrink-0 font-mono text-xs text-base-content/55" title={epic.id}>
-          {shortIssueId(epic.id)}
-        </span>
+        <CopyIssueIdButton
+          issueId={epic.id}
+          short
+          className="w-12 shrink-0 rounded text-left text-xs text-base-content/55"
+        />
         <Link
           className="min-w-0 grow text-[15px] wrap-anywhere font-semibold decoration-base-content/30 underline-offset-4 hover:underline"
           href={issueHref(epic.id)}

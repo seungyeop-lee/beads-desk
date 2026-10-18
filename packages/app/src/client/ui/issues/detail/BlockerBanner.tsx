@@ -4,6 +4,7 @@ import { useId } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateChip } from "../HumanGateChip";
 import { StatusChip } from "../IssueChip";
+import { CopyIssueIdButton } from "../CopyIssueIdButton";
 
 type Props = {
   issue: IssueDetail;
@@ -34,12 +35,16 @@ export function BlockerBanner({ issue, issueHref }: Props) {
       <ul className="flex flex-col gap-1">
         {blockers.map((link) => (
           <li key={link.id} className="flex items-center gap-2 text-sm">
+            <CopyIssueIdButton
+              issueId={link.id}
+              className="shrink-0 rounded text-xs text-base-content/55"
+            />
             <Link
               href={issueHref(link.id)}
               scroll={false}
               className="min-w-0 grow truncate hover:underline"
             >
-              <span className="font-mono text-xs text-base-content/55">{link.id}</span> {link.title}
+              {link.title}
             </Link>
             {isOpenHumanGateLink(link) ? <HumanGateChip /> : <StatusChip status={link.status} />}
           </li>

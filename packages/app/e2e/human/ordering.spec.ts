@@ -26,9 +26,9 @@ test("확인 요청과 질문 묶음은 각각 늦게 만든 항목부터 맨 �
   await page.goto("/human");
   const gates = page.getByRole("region", { name: "확인 요청", exact: true });
   const questions = page.getByRole("region", { name: "질문", exact: true });
-  await expect(gates.getByRole("button")).toHaveText([
+  await expect(gates.getByRole("listitem")).toHaveText([
     new RegExp(`Review: ${newWork}`),
     new RegExp(`Review: ${oldWork}`),
   ]);
-  await expect(questions.getByRole("button")).toHaveText([/최근 질문/, /오래된 질문/]);
+  await expect(questions.getByRole("listitem")).toHaveText([/최근 질문/, /오래된 질문/]);
 });

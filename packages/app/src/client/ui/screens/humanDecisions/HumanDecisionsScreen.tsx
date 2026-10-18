@@ -26,6 +26,7 @@ import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateDecision } from "./HumanGateDecision";
+import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
 /** 왼쪽 목록에서 고른 항목 id를 담는 query 이름입니다. 주소에 남겨 새로고침하거나 주소를 다시 열어도 같은 항목을 보입니다. */
 const ITEM_PARAM = "item";
@@ -153,32 +154,37 @@ function PendingRow({
 }) {
   const messages = useMessages();
   const issue = item.kind === "gate" ? item.summary.gate : item.issue;
+  const title = issue.title || messages.common.untitled;
   return (
-    <button
-      type="button"
-      aria-current={current ? "true" : undefined}
-      className="flex min-w-0 w-full flex-col gap-1 px-4 py-3 text-left text-sm hover:bg-base-200/60 aria-[current=true]:bg-base-300/60"
-      onClick={onSelect}
+    <div
+      className={`relative flex min-w-0 w-full flex-col gap-1 px-4 py-3 text-sm ${current ? "bg-base-300/60" : "hover:bg-base-200/60"}`}
     >
+      {/* 선택 단추가 행 전체를 덮어 어디를 눌러도 고릅니다. ID 복사 단추는 relative로 선택 단추 위에 둡니다. */}
+      <button
+        type="button"
+        aria-current={current ? "true" : undefined}
+        aria-label={`${issue.id} ${title}`}
+        className="absolute inset-0"
+        onClick={onSelect}
+      />
       <span className="flex w-full flex-wrap items-center gap-2">
         <span className="w-16 shrink-0 text-xs">
           <IssueTypeTag issueType={issue.issueType} />
         </span>
-        <span className="order-first w-full font-medium wrap-anywhere">
-          {issue.title || messages.common.untitled}
-        </span>
+        <span className="order-first w-full font-medium wrap-anywhere">{title}</span>
         {issue.priority !== null && <PriorityChip priority={issue.priority} />}
         {item.kind === "gate" && item.summary.previousGateCount > 0 && (
           <IssueChip aria-label={messages.humanGate.previousRounds(item.summary.previousGateCount)}>
             🕘 {item.summary.previousGateCount}
           </IssueChip>
         )}
-        <span className="ml-auto shrink-0 text-right font-mono text-xs text-base-content/45">
-          {issue.id}
-        </span>
+        <CopyIssueIdButton
+          issueId={issue.id}
+          className="relative ml-auto shrink-0 rounded text-right text-xs text-base-content/45"
+        />
       </span>
       {item.kind === "gate" && <FirstBlockedLine blocks={item.summary.blocks} />}
-    </button>
+    </div>
   );
 }
 
@@ -203,7 +209,7 @@ function SelectedDecision({ issueId }: { issueId: string }) {
           <header className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <IssueTypeTag issueType={issue.issueType} />
-              <span className="font-mono text-base-content/55">{issue.id}</span>
+              <CopyIssueIdButton issueId={issue.id} className="rounded text-base-content/55" />
               <Link
                 href={issueHref(issue.id)}
                 scroll={false}

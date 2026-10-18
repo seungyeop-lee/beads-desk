@@ -40,7 +40,8 @@ test("다른 이슈에 막힌 열린 이슈를 목록, 에픽, 보드, 상세에
   await page.goto(`/issues?issue=${waiting}`);
   const dialog = page.getByRole("dialog", { name: `${waiting} 이슈` });
   const banner = dialog.getByRole("region", { name: "먼저 끝나야 하는 이슈가 있습니다" });
-  await expect(banner.getByRole("link", { name: `${blocker} 선행 작업` })).toBeVisible();
+  await expect(banner.getByRole("button", { name: `${blocker} ID 복사` })).toBeVisible();
+  await expect(banner.getByRole("link", { name: "선행 작업", exact: true })).toBeVisible();
 
   await workspace.bd("close", blocker);
 

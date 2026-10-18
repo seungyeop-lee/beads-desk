@@ -4,11 +4,10 @@ import { memo, useMemo, useState, type ReactNode } from "react";
 import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/domain/issueListView";
 import { BlockerLine } from "./BlockerLine";
 import { HumanDecisionChip } from "./HumanDecisionChip";
-import { copyIssueId } from "./copyIssueId";
+import { CopyIssueIdButton } from "./CopyIssueIdButton";
 import { DeferralLine } from "./DeferralLine";
 import { statusPrompts } from "./fields/statusPrompts";
 import { PrioritySelect } from "./fields/PrioritySelect";
@@ -150,15 +149,11 @@ function IssueRow({
   return (
     <tr className="group hover:bg-base-200/60">
       <td>
-        <button
-          type="button"
-          className="cursor-copy rounded font-mono text-xs text-base-content/55 hover:text-base-content"
-          title={messages.issueTable.copyId}
-          aria-label={messages.issueTable.copyIdOf(issue.id)}
-          onClick={() => void copyIssueId(issue.id)}
-        >
-          {shortIssueId(issue.id)}
-        </button>
+        <CopyIssueIdButton
+          issueId={issue.id}
+          short
+          className="rounded text-xs text-base-content/55"
+        />
       </td>
       <td className="text-sm @max-[34rem]:hidden">
         <IssueTypeTag issueType={issue.issueType} />

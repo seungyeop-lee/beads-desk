@@ -10,16 +10,17 @@ test("human gate가 막는 작업은 지금 화면, 목록, 보드에서 사람 
   const gateTitle = `Review: ${work}`;
 
   await page.goto("/focus");
-  const focusRow = page
+  // 행과 카드의 링크는 위에 겹친 빈 요소라, 보이는 글자는 링크를 품은 목록 항목에서 확인합니다.
+  const blockedItem = page
     .getByRole("region", { name: "막힘" })
-    .getByRole("link", { name: /로그인 화면 다시 그리기/ });
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("link", { name: /로그인 화면 다시 그리기/ }) });
+  const focusRow = blockedItem;
   await expect(focusRow).toContainText("사람 확인 기다림");
   await expect(focusRow).toContainText(gateTitle);
 
   await page.goto("/board");
-  const card = page
-    .getByRole("region", { name: "막힘" })
-    .getByRole("link", { name: /로그인 화면 다시 그리기/ });
+  const card = blockedItem;
   await expect(card).toContainText("사람 확인 기다림");
   await expect(card).toContainText(gateTitle);
 
@@ -68,7 +69,8 @@ test("열린 gate 목록을 받기 전에는 human gate에 막힌 작업에 다�
   const screens = page.getByRole("navigation", { name: "화면" });
   const blockedWork = page
     .getByRole("region", { name: "막힘" })
-    .getByRole("link", { name: /검토받을 작업/ });
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("link", { name: /검토받을 작업/ }) });
   const workRow = page.getByRole("row").filter({ hasText: "검토받을 작업" });
 
   for (const { href, item } of [

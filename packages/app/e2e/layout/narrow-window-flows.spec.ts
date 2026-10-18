@@ -88,7 +88,7 @@ for (const route of ROUTES) {
       .locator("section.surface")
       .filter({ has: page.getByRole("link", { name: `Epic ${title}`, exact: true }) });
     if (route === "epics") {
-      const toggle = epic.getByRole("button", { name: new RegExp(ids.epic!) });
+      const toggle = epic.getByRole("button", { name: new RegExp(`${ids.epic!} 하위 이슈`) });
       if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
       await expect(epic.getByRole("link", { name: `First ${title}`, exact: true })).toBeVisible();
     }
@@ -159,7 +159,7 @@ for (const route of ROUTES) {
         })
         .toBe("Dismissed: 질문 취소");
     } else if (route === "epics") {
-      const toggle = epic.getByRole("button", { name: new RegExp(ids.epic!) });
+      const toggle = epic.getByRole("button", { name: new RegExp(`${ids.epic!} 하위 이슈`) });
       await toggle.click();
       await expect(toggle).toHaveAttribute("aria-expanded", "false");
       await toggle.click();

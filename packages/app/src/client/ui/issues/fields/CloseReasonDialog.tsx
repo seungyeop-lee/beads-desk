@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { createDialogRequest, type DialogRequest } from "./dialogRequest";
+import { CopyIssueIdButton } from "../CopyIssueIdButton";
 
 const reasonRequest = createDialogRequest<string>();
 
@@ -41,7 +42,10 @@ function CloseReasonDialog({ request }: { request: DialogRequest<string> }) {
       <form className="modal-box flex max-w-md flex-col gap-4" onSubmit={submit}>
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-bold tracking-tight">{messages.closeIssue.title}</h2>
-          <span className="font-mono text-xs text-base-content/55">{request.issueId}</span>
+          <CopyIssueIdButton
+            issueId={request.issueId}
+            className="self-start rounded text-xs text-base-content/55"
+          />
         </div>
         <label className="flex flex-col gap-1.5">
           <span className="caption">{messages.closeIssue.reason}</span>

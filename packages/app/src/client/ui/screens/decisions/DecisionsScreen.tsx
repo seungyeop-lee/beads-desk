@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useDecisions } from "@/client/modules/decisions/application/useDecisions";
 import { decisionGroups, type DecisionRow } from "@/client/modules/decisions/domain/decisionsView";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
-import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import {
   useIssueWrites,
   type IssueWrites,
@@ -18,6 +17,7 @@ import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
+import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
 /**
  * decision 유형의 이슈를 유효한 것과 닫힌 것으로 나눠 보이고, bd supersede로 대체한 관계를 함께 보여 줍니다.
@@ -131,8 +131,12 @@ function DecisionRowView({
   const messages = useMessages();
   return (
     <tr className="hover:bg-base-200/60">
-      <td className="font-mono text-xs text-base-content/55" title={decision.id}>
-        {shortIssueId(decision.id)}
+      <td>
+        <CopyIssueIdButton
+          issueId={decision.id}
+          short
+          className="rounded text-xs text-base-content/55"
+        />
       </td>
       <td>
         <Link

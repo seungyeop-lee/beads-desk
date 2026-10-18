@@ -100,9 +100,11 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
 
   await page.goto("/human");
   const row = page.getByRole("button", { name: new RegExp(`Review: ${work}\\b`) });
-  await expect(row.getByLabel("이전 게이트 라운드 2개")).toBeVisible();
+  // 선택 단추는 카드 위에 겹친 빈 요소라, 카드에 달린 표시는 단추를 품은 목록 항목에서 확인합니다.
+  const card = (button: Locator) => page.getByRole("listitem").filter({ has: button });
+  await expect(card(row).getByLabel("이전 게이트 라운드 2개")).toBeVisible();
   const freshRow = page.getByRole("button", { name: new RegExp(`Review: ${freshWork}\\b`) });
-  await expect(freshRow.getByLabel(/이전 게이트 라운드/)).toHaveCount(0);
+  await expect(card(freshRow).getByLabel(/이전 게이트 라운드/)).toHaveCount(0);
 
   await row.click();
   const decision = page.getByRole("region", { name: `Review: ${work}`, exact: true });
@@ -121,6 +123,10 @@ test("재판단을 기다리는 gate를 고르면 같은 작업을 막았던 닫
   const firstRound = rounds.filter({ hasText: first });
   await expect(firstRound).toHaveCount(1);
   await expect(firstRound).toContainText("정정: 버튼 색도 함께 바꿔 주세요.");
+  await expect(firstRound.getByRole("button", { name: `${first} ID 복사` })).toHaveCSS(
+    "cursor",
+    "copy",
+  );
   const secondRound = rounds.filter({ hasText: second });
   await expect(secondRound).toHaveCount(1);
   await expect(secondRound).toContainText("Response: 간격 조정 요청");

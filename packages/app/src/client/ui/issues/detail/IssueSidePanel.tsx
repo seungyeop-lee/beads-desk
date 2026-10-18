@@ -11,6 +11,7 @@ import { DependencyList } from "./DependencyList";
 import { BODY_FIELDS } from "./bodyFields";
 import { CommentTimeline } from "./CommentList";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { CopyIssueIdButton } from "../CopyIssueIdButton";
 
 type Props = {
   issueId: string;
@@ -32,9 +33,10 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
       aria-label={messages.issueDetail.sidePanel(issueId)}
     >
       <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-base-300 px-5 py-3">
-        <span className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 font-mono text-xs text-base-content/70">
-          {issueId}
-        </span>
+        <CopyIssueIdButton
+          issueId={issueId}
+          className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 text-xs text-base-content/70"
+        />
         {data && (
           <span className="text-sm text-base-content/70">
             <IssueTypeTag issueType={data.issueType} />

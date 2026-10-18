@@ -12,6 +12,7 @@ import { IssueDetailView } from "./IssueDetailView";
 import { IssueSidePanel } from "./IssueSidePanel";
 import { WriteErrorAlert } from "../WriteErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { CopyIssueIdButton } from "../CopyIssueIdButton";
 
 type Props = {
   embedded?: boolean;
@@ -160,9 +161,10 @@ function IssueDetailPanel({
             {previous.issue}
           </Link>
         )}
-        <span className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 font-mono text-xs text-base-content/70">
-          {issueId}
-        </span>
+        <CopyIssueIdButton
+          issueId={issueId}
+          className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 text-xs text-base-content/70"
+        />
         {issue && (
           <span className="text-sm text-base-content/70">
             <IssueTypeTag issueType={issue.issueType} />

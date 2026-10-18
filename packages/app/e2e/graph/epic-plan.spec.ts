@@ -31,6 +31,8 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
   await page.goto(`/graph?epic=${epic}`);
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
+  // 링크는 카드 위에 겹친 빈 요소라, 카드에 보이는 글자는 링크를 품은 카드에서 확인합니다.
+  const card = (title: string) => node(title).locator("..");
   await expect(node("계획 넷째")).toBeVisible();
 
   await expect(page.getByText("전체 4단계 중 2단계 진행 중")).toBeVisible();
@@ -44,10 +46,10 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
     0,
   );
 
-  const outside = node("계획 밖 선행");
+  const outside = card("계획 밖 선행");
   await expect(outside).toContainText("에픽 밖");
-  await expect(outside).toHaveCSS("border-top-style", "dashed");
-  await expect(node("계획 둘째")).not.toContainText("에픽 밖");
+  await expect(node("계획 밖 선행")).toHaveCSS("border-top-style", "dashed");
+  await expect(card("계획 둘째")).not.toContainText("에픽 밖");
   await expect(canvas.getByLabel(`${first} 다음에 ${outsideId}`)).toHaveCount(1);
   await expect(canvas.getByLabel(`${outsideId} 다음에 ${third}`)).toHaveCount(1);
   const legend = page.getByLabel("관계 범례");
@@ -55,9 +57,9 @@ test("에픽 순서 보기는 열마다 단계 이름과 위쪽의 진행 요약
   await expect(legend.getByRole("button")).toHaveCount(1);
   await expect(legend.getByRole("button")).toHaveAccessibleName(/^앞 이슈가 끝나야 뒤 이슈를/);
 
-  await expect(node("계획 둘째")).toContainText("2개 대기");
+  await expect(card("계획 둘째")).toContainText("2개 대기");
   await expect(outside).toContainText("2개 대기");
-  await expect(node("계획 넷째")).not.toContainText("대기");
+  await expect(card("계획 넷째")).not.toContainText("대기");
   await expect(canvas.locator("[aria-current]")).toHaveCount(0);
 
   const unordered = page.getByRole("region", { name: "선후 관계 없음" });
@@ -93,7 +95,10 @@ test("선후 관계 없음 목록은 긴 제목을 끝까지 보이고, 행을 �
     panel.getByText("에픽 안의 다른 이슈와 blocks 관계가 없는 이슈입니다."),
   ).toBeVisible();
   await expect(panel).toHaveCSS("width", "320px");
-  const row = panel.getByRole("link", { name: new RegExp(longTitle) });
+  // 링크는 행 위에 겹친 빈 요소라, 행에 보이는 글자와 흐림은 링크를 품은 목록 항목에서 확인합니다.
+  const row = panel
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("link", { name: new RegExp(longTitle) }) });
   const title = row.getByText(longTitle, { exact: true });
   await expect(title).toBeVisible();
   const size = await title.evaluate((el) => ({
@@ -108,13 +113,16 @@ test("선후 관계 없음 목록은 긴 제목을 끝까지 보이고, 행을 �
   expect(size.height).toBeGreaterThan(size.lineHeight * 2);
   await expect(row).toContainText("1개 대기");
   await expect(row).toContainText(alone.slice(alone.lastIndexOf("-") + 1));
-  await expect(panel.getByRole("link", { name: /완료한 독립 작업/ })).toHaveCSS("opacity", "0.5");
+  await expect(panel.getByRole("link", { name: /완료한 독립 작업/ }).locator("..")).toHaveCSS(
+    "opacity",
+    "0.5",
+  );
 
   const node = page
     .getByRole("region", { name: "의존 그래프" })
     .getByRole("link", { name: new RegExp(longTitle) });
   await expect(node).toHaveCSS("width", "280px");
-  const nodeTitle = node.getByText(longTitle, { exact: true });
+  const nodeTitle = node.locator("..").getByText(longTitle, { exact: true });
   const nodeSize = await nodeTitle.evaluate((el) => ({
     height: el.clientHeight,
     contentHeight: el.scrollHeight,

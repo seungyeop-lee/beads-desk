@@ -12,6 +12,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { PRIORITIES } from "@/shared/contract/issueActions";
 import { IssuePicker } from "./IssuePicker";
 import { ISSUE_TYPES, priorityLabel, typeLabel, typeTone } from "./issueLabels";
+import { CopyIssueIdButton } from "./CopyIssueIdButton";
 
 type Props = {
   onCreated: (issueId: string) => void;
@@ -114,7 +115,10 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
             {parent ? (
               <span className="flex h-10 items-center gap-2 rounded-field border border-base-300 px-3 text-sm">
                 <span className={`tone-dot ${typeTone(parent.issueType)}`} />
-                <span className="font-mono text-xs text-base-content/55">{parent.id}</span>
+                <CopyIssueIdButton
+                  issueId={parent.id}
+                  className="rounded text-xs text-base-content/55"
+                />
                 <span className="min-w-0 grow truncate">{parent.title}</span>
                 {!fixedParent && (
                   <button

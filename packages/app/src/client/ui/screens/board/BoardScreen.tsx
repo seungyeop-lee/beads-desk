@@ -17,11 +17,11 @@ import {
 } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { statusPrompts } from "@/client/ui/issues/fields/statusPrompts";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { READY_TONE, statusTone } from "@/client/ui/issues/issueLabels";
 import { BoardBlockerLine } from "@/client/ui/issues/BlockerLine";
+import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
@@ -164,36 +164,47 @@ type CardProps = {
 
 function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {
   const messages = useMessages();
+  const title = issue.title || messages.common.untitled;
   return (
-    <li>
+    <li className="relative flex flex-col gap-2.5 rounded-lg border border-base-300 bg-base-100 p-3 text-sm transition hover:border-base-content/25 hover:shadow-sm">
+      {/* 링크가 카드 전체를 덮어 어디를 눌러도 상세를 열고 끌 수 있습니다. ID 복사 단추는 relative로 링크 위에 두어, 눌러도 끌기가 시작되지 않습니다. */}
       <Link
         href={href}
         scroll={false}
-        className="flex cursor-grab flex-col gap-2.5 rounded-lg border border-base-300 bg-base-100 p-3 text-sm transition hover:border-base-content/25 hover:shadow-sm active:cursor-grabbing"
+        className="absolute inset-0 cursor-grab rounded-lg active:cursor-grabbing"
+        aria-label={`${issue.id} ${title}`}
         onDragStart={(event) => {
           event.dataTransfer.setData(
             DRAG_TYPE,
             JSON.stringify({ issueId: issue.id, from: column, status: issue.status }),
           );
           event.dataTransfer.effectAllowed = "move";
+          // 링크에는 글자가 없으므로, 끄는 동안 카드 전체의 모습을 보입니다.
+          const card = event.currentTarget.parentElement;
+          if (card) {
+            event.dataTransfer.setDragImage(
+              card,
+              event.nativeEvent.offsetX,
+              event.nativeEvent.offsetY,
+            );
+          }
         }}
-      >
-        <span className="leading-snug font-medium break-words">
-          {issue.title || messages.common.untitled}
-        </span>
-        {/* 보드는 막는 이슈를 id로만 보이고, 열린 human gate만 사람 확인 기다림 표시와 gate 제목으로 보입니다. */}
-        <BoardBlockerLine
-          blockers={blockersOf(issue.blockedBy ?? [], humanGateTitles, () => undefined)}
+      />
+      <span className="leading-snug font-medium break-words">{title}</span>
+      {/* 보드는 막는 이슈를 id로만 보이고, 열린 human gate만 사람 확인 기다림 표시와 gate 제목으로 보입니다. */}
+      <BoardBlockerLine
+        blockers={blockersOf(issue.blockedBy ?? [], humanGateTitles, () => undefined)}
+      />
+      <span className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
+        <IssueTypeTag issueType={issue.issueType} />
+        <HumanDecisionChip issue={issue} />
+        {issue.priority !== null && <PriorityChip priority={issue.priority} />}
+        <CopyIssueIdButton
+          issueId={issue.id}
+          short
+          className="relative ml-auto rounded text-base-content/45"
         />
-        <span className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
-          <IssueTypeTag issueType={issue.issueType} />
-          <HumanDecisionChip issue={issue} />
-          {issue.priority !== null && <PriorityChip priority={issue.priority} />}
-          <span className="ml-auto font-mono text-base-content/45" title={issue.id}>
-            {shortIssueId(issue.id)}
-          </span>
-        </span>
-      </Link>
+      </span>
     </li>
   );
 }

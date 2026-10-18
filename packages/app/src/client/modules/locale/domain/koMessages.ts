@@ -101,8 +101,6 @@ export const koMessages = {
   },
   issueTable: {
     empty: "조건에 맞는 이슈가 없습니다.",
-    copyId: "ID 복사",
-    copyIdOf: (id: string) => `${id} ID 복사`,
     statusOf: (id: string) => `${id} 상태`,
     priorityOf: (id: string) => `${id} 우선순위`,
     dependencyCounts: (dependencies: number, dependents: number) =>
@@ -153,6 +151,8 @@ export const koMessages = {
     responsePlaceholder: "확인한 결과나 고칠 점을 적으세요",
   },
   copyId: {
+    label: "ID 복사",
+    labelOf: (id: string) => `${id} ID 복사`,
     copied: (id: string) => `ID를 복사했습니다: ${id}`,
     failed: (id: string) => `ID를 복사하지 못했습니다: ${id}`,
   },

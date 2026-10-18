@@ -69,7 +69,7 @@ for (const width of AREA_WIDTHS) {
         .elements()
         .find((element) => element.checkVisibility());
       for (const element of [
-        row.getByRole("button", { name: messages.issueTable.copyIdOf(id) }).element(),
+        row.getByRole("button", { name: messages.copyId.labelOf(id) }).element(),
         visibleType!,
       ]) {
         const box = element.getBoundingClientRect();

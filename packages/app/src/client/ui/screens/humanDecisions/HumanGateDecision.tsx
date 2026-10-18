@@ -14,6 +14,7 @@ import { LabelChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { LoadResult } from "@/client/ui/designSystem/LoadResult";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
+import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
 /** 고른 human gate의 사유를 보이고 응답하거나 응답 없이 닫으며, 이전 라운드 피드백은 응답 아래에, 막고 있는 작업은 맨 아래에 보입니다. */
 export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
@@ -26,7 +27,7 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <IssueTypeTag issueType={gate.issueType} />
-          <span className="font-mono text-base-content/55">{gate.id}</span>
+          <CopyIssueIdButton issueId={gate.id} className="rounded text-base-content/55" />
           <Link
             href={issueHref(gate.id)}
             scroll={false}
@@ -91,7 +92,10 @@ function PreviousGateFeedback({ gateId }: { gateId: string }) {
                       {gate.title || messages.common.untitled}
                     </Link>
                   </h4>
-                  <span className="font-mono text-xs text-base-content/45">{gate.id}</span>
+                  <CopyIssueIdButton
+                    issueId={gate.id}
+                    className="rounded text-xs text-base-content/45"
+                  />
                   {gate.closedAt !== null && (
                     <span className="text-xs text-base-content/55">
                       {messages.humanGate.roundClosed(formatTime(locale, gate.closedAt))}
@@ -169,7 +173,10 @@ function BlockedIssueLine({ issue }: { issue: Issue }) {
       >
         {issue.title || messages.common.untitled}
       </Link>
-      <span className="shrink-0 font-mono text-xs text-base-content/45">{issue.id}</span>
+      <CopyIssueIdButton
+        issueId={issue.id}
+        className="shrink-0 rounded text-xs text-base-content/45"
+      />
     </div>
   );
 }

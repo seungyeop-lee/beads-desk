@@ -12,6 +12,7 @@ import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HUMAN_DECISION_TONE } from "../issueLabels";
 import { HumanGateResponse } from "./HumanGateResponse";
+import { CopyIssueIdButton } from "../CopyIssueIdButton";
 
 type Props = {
   issue: IssueDetail;
@@ -57,14 +58,15 @@ function HumanGateItem({
   const reason = gate ? humanGateReason(gate.description) : "";
   return (
     <section aria-label={link.title} className="flex flex-col gap-4 border-t border-base-300 pt-4">
-      <Link
-        href={issueHref(link.id)}
-        scroll={false}
-        className="flex items-baseline gap-2 font-semibold hover:underline"
-      >
-        <span className="font-mono text-xs font-normal text-base-content/55">{link.id}</span>
-        {link.title || messages.common.untitled}
-      </Link>
+      <div className="flex items-baseline gap-2">
+        <CopyIssueIdButton
+          issueId={link.id}
+          className="shrink-0 rounded text-xs text-base-content/55"
+        />
+        <Link href={issueHref(link.id)} scroll={false} className="font-semibold hover:underline">
+          {link.title || messages.common.untitled}
+        </Link>
+      </div>
       {error && <ErrorAlert>{messages.issueDetail.loadFailed(error)}</ErrorAlert>}
       {reason && (
         <section className="flex flex-col gap-1 text-sm" aria-label={messages.humanGate.reason}>

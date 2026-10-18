@@ -5,6 +5,7 @@ import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssuePicker } from "./IssuePicker";
 import { typeTone } from "./issueLabels";
+import { CopyIssueIdButton } from "./CopyIssueIdButton";
 
 type Props = PickerOptions & {
   label: string;
@@ -61,7 +62,10 @@ export function IssueConfirmPicker({
     <div className="flex items-center gap-2">
       <span className="flex h-8 min-w-0 grow items-center gap-2 rounded-field border border-base-300 bg-base-100 px-3 text-sm">
         <span className={`tone-dot ${typeTone(picked.issueType)}`} />
-        <span className="shrink-0 font-mono text-xs text-base-content/55">{picked.id}</span>
+        <CopyIssueIdButton
+          issueId={picked.id}
+          className="shrink-0 rounded text-xs text-base-content/55"
+        />
         <span className="min-w-0 grow truncate">{picked.title}</span>
         <button
           type="button"

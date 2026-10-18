@@ -237,7 +237,8 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
     [openGateNode, openGate],
     [closedGateNode, closedGate],
   ] as const) {
-    await expect(gateNode).toContainText("에픽 밖");
+    // 링크는 카드 위에 겹친 빈 요소라, 카드에 보이는 글자는 링크를 품은 카드에서 확인합니다.
+    await expect(gateNode.locator("..")).toContainText("에픽 밖");
     await expect(canvas.getByLabel(`${gate} 다음에 ${work}`)).toHaveCount(1);
   }
   await expect(

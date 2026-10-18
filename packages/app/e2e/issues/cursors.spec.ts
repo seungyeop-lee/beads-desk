@@ -1,4 +1,6 @@
+import type { Locator } from "@playwright/test";
 import { expect, test } from "../support/bdWorkspace";
+import { createHumanGate } from "../support/humanGates";
 
 test("여러 화면의 활성 버튼·링크·메뉴는 pointer를 보이고 비활성 요소는 조작 대상에서 빠진다", async ({
   page,
@@ -38,7 +40,17 @@ test("여러 화면의 활성 버튼·링크·메뉴는 pointer를 보이고 비
   await page.goto("/human");
   const question = page.getByRole("button", { name: /판단할 질문/ });
   await expect(question).toHaveCSS("cursor", "pointer");
-  await expect(question.locator("span").first()).toHaveCSS("cursor", "pointer");
+  // 선택 단추는 카드 위에 겹친 빈 요소라, 카드의 제목 글자 위를 가리켜도 그 단추가 받아 pointer를 보입니다.
+  const questionTitle = page
+    .getByRole("region", { name: "질문", exact: true })
+    .getByText("판단할 질문", { exact: true });
+  expect(
+    await questionTitle.evaluate((title) => {
+      const rect = title.getBoundingClientRect();
+      const target = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      return target && getComputedStyle(target).cursor;
+    }),
+  ).toBe("pointer");
   const respond = page.getByRole("button", { name: "응답하고 닫기" });
   await expect(respond).toBeDisabled();
   await expect(respond).toHaveCSS("pointer-events", "none");
@@ -101,4 +113,68 @@ test("복사·텍스트 편집·보드 드래그·상세 로딩의 특수 커서
   } finally {
     await page.mouse.up();
   }
+});
+
+test("ID가 보이는 화면마다 ID는 copy 커서를 보이고 'ID 복사' 이름을 가진 단추다", async ({
+  page,
+  workspace,
+}) => {
+  const { epic, first, second, loose, decision, question, bug } = await workspace.createIssues(
+    {
+      epic: { title: "복사 에픽", type: "epic" },
+      first: { title: "복사 선행 작업", type: "task", parent: "epic" },
+      second: { title: "복사 후속 작업", type: "task", parent: "epic" },
+      loose: { title: "복사 독립 작업", type: "task", parent: "epic" },
+      decision: { title: "복사 결정", type: "decision" },
+      question: { title: "복사 질문", type: "task", labels: ["human"] },
+      bug: { title: "복사 버그", type: "bug", description: "가끔 실패합니다." },
+    },
+    [["second", "first"]],
+  );
+  const gate = await createHumanGate(workspace, second, "복사 확인");
+  const expectCopyButton = (scope: Locator, id: string) =>
+    expect(scope.getByRole("button", { name: `${id} ID 복사`, exact: true })).toHaveCSS(
+      "cursor",
+      "copy",
+    );
+  const main = page.getByRole("main");
+  const region = (name: string) => page.getByRole("region", { name, exact: true });
+
+  await page.goto("/epics");
+  await expectCopyButton(main, epic);
+  await page.goto("/decisions");
+  await expectCopyButton(main, decision);
+  await page.goto("/focus");
+  await expectCopyButton(region("막힘"), second);
+  await page.goto("/board");
+  await expectCopyButton(region("막힘"), second);
+  await page.goto("/hygiene");
+  await expectCopyButton(region("권장 섹션이 빠진 이슈"), bug);
+
+  await page.goto(`/graph?epic=${epic}`);
+  await expectCopyButton(region("의존 그래프"), first);
+  await expectCopyButton(region("선후 관계 없음"), loose);
+
+  await page.goto("/human");
+  await expectCopyButton(region("확인 요청"), gate);
+  await expectCopyButton(region("질문"), question);
+  const gateDecision = region(`Review: ${second}`);
+  await expectCopyButton(gateDecision.locator("header"), gate);
+  await expectCopyButton(gateDecision.getByRole("region", { name: "막고 있는 작업" }), second);
+  await page.getByRole("button", { name: `${question} 복사 질문` }).click();
+  await expectCopyButton(region("복사 질문"), question);
+
+  await page.goto(`/issues?issue=${second}&side=${first}`);
+  const dialog = page.getByRole("dialog", { name: `${second} 이슈` });
+  await expectCopyButton(dialog.locator("header").first(), second);
+  await expectCopyButton(
+    dialog.getByRole("region", { name: "먼저 끝나야 하는 이슈가 있습니다" }),
+    first,
+  );
+  await expectCopyButton(dialog.getByRole("region", { name: "연결된 이슈" }).first(), first);
+  await expectCopyButton(
+    dialog.getByRole("region", { name: "사람의 확인을 기다리는 작업입니다" }),
+    gate,
+  );
+  await expectCopyButton(dialog.getByRole("region", { name: `${first} 이슈 옆 패널` }), first);
 });

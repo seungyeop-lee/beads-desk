@@ -5,7 +5,7 @@ function shortId(id: string) {
   return id.replace(/^e2e-/, "");
 }
 
-test("이슈 표, 에픽, 결정, 지금 화면, 보드는 ID를 prefix 없이 보이고 전체 ID를 복사 단추나 title로 알려 준다", async ({
+test("이슈 표, 에픽, 결정, 지금 화면, 보드는 ID를 prefix 없이 보이고, 전체 ID를 복사 단추의 이름으로 알려 준다", async ({
   page,
   workspace,
 }) => {
@@ -33,15 +33,13 @@ test("이슈 표, 에픽, 결정, 지금 화면, 보드는 ID를 prefix 없이 �
   await expect(row.getByRole("combobox", { name: `${doing} 상태` })).toBeEnabled();
   await expect(row.getByRole("combobox", { name: `${doing} 우선순위` })).toBeEnabled();
 
+  const copyButton = (id: string) => page.getByRole("button", { name: `${id} ID 복사` });
   await page.goto("/epics");
-  await expect(page.getByText(shortId(epic), { exact: true })).toHaveAttribute("title", epic);
-  await expect(page.getByRole("button", { name: `${doing} ID 복사` })).toHaveText(shortId(doing));
+  await expect(copyButton(epic)).toHaveText(shortId(epic));
+  await expect(copyButton(doing)).toHaveText(shortId(doing));
 
   await page.goto("/decisions");
-  await expect(page.getByRole("cell", { name: shortId(decision), exact: true })).toHaveAttribute(
-    "title",
-    decision,
-  );
+  await expect(copyButton(decision)).toHaveText(shortId(decision));
 
   await page.goto("/focus");
   for (const [region, id] of [
@@ -49,12 +47,12 @@ test("이슈 표, 에픽, 결정, 지금 화면, 보드는 ID를 prefix 없이 �
     ["다음에 할 일", next],
   ]) {
     await expect(
-      page.getByRole("region", { name: region, exact: true }).getByText(shortId(id), {
-        exact: true,
-      }),
-    ).toHaveAttribute("title", id);
+      page
+        .getByRole("region", { name: region, exact: true })
+        .getByRole("button", { name: `${id} ID 복사` }),
+    ).toHaveText(shortId(id));
   }
 
   await page.goto("/board");
-  await expect(page.getByText(shortId(next), { exact: true })).toHaveAttribute("title", next);
+  await expect(copyButton(next)).toHaveText(shortId(next));
 });
