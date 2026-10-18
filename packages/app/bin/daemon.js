@@ -42,7 +42,11 @@ export function createDaemon({
   const lockPath = join(runtimeDir, "command.lock");
 
   return {
-    /** 이미 실행 중이면 새로 띄우지 않고 cwd를 workspace로 등록해 현재 workspace로 바꿉니다. */
+    /**
+     * 이미 실행 중이면 새로 띄우지 않고 cwd를 workspace로 등록해 현재 workspace로 바꿉니다.
+     *
+     * @param {{ cwd: string; port?: number; open: boolean }} options
+     */
     start: ({ cwd, port, open }) =>
       withLock(async () => {
         const root = workspaceRootOf(cwd);
@@ -81,7 +85,11 @@ export function createDaemon({
         return 0;
       }),
 
-    /** 같은 포트로 다시 시작하고, 등록한 workspace를 같은 순서로 등록한 뒤 현재 workspace를 고릅니다. */
+    /**
+     * 같은 포트로 다시 시작하고, 등록한 workspace를 같은 순서로 등록한 뒤 현재 workspace를 고릅니다.
+     *
+     * @param {{ port?: number; open: boolean }} options
+     */
     restart: ({ port, open }) =>
       withLock(async () => {
         const running = await runningServer();
