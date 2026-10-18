@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        If the same problem happens when you run `bd` directly in the terminal, report it to [Beads](https://github.com/steveyegge/beads) instead. To report a security vulnerability, follow [SECURITY.md](https://github.com/seungyeop-lee/beads-desk/blob/main/SECURITY.md) and do not open a public issue.
+        If the same problem happens when you run `bd` directly in the terminal, report it to [Beads](https://github.com/gastownhall/beads) instead. To report a security vulnerability, follow [SECURITY.md](https://github.com/seungyeop-lee/beads-desk/blob/main/SECURITY.md) and do not open a public issue.
   - type: textarea
     id: what-happened
     attributes:

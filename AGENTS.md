@@ -88,11 +88,11 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 파일과 출력마다 쓰는 언어는 아래와 같습니다. 어느 언어로 쓰든 식별자, 라이브러리 이름, 명령어는 원문을 유지합니다.
 
 - 영어로 씁니다.
-  - 외부 문서: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, `.github/ISSUE_TEMPLATE/`의 issue template
+  - 외부 문서: `README.md`, `USAGE.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, `.github/ISSUE_TEMPLATE/`의 issue template
   - `bd-desk` CLI와 배포 스크립트(`packages/app/bin/`, `packages/app/scripts/`)가 출력하는 문구. 터미널 언어를 감지하지 않고 영어로만 출력합니다.
 - 한국어로 씁니다.
   - 코드 주석, 테스트 이름, 커밋 메시지, 모든 디렉터리의 `AGENTS.md`, `docs/`
-  - `README.ko.md`. `README.md`의 한국어 미러이므로, `README.md`를 고치면 같은 내용으로 함께 고칩니다.
+  - `README.ko.md`와 `USAGE.ko.md`. 각각 `README.md`와 `USAGE.md`의 한국어 미러이므로, 영어 문서를 고치면 같은 내용으로 함께 고칩니다.
 - 한국어와 영어로 함께 씁니다.
   - 웹 UI 문구. Server Action, Route API, `packages/bd`가 화면에 전달하는 오류도 포함합니다. 문구를 넣을 사전은 "소스 구조" 절에 있습니다.
 

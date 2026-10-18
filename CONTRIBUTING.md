@@ -44,6 +44,8 @@ BEADS_DESK_WORKSPACE=<path to a beads workspace> pnpm run dev
 
 If you change `packages/bd` while `pnpm run dev` is running, restart it; the server keeps running `bd` with the old code until then.
 
+To install the repository's current code as the global `bd-desk`, run `pnpm run install:global` at the repository root. It installs with `pnpm add -g`, so it needs the global bin directory that `pnpm setup` creates. To remove it, run `pnpm run uninstall:global`.
+
 ## Verification
 
 Run these after changing code:

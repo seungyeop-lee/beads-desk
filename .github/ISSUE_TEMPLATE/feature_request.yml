@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        beads-desk runs the `bd` CLI and cannot change how `bd` stores or reports issues. If your request needs a change in `bd` itself, open it in [Beads](https://github.com/steveyegge/beads) instead.
+        beads-desk runs the `bd` CLI and cannot change how `bd` stores or reports issues. If your request needs a change in `bd` itself, open it in [Beads](https://github.com/gastownhall/beads) instead.
   - type: textarea
     id: problem
     attributes:
