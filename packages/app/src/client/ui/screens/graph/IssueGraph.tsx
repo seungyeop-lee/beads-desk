@@ -28,7 +28,7 @@ import {
   edgeStyle,
 } from "./edgeLook";
 import { type GraphLayout, NODE_WIDTH, type Point } from "./graphLayout";
-import { initialGraphViewport, STAGE_LABEL_HEIGHT } from "./graphViewport";
+import { initialGraphViewport, issueFocus, STAGE_LABEL_HEIGHT, stageFocus } from "./graphViewport";
 import { IssueCard, type PlanMarks } from "./IssueCard";
 
 type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
@@ -59,14 +59,23 @@ type Props = {
 export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: Props) {
   const containerRef = useRef<HTMLElement>(null);
   const flowRef = useRef<ReactFlowInstance<IssueNode, GraphEdge> | null>(null);
-  const layoutRef = useRef(layout);
+  const focus = useMemo(
+    () =>
+      plan
+        ? stageFocus(layout, plan.stages)
+        : centerId === undefined
+          ? undefined
+          : issueFocus(layout, centerId),
+    [layout, plan, centerId],
+  );
+  const viewRef = useRef({ layout, focus });
   const viewportChosen = useRef(false);
   const preserveViewport = () => {
     viewportChosen.current = true;
   };
   useLayoutEffect(() => {
-    layoutRef.current = layout;
-  }, [layout]);
+    viewRef.current = { layout, focus };
+  }, [layout, focus]);
   const [initialized, setInitialized] = useState(false);
   if (ready && !initialized) setInitialized(true);
   const planned = !!plan;
@@ -77,10 +86,11 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
       if (viewportChosen.current) return;
       void flowRef.current?.setViewport(
         initialGraphViewport(
-          layoutRef.current,
+          viewRef.current.layout,
           container.clientWidth,
           container.clientHeight,
           planned,
+          viewRef.current.focus,
         ),
       );
     };
@@ -167,7 +177,13 @@ export function IssueGraph({ layout, issueHref, plan, centerId, ready = true }: 
             flowRef.current = instance;
             const container = containerRef.current!;
             void instance.setViewport(
-              initialGraphViewport(layout, container.clientWidth, container.clientHeight, planned),
+              initialGraphViewport(
+                layout,
+                container.clientWidth,
+                container.clientHeight,
+                planned,
+                focus,
+              ),
             );
           }}
           onMoveStart={(event) => {

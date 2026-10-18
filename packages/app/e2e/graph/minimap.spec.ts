@@ -34,7 +34,7 @@ test("그래프 캔버스에는 미니맵이 있고, 캔버스를 끌어 옮기�
   await expect(mask).not.toHaveAttribute("d", afterPan!);
 });
 
-test("긴 사슬의 화면 밖 기준 이슈만 미니맵에서 강조하고, 상태 색과 에픽 미니맵은 유지한다", async ({
+test("긴 사슬을 열면 기준 이슈가 첫 화면에 보이고, 미니맵은 기준 이슈만 강조하며 상태 색과 에픽 미니맵은 유지한다", async ({
   page,
   workspace,
 }, testInfo) => {
@@ -74,7 +74,7 @@ test("긴 사슬의 화면 밖 기준 이슈만 미니맵에서 강조하고, �
     await expect(highlighted).toHaveCount(1);
     await expect(page.locator("html")).toHaveCSS("color-scheme", scheme);
     const center = canvas.locator(`[data-id="${last}"]`);
-    await expect(center).not.toBeInViewport();
+    await expect(center).toBeInViewport();
     const styles = await nodeStyles();
     expect(new Set(styles.map(({ fill }) => fill)).size).toBe(1);
     const rightmost = Math.max(...styles.map(({ x }) => x));
