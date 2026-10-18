@@ -104,6 +104,38 @@ test("중심 이슈와 앞뒤 이슈가 모두 닫혔어도 사슬 전체를 담
   ]);
 });
 
+test("gate를 기준으로 열면 gate의 선행 이슈와 gate를 기다리는 이슈의 사슬을 담고, 같은 작업을 막는 다른 gate와 작업의 관련 이슈는 뺀다", () => {
+  const data = {
+    issues: [
+      issue("before"),
+      issue("work"),
+      issue("after"),
+      issue("note"),
+      ...["shared", "other", "other-before"].map((id) => issue(id, { issueType: "gate" })),
+    ],
+    dependencies: [
+      ...blocks(
+        ["work", "before"],
+        ["after", "work"],
+        ["work", "shared"],
+        ["after", "shared"],
+        ["shared", "before"],
+        ["work", "other"],
+        ["other", "other-before"],
+      ),
+      { issueId: "work", dependsOnId: "note", type: "related", createdAt: 0 },
+    ],
+    ancestorEpics: {},
+  };
+
+  expect(ids(scopedIssues(data, { kind: "center", id: "shared" }))).toEqual([
+    "before",
+    "work",
+    "after",
+    "shared",
+  ]);
+});
+
 test("blocks가 순환해도 끝난다", () => {
   const data = {
     issues: [issue("a"), issue("b")],

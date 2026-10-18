@@ -1,7 +1,8 @@
 import { expect, test, vi } from "vitest";
-import { page, userEvent } from "vitest/browser";
+import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { VIEWPORT_MARGIN } from "@/client/modules/graph/domain/graphViewport";
+import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { issue } from "@/shared/domain/issues/issueFixture";
@@ -9,13 +10,16 @@ import { GraphScreen } from "./GraphScreen";
 
 let graph: GraphData = { issues: [], dependencies: [], ancestorEpics: {} };
 let address = new URLSearchParams();
+let detailShown = false;
 
 // 화면이 서버에서 읽는 그래프 데이터와 주소, 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
+// 상세는 detailShown일 때만 그래프 옆에 놓이는 빈 영역으로 그려, 그래프와 상세의 배치만 확인합니다.
 vi.mock("@/client/modules/graph/application/useGraph", () => ({
   useGraph: () => ({ data: graph, error: null, loading: false }),
 }));
 vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  IssueDetailRoute: () => null,
+  IssueDetailRoute: () =>
+    detailShown ? <section aria-label="상세 자리" className="h-96 w-full shrink-0" /> : null,
   useIssueHref: () => (id: string) => `/graph?issue=${id}`,
 }));
 vi.mock("next/navigation", () => ({
@@ -142,31 +146,63 @@ test("이슈 중심 그래프의 gate·관련·발견 간선도 양 끝이 아�
   expect(await coveredEdges(screen, 8)).toEqual([]);
 });
 
+// 에픽 밖의 사람 판단 gate와 PR gate가 에픽의 작업을 막는 에픽 계획입니다.
+const GATE_EPIC = graphData(
+  {
+    "gate-epic": { title: "gate 에픽", issueType: "epic" },
+    "gate-first": { title: "gate 앞 작업", parent: "gate-epic" },
+    "gate-work": { title: "gate를 기다리는 작업", parent: "gate-epic" },
+    "gate-next": { title: "gate 뒤 작업", parent: "gate-epic" },
+    "gate-human": { title: "사람 판단", issueType: "gate", awaitType: "human" },
+    "gate-pr": { title: "PR 대기", issueType: "gate", awaitType: "gh:pr" },
+  },
+  [
+    ["gate-work", "gate-first"],
+    ["gate-next", "gate-work"],
+    ["gate-work", "gate-human"],
+    ["gate-work", "gate-pr"],
+    ["gate-next", "gate-pr"],
+  ],
+);
+
 test("에픽 계획 그래프의 gate 간선도 양 끝이 아닌 노드 밑을 지나지 않는다", async () => {
   await page.viewport(1440, 900);
-  const screen = await renderGraph(
-    "epic",
-    "gate-epic",
-    graphData(
-      {
-        "gate-epic": { title: "gate 에픽", issueType: "epic" },
-        "gate-first": { title: "gate 앞 작업", parent: "gate-epic" },
-        "gate-work": { title: "gate를 기다리는 작업", parent: "gate-epic" },
-        "gate-next": { title: "gate 뒤 작업", parent: "gate-epic" },
-        "gate-human": { title: "사람 판단", issueType: "gate", awaitType: "human" },
-        "gate-pr": { title: "PR 대기", issueType: "gate", awaitType: "gh:pr" },
-      },
-      [
-        ["gate-work", "gate-first"],
-        ["gate-next", "gate-work"],
-        ["gate-work", "gate-human"],
-        ["gate-work", "gate-pr"],
-        ["gate-next", "gate-pr"],
-      ],
-    ),
-  );
+  const screen = await renderGraph("epic", "gate-epic", GATE_EPIC);
   expect(await coveredEdges(screen, 5)).toEqual([]);
 });
+
+test("에픽 계획 그래프는 에픽 밖 gate 카드에 에픽 밖 표시를 붙이고, gate 간선을 실행 순서로 읽으며, 범례에 사람 판단 gate 설명을 보인다", async () => {
+  const screen = await renderGraph("epic", "gate-epic", GATE_EPIC);
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  for (const [from, to] of [
+    ["gate-human", "gate-work"],
+    ["gate-pr", "gate-work"],
+    ["gate-pr", "gate-next"],
+  ])
+    await expect
+      .element(canvas.getByRole("img", { name: `${from} 다음에 ${to}`, exact: true }))
+      .toBeInTheDocument();
+  for (const title of ["사람 판단", "PR 대기"])
+    await expect.poll(() => cardText(canvas, title)).toContain("에픽 밖");
+  expect(cardText(canvas, "gate를 기다리는 작업")).not.toContain("에픽 밖");
+  await expect
+    .element(
+      screen.getByLabelText("관계 범례").getByRole("button", { name: /^사람이 판단해 응답해야/ }),
+    )
+    .toBeInTheDocument();
+});
+
+/** 그래프 노드의 카드입니다. 링크는 카드 위에 겹친 빈 요소라, 카드에 보이는 글자와 흐림은 링크를 감싼 카드에서 확인합니다. */
+function cardOf(container: Locator, title: string) {
+  return page.elementLocator(
+    container.getByRole("link", { name: new RegExp(title) }).element().parentElement!,
+  );
+}
+
+/** 카드에 보이는 글자입니다. 부를 때마다 카드를 다시 찾으므로 expect.poll에 넘길 수 있습니다. */
+function cardText(container: Locator, title: string) {
+  return cardOf(container, title).element().textContent;
+}
 
 /**
  * 캔버스에 그린 간선 가운데 양 끝이 아닌 노드 밑으로 지나 가려지는 간선과 그 노드입니다. count개의 간선이 그려질 때까지 기다립니다.
@@ -259,12 +295,18 @@ async function moveAwayAndZoomIn(screen: Awaited<ReturnType<typeof renderGraph>>
   const canvas = screen.getByRole("region", { name: "의존 그래프" });
   const viewport = canvas.element().querySelector<HTMLElement>(".react-flow__viewport")!;
   const before = viewport.style.transform;
+  await dragCanvas(screen);
+  await canvas.getByRole("button", { name: "확대" }).click();
+  await expect.poll(() => viewport.style.transform).not.toBe(before);
+}
+
+/** 캔버스 왼쪽 위의 빈 곳을 오른쪽 아래로 끌어 그래프를 옮깁니다. */
+async function dragCanvas(screen: Awaited<ReturnType<typeof renderGraph>>) {
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
   await userEvent.dragAndDrop(canvas, canvas, {
     sourcePosition: { x: 20, y: 20 },
     targetPosition: { x: 620, y: 420 },
   });
-  await canvas.getByRole("button", { name: "확대" }).click();
-  await expect.poll(() => viewport.style.transform).not.toBe(before);
 }
 
 /** 그래프 viewport의 배율입니다. React Flow는 viewport를 translate 뒤 scale로 옮깁니다. */
@@ -668,11 +710,7 @@ test("닫힌 카드와 에픽 밖 카드는 흐리게 하지 않고, 닫힌 카�
     ),
   );
   const canvas = screen.getByRole("region", { name: "의존 그래프" });
-  // 링크는 카드 위에 겹친 빈 요소라, 흐림과 제목 글자는 링크를 감싼 카드에서 확인합니다.
-  const card = (title: string) =>
-    page.elementLocator(
-      canvas.getByRole("link", { name: new RegExp(title) }).element().parentElement!,
-    );
+  const card = (title: string) => cardOf(canvas, title);
   await expect.element(card("에픽 밖 카드")).toBeVisible();
   expect(
     ["닫힌 카드", "에픽 밖 카드"].map((title) => getComputedStyle(card(title).element()).opacity),
@@ -683,12 +721,443 @@ test("닫힌 카드와 에픽 밖 카드는 흐리게 하지 않고, 닫힌 카�
   expect(titleColor("에픽 밖 카드")).toBe(titleColor("열린 카드"));
 });
 
+test("캔버스를 끌어 옮기거나 확대하면 미니맵의 보이는 영역 표시도 바뀐다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph(
+    "center",
+    "mini-after",
+    graphData({ "mini-before": { title: "미니맵 먼저" }, "mini-after": { title: "미니맵 나중" } }, [
+      ["mini-after", "mini-before"],
+    ]),
+  );
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  // 미니맵은 보이지 않는 영역을 덮는 path의 구멍으로 지금 보이는 영역을 나타냅니다.
+  const mask = () =>
+    canvas
+      .getByRole("img", { name: "그래프 미니맵" })
+      .element()
+      .querySelector(".react-flow__minimap-mask")
+      ?.getAttribute("d");
+  await expect.poll(mask).toBeTruthy();
+  const first = mask();
+
+  await dragCanvas(screen);
+  await expect.poll(mask).not.toBe(first);
+  const moved = mask();
+  await canvas.getByRole("button", { name: "확대", exact: true }).click();
+  await expect.poll(mask).not.toBe(moved);
+});
+
+const CHAIN_KEYS = Array.from({ length: 10 }, (_, index) => `chain-${index + 1}`);
+// 닫힌 작업 10개가 한 줄로 이어진 에픽입니다.
+const LONG_CHAIN = graphData(
+  {
+    "chain-epic": { title: "미니맵 긴 사슬", issueType: "epic" },
+    ...Object.fromEntries(
+      CHAIN_KEYS.map((key, index) => [
+        key,
+        { title: `미니맵 작업 ${index + 1}`, status: "closed", parent: "chain-epic" },
+      ]),
+    ),
+  },
+  CHAIN_KEYS.slice(1).map((key, index) => [key, CHAIN_KEYS[index]!]),
+);
+
+for (const theme of ["desk", "desk-dark"])
+  test(`${theme} 테마에서 긴 사슬을 열면 기준 이슈가 첫 화면에 보이고, 미니맵은 기준 이슈 노드만 강조하며, 기준을 바꾸거나 에픽 보기로 열어도 상태 색은 그대로다`, async () => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      await page.viewport(1440, 900);
+      const lastScreen = await renderGraph("center", "chain-10", LONG_CHAIN);
+      await expectNodeInsideCanvas(lastScreen, "chain-10");
+      const last = await minimapNodes(lastScreen);
+      await lastScreen.unmount();
+      const [lastCenter, ...lastOthers] = last.toSorted(
+        (a, b) => Number(b.center) - Number(a.center),
+      );
+      expect(last.filter(({ center }) => center)).toHaveLength(1);
+      expect(lastCenter!.x).toBe(Math.max(...last.map(({ x }) => x)));
+      expect(lastCenter!.vectorEffect).toBe("non-scaling-stroke");
+      expect(lastOthers.filter(({ stroke }) => stroke === lastCenter!.stroke)).toEqual([]);
+      const fills = new Set(last.map(({ fill }) => fill));
+      expect(fills.size).toBe(1);
+
+      const firstScreen = await renderGraph("center", "chain-1", LONG_CHAIN);
+      const first = await minimapNodes(firstScreen);
+      await firstScreen.unmount();
+      const firstCenter = first.filter(({ center }) => center);
+      expect(firstCenter).toHaveLength(1);
+      expect(firstCenter[0]!.x).toBe(Math.min(...first.map(({ x }) => x)));
+      expect(firstCenter[0]!.stroke).toBe(lastCenter!.stroke);
+      expect(new Set(first.map(({ fill }) => fill))).toEqual(fills);
+
+      const epic = await minimapNodes(await renderGraph("epic", "chain-epic", LONG_CHAIN));
+      expect(epic.filter(({ center }) => center)).toEqual([]);
+      const strokes = new Set(epic.map(({ stroke }) => stroke));
+      expect(strokes.size).toBe(1);
+      expect(strokes.has(lastCenter!.stroke)).toBe(false);
+      expect(new Set(epic.map(({ fill }) => fill))).toEqual(fills);
+    } finally {
+      delete document.documentElement.dataset.theme;
+    }
+  });
+
+/** 미니맵 노드 10개가 그려질 때까지 기다린 뒤, 노드마다 위치와 칠한 색, 기준 이슈 강조 여부를 읽습니다. */
+async function minimapNodes(screen: Awaited<ReturnType<typeof renderGraph>>) {
+  const minimap = screen.getByRole("img", { name: "그래프 미니맵" }).element();
+  await expect.poll(() => minimap.querySelectorAll(".react-flow__minimap-node").length).toBe(10);
+  return [...minimap.querySelectorAll(".react-flow__minimap-node")].map((node) => ({
+    x: Number(node.getAttribute("x")),
+    fill: getComputedStyle(node).fill,
+    stroke: getComputedStyle(node).stroke,
+    center: node.classList.contains("minimap-center"),
+    vectorEffect: getComputedStyle(node).vectorEffect,
+  }));
+}
+
+/** 노드가 캔버스 안에 모두 보일 때까지 기다립니다. 첫 화면의 viewport는 캔버스 크기가 정해진 뒤에 다시 맞춰집니다. */
+async function expectNodeInsideCanvas(screen: Awaited<ReturnType<typeof renderGraph>>, id: string) {
+  const canvas = screen.getByRole("region", { name: "의존 그래프" }).element();
+  await expect
+    .poll(() => {
+      const node = canvas.querySelector(`.react-flow__node[data-id="${id}"]`);
+      if (!node) return false;
+      const [box, bounds] = [node, canvas].map((it) => it.getBoundingClientRect());
+      return (
+        box!.left >= bounds!.left &&
+        box!.right <= bounds!.right &&
+        box!.top >= bounds!.top &&
+        box!.bottom <= bounds!.bottom
+      );
+    })
+    .toBe(true);
+}
+
+const CYCLE = graphData(
+  {
+    "cycle-epic": { title: "합성 순환 EPIC", issueType: "epic" },
+    "cycle-a": {
+      title:
+        "합성 순환 A 높이가 달라지는 긴 한국어 제목도 다른 노드와 간선을 가리지 않고 마지막 글자까지 끝까지 표시하는지 확인합니다",
+      parent: "cycle-epic",
+    },
+    "cycle-b": {
+      title:
+        "합성 순환 B A long English title should wrap onto more than two lines while all cycle edges remain visible and avoid the neighboring nodes",
+      parent: "cycle-epic",
+    },
+    "cycle-c": { title: "합성 순환 C", parent: "cycle-epic" },
+  },
+  [
+    ["cycle-b", "cycle-a"],
+    ["cycle-c", "cycle-b"],
+    ["cycle-a", "cycle-c"],
+  ],
+);
+
+for (const [scope, id] of [
+  ["epic", "cycle-epic"],
+  ["center", "cycle-a"],
+] as const)
+  test(`${scope} 그래프의 blocks 순환은 한 열에 두고, 순환 간선은 다른 노드를 피하면서 캔버스 안에 그린다`, async () => {
+    await page.viewport(1440, 900);
+    const screen = await renderGraph(scope, id, CYCLE);
+    expect(await coveredEdges(screen, 3)).toEqual([]);
+    const canvas = screen.getByRole("region", { name: "의존 그래프" }).element();
+    const nodes = [...canvas.querySelectorAll<HTMLElement>(".react-flow__node")];
+    expect(nodes).toHaveLength(3);
+    expect(new Set(nodes.map((node) => node.getBoundingClientRect().x)).size).toBe(1);
+    const bounds = canvas.getBoundingClientRect();
+    const clipped = [...canvas.querySelectorAll<SVGPathElement>("path[data-edge]")].filter((path) =>
+      pathPoints(path).some(
+        ({ x, y }) => x < bounds.left || x > bounds.right || y < bounds.top || y > bounds.bottom,
+      ),
+    );
+    expect(clipped).toEqual([]);
+  });
+
+test("에픽 그래프의 blocks 순환은 경고를 보이고 순환하는 이슈를 한 단계로 센다", async () => {
+  const screen = await renderGraph("epic", "cycle-epic", CYCLE);
+  await expect
+    .element(screen.getByRole("alert").getByText(/blocks 관계가 순환/))
+    .toBeInTheDocument();
+  await expect.element(screen.getByText("1단계 · 진행 중", { exact: true })).toBeVisible();
+  await expect.element(screen.getByText("전체 1단계 중 1단계 진행 중")).toBeVisible();
+});
+
+test("gate를 기다리는 작업을 기준으로 열면 공유 gate·복수 gate·gate의 선행 조건 간선을 대기 조건으로 읽는다", async () => {
+  await page.viewport(1440, 1000);
+  const screen = await renderGraph(
+    "center",
+    "cond-work",
+    graphData(
+      {
+        "cond-before": { title: "조건 선행 작업" },
+        "cond-work": { title: "여러 조건을 기다리는 작업" },
+        "cond-after": { title: "공유 조건을 기다리는 후속" },
+        "cond-note": { title: "차단하지 않는 관련 메모" },
+        "cond-shared": { title: "공통 대기 조건", issueType: "gate", awaitType: "human" },
+        "cond-second": { title: "두 번째 대기 조건", issueType: "gate", awaitType: "human" },
+        "cond-gate-before": {
+          title: "gate 자체의 선행 조건",
+          issueType: "gate",
+          awaitType: "human",
+        },
+      },
+      [
+        ["cond-work", "cond-before"],
+        ["cond-after", "cond-work"],
+        ["cond-work", "cond-shared"],
+        ["cond-after", "cond-shared"],
+        ["cond-shared", "cond-before"],
+        ["cond-work", "cond-second"],
+        ["cond-second", "cond-gate-before"],
+      ],
+      [["cond-work", "cond-note", "related"]],
+    ),
+  );
+  const lines = await renderedEdges(screen, 8);
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  for (const [from, to] of [
+    ["cond-shared", "cond-work"],
+    ["cond-shared", "cond-after"],
+    ["cond-second", "cond-work"],
+    ["cond-gate-before", "cond-second"],
+    ["cond-before", "cond-shared"],
+  ])
+    await expect
+      .element(
+        canvas.getByRole("img", { name: `${to}의 선행 조건: ${from} (blocks)`, exact: true }),
+      )
+      .toBeInTheDocument();
+  for (const [from, to] of [
+    ["cond-before", "cond-work"],
+    ["cond-work", "cond-after"],
+  ])
+    await expect
+      .element(canvas.getByRole("img", { name: `${from} 다음에 ${to}`, exact: true }))
+      .toBeInTheDocument();
+  expect(lines.map((line) => line.dataset.edge).toSorted()).toEqual([
+    "blocks",
+    "blocks",
+    "humanGate",
+    "humanGate",
+    "humanGate",
+    "humanGate",
+    "humanGate",
+    "related",
+  ]);
+  expect(await coveredEdges(screen, 8)).toEqual([]);
+});
+
+test("좁은 창에서 그래프 안에 연 상세는 그래프 아래에 놓인다", async () => {
+  await page.viewport(390, 844);
+  detailShown = true;
+  try {
+    const screen = await renderGraph(
+      "center",
+      "narrow-after",
+      graphData(
+        { "narrow-before": { title: "좁은 창 선행" }, "narrow-after": { title: "좁은 창 후속" } },
+        [["narrow-after", "narrow-before"]],
+      ),
+    );
+    const canvas = screen.getByRole("region", { name: "의존 그래프" }).element();
+    const detail = screen.getByRole("region", { name: "상세 자리" }).element();
+    expect(detail.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      canvas.getBoundingClientRect().bottom,
+    );
+  } finally {
+    detailShown = false;
+  }
+});
+
+test("관계가 없는 이슈를 기준으로 열면 캔버스 대신 빈 상태 안내를 보인다", async () => {
+  const screen = await renderGraph(
+    "center",
+    "alone",
+    graphData({ alone: { title: "관계 없는 이슈" } }, []),
+  );
+  await expect
+    .element(
+      screen.getByText("이 이슈와 blocks·related·discovered-from 관계로 이어진 이슈가 없습니다."),
+    )
+    .toBeVisible();
+  expect(screen.getByRole("region", { name: "의존 그래프" }).elements()).toHaveLength(0);
+});
+
+test("이슈 중심 보기는 기준 이슈 노드만 강조하고, 관련·양방향 발견 간선을 blocks 사슬과 구분해 방향대로 읽는다", async () => {
+  const screen = await renderGraph(
+    "center",
+    "aux-center",
+    graphData(
+      {
+        "aux-before": { title: "주 사슬 선행" },
+        "aux-center": { title: "보조 관계 기준" },
+        "aux-after": { title: "주 사슬 후속" },
+        "aux-note": { title: "직접 관련 이슈" },
+        "aux-origin": { title: "이슈를 발견한 작업", status: "closed" },
+        "aux-found": { title: "작업 중 발견한 이슈" },
+      },
+      [
+        ["aux-center", "aux-before"],
+        ["aux-after", "aux-center"],
+      ],
+      [
+        ["aux-center", "aux-note", "related"],
+        ["aux-center", "aux-origin", "discovered-from"],
+        ["aux-found", "aux-center", "discovered-from"],
+      ],
+    ),
+  );
+  const lines = await renderedEdges(screen, 5);
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  for (const name of [
+    "aux-before 다음에 aux-center",
+    "aux-center 다음에 aux-after",
+    "aux-center와 aux-note: 관련",
+    "aux-origin: 이 작업 중 발견한 이슈 aux-center (aux-center: 이 이슈를 발견한 작업 aux-origin)",
+    "aux-center: 이 작업 중 발견한 이슈 aux-found (aux-found: 이 이슈를 발견한 작업 aux-center)",
+  ])
+    await expect.element(canvas.getByRole("img", { name, exact: true })).toBeInTheDocument();
+  expect(lines.map((line) => line.dataset.edge).toSorted()).toEqual([
+    "blocks",
+    "blocks",
+    "discovered",
+    "discovered",
+    "related",
+  ]);
+
+  const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
+  expect(canvas.element().querySelectorAll("[aria-current]")).toHaveLength(1);
+  await expect.element(node("보조 관계 기준")).toHaveAttribute("aria-current", "true");
+  expect(getComputedStyle(node("보조 관계 기준").element()).boxShadow).not.toBe("none");
+  expect(getComputedStyle(node("주 사슬 선행").element()).boxShadow).toBe("none");
+});
+
+test("에픽 순서 보기는 열마다 단계 이름과 진행 요약을 보이고, 후손 이슈를 막는 에픽 밖 이슈를 점선 카드로, 카드마다 대기 수를 보이며, 기준 노드 강조는 없다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph(
+    "epic",
+    "plan-epic",
+    graphData(
+      {
+        "plan-epic": { title: "계획 에픽", issueType: "epic" },
+        "plan-1": { title: "계획 첫째", parent: "plan-epic", status: "closed" },
+        "plan-2": { title: "계획 둘째", parent: "plan-epic" },
+        "plan-3": {
+          title: "계획 셋째",
+          parent: "plan-epic",
+          blockedBy: ["plan-2", "plan-outside"],
+        },
+        "plan-4": { title: "계획 넷째", parent: "plan-epic", blockedBy: ["plan-3"] },
+        "plan-outside": { title: "계획 밖 선행" },
+        "plan-loose": { title: "계획 순서 없음", parent: "plan-epic" },
+      },
+      [
+        ["plan-2", "plan-1"],
+        ["plan-3", "plan-2"],
+        ["plan-4", "plan-3"],
+        ["plan-outside", "plan-1"],
+        ["plan-3", "plan-outside"],
+      ],
+    ),
+  );
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  await expect.element(screen.getByText("전체 4단계 중 2단계 진행 중")).toBeVisible();
+  for (const label of ["1단계 · 완료", "2단계 · 진행 중", "3단계", "4단계"])
+    await expect.element(canvas.getByText(label, { exact: true })).toBeVisible();
+  const second = canvas.element().querySelector('.react-flow__node[data-id="plan-2"]')!;
+  expect(
+    canvas.getByText("2단계 · 진행 중", { exact: true }).element().getBoundingClientRect().x,
+  ).toBeCloseTo(second.getBoundingClientRect().x, 0);
+
+  await expect.poll(() => cardText(canvas, "계획 밖 선행")).toContain("에픽 밖");
+  expect(
+    getComputedStyle(canvas.getByRole("link", { name: /계획 밖 선행/ }).element()).borderTopStyle,
+  ).toBe("dashed");
+  expect(cardText(canvas, "계획 둘째")).not.toContain("에픽 밖");
+  for (const [from, to] of [
+    ["plan-1", "plan-outside"],
+    ["plan-outside", "plan-3"],
+  ])
+    await expect
+      .element(canvas.getByRole("img", { name: `${from} 다음에 ${to}`, exact: true }))
+      .toBeInTheDocument();
+  await expect.poll(() => cardText(canvas, "계획 둘째")).toContain("2개 대기");
+  await expect.poll(() => cardText(canvas, "계획 밖 선행")).toContain("2개 대기");
+  expect(cardText(canvas, "계획 넷째")).not.toContain("대기");
+  expect(canvas.element().querySelectorAll("[aria-current]")).toHaveLength(0);
+
+  const panel = screen.getByRole("region", { name: "선후 관계 없음" });
+  const expand = panel.getByRole("button", { name: "선후 관계 없는 이슈 목록 펼치기" });
+  await expect.element(expand).toHaveAttribute("aria-expanded", "false");
+  await expand.click();
+  await expect.element(panel.getByRole("link", { name: /계획 순서 없음/ })).toBeVisible();
+  expect(canvas.getByRole("link", { name: /계획 순서 없음/ }).elements()).toHaveLength(0);
+});
+
+const LONG_PLAN_TITLE =
+  "에픽 안의 다른 이슈와 선후 관계가 없는 긴 제목도 목록에서 마지막 글자까지 빠짐없이 확인하고 독립적으로 작업을 진행할 수 있도록 표시합니다";
+
+test("선후 관계 없음 목록과 그래프 노드는 긴 제목을 끝까지 보이고, 목록은 대기 수와 짧은 ID를 보이며 닫힌 이슈 행을 흐리게 그린다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph(
+    "epic",
+    "long-epic",
+    graphData(
+      {
+        "long-epic": { title: "긴 제목 표시 확인", issueType: "epic" },
+        "long-first": { title: LONG_PLAN_TITLE, parent: "long-epic", status: "closed" },
+        "long-second": { title: "연결된 다음 작업", parent: "long-epic" },
+        "long-alone": { title: LONG_PLAN_TITLE, parent: "long-epic" },
+        "long-closed": { title: "완료한 독립 작업", parent: "long-epic", status: "closed" },
+        "long-outside": { title: "에픽 밖에서 기다리는 작업", blockedBy: ["long-alone"] },
+      },
+      [
+        ["long-second", "long-first"],
+        ["long-outside", "long-alone"],
+      ],
+    ),
+  );
+  const panel = screen.getByRole("region", { name: "선후 관계 없음" });
+  await expect
+    .element(panel.getByText("에픽 안의 다른 이슈와 blocks 관계가 없는 이슈입니다."))
+    .toBeVisible();
+  expect(getComputedStyle(panel.element()).width).toBe("320px");
+  expectWholeTitle(
+    cardOf(panel, LONG_PLAN_TITLE).getByText(LONG_PLAN_TITLE, { exact: true }).element(),
+  );
+  expect(cardText(panel, LONG_PLAN_TITLE)).toContain("1개 대기");
+  expect(cardText(panel, LONG_PLAN_TITLE)).toContain(shortIssueId("long-alone"));
+  const closedRow = panel.getByRole("link", { name: /완료한 독립 작업/ }).element().parentElement!;
+  expect(getComputedStyle(closedRow).opacity).toBe("0.5");
+
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  const node = canvas.getByRole("link", { name: new RegExp(LONG_PLAN_TITLE) });
+  expect(getComputedStyle(node.element()).width).toBe("280px");
+  expectWholeTitle(
+    cardOf(canvas, LONG_PLAN_TITLE).getByText(LONG_PLAN_TITLE, { exact: true }).element(),
+  );
+});
+
+/** 제목이 두 줄을 넘게 감겨도 잘리거나 스크롤되지 않고 모두 보입니다. */
+function expectWholeTitle(title: Element) {
+  expect(title.clientHeight).toBe(title.scrollHeight);
+  expect(title.clientWidth).toBe(title.scrollWidth);
+  expect(title.clientHeight).toBeGreaterThan(
+    Number.parseFloat(getComputedStyle(title).lineHeight) * 2,
+  );
+}
+
 type IssueSeed = {
   title: string;
   issueType?: string;
   parent?: string;
   status?: string;
   awaitType?: string;
+  /** 대기 수를 세는 값입니다. bd blocked처럼 닫히지 않은 선행 이슈만 적습니다. */
+  blockedBy?: string[];
 };
 
 /**

@@ -214,6 +214,19 @@ for (const [name, input] of Object.entries(FIXTURES)) {
     }
   });
 
+  test(`${name}: 노드끼리 겹치지 않는다`, () => {
+    const { nodes } = layoutGraph(input);
+    for (const [at, a] of nodes.entries())
+      for (const b of nodes.slice(at + 1)) {
+        const apart =
+          a.x + NODE_WIDTH <= b.x ||
+          b.x + NODE_WIDTH <= a.x ||
+          a.y + a.height <= b.y ||
+          b.y + b.height <= a.y;
+        expect(apart, `${a.issue.id}와 ${b.issue.id}`).toBe(true);
+      }
+  });
+
   test(`${name}: 같은 입력을 두 번 넣으면 같은 결과가 나온다`, () => {
     expect(layoutGraph(input)).toEqual(layoutGraph(input));
   });

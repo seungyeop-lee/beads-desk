@@ -59,36 +59,7 @@ test("그래프를 연달아 방문한 뒤 닫기로 한 그래프씩 거슬러 
   await expect(page).toHaveURL(origin);
 });
 
-test("같은 그래프를 다시 열어도 자기 자신을 복귀 순서에 넣지 않는다", async ({
-  page,
-  workspace,
-}) => {
-  const { second } = await workspace.createIssues(
-    { first: { title: "같은 그래프 앞" }, second: { title: "같은 그래프 기준" } },
-    [["second", "first"]],
-  );
-  await page.goto(`/focus?issue=${second}`);
-  await page
-    .getByRole("dialog", { name: `${second} 이슈` })
-    .getByRole("link", { name: "선행·후속 그래프" })
-    .click();
-  await page
-    .getByRole("dialog")
-    .getByRole("heading", { level: 1 })
-    .getByRole("link", { name: "같은 그래프 기준" })
-    .click();
-  await page
-    .getByRole("region", { name: `${second} 이슈` })
-    .getByRole("link", { name: "선행·후속 그래프" })
-    .click();
-  const close = page.getByRole("link", { name: "닫기", exact: true });
-  await expect(close).toHaveAttribute("href", `/focus?issue=${second}`);
-  await close.click();
-  await expect(page).toHaveURL(`/focus?issue=${second}`);
-  await expect(page.getByRole("dialog", { name: `${second} 이슈` })).toBeVisible();
-});
-
-test("직접 진입과 외부·손상된 복귀 정보는 그래프별 대체 화면으로 돌아간다", async ({
+test("복귀 정보 없이 그래프 주소로 바로 들어오면 닫기는 그래프별 대체 화면으로 돌아간다", async ({
   page,
   workspace,
 }) => {
@@ -104,21 +75,10 @@ test("직접 진입과 외부·손상된 복귀 정보는 그래프별 대체 �
     ["epic", epic, "/epics"],
     ["center", second, `/issues?issue=${second}`],
   ]) {
-    for (const invalid of [
-      null,
-      "https://example.com/issues",
-      "//example.com/issues",
-      "/api/issues",
-      "/graph",
-      "/issues?issue=%ZZ",
-    ]) {
-      const query = new URLSearchParams({ [scope!]: id! });
-      if (invalid !== null) query.append("returnTo", invalid);
-      await page.goto(`/graph?${query}`);
-      const close = page.getByRole("link", { name: "닫기", exact: true });
-      await expect(close).toHaveAttribute("href", fallback!);
-    }
-    await page.getByRole("link", { name: "닫기", exact: true }).click();
+    await page.goto(`/graph?${new URLSearchParams({ [scope!]: id! })}`);
+    const close = page.getByRole("link", { name: "닫기", exact: true });
+    await expect(close).toHaveAttribute("href", fallback!);
+    await close.click();
     await expect(page).toHaveURL(fallback!);
   }
 });

@@ -58,8 +58,14 @@ export type SeedIssue<K extends string = string> = {
   parent?: K;
 };
 
-/** `[기다리는 이슈 key, 먼저 끝나야 하는 이슈 key]`입니다. `bd dep add`와 같은 방향의 blocks 관계입니다. */
-export type SeedDependency<K extends string = string> = [K, K];
+/**
+ * `[의존하는 이슈 key, 의존 대상 이슈 key, 관계]`입니다. `bd dep add`와 같은 방향이고, 관계를 적지 않으면 blocks입니다.
+ * blocks이면 앞 이슈가 뒤 이슈가 끝나기를 기다리고, discovered-from이면 앞 이슈를 뒤 이슈에서 발견한 것입니다.
+ */
+export type SeedDependency<K extends string = string> = [K, K, SeedDependencyType?];
+
+/** `bd create --graph`의 간선 type으로 넣어 `bd dep add --type`과 같은 관계가 생기는 것을 확인한 값입니다. */
+export type SeedDependencyType = "blocks" | "related" | "discovered-from";
 
 /** `bd show --json` 출력 가운데 시나리오가 확인하는 필드입니다. */
 export type BdIssue = {
@@ -145,7 +151,11 @@ function bdWorkspace(path: string, userHomeEnv: UserHomeEnv): BdWorkspace {
           ...issue,
           parent_key: parent,
         })),
-        edges: dependencies.map(([from, to]) => ({ from_key: from, to_key: to, type: "blocks" })),
+        edges: dependencies.map(([from, to, type = "blocks"]) => ({
+          from_key: from,
+          to_key: to,
+          type,
+        })),
       };
       // bd create --graph는 계획을 파일로만 받습니다. workspace와 함께 지워지도록 그 안에 둡니다.
       const planPath = join(path, "e2e-seed-plan.json");
