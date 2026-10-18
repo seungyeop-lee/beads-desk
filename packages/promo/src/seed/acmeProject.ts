@@ -560,7 +560,7 @@ export type RunBd = (...args: string[]) => string;
  * 활동 기록을 보여 줄 이슈는 여기서 만들고 claim하고 닫습니다. 이 이슈들의 시각은 seed를 실행한 시각입니다.
  */
 export function addCliActivity(bd: RunBd): void {
-  bd(
+  const legalReview = bd(
     "gate",
     "create",
     "--type=human",
@@ -572,7 +572,10 @@ export function addCliActivity(bd: RunBd): void {
     "Legal has to approve the final wording before we publish it.",
     "--actor",
     "sam",
+    "--json",
   );
+  // Needs human 화면은 같은 초에 만든 gate를 무작위 hash인 ID 순서로 놓으므로, 다음 gate를 늦은 초에 만들어 맨 위에 둡니다.
+  waitForNextCreatedSecond(bd, (JSON.parse(legalReview) as { id: string }).id);
   bd(
     "gate",
     "create",
@@ -620,6 +623,17 @@ export function addCliActivity(bd: RunBd): void {
     "--actor",
     "nina",
   );
+}
+
+/**
+ * id 이슈가 만들어진 시각으로 기록된 초보다 늦은 초가 될 때까지 기다립니다.
+ * bd는 만든 시각을 초 단위로 반올림해 저장하므로, 저장된 초에서 1초가 지난 뒤에 만든 이슈는 반드시 늦은 초로 기록됩니다.
+ */
+function waitForNextCreatedSecond(bd: RunBd, id: string): void {
+  const [issue] = JSON.parse(bd("show", id, "--json")) as { created_at: string }[];
+  const remaining = Date.parse(issue!.created_at) + 1000 - Date.now();
+  // RunBd가 동기 함수라서 seed 흐름도 동기이므로, event loop를 거치지 않고 멈추는 Atomics.wait로 기다립니다.
+  if (remaining > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, remaining);
 }
 
 function createIssue(bd: RunBd, actor: string, title: string, args: string[]): string {
