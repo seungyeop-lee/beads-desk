@@ -11,7 +11,10 @@ import {
 } from "@/client/modules/board/domain/boardView";
 import { useBoard } from "@/client/modules/board/application/useBoard";
 import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
-import { blockersOf } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import {
+  blockersOf,
+  type HumanGateTitles,
+} from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
@@ -156,7 +159,7 @@ type CardProps = {
   issue: Issue;
   column: BoardColumn;
   href: string;
-  humanGateTitles: ReadonlyMap<string, string>;
+  humanGateTitles: HumanGateTitles;
 };
 
 function BoardCard({ issue, column, href, humanGateTitles }: CardProps) {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
+import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import {
@@ -90,7 +91,7 @@ type SectionProps = {
   summary: EpicSummary;
   expanded: boolean;
   onToggle: () => void;
-  humanGateTitles: ReadonlyMap<string, string>;
+  humanGateTitles: HumanGateTitles;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 };
@@ -169,7 +170,7 @@ function EpicDescendants({
   writes,
 }: {
   epic: Issue;
-  humanGateTitles: ReadonlyMap<string, string>;
+  humanGateTitles: HumanGateTitles;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 }) {

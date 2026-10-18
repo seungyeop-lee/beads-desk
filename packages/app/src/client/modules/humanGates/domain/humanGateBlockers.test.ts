@@ -20,4 +20,8 @@ describe("blockersOf", () => {
       { id: "x-2", humanGate: false, title: "선행 작업" },
     ]);
   });
+
+  test("gate 목록을 아직 받지 못했으면 막는 이슈를 하나도 돌려주지 않는다", () => {
+    expect(blockersOf(["x-2", "x-gate"], null, (id) => titles.get(id))).toEqual([]);
+  });
 });

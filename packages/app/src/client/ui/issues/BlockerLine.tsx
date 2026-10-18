@@ -1,6 +1,10 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { blockersOf, type Blocker } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import {
+  blockersOf,
+  type Blocker,
+  type HumanGateTitles,
+} from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateChip } from "./HumanGateChip";
 import { IssueChip } from "./IssueChip";
@@ -15,7 +19,7 @@ type Props = {
   blockedBy: string[];
   /** 표에 없는 이슈면 undefined를 돌려줍니다. 그때는 id만 보입니다. */
   titleOf: (issueId: string) => string | undefined;
-  humanGateTitles: ReadonlyMap<string, string>;
+  humanGateTitles: HumanGateTitles;
   issueHref: (issueId: string) => string;
 };
 

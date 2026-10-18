@@ -1,6 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { memo, useMemo, useState, type ReactNode } from "react";
+import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
@@ -33,7 +34,7 @@ type Props = (
   /** 막고 있는 이슈의 제목을 찾을 목록입니다. 없으면 표의 이슈에서 찾습니다. */
   titleSource?: Issue[];
   /** 열린 human gate의 id와 제목입니다. bd list가 gate를 돌려주지 않아 따로 받습니다. */
-  humanGateTitles: ReadonlyMap<string, string>;
+  humanGateTitles: HumanGateTitles;
   /** 이슈 id마다 대기 수입니다. 없으면 대기 수를 보이지 않습니다. */
   waiters?: ReadonlyMap<string, number>;
   /** 묶음마다 표를 나눠 보일 때, 첫 표가 아니면 열 이름을 감춥니다. 열 너비는 그대로 맞춥니다. */
@@ -129,7 +130,7 @@ type RowProps = {
   issueHref: (issueId: string) => string;
   /** 막고 있는 이슈의 제목을 표에서 찾습니다. */
   titleOf: (issueId: string) => string | undefined;
-  humanGateTitles: ReadonlyMap<string, string>;
+  humanGateTitles: HumanGateTitles;
   waiters: number;
   writes: IssueWrites;
 };

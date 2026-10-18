@@ -4,6 +4,7 @@ import { useEpics } from "@/client/modules/epics/application/useEpics";
 import { focusStats, type FocusStats } from "@/client/modules/focus/domain/focusStats";
 import { focusView, type FocusView } from "@/client/modules/focus/domain/focusView";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
+import type { HumanGateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useHumanGateTitles } from "@/client/modules/humanGates/application/useHumanGateTitles";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import type { WorkspaceReadState } from "@/client/modules/workspace/application/useWorkspaceRead";
@@ -23,7 +24,7 @@ export function useFocusView(now: number): {
   /** 이슈 id마다 제목입니다. 막힘 표시에 상대 이슈 이름을 보입니다. */
   titles: ReadonlyMap<string, string>;
   /** 열린 human gate의 id마다 제목입니다. */
-  gateTitles: ReadonlyMap<string, string>;
+  gateTitles: HumanGateTitles;
 } {
   const issueList = useIssueList();
   const epics = useEpics();
