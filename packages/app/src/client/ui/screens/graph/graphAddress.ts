@@ -43,6 +43,21 @@ export function graphBackHref(scope: GraphScope, params: URLSearchParams): strin
   return `${target.pathname}${target.search}`;
 }
 
+/**
+ * 그래프를 처음 연 화면 주소의 query입니다. 그래프 아래에 깔린 화면의 상세 dialog는 이 query의 issue·side를 보여 줍니다.
+ * 그래프를 이어 열어도 복귀 정보의 첫 주소는 바뀌지 않으므로, 아래의 상세는 그래프를 모두 닫을 때까지 같은 이슈를 보여 줍니다.
+ * 복귀 정보가 없거나 잘못됐을 때, 첫 주소가 그래프이거나 지금 화면과 다른 화면일 때는 null입니다.
+ */
+export function graphOriginParams(
+  params: URLSearchParams,
+  pathname: string,
+): URLSearchParams | null {
+  const first = readReturnTrail(params)?.[0];
+  const origin = first ? readScreenAddress(first) : null;
+  if (!origin || origin.pathname !== pathname || readGraphScope(origin.searchParams)) return null;
+  return origin.searchParams;
+}
+
 function readReturnTrail(params: URLSearchParams): string[] | null {
   const trail = params.getAll(RETURN_PARAM);
   return trail.every((address) => {

@@ -21,6 +21,7 @@ vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
   IssueDetailRoute: () =>
     detailShown ? <section aria-label="상세 자리" className="h-96 w-full shrink-0" /> : null,
   useIssueHref: () => (id: string) => `/graph?issue=${id}`,
+  useScreenDetailReady: () => true,
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/graph",

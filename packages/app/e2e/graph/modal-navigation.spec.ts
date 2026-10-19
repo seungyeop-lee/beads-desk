@@ -1,3 +1,4 @@
+import type { Locator } from "@playwright/test";
 import { expect, test } from "../support/bdWorkspace";
 
 const KOREAN_TITLE =
@@ -6,7 +7,7 @@ const ENGLISH_TITLE =
   "Read every word of this long English issue title without opening its detail or hovering, while keeping different node heights and all dependency edges readable";
 
 // 그래프를 닫았을 때 출발 화면의 주소와 옆 패널로 돌아가는지는 이 시나리오에서만 확인합니다. 다른 그래프 시나리오에 같은 확인을 더하지 않습니다.
-test("출발 목록을 유지하고 그래프에서 상세를 열고 닫으며 Escape·닫기·브라우저 뒤로가기로 원래 상세와 옆 패널을 복원한다", async ({
+test("상세에서 연 그래프를 상세 위에 겹쳐 열고, 닫기·바깥 클릭·Escape·브라우저 뒤로가기로 닫으면 출발 목록과 상세, 옆 패널이 다시 열리지 않고 그대로 보인다", async ({
   page,
   workspace,
 }) => {
@@ -15,42 +16,57 @@ test("출발 목록을 유지하고 그래프에서 상세를 열고 닫으며 E
     [["second", "first"]],
   );
   const origin = `/issues?view=blocked&type=task&issue=${second}&side=${first}`;
-  await page.goto(origin);
-  await page
-    .getByRole("dialog", { name: `${second} 이슈` })
-    .getByRole("link", { name: "선행·후속 그래프" })
-    .click();
-  const graph = page.getByRole("dialog");
+  const screenDetail = page.getByRole("dialog", { name: `${second} 이슈` });
+  const side = screenDetail.getByRole("region", { name: `${first} 이슈 옆 패널` });
+  const graph = page.getByRole("dialog", { name: "모달 출발 기준 · 선행·후속" });
   const canvas = graph.getByRole("region", { name: "의존 그래프" });
-  await expect(graph.getByRole("heading", { level: 1 })).toHaveText("모달 출발 기준 · 선행·후속");
+  const openGraph = async () => {
+    await screenDetail.getByRole("link", { name: "선행·후속 그래프" }).click();
+    await expect(canvas).toBeVisible();
+    await expect(screenDetail).toBeVisible();
+  };
+  const expectOriginKept = async () => {
+    await expect(page).toHaveURL(origin);
+    await expect(graph).toHaveCount(0);
+    await expect(side).toBeVisible();
+    await expectDetailKept(screenDetail);
+  };
+
+  await page.goto(origin);
+  await watchDetail(screenDetail);
+  await openGraph();
   await expect(page).toHaveURL(
     (url) => url.pathname === "/issues" && url.searchParams.get("view") === "blocked",
   );
+  await graph.getByRole("link", { name: "닫기", exact: true }).click();
+  await expectOriginKept();
+
+  await openGraph();
+  // 바깥 영역은 그래프 modal-box의 바깥, 즉 화면 가장자리입니다.
+  await graph
+    .getByRole("button", { name: "닫기", exact: true })
+    .click({ position: { x: 4, y: 4 } });
+  await expectOriginKept();
+
+  await openGraph();
   await page.goBack();
-  await expect(page).toHaveURL(origin);
-  await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
+  await expectOriginKept();
   await page.goForward();
   await expect(canvas).toBeVisible();
+
   await page.reload();
   await expect(canvas.getByRole("link", { name: /모달 출발 선행/ })).toBeVisible();
+  await expect(side).toBeVisible();
+  await watchDetail(screenDetail);
   await canvas.getByRole("link", { name: /모달 출발 선행/ }).click();
   const detail = graph.getByRole("region", { name: `${first} 이슈`, exact: true });
   await expect(detail).toBeVisible();
-  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(graph.getByRole("dialog")).toHaveCount(0);
   await detail.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(detail).toHaveCount(0);
   await expect(canvas).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(origin);
-  await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
-  await page
-    .getByRole("dialog", { name: `${second} 이슈` })
-    .getByRole("link", { name: "선행·후속 그래프" })
-    .click();
-  await expect(canvas).toBeVisible();
-  await graph.getByRole("link", { name: "닫기", exact: true }).click();
-  await expect(page).toHaveURL(origin);
-  await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
+  await expectOriginKept();
 });
 
 test("그래프 안 상세에 옆 패널을 연 뒤 Escape를 누를 때마다 옆 패널, 상세, 그래프 순으로 하나씩 닫힌다", async ({
@@ -165,3 +181,31 @@ test("이슈 갱신으로 선후 관계 없음 패널이 나타나도 사용자�
   ).toBeVisible();
   await expect(viewport).toHaveCSS("transform", before);
 });
+
+declare global {
+  interface Window {
+    detailWatch?: { dialog: HTMLDialogElement; loadingBarShown: boolean };
+  }
+}
+
+/** 지금 열린 상세 dialog element를 기억하고, 이후 상세를 다시 받는 loading bar가 나타나는지 기록합니다. */
+async function watchDetail(dialog: Locator) {
+  await dialog.evaluate((element: HTMLDialogElement) => {
+    const watch = { dialog: element, loadingBarShown: false };
+    new MutationObserver(() => {
+      watch.loadingBarShown ||= document.querySelector(".loading-bar") !== null;
+    }).observe(document.body, { childList: true, subtree: true });
+    window.detailWatch = watch;
+  });
+}
+
+/** 상세 dialog가 watchDetail로 기억한 element 그대로 열려 있고, 그동안 loading bar가 나타나지 않았는지 확인합니다. */
+async function expectDetailKept(dialog: Locator) {
+  await expect(dialog).toBeVisible();
+  expect(
+    await dialog.evaluate((element: HTMLDialogElement) => ({
+      sameOpenDialog: element === window.detailWatch?.dialog && element.matches(":modal"),
+      loadingBarShown: window.detailWatch?.loadingBarShown,
+    })),
+  ).toEqual({ sameOpenDialog: true, loadingBarShown: false });
+}

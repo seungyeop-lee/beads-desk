@@ -1,12 +1,12 @@
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   nextIssueDetailTrail,
   type IssueDetailLocation,
 } from "@/client/modules/issues/domain/issueDetailTrail";
 import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspaces";
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
-import { readGraphScope } from "@/client/ui/screens/graph/graphAddress";
+import { graphOriginParams, readGraphScope } from "@/client/ui/screens/graph/graphAddress";
 import { IssueDetailDialog } from "./detail/IssueDetailDialog";
 import type { ListedIssues } from "./detail/listedIssues";
 
@@ -50,10 +50,11 @@ export function IssueDetailRoute({
 }) {
   const replaceQuery = useQueryReplace();
   const detailHref = useIssueDetailHref();
-  const location = useIssueDetailLocation();
+  const location = useIssueDetailLocation(embedded);
   const issueId = location?.issue ?? null;
   const currentWorkspace = useWorkspaces().data?.current ?? null;
   const searchParams = useSearchParams();
+  const covered = !embedded && readGraphScope(new URLSearchParams(searchParams)) !== null;
   const close = useCallback(() => {
     replaceQuery((params) => {
       params.delete(ISSUE_PARAM);
@@ -76,10 +77,12 @@ export function IssueDetailRoute({
     if (switched && issueId) close();
   }, [currentWorkspace, issueId, close]);
 
-  if (!location || (!embedded && readGraphScope(new URLSearchParams(searchParams)))) return null;
+  if (!location) return null;
   return (
     <IssueDetailDialog
       embedded={embedded}
+      covered={covered}
+      onShownChange={embedded ? undefined : setScreenDetailShown}
       listedIssues={listedIssues}
       location={location}
       previous={trail.at(-2) ?? null}
@@ -89,10 +92,49 @@ export function IssueDetailRoute({
   );
 }
 
-function useIssueDetailLocation(): IssueDetailLocation | null {
-  const params = useSearchParams();
+/** 그래프 안에 붙여 보는 상세도 issue·side를 쓰므로, 그래프 아래에 깔린 화면의 상세는 그래프를 처음 연 화면 주소에서 위치를 읽습니다. */
+function useIssueDetailLocation(embedded: boolean): IssueDetailLocation | null {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const params = new URLSearchParams(searchParams);
+  if (embedded || !readGraphScope(params)) return readIssueDetailLocation(params);
+  const origin = graphOriginParams(params, pathname);
+  return origin && readIssueDetailLocation(origin);
+}
+
+function readIssueDetailLocation(params: URLSearchParams): IssueDetailLocation | null {
   const issue = params.get(ISSUE_PARAM);
   const side = params.get(SIDE_PARAM);
   if (!issue) return null;
   return { issue, side: side && side !== issue ? side : null };
+}
+
+const screenDetail = { shown: false, listeners: new Set<() => void>() };
+
+function setScreenDetailShown(shown: boolean) {
+  if (screenDetail.shown === shown) return;
+  screenDetail.shown = shown;
+  for (const listener of screenDetail.listeners) listener();
+}
+
+function subscribeScreenDetail(listener: () => void) {
+  screenDetail.listeners.add(listener);
+  return () => {
+    screenDetail.listeners.delete(listener);
+  };
+}
+
+/**
+ * 그래프 아래에 깔릴 화면의 상세 dialog가 열려 있거나 깔릴 상세가 없으면 true입니다.
+ * modal dialog는 나중에 연 것이 위에 놓이므로, 그래프는 이 값이 true가 된 뒤에 열어야 상세 위에 놓입니다.
+ * 상세와 그래프가 함께 있는 주소를 새로고침하면 상세는 내용을 받은 뒤에야 열립니다.
+ */
+export function useScreenDetailReady(): boolean {
+  const location = useIssueDetailLocation(false);
+  const shown = useSyncExternalStore(
+    subscribeScreenDetail,
+    () => screenDetail.shown,
+    () => false,
+  );
+  return !location || shown;
 }

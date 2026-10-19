@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { graphBackHref, graphHref, readGraphScope } from "./graphAddress";
+import { graphBackHref, graphHref, graphOriginParams, readGraphScope } from "./graphAddress";
 
 const read = (href: string) => readGraphScope(new URL(href, "http://localhost").searchParams);
 
@@ -94,4 +94,20 @@ test("앱 내부의 각 화면으로 돌아갈 수 있다", () => {
   ]) {
     expect(graphBackHref(center, params(graphHref(center, path)))).toBe(path);
   }
+});
+
+test("그래프를 이어 열어도 처음 출발한 화면의 query를 읽는다", () => {
+  const first = graphHref(center, "/issues?view=blocked&issue=demo-2&side=demo-3");
+  const second = graphHref(epic, `${first}&issue=demo-4`);
+  for (const href of [first, second]) {
+    expect(graphOriginParams(params(href), "/issues")?.toString()).toBe(
+      "view=blocked&issue=demo-2&side=demo-3",
+    );
+  }
+});
+
+test("출발 주소가 그래프이거나 다른 화면이거나 없으면 출발 화면의 query가 없다", () => {
+  expect(graphOriginParams(params(graphHref(epic, "/graph?center=demo-2")), "/graph")).toBeNull();
+  expect(graphOriginParams(params(graphHref(center, "/focus?issue=demo-2")), "/issues")).toBeNull();
+  expect(graphOriginParams(params(graphHref(center)), "/graph")).toBeNull();
 });

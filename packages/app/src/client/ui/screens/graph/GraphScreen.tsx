@@ -11,7 +11,11 @@ import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { HelpTooltip } from "@/client/ui/designSystem/HelpTooltip";
 import { isTyping, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
-import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
+import {
+  IssueDetailRoute,
+  useIssueHref,
+  useScreenDetailReady,
+} from "@/client/ui/issues/IssueDetailRoute";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { EdgeLegend } from "./EdgeLegend";
@@ -38,7 +42,8 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
   const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
   const title = `${scopeTitle} · ${messages.graph.scopes[scope.kind]}`;
 
-  useShowModal(dialogRef);
+  const screenDetailReady = useScreenDetailReady();
+  useShowModal(dialogRef, screenDetailReady);
 
   return (
     <dialog

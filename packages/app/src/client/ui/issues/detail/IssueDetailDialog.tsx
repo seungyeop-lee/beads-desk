@@ -18,6 +18,10 @@ import { CopyIssueIdButton } from "../CopyIssueIdButton";
 
 type Props = {
   embedded?: boolean;
+  /** 그래프 dialog가 이 dialog 위에 겹쳐 열려 있으면 true입니다. */
+  covered?: boolean;
+  /** 화면의 상세 dialog가 열리면 true로, 사라지면 false로 부릅니다. */
+  onShownChange?: (shown: boolean) => void;
   listedIssues?: ListedIssues;
   location: IssueDetailLocation;
   /** 이 dialog에서 지금 주 상세로 넘어오기 전에 보던 상세입니다. 없으면 null입니다. */
@@ -38,6 +42,8 @@ export function IssueDetailDialog({
   detailHref,
   onClose,
   embedded = false,
+  covered = false,
+  onShownChange,
   listedIssues,
 }: Props) {
   const { issue: issueId, side } = location;
@@ -64,6 +70,10 @@ export function IssueDetailDialog({
   }, [opening]);
 
   useShowModal(dialogRef, !embedded && !loading, closeRef);
+  useEffect(() => {
+    if (!loading) onShownChange?.(true);
+  }, [loading, onShownChange]);
+  useEffect(() => () => onShownChange?.(false), [onShownChange]);
 
   const close = () => {
     if (embedded) onClose();
@@ -114,6 +124,9 @@ export function IssueDetailDialog({
         ref={dialogRef}
         className="modal"
         aria-label={messages.issueDetail.dialog(issueId)}
+        // HTML 표준은 사용자 동작 없이 연 modal dialog를 앞서 연 dialog와 한 묶음으로 보고, Escape 한 번에 묶음을 함께 닫을 수 있게 합니다.
+        // 새로고침으로 상세와 그 위의 그래프를 함께 열어도 그래프에서 누른 Escape가 이 dialog까지 닫지 않게 합니다.
+        closedby={covered ? "none" : undefined}
         onClose={onClose}
         onCancel={(event) => {
           // 입력 중에 누른 Escape는 편집 취소로만 쓰고 dialog를 닫지 않습니다.
