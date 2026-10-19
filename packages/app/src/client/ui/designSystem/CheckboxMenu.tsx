@@ -46,7 +46,7 @@ export function CheckboxMenu<T extends string>({
         <span className="text-base-content/50">{summary}</span>
         <ChevronDownIcon width={14} height={14} className="text-base-content/50" />
       </summary>
-      <ul className="dropdown-content menu z-10 mt-1 w-44 rounded-box border border-base-300 bg-base-100 p-1.5 shadow-lg">
+      <ul className="dropdown-content menu z-10 mt-1 max-h-80 w-44 flex-nowrap overflow-y-auto rounded-box border border-base-300 bg-base-100 p-1.5 shadow-lg">
         {options.map((option) => (
           <li key={option.value}>
             <label className="flex cursor-pointer items-center gap-2.5">
@@ -57,7 +57,7 @@ export function CheckboxMenu<T extends string>({
                 onChange={() => toggle(option.value)}
               />
               <span className={`tone-dot ${option.tone}`} />
-              {option.label}
+              <span className="min-w-0 wrap-anywhere">{option.label}</span>
             </label>
           </li>
         ))}

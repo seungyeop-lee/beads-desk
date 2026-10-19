@@ -10,6 +10,7 @@ import {
   refineIssues,
   visibleTreeRows,
 } from "./issueListView";
+import { NO_LABEL } from "./issueLabelFilter";
 
 const ids = (issues: Issue[]) => issues.map((it) => it.id);
 
@@ -157,9 +158,17 @@ describe("refineIssues", () => {
       issue("demo-3", { title: "Signup", issueType: "bug" }),
     ];
 
-    expect(ids(refineIssues(issues, { types: ["bug"], search: "" }))).toEqual(["demo-1", "demo-3"]);
-    expect(ids(refineIssues(issues, { types: [], search: "LOG" }))).toEqual(["demo-1", "demo-2"]);
-    expect(ids(refineIssues(issues, { types: [], search: "demo-3" }))).toEqual(["demo-3"]);
+    expect(ids(refineIssues(issues, { types: ["bug"], labels: [], search: "" }))).toEqual([
+      "demo-1",
+      "demo-3",
+    ]);
+    expect(ids(refineIssues(issues, { types: [], labels: [], search: "LOG" }))).toEqual([
+      "demo-1",
+      "demo-2",
+    ]);
+    expect(ids(refineIssues(issues, { types: [], labels: [], search: "demo-3" }))).toEqual([
+      "demo-3",
+    ]);
   });
 
   test("설명 검색으로 찾은 이슈는 id와 제목에 검색어가 없어도 넣고, 유형 조건은 그대로 지킨다", () => {
@@ -170,12 +179,30 @@ describe("refineIssues", () => {
     ];
     const descriptionMatches = new Set(["demo-1", "demo-3"]);
 
-    expect(ids(refineIssues(issues, { types: [], search: "token", descriptionMatches }))).toEqual([
-      "demo-1",
-      "demo-3",
-    ]);
     expect(
-      ids(refineIssues(issues, { types: ["task"], search: "token", descriptionMatches })),
+      ids(refineIssues(issues, { types: [], labels: [], search: "token", descriptionMatches })),
+    ).toEqual(["demo-1", "demo-3"]);
+    expect(
+      ids(
+        refineIssues(issues, { types: ["task"], labels: [], search: "token", descriptionMatches }),
+      ),
     ).toEqual(["demo-3"]);
+  });
+
+  test("고른 라벨 중 하나라도 붙은 이슈를 남기고, 라벨 없음을 고르면 라벨이 없는 이슈도 남긴다", () => {
+    const issues = [
+      issue("demo-1", { labels: ["ui"] }),
+      issue("demo-2", { labels: ["api", "triage"] }),
+      issue("demo-3"),
+      issue("demo-4", { labels: ["triage"] }),
+    ];
+    const byLabels = (labels: string[]) =>
+      ids(refineIssues(issues, { types: [], labels, search: "" }));
+
+    expect(byLabels(["triage"])).toEqual(["demo-2", "demo-4"]);
+    expect(byLabels(["ui", "api"])).toEqual(["demo-1", "demo-2"]);
+    expect(byLabels([NO_LABEL])).toEqual(["demo-3"]);
+    expect(byLabels([NO_LABEL, "ui"])).toEqual(["demo-1", "demo-3"]);
+    expect(byLabels([])).toEqual(["demo-1", "demo-2", "demo-3", "demo-4"]);
   });
 });

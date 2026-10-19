@@ -20,11 +20,11 @@ const closed = (createdDay: number, closedDay: number) => ({
 
 /** 이슈 목록 화면(IssuesScreen)이 주소의 조건으로 이슈를 거르는 순서를 따릅니다. 검색어는 비어 있습니다. */
 function issueListCount(issues: Issue[], href: string): number {
-  const { view, dates, types } = readIssueListAddress(
+  const { view, dates, types, labels } = readIssueListAddress(
     new URL(href, "http://localhost").searchParams,
   );
   const groups = issueListGroups(
-    refineIssues(filterByDate(issues, dates), { types, search: "" }),
+    refineIssues(filterByDate(issues, dates), { types, labels, search: "" }),
     waiterCounts(issues),
   );
   return view

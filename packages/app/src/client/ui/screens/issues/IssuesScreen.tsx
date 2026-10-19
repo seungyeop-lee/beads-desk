@@ -6,6 +6,7 @@ import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
+import { labelChoices } from "@/client/modules/issues/domain/issueLabelFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
@@ -22,15 +23,15 @@ import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /**
- * 위쪽 보기 탭으로 작업 상태 하나를 고르고, 유형, 날짜, 검색으로 그 안을 좁힙니다.
- * 보기 탭, 유형, 날짜 조건은 다른 화면에서 링크로 열 수 있도록 주소에 둡니다.
+ * 위쪽 보기 탭으로 작업 상태 하나를 고르고, 유형, 라벨, 날짜, 검색으로 그 안을 좁힙니다.
+ * 보기 탭, 유형, 라벨, 날짜 조건은 다른 화면에서 링크로 열 수 있도록 주소에 둡니다.
  * 보기 탭과 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function IssuesScreen() {
   const [search, setSearch] = useState("");
   const { data: issues, error, loading } = useIssueList();
   const { address, changeFilters } = useIssueListAddress();
-  const { view, dates, types } = address;
+  const { view, dates, types, labels } = address;
   // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
   const deferredSearch = useDeferredValue(search);
   const description = useDescriptionMatches(search);
@@ -43,13 +44,14 @@ export function IssuesScreen() {
         issues
           ? refineIssues(filterByDate(issues, dates), {
               types,
+              labels,
               search: deferredSearch,
               descriptionMatches,
             })
           : [],
         waiters,
       ),
-    [issues, waiters, types, deferredSearch, descriptionMatches, dates],
+    [issues, waiters, types, labels, deferredSearch, descriptionMatches, dates],
   );
   const viewIssues = view
     ? (groups.find((group) => group.state === view)?.issues ?? [])
@@ -68,11 +70,14 @@ export function IssuesScreen() {
         loading={loading}
       />
 
-      <IssueViewTabs view={view} filters={{ dates, types }} groups={groups} />
+      <IssueViewTabs view={view} filters={{ dates, types, labels }} groups={groups} />
 
       <IssueFilterBar
         types={types}
         onTypesChange={(next) => changeFilters({ types: next })}
+        labels={labels}
+        labelChoices={labelChoices(issues ?? [], labels)}
+        onLabelsChange={(next) => changeFilters({ labels: next })}
         search={search}
         onSearchChange={setSearch}
         dates={dates}

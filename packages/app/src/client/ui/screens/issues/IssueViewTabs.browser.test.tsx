@@ -20,7 +20,7 @@ for (const { width, horizontal } of [
         <div style={{ width }}>
           <IssueViewTabs
             view={null}
-            filters={{ dates: { field: "created", from: null, to: null }, types: [] }}
+            filters={{ dates: { field: "created", from: null, to: null }, types: [], labels: [] }}
             groups={GROUPS}
           />
         </div>

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { NO_LABEL } from "@/client/modules/issues/domain/issueLabelFilter";
 import {
   DEFAULT_TYPES,
   issueListHref,
@@ -15,6 +16,7 @@ describe("issueListHref", () => {
       issueListHref({
         dates: { field: "created", from: null, to: null },
         types: [...DEFAULT_TYPES].reverse(),
+        labels: [],
       }),
     ).toBe("/issues");
     expect(issueViewHref("ready")).toBe("/issues?view=ready");
@@ -25,6 +27,7 @@ describe("issueListHref", () => {
       view: "closed",
       dates: { field: "closed", from: "2026-10-14", to: "2026-10-15" },
       types: ["bug", "task"],
+      labels: [],
     } as const;
     const href = issueListHref(address);
 
@@ -32,6 +35,14 @@ describe("issueListHref", () => {
       "/issues?view=closed&date=closed&from=2026-10-14&to=2026-10-15&type=bug&type=task",
     );
     expect(read(href)).toEqual(address);
+  });
+
+  test("고른 라벨과 라벨 없음을 주소에 남기고, 주소에서 그대로 다시 읽는다", () => {
+    const labels = [NO_LABEL, "triage", "needs review"];
+    const href = issueListHref({ view: "ready", labels });
+
+    expect(href).toBe("/issues?view=ready&label=&label=triage&label=needs+review");
+    expect(read(href).labels).toEqual(labels);
   });
 
   test("날짜 없이 고른 기준도 주소에 남긴다", () => {
@@ -46,5 +57,9 @@ describe("readIssueListAddress", () => {
     expect(read("/issues").types).toEqual(DEFAULT_TYPES);
     expect(DEFAULT_TYPES).not.toContain("decision");
     expect(read(issueListHref({ types: [] })).types).toEqual([]);
+  });
+
+  test("라벨 조건이 없으면 라벨로 거르지 않는 빈 선택이다", () => {
+    expect(read("/issues?view=ready").labels).toEqual([]);
   });
 });

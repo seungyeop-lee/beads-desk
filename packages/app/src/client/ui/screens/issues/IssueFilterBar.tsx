@@ -2,15 +2,21 @@ import type {
   IssueDateField,
   IssueDateFilter,
 } from "@/client/modules/issues/domain/issueDateFilter";
+import { NO_LABEL } from "@/client/modules/issues/domain/issueLabelFilter";
 import { CheckboxMenu } from "@/client/ui/designSystem/CheckboxMenu";
 import { SearchIcon } from "@/client/ui/designSystem/icons";
-import { ISSUE_TYPES, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
+import { ISSUE_TYPES, nameTone, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {
   /** 비어 있으면 모든 유형을 보입니다. */
   types: readonly string[];
   onTypesChange: (types: string[]) => void;
+  /** 비어 있으면 라벨로 거르지 않습니다. */
+  labels: readonly string[];
+  /** 라벨 메뉴에 보일 선택지입니다. labelChoices로 만듭니다. */
+  labelChoices: readonly string[];
+  onLabelsChange: (labels: string[]) => void;
   search: string;
   onSearchChange: (search: string) => void;
   dates: IssueDateFilter;
@@ -19,10 +25,13 @@ type Props = {
 
 const DATE_FIELDS: IssueDateField[] = ["created", "closed"];
 
-/** 고른 보기 탭 안에서 유형, 날짜, 검색어로 결과를 좁힙니다. */
+/** 고른 보기 탭 안에서 유형, 라벨, 날짜, 검색어로 결과를 좁힙니다. */
 export function IssueFilterBar({
   types,
   onTypesChange,
+  labels,
+  labelChoices,
+  onLabelsChange,
   search,
   onSearchChange,
   dates,
@@ -44,6 +53,22 @@ export function IssueFilterBar({
         }))}
         selected={types}
         onChange={onTypesChange}
+      />
+
+      <CheckboxMenu
+        label={messages.issue.labels}
+        summary={
+          labels.length === 0
+            ? messages.issues.allLabels
+            : messages.issues.labelCount(labels.length)
+        }
+        options={labelChoices.map((label) =>
+          label === NO_LABEL
+            ? { value: label, label: messages.issues.noLabel, tone: "tone-none" }
+            : { value: label, label, tone: nameTone(label) },
+        )}
+        selected={labels}
+        onChange={onLabelsChange}
       />
 
       <fieldset
