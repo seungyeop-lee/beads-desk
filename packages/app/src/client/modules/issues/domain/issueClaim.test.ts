@@ -13,8 +13,8 @@ test("bd가 claim을 거부하는 상태는 가져갈 수 없다", () => {
   }
 });
 
-test("하위 이슈를 묶는 에픽과 직접 작업하지 않는 결정은 열려 있어도 가져갈 수 없다", () => {
-  for (const issueType of ["epic", "decision"]) {
+test("하위 이슈를 묶는 에픽과 직접 작업하지 않는 결정·마일스톤은 열려 있어도 가져갈 수 없다", () => {
+  for (const issueType of ["epic", "decision", "milestone"]) {
     expect(canClaim({ status: "open", issueType })).toBe(false);
   }
 });

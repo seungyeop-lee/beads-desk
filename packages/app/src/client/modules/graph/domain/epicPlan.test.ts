@@ -88,13 +88,15 @@ test("에픽 안에서 blocks 관계가 없는 후손 이슈는 선후 관계 �
   expect(layerIds(plan)).toEqual([[["a"], ["b"]]]);
 });
 
-test("선후 관계가 없는 epic은 자식 유무와 관계없이 목록에서 빼고, feature와 task는 자식이 있어도 남긴다", () => {
+test("선후 관계가 없는 epic·decision·milestone은 자식 유무와 관계없이 목록에서 빼고, feature와 task는 자식이 있어도 남긴다", () => {
   const plan = epicPlan(
     graph(
       [
         issue("group", { issueType: "epic" }),
         issue("empty-group", { issueType: "epic" }),
         issue("group-child", { parent: "group" }),
+        issue("decision", { issueType: "decision" }),
+        issue("milestone", { issueType: "milestone" }),
         issue("feature", { issueType: "feature" }),
         issue("feature-child", { parent: "feature" }),
         issue("task-parent"),

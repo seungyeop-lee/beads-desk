@@ -4,7 +4,6 @@ import type { IssueWrites } from "@/client/modules/issues/application/useIssueWr
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
 import {
   dependencyToAdd,
-  notRelationCandidate,
   RELATION_KINDS,
   type RelationKind,
 } from "@/client/modules/issues/domain/issueRelations";
@@ -49,7 +48,7 @@ export function RelationAddForm({ issue, writes }: { issue: IssueDetail; writes:
         label={messages.relations.search}
         confirmLabel={messages.relations.linkConfirm}
         disabled={writes.pending}
-        exclude={notRelationCandidate(kind, linked)}
+        exclude={(candidate) => linked.has(candidate.id)}
         rank={kind === "parent" ? epicsFirst : undefined}
         onConfirm={async (other) => {
           const { issueId, dependsOnId, type } = dependencyToAdd(kind, issue.id, other.id);

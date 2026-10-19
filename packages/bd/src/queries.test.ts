@@ -938,7 +938,7 @@ describe("boardIssues", () => {
     ).toEqual({ waiting: "blocked" });
   });
 
-  test("decision과 epic은 상태와 관계없이 어느 열에도 넣지 않는다", async () => {
+  test("decision, epic, milestone은 상태와 관계없이 어느 열에도 넣지 않는다", async () => {
     const issue = (id: string, status: string, issue_type: string) => ({ id, status, issue_type });
     await useFakeBd({
       [LIST_ALL_ARGS]: {
@@ -948,6 +948,7 @@ describe("boardIssues", () => {
           issue("closed-decision", "closed", "decision"),
           issue("open-epic", "open", "epic"),
           issue("doing-epic", "in_progress", "epic"),
+          issue("open-milestone", "open", "milestone"),
           issue("feature", "open", "feature"),
         ]),
       },
@@ -956,6 +957,7 @@ describe("boardIssues", () => {
           issue("task", "open", "task"),
           issue("open-decision", "open", "decision"),
           issue("open-epic", "open", "epic"),
+          issue("open-milestone", "open", "milestone"),
           issue("feature", "open", "feature"),
         ]),
       },

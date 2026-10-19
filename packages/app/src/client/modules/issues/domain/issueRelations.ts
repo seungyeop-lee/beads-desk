@@ -12,20 +12,6 @@ export type DependencyToAdd = {
   type: LinkableDependencyType;
 };
 
-/** 결정은 여러 이슈에 걸친 합의를 기록하므로 상하위 관계(parent-child)에 넣지 않습니다. 관련(related) 관계로는 연결합니다. */
-export function canJoinHierarchy(issue: Pick<Issue, "issueType">): boolean {
-  return issue.issueType !== "decision";
-}
-
-/** 관계 맺기에서 고른 관계의 후보로 쓸 수 없는 이슈를 고릅니다. 이미 연결한 이슈와, 상위·하위 관계일 때의 결정입니다. */
-export function notRelationCandidate(
-  kind: RelationKind,
-  linked: ReadonlySet<string>,
-): (issue: Issue) => boolean {
-  const hierarchy = kind === "parent" || kind === "child";
-  return (issue) => linked.has(issue.id) || (hierarchy && !canJoinHierarchy(issue));
-}
-
 /** 대체·중복으로 닫을 대상의 후보로 쓸 수 없는 이슈를 고릅니다. 자기 자신과, 이 이슈가 이미 의존하는 이슈는 bd가 거부합니다. 반대 방향으로 연결된 이슈는 고를 수 있습니다. */
 export function notReplacementTarget(
   issue: Pick<IssueDetail, "id" | "dependencies">,

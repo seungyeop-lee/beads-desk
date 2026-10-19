@@ -172,7 +172,7 @@ export async function issueIdsByDescription(
   return result.ok ? { ok: true, value: result.value.map((issue) => issue.id) } : result;
 }
 
-/** 바로 작업할 수 있는 이슈를 읽습니다. decision과 epic은 빼고 돌려줍니다. */
+/** 바로 작업할 수 있는 이슈를 읽습니다. decision, epic, milestone은 빼고 돌려줍니다. */
 export async function readyIssues(cwd: string): Promise<BdOutcome<Issue[]>> {
   const result = await queryIssues(cwd, READY_ARGS);
   return result.ok ? { ok: true, value: result.value.filter(isWork) } : result;
@@ -467,7 +467,7 @@ export async function openGates(cwd: string): Promise<BdOutcome<Issue[]>> {
 }
 
 /**
- * days일 넘게 갱신되지 않은 이슈를 읽습니다. decision과 epic은 뺍니다.
+ * days일 넘게 갱신되지 않은 이슈를 읽습니다. decision, epic, milestone은 뺍니다.
  * decision은 열려 있는 동안 유효한 기록이고, epic은 하위 이슈가 진행돼도 갱신 시각이 바뀌지 않아 방치된 것으로 잘못 보이기 때문입니다.
  */
 export async function staleIssues(cwd: string, days: number): Promise<BdOutcome<Issue[]>> {
@@ -573,7 +573,7 @@ function supersedingIssue(record: unknown): string | null {
 
 /**
  * 모든 이슈를 한 번에 읽어 작업 상태(workState)로 열을 정합니다. 열이 없는 작업 상태(보류, 판단 기다림, other)의 이슈는 넣지 않습니다.
- * decision과 epic은 작업 상태와 관계없이 보드에 넣지 않습니다.
+ * decision, epic, milestone은 작업 상태와 관계없이 보드에 넣지 않습니다.
  * 조회가 하나라도 실패하면 열을 잘못 나누게 되므로 오류를 돌려줍니다.
  */
 export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>> {

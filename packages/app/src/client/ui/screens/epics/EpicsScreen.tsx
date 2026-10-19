@@ -192,7 +192,7 @@ function EpicDescendants({
             placeholder={messages.epics.addExistingChildPlaceholder}
             confirmLabel={messages.epics.addChildConfirm}
             disabled={writes.pending || !descendants}
-            exclude={notChildCandidate(descendants ?? [])}
+            exclude={notChildCandidate(epic.id, descendants ?? [])}
             onConfirm={async (issue) => {
               const result = await writes.run(() =>
                 addDependencyAction(issue.id, epic.id, "parent-child"),

@@ -2,7 +2,6 @@ import type { Issue } from "@beads-desk/bd/issue";
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
-import { canJoinHierarchy } from "@/client/modules/issues/domain/issueRelations";
 import { createIssueAction } from "@/server/web/issues/issueActions";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
@@ -136,7 +135,6 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
             ) : (
               <IssuePicker
                 label={messages.newIssue.parentSearch}
-                exclude={(candidate) => !canJoinHierarchy(candidate)}
                 rank={epicsFirst}
                 onPick={async (issue) => {
                   setPickedParent(issue);

@@ -5,7 +5,6 @@ import {
   issueTree,
   type IssueTreeRow,
 } from "@/client/modules/issues/domain/issueListView";
-import { canJoinHierarchy } from "@/client/modules/issues/domain/issueRelations";
 import type { EpicSummary } from "@/shared/contract/epics";
 
 /** 지금 진행 중인 epic을 먼저 보입니다. */
@@ -43,11 +42,16 @@ export function settleExpandedEpics(
   return new Set([first.epic.id]);
 }
 
-/** 에픽에 기존 이슈를 하위로 넣을 때 후보에서 뺄 이슈를 고릅니다. 에픽 자신과 다른 에픽, 결정, 이미 그 에픽에 속한 후손 이슈입니다. */
-export function notChildCandidate(descendants: readonly Issue[]): (issue: Issue) => boolean {
-  const descendantIds = new Set(descendants.map((issue) => issue.id));
-  return (issue) =>
-    issue.issueType === "epic" || !canJoinHierarchy(issue) || descendantIds.has(issue.id);
+/**
+ * 에픽에 기존 이슈를 하위로 넣을 때 후보에서 뺄 이슈를 고릅니다. 에픽 자신과 이미 그 에픽에 속한 후손 이슈입니다.
+ * bd는 다른 에픽과 결정도 하위로 받습니다. 에픽의 조상을 넣어 생기는 순환은 bd가 거부합니다.
+ */
+export function notChildCandidate(
+  epicId: string,
+  descendants: readonly Issue[],
+): (issue: Issue) => boolean {
+  const unavailable = new Set([epicId, ...descendants.map((issue) => issue.id)]);
+  return (issue) => unavailable.has(issue.id);
 }
 
 /**

@@ -500,7 +500,8 @@ export const enMessages: Messages = {
     loadFailed: (error) => `Could not load hygiene checks: ${error}`,
     stale: {
       title: "Stale issues",
-      hint: (days) => `Issues not updated in ${days} days. Decisions and epics are excluded.`,
+      hint: (days) =>
+        `Issues not updated in ${days} days. Decisions, epics, and milestones are excluded.`,
       empty: (days) => `No issue has gone ${days} days without an update.`,
       days: "Stale after",
       dayOption: (days) => `${days} days`,

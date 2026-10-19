@@ -512,7 +512,8 @@ export const koMessages = {
     loadFailed: (error: string) => `정리 점검 결과를 불러오지 못했습니다: ${error}`,
     stale: {
       title: "오래 방치된 이슈",
-      hint: (days: number) => `${days}일 넘게 바뀌지 않은 이슈입니다. 결정과 에픽은 뺍니다.`,
+      hint: (days: number) =>
+        `${days}일 넘게 바뀌지 않은 이슈입니다. 결정, 에픽, 마일스톤은 뺍니다.`,
       empty: (days: number) => `${days}일 넘게 바뀌지 않은 이슈가 없습니다.`,
       days: "기준 일수",
       dayOption: (days: number) => `${days}일`,

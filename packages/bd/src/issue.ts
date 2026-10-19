@@ -41,8 +41,9 @@ export function awaitsHumanDecision(issue: Pick<Issue, "status" | "labels">): bo
 /**
  * 직접 작업하지 않는 유형입니다. bd ready는 이 유형도 돌려줍니다.
  * decision은 열려 있으면 유효한 결정이라는 기록이고, epic은 하위 이슈를 묶을 뿐 직접 작업하지 않습니다.
+ * milestone은 bd types가 관련 이슈들의 완료를 표시하고 작업 자체는 담지 않는 유형으로 설명합니다.
  */
-export const NON_WORK_TYPES: ReadonlySet<string> = new Set(["epic", "decision"]);
+export const NON_WORK_TYPES: ReadonlySet<string> = new Set(["epic", "decision", "milestone"]);
 
 /** 저장 상태와 의존 관계, human 라벨, bd ready를 합쳐 지금 이 이슈로 무엇을 할 수 있는지 나타냅니다. */
 export type WorkState =
@@ -59,7 +60,7 @@ export type WorkState =
  * blockedBy와 ready는 목록 조회(withWorkSignals)가 채운 값이어야 합니다.
  * 닫힘과 보류는 저장 상태를 따르고, 미해결 의존이 있어도 blocked로 보지 않습니다. 그 밖에 bd blocked에 나온 이슈는 저장 상태와 관계없이 blocked입니다.
  * bd ready는 human 라벨 이슈도 돌려주지만, 사람이 판단할 차례라 진행 중이나 바로 작업 가능으로 보지 않습니다.
- * epic과 decision은 진행 중이거나 bd ready에 있어도 in_progress나 ready로 보지 않습니다.
+ * epic, decision, milestone은 진행 중이거나 bd ready에 있어도 in_progress나 ready로 보지 않습니다.
  */
 export function workState(issue: Issue): WorkState {
   if (issue.status === "closed") return "closed";
