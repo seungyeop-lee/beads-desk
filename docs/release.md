@@ -1,6 +1,16 @@
-# 릴리스 게시 흐름과 문제 해결
+# 릴리스
 
-릴리스 커밋을 만드는 1–3단계는 저장소 루트 `AGENTS.md`의 "릴리스" 절에 있습니다. `release.yml`을 고친 뒤 확인하는 방법은 `.github/AGENTS.md`에 있습니다.
+`release.yml`을 고친 뒤 확인하는 방법은 `.github/AGENTS.md`에 있습니다.
+
+## 릴리스 커밋 만들기
+
+`packages/app/package.json`의 `version`을 올린 커밋을 `main`에 push하면 npm에 게시됩니다. 게시 조건은 아래 "게시 흐름"에 있습니다.
+
+1. 저장소 루트 `CHANGELOG.md`의 가장 최근 version 절 위에 `## [<version>] - <YYYY-MM-DD>` 절을 추가하고, 바뀐 내용을 영어로 적습니다. 이 절의 본문(다음 `## ` 제목 앞까지)이 GitHub Release의 노트가 됩니다.
+2. `packages/app/package.json`의 `version`을 같은 값으로 바꿉니다.
+3. 두 변경을 `main`에 push합니다.
+
+1–2단계와 두 파일만 담은 릴리스 커밋은 프로젝트 skill `/versionup [patch|minor|major]`(Codex에서는 `$versionup`)로 만들 수 있습니다. skill은 push하지 않으므로, 커밋을 검토한 뒤 3단계는 직접 실행합니다.
 
 ## 게시 흐름
 

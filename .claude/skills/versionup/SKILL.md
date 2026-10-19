@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # versionup
 
-`main`에 push하기만 하면 `.github/workflows/release.yml`이 게시하도록, `CHANGELOG.md`와 `packages/app/package.json`의 version을 올린 릴리스 커밋 하나를 만듭니다. 릴리스 규칙은 루트 `AGENTS.md` "릴리스" 절, `docs/release.md`, `release.yml`에 있고, 이 skill은 "릴리스" 절의 1–2단계를 대신 실행합니다. 이 skill이 그 셋과 어긋나는 곳을 발견하면 skill에 맞추지 말고 멈춘 뒤 어긋난 곳을 사용자에게 알립니다.
+`main`에 push하기만 하면 `.github/workflows/release.yml`이 게시하도록, `CHANGELOG.md`와 `packages/app/package.json`의 version을 올린 릴리스 커밋 하나를 만듭니다. 릴리스 규칙은 `docs/release.md`와 `release.yml`에 있고, 이 skill은 `docs/release.md` "릴리스 커밋 만들기" 절의 1–2단계를 대신 실행합니다. 이 skill이 그 둘과 어긋나는 곳을 발견하면 skill에 맞추지 말고 멈춘 뒤 어긋난 곳을 사용자에게 알립니다.
 
 **이 skill은 push, npm 게시, tag와 GitHub Release 생성을 하지 않습니다.** 사용자가 커밋을 검토한 뒤 직접 push합니다.
 

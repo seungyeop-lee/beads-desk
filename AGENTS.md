@@ -22,7 +22,7 @@
 - 컴포넌트 테스트(`*.browser.test.tsx`)를 쓰거나 고칠 때: `packages/app/src/client/ui/AGENTS.md`
 - e2e 시나리오를 추가하거나 고칠 때, `pnpm run test:e2e`의 실행 방식을 알아볼 때: `packages/app/e2e/AGENTS.md`
 - `.github/workflows/`를 고칠 때: `.github/AGENTS.md`
-- 릴리스가 게시되지 않았거나 prerelease를 낼 때: `docs/release.md`
+- `packages/app/package.json`의 `version`을 바꾸거나 릴리스할 때, 릴리스가 게시되지 않았을 때, prerelease를 낼 때: `docs/release.md`
 
 하위 디렉터리에 `AGENTS.md`를 새로 만들면 이 목록에 그 문서를 읽을 작업을 적습니다. 저장소에는 `CLAUDE.md`나 `CLAUDE.local.md`를 만들지 않습니다. 작업 디렉터리나 그 위 디렉터리에 이 파일이 하나라도 있으면 Claude Code가 `AGENTS.md`를 읽지 않습니다.
 
@@ -118,13 +118,3 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다. 다른 worktree의 e2e가 실행 중이면 그 실행이 끝난 뒤에 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다.
 
 `next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) `docs/troubleshooting.md`의 절차를 따릅니다. `packages/app/.next/dev`를 지우기 전에 남겨야 할 자료가 그 문서에 있습니다.
-
-## 릴리스
-
-`packages/app/package.json`의 `version`을 올린 커밋을 `main`에 push하면, 그 커밋의 검사(`check.yml`)가 성공한 뒤 `release.yml`이 npm에 게시하고 `v<version>` tag와 GitHub Release를 만듭니다. 그 version이 이미 npm에 있으면 게시하지 않습니다.
-
-1. 저장소 루트 `CHANGELOG.md`의 가장 최근 version 절 위에 `## [<version>] - <YYYY-MM-DD>` 절을 추가하고, 바뀐 내용을 영어로 적습니다. 이 절의 본문(다음 `## ` 제목 앞까지)이 GitHub Release의 노트가 됩니다.
-2. `packages/app/package.json`의 `version`을 같은 값으로 바꿉니다.
-3. 두 변경을 `main`에 push합니다.
-
-1–2단계와 두 파일만 담은 릴리스 커밋은 프로젝트 skill `/versionup [patch|minor|major]`(Codex에서는 `$versionup`)로 만들 수 있습니다. skill은 push하지 않으므로, 커밋을 검토한 뒤 3단계는 직접 실행합니다.
