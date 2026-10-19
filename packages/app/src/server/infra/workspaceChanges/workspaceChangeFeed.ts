@@ -5,7 +5,8 @@ type Listener = () => void;
 
 type Feed = {
   listeners: Set<Listener>;
-  timer: ReturnType<typeof setInterval>;
+  /** 구독자가 있는 동안의 주기 조회입니다. 구독자가 모두 떠나면 null입니다. */
+  timer: ReturnType<typeof setInterval> | null;
   fingerprint: ChangeFingerprint | null;
   last: string | null;
   /** 처음 조회를 마쳤는지입니다. 처음 조회는 DB 상태를 읽지 못해도 알립니다. */
@@ -17,6 +18,8 @@ type Feed = {
 const DEFAULT_POLL_INTERVAL_MS = 2_000;
 
 // route handler마다 module 사본이 따로 생기므로, 같은 workspace의 구독자가 조회를 하나만 공유하도록 process 전역에 둡니다.
+// 마지막 구독자가 떠나도 feed를 지우지 않고 주기 조회만 멈춥니다. 전체 페이지를 이동하면 SSE 연결이 끊겼다가 다시 열리는데,
+// feed를 지우면 다시 연결할 때마다 bd로 기준값을 새로 읽고, 새 화면은 그 알림을 받은 뒤에야 첫 조회를 시작합니다.
 const FEEDS_KEY = Symbol.for("beads-desk.workspaceChangeFeeds");
 
 function feeds(): Map<string, Feed> {
@@ -37,34 +40,37 @@ export function subscribeWorkspaceChanges(
 ): () => void {
   let feed = feeds().get(workspaceRoot);
   if (!feed) {
-    const created: Feed = {
+    feed = {
       listeners: new Set(),
-      timer: setInterval(
-        () => void poll(workspaceRoot, created),
-        options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,
-      ),
+      timer: null,
       fingerprint: null,
       last: null,
       settled: false,
       polling: null,
     };
-    created.timer.unref();
-    feeds().set(workspaceRoot, created);
-    void poll(workspaceRoot, created);
-    feed = created;
+    feeds().set(workspaceRoot, feed);
+    void poll(workspaceRoot, feed);
   }
-  feed.listeners.add(listener);
-  // 이미 기준값을 읽은 feed에 구독한 listener에게는 구독 직후 바로 알립니다. 그 listener가 구독 전에 조회한
-  // 데이터는 기준값과 그 사이의 쓰기를 놓칠 수 있어서입니다. 기준값을 아직 읽지 않은 feed에서는 첫 조회가
-  // 끝날 때 모든 listener에게 알리므로 여기서 알리지 않습니다.
-  if (feed.settled) listener();
-
   const subscribed = feed;
+  if (!subscribed.timer) {
+    subscribed.timer = setInterval(
+      () => void poll(workspaceRoot, subscribed),
+      options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,
+    );
+    subscribed.timer.unref();
+  }
+  subscribed.listeners.add(listener);
+  // 이미 기준값을 읽은 feed에 구독한 listener에게는 구독 직후 바로 알립니다. 그 listener가 구독 전에 조회한
+  // 데이터는 기준값과 그 사이의 쓰기를 놓칠 수 있어서입니다. 구독자가 모두 떠나 있던 feed의 기준값도 그대로 쓰는데,
+  // 그동안 일어난 쓰기는 다음 주기 조회에서 변경으로 잡혀 한 번 더 알립니다. 기준값을 아직 읽지 않은 feed에서는
+  // 첫 조회가 끝날 때 모든 listener에게 알리므로 여기서 알리지 않습니다.
+  if (subscribed.settled) listener();
+
   return () => {
     subscribed.listeners.delete(listener);
-    if (subscribed.listeners.size === 0 && feeds().get(workspaceRoot) === subscribed) {
+    if (subscribed.listeners.size === 0 && subscribed.timer) {
       clearInterval(subscribed.timer);
-      feeds().delete(workspaceRoot);
+      subscribed.timer = null;
     }
   };
 }
@@ -75,7 +81,7 @@ export function subscribeWorkspaceChanges(
  */
 export async function checkWorkspaceChangesNow(workspaceRoot: string): Promise<void> {
   const feed = feeds().get(workspaceRoot);
-  if (!feed) return;
+  if (!feed || feed.listeners.size === 0) return;
   // 진행 중인 조회는 쓰기 전에 값을 읽었을 수 있으므로 끝나기를 기다렸다가 새로 읽습니다.
   await feed.polling;
   await poll(workspaceRoot, feed);
@@ -99,12 +105,18 @@ async function readFingerprint(workspaceRoot: string, feed: Feed): Promise<void>
   if (current !== null) feed.last = current;
 }
 
-/** DB 상태를 비교할 값을 읽습니다. 읽지 못하면 null을 돌려줍니다. */
+/**
+ * DB 상태를 비교할 값을 읽습니다. 읽지 못하면 null을 돌려줍니다.
+ * 읽지 못하면 읽는 방법을 버리고 다음 조회에서 `dolt show`로 다시 정합니다. feed는 구독자가 모두 떠난 뒤에도 남으므로,
+ * 그동안 workspace의 Dolt mode나 DB 위치가 바뀌어 남은 방법으로 읽지 못하게 되면 새 방법으로 바꿔야 합니다.
+ */
 async function currentFingerprint(workspaceRoot: string, feed: Feed): Promise<string | null> {
   if (!feed.fingerprint) {
     const opened = await openChangeFingerprint(workspaceRoot);
     if (!opened.ok) return null;
     feed.fingerprint = opened.value;
   }
-  return feed.fingerprint();
+  const current = await feed.fingerprint();
+  if (current === null) feed.fingerprint = null;
+  return current;
 }

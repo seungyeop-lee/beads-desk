@@ -171,6 +171,65 @@ test("마지막 구독자가 떠나면 조회를 멈춘다", async () => {
   expect(await hashQueryCount()).toBe(afterLeave);
 });
 
+test("마지막 구독자가 떠난 뒤 다시 구독하면 dolt show를 다시 실행하지 않고 새 listener에게 한 번 알린다", async () => {
+  let first = 0;
+  const stopFirst = subscribeWorkspaceChanges(workDir, () => first++, { pollIntervalMs: 60_000 });
+  await waitUntil(() => first === 1);
+  stopFirst();
+
+  let second = 0;
+  const stopSecond = subscribeWorkspaceChanges(workDir, () => second++, { pollIntervalMs: 60_000 });
+  expect(second).toBe(1);
+  await sleep(100);
+  stopSecond();
+
+  expect(second).toBe(1);
+  expect(await bdCallCount("dolt show")).toBe(1);
+});
+
+test("구독자가 모두 떠나 있는 동안 DB 상태가 바뀌면 다시 구독한 listener에게 변경을 한 번 더 알린다", async () => {
+  const stopFirst = subscribeWorkspaceChanges(workDir, () => {}, { pollIntervalMs: 60_000 });
+  await checkWorkspaceChangesNow(workDir);
+  stopFirst();
+  await writeHash("hash-2");
+
+  let notified = 0;
+  const stopSecond = subscribeWorkspaceChanges(workDir, () => notified++, {
+    pollIntervalMs: POLL_INTERVAL_MS,
+  });
+  await waitUntil(() => notified === 2);
+  const afterChange = await hashQueryCount();
+  await waitUntil(async () => (await hashQueryCount()) >= afterChange + 2);
+  stopSecond();
+
+  expect(notified).toBe(2);
+});
+
+test("DB 상태를 읽지 못하면 다음 조회에서 dolt show로 읽는 방법을 다시 정한다", async () => {
+  let notified = 0;
+  const unsubscribe = subscribeWorkspaceChanges(workDir, () => notified++, {
+    pollIntervalMs: POLL_INTERVAL_MS,
+  });
+  await waitUntil(() => notified === 1);
+
+  await writeFile(failFlag, "");
+  await waitUntil(async () => (await bdCallCount("dolt show")) >= 2);
+  unsubscribe();
+
+  expect(notified).toBe(1);
+});
+
+test("구독자가 모두 떠난 뒤에는 확인 요청에 bd를 실행하지 않는다", async () => {
+  const unsubscribe = subscribeWorkspaceChanges(workDir, () => {}, { pollIntervalMs: 60_000 });
+  await checkWorkspaceChangesNow(workDir);
+  unsubscribe();
+  const afterLeave = await hashQueryCount();
+
+  await checkWorkspaceChangesNow(workDir);
+
+  expect(await hashQueryCount()).toBe(afterLeave);
+});
+
 test("쓰기 직후 확인을 요청하면 다음 주기를 기다리지 않고 알린다", async () => {
   let notified = 0;
   const unsubscribe = subscribeWorkspaceChanges(workDir, () => notified++, {
