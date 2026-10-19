@@ -4,6 +4,14 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-10-20
+
+### Fixed
+
+- Open `feature` issues can be claimed with **Claim** in the issue detail even when they have child issues, because `bd` treats a feature as work at the same level as a task. In an epic's **View order**, features with no blocks dependency are listed under **No blocks dependency**.
+- `milestone` issues are treated like epics and decisions, as issues that are not worked on directly. They are no longer shown as ready or in progress, listed under **Up next** on the **Now** screen, placed on the **Board**, or listed under **Stale issues** on the **Hygiene** screen. They are left out of the **Flow** counts and durations on the **Now** screen and cannot be claimed. In an epic's **View order**, milestones and decisions are no longer listed under **No blocks dependency**.
+- Decisions and other epics can be picked as a parent or child issue: in **Linked issues** in the issue detail, in the parent search of the **New issue** dialog, and in **Add an existing issue as a child** on the **Epics** screen.
+
 ## [0.3.0] - 2026-10-19
 
 ### Added
