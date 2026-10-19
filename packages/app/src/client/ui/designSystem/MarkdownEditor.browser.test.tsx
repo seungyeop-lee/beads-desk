@@ -1,3 +1,4 @@
+import { foldCode } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { afterEach, expect, test } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -171,6 +172,135 @@ test("어두운 테마에서도 코드 블록의 현재 줄, 고른 글자, 괄�
   }
 });
 
+test("어두운 테마에서도 코드 블록의 같은 낱말 강조, 검색 결과 강조, snippet 입력 칸은 밝은 테마만큼 바탕과 구분되고, 그 위의 강조 토큰은 4.5:1 이상 대비된다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  const doc = view.state.doc.toString();
+
+  const word = doc.indexOf("intent ");
+  view.dispatch({ selection: { anchor: word, head: word + "intent".length } });
+  const selectionMatch = await markOverText(view, ".cm-selectionMatch");
+
+  view.dispatch({ selection: { anchor: 0 } });
+  await userEvent.keyboard("{ControlOrMeta>}f{/ControlOrMeta}intent{Enter}");
+  const searchMatch = await markOverText(view, ".cm-searchMatch:not(.cm-searchMatch-selected)");
+  const currentSearchMatch = await markOverText(view, ".cm-searchMatch-selected");
+  await userEvent.keyboard("{Escape}");
+
+  await typeOnNewLastLine(view, "for");
+  await userEvent.click(await completionOption(view));
+  const snippetField = await markOverText(view, ".cm-snippetField");
+
+  const marks = { selectionMatch, searchMatch, currentSearchMatch, snippetField };
+  // 밝은 테마는 CodeMirror 기본 테마의 색 그대로입니다.
+  expect(
+    Object.fromEntries(Object.entries(marks).map(([name, mark]) => [name, mark.light.color])),
+  ).toEqual({
+    selectionMatch: "rgba(153, 255, 119, 0.5)",
+    searchMatch: "rgba(255, 255, 0, 0.33)",
+    currentSearchMatch: "rgba(255, 106, 0, 0.33)",
+    snippetField: "rgba(0, 0, 0, 0.133)",
+  });
+  for (const [name, { light, dark }] of Object.entries(marks)) {
+    expect(dark.distinction, `${name} 바탕 구분`).toBeGreaterThanOrEqual(light.distinction);
+    expect(dark.text, `${name} 위의 글자`).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
+test("어두운 테마에서도 코드 블록의 caret과 끌어 놓을 자리 표시는 코드 블록 바탕과 3:1 이상 대비된다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  view.dispatch({ selection: { anchor: 0 } });
+  const target = view.coordsAtPos(view.state.doc.toString().indexOf("Retry"))!;
+  view.contentDOM.dispatchEvent(
+    new DragEvent("dragover", {
+      clientX: target.left + 1,
+      clientY: (target.top + target.bottom) / 2,
+      bubbles: true,
+      dataTransfer: new DataTransfer(),
+    }),
+  );
+  await expect.poll(() => view.dom.querySelector(".cm-cursor")).not.toBeNull();
+  await expect.poll(() => view.dom.querySelector(".cm-dropCursor")).not.toBeNull();
+
+  const cursors = inBothThemes(() => {
+    const background = getComputedStyle(view.dom).backgroundColor;
+    const caret = getComputedStyle(view.dom.querySelector(".cm-cursor")!).borderLeftColor;
+    const dropCursor = getComputedStyle(view.dom.querySelector(".cm-dropCursor")!).borderLeftColor;
+    return {
+      colors: { caret, dropCursor },
+      caret: contrast(caret, background),
+      dropCursor: contrast(dropCursor, background),
+    };
+  });
+  // 밝은 테마는 CodeMirror 기본 테마의 색 그대로입니다.
+  expect(cursors.light.colors).toEqual({ caret: "rgb(0, 0, 0)", dropCursor: "rgb(0, 0, 0)" });
+  expect(cursors.dark.caret).toBeGreaterThanOrEqual(3);
+  expect(cursors.dark.dropCursor).toBeGreaterThanOrEqual(3);
+});
+
+test("어두운 테마에서도 코드 블록의 자동 완성 목록은 밝은 테마만큼 바탕과 구분되고, 고르지 않은 항목의 글자는 4.5:1 이상 대비된다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  await typeOnNewLastLine(view, "con");
+  await completionOption(view);
+
+  const tooltip = inBothThemes(() => {
+    const background = getComputedStyle(view.dom).backgroundColor;
+    const box = getComputedStyle(view.dom.querySelector(".cm-tooltip-autocomplete")!);
+    const item = getComputedStyle(
+      view.dom.querySelector(".cm-tooltip-autocomplete li:not([aria-selected])")!,
+    ).color;
+    return {
+      colors: { background: box.backgroundColor, border: box.borderTopColor, item },
+      editorText: getComputedStyle(view.dom).color,
+      box: contrast(box.backgroundColor, background),
+      border: contrast(box.borderTopColor, background),
+      item: contrast(item, box.backgroundColor),
+    };
+  });
+  // 밝은 테마는 CodeMirror 기본 테마의 색 그대로이고, 기본 테마는 글자색을 정하지 않아 편집기 글자색을 물려받습니다.
+  expect(tooltip.light.colors).toEqual({
+    background: "rgb(245, 245, 245)",
+    border: "rgb(187, 187, 187)",
+    item: tooltip.light.editorText,
+  });
+  expect(tooltip.dark.box).toBeGreaterThanOrEqual(tooltip.light.box);
+  expect(tooltip.dark.border).toBeGreaterThanOrEqual(3);
+  expect(tooltip.dark.item).toBeGreaterThanOrEqual(4.5);
+});
+
+test("어두운 테마에서도 코드 블록의 접힌 코드 자리 표시는 밝은 테마만큼 바탕과 구분되고, 그 안의 글자는 4.5:1 이상 대비된다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  view.dispatch({ selection: { anchor: view.state.doc.line(3).from } });
+  expect(foldCode(view)).toBe(true);
+  await expect.poll(() => view.dom.querySelector(".cm-foldPlaceholder")).not.toBeNull();
+
+  const fold = inBothThemes(() => {
+    const background = getComputedStyle(view.dom).backgroundColor;
+    const activeLine = getComputedStyle(view.dom.querySelector(".cm-activeLine")!).backgroundColor;
+    const placeholder = getComputedStyle(view.dom.querySelector(".cm-foldPlaceholder")!);
+    const line = paint(background, activeLine);
+    const fill = paint(background, activeLine, placeholder.backgroundColor);
+    return {
+      colors: {
+        background: placeholder.backgroundColor,
+        border: placeholder.borderTopColor,
+        text: placeholder.color,
+      },
+      box: contrast(fill, line),
+      border: contrast(placeholder.borderTopColor, background),
+      text: contrast(placeholder.color, fill),
+    };
+  });
+  // 밝은 테마는 CodeMirror 기본 테마의 색 그대로입니다.
+  expect(fold.light.colors).toEqual({
+    background: "rgb(238, 238, 238)",
+    border: "rgb(221, 221, 221)",
+    text: "rgb(136, 136, 136)",
+  });
+  expect(fold.dark.box).toBeGreaterThanOrEqual(fold.light.box);
+  expect(fold.dark.border).toBeGreaterThanOrEqual(3);
+  expect(fold.dark.text).toBeGreaterThanOrEqual(4.5);
+});
+
 test("그림의 한글 라벨은 노드 상자 안에 들어가고, 지원하지 않는 종류의 그림은 코드로 보인다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
@@ -236,6 +366,65 @@ async function codeIndicators(view: EditorView, at: number) {
     selection: contrast(selectedLine, line),
     matchingBracket: contrast(paint(background, activeLine, matchingBracket), line),
   };
+}
+
+/** 코드 블록을 편집 상태로 그리고, 구문 강조가 끝난 뒤 포커스를 둔 코드 블록 편집기를 돌려줍니다. */
+async function renderCodeEditor(value: string) {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value={value} label="설명" />
+    </LocaleProvider>,
+  );
+  await expect.poll(() => tokenColor(screen.container, "return")).not.toBe("");
+  const view = EditorView.findFromDOM(screen.container.querySelector<HTMLElement>(".cm-editor")!)!;
+  view.focus();
+  return view;
+}
+
+/** 코드 끝에 빈 줄을 더하고 그 줄에 text를 입력합니다. 입력하는 동안 자동 완성 목록이 저절로 열립니다. */
+async function typeOnNewLastLine(view: EditorView, text: string) {
+  const end = view.state.doc.length;
+  view.dispatch({ changes: { from: end, insert: "\n" }, selection: { anchor: end + 1 } });
+  await userEvent.keyboard(text);
+}
+
+/** 열린 자동 완성 목록의 첫 항목입니다. 목록이 열릴 때까지 기다립니다. */
+async function completionOption(view: EditorView) {
+  await expect.poll(() => view.dom.querySelector(".cm-tooltip-autocomplete li")).not.toBeNull();
+  return view.dom.querySelector<HTMLElement>(".cm-tooltip-autocomplete li")!;
+}
+
+/** 열어 둔 화면을 밝은 테마와 어두운 테마에서 차례로 읽습니다. 테마를 바꿔도 편집기를 다시 만들지 않으므로 열린 표시가 그대로 남습니다. */
+function inBothThemes<T>(read: () => T) {
+  document.documentElement.removeAttribute("data-theme");
+  const light = read();
+  document.documentElement.dataset.theme = "desk-dark";
+  const dark = read();
+  document.documentElement.removeAttribute("data-theme");
+  return { light, dark };
+}
+
+/**
+ * 글자 위에 칠하는 표시(selector)가 나타나기를 기다린 뒤, 두 테마에서 그 바탕색을 읽습니다.
+ * distinction은 현재 줄 바탕과 표시를 겹친 색이 현재 줄 바탕과 이루는 대비율이고,
+ * text는 코드 블록의 글자색과 강조 토큰 색 가운데 표시 위에서 대비가 가장 낮은 값입니다.
+ */
+async function markOverText(view: EditorView, selector: string) {
+  await expect.poll(() => view.dom.querySelector(selector)).not.toBeNull();
+  return inBothThemes(() => {
+    const background = getComputedStyle(view.dom).backgroundColor;
+    const activeLine = getComputedStyle(view.dom.querySelector(".cm-activeLine")!).backgroundColor;
+    const color = getComputedStyle(view.dom.querySelector(selector)!).backgroundColor;
+    const marked = paint(background, activeLine, color);
+    const textColors = [view.dom, ...view.dom.querySelectorAll(".cm-line span")].map(
+      (element) => getComputedStyle(element).color,
+    );
+    return {
+      color,
+      distinction: contrast(marked, paint(background, activeLine)),
+      text: Math.min(...textColors.map((text) => contrast(text, marked))),
+    };
+  });
 }
 
 /** 색을 차례로 겹쳐 칠한 결과입니다. 반투명한 표시 색을 그 아래 바탕과 합친 색을 구할 때 씁니다. */

@@ -35,13 +35,28 @@ export const codeHighlighting = syntaxHighlighting(
 );
 
 /**
- * 코드 블록에서 커서가 있는 줄과 고른 글자의 바탕입니다. CodeMirror 기본 테마는 dark theme 확장이 없으면 밝은 바탕에 맞춘 색을 쓰므로,
- * 색을 markdownEditor.css의 --code-* 변수로 바꿉니다. EditorView.theme의 규칙은 기본 테마의 같은 규칙보다 우선합니다.
+ * 코드 블록 편집기가 그리는 표시(현재 줄, 고른 글자, caret, 같은 낱말과 검색 결과 강조, 자동 완성 목록, 접힌 코드, snippet 입력 칸)의 색입니다.
+ * CodeMirror 기본 테마는 dark theme 확장이 없으면 밝은 바탕에 맞춘 색을 쓰므로, 색을 markdownEditor.css의 --code-* 변수로 바꿉니다.
+ * EditorView.theme의 규칙은 기본 테마의 같은 규칙보다 우선합니다.
  */
-export const codeSelectionTheme = EditorView.theme({
+export const codeEditorTheme = EditorView.theme({
   ".cm-activeLine": { backgroundColor: "var(--code-active-line)" },
   ".cm-selectionBackground": { background: "var(--code-selection-unfocused)" },
   "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
     background: "var(--code-selection)",
+  },
+  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--code-cursor)" },
+  ".cm-selectionMatch": { backgroundColor: "var(--code-selection-match)" },
+  ".cm-searchMatch": { backgroundColor: "var(--code-search-match)" },
+  ".cm-searchMatch-selected": { backgroundColor: "var(--code-search-match-current)" },
+  ".cm-snippetField": { backgroundColor: "var(--code-snippet-field)" },
+  ".cm-tooltip": {
+    backgroundColor: "var(--code-tooltip)",
+    borderColor: "var(--code-tooltip-border)",
+  },
+  ".cm-foldPlaceholder": {
+    backgroundColor: "var(--code-fold-placeholder)",
+    borderColor: "var(--code-fold-placeholder-border)",
+    color: "var(--code-fold-placeholder-text)",
   },
 });

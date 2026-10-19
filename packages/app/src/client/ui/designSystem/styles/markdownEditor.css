@@ -95,14 +95,26 @@
 }
 
 /*
- * 코드 블록에서 커서가 있는 줄과 고른 글자의 바탕색입니다(codeHighlighting.ts의 codeSelectionTheme). 밝은 테마 값은 CodeMirror 기본 테마의 색 그대로입니다.
- * 어두운 테마 값은 밝은 테마만큼 바탕과 구분되면서도, 그 위의 강조 토큰이 4.5:1 이상 대비되는 색입니다.
+ * 코드 블록 편집기가 그리는 표시의 색입니다(codeHighlighting.ts의 codeEditorTheme). 밝은 테마 값은 CodeMirror 기본 테마의 색 그대로입니다.
+ * 어두운 테마 값은 밝은 테마만큼 바탕과 구분되면서도, 그 위의 강조 토큰과 글자가 4.5:1 이상 대비되는 색입니다.
+ * caret과 테두리 선은 코드 블록 바탕과 3:1 이상 대비됩니다. 자동 완성 목록은 글자색을 정하지 않아 본문 글자색을 물려받습니다.
  * 고른 글자의 바탕은 그 줄의 현재 줄 바탕 아래에 깔리므로, 현재 줄 바탕은 반투명이어야 합니다.
+ * 같은 낱말 강조, 검색 결과 강조, snippet 입력 칸은 고른 글자를 덮어 칠하므로, 고른 글자가 비쳐 보이게 반투명으로 둡니다.
  */
 .markdown-editor {
   --code-active-line: light-dark(#cceeff44, #ede9e30d);
   --code-selection: light-dark(#d7d4f0, #2d2b44);
   --code-selection-unfocused: light-dark(#d9d9d9, #34312d);
+  --code-cursor: light-dark(#000, #ede9e3);
+  --code-selection-match: light-dark(#99ff7780, #99ff771f);
+  --code-search-match: light-dark(#ffff0054, #ffff0018);
+  --code-search-match-current: light-dark(#ff6a0054, #ff6a003a);
+  --code-snippet-field: light-dark(#00000022, #ffffff1c);
+  --code-tooltip: light-dark(#f5f5f5, #1f1d1b);
+  --code-tooltip-border: light-dark(#bbb, #716b63);
+  --code-fold-placeholder: light-dark(#eee, #34312d);
+  --code-fold-placeholder-border: light-dark(#ddd, #716b63);
+  --code-fold-placeholder-text: light-dark(#888, #a8a29a);
 }
 
 .markdown-editor .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
