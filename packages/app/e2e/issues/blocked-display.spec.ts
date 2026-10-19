@@ -1,7 +1,8 @@
 import { expect, test } from "../support/bdWorkspace";
+import { TIMEOUT_SCALE } from "../support/stress";
 
 // 선행 이슈를 CLI로 닫으면 막힘 표시는 새로고침 없이 사라지므로, 그 반영을 기다리는 시간을 넉넉히 잡습니다.
-const NOTIFY_TIMEOUT = 10_000;
+const NOTIFY_TIMEOUT = 10_000 * TIMEOUT_SCALE;
 
 test("다른 이슈에 막힌 열린 이슈를 목록과 상세에서 막힘으로 보이고, 선행 이슈를 닫으면 표시가 사라진다", async ({
   page,

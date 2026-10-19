@@ -10,6 +10,7 @@ import {
   type RegisterWorkspaceRequest,
 } from "../../src/shared/contract/workspaces";
 import { test as base } from "./appServer";
+import { throttleCpu, TIMEOUT_SCALE } from "./stress";
 import type { UserHomeEnv } from "./userHome";
 
 const execFileAsync = promisify(execFile);
@@ -21,8 +22,9 @@ const BD = bdBin();
  * 화면에서 고친 값이 bd에 저장될 때까지 기다리는 시간입니다.
  * 서버는 bd를 한 번에 하나씩 실행해서, 쓰기는 그때 실행 중인 bd가 끝나야 시작합니다.
  * 시나리오가 bd를 함께 실행하는 동안 서버의 bd 한 번이 3초 넘게 걸린 적이 있어 기본 5초보다 넉넉히 둡니다.
+ * stress 모드에서는 TIMEOUT_SCALE배로 늘립니다.
  */
-export const SAVE_TIMEOUT = 15_000;
+export const SAVE_TIMEOUT = 15_000 * TIMEOUT_SCALE;
 
 /** 시나리오 하나가 쓰는 임시 bd workspace입니다. */
 export type BdWorkspace = {
@@ -131,6 +133,10 @@ export const test = base.extend<{ workspace: BdWorkspace }, { workspaceTemplate:
     },
     { auto: true },
   ],
+  page: async ({ page }, use, testInfo) => {
+    await throttleCpu(page, testInfo.title);
+    await use(page);
+  },
 });
 
 export { expect };

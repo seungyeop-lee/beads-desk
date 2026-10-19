@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { usesRamDisk } from "./e2e/support/ramDisk";
+import { TIMEOUT_SCALE } from "./e2e/support/stress";
 
 // bd는 명령마다 사용 통계를 쌓고, 가끔 `bd send-metrics`를 실행한 bd의 cwd에서 분리된 프로세스로 띄워 보냅니다.
 // 이 프로세스는 시나리오 workspace를 cwd로 잡은 채 실행이 끝난 뒤에도 남아, 서버를 종료해도 RAM disk를 뗄 수 없게 합니다.
@@ -22,15 +23,17 @@ export default defineConfig({
   fullyParallel: true,
   // 다른 worktree의 e2e 실행이 끝나기를 기다린 뒤 시작합니다. `pnpm run test:e2e`로 실행하면 runE2e.ts가 빌드 전에 이미 기다렸으므로 다시 기다리지 않습니다.
   // teardown은 역순이고 runE2e.ts는 Playwright가 끝난 뒤 lock을 놓으므로, 어느 쪽이든 RAM disk를 뗀 뒤 차례를 넘깁니다.
+  // stress 모드(e2e/support/stress.ts)는 실행 기록을 RAM disk 밖에 두도록 RAM disk보다 먼저 준비합니다.
   // worker마다 bd를 동시에 실행하면 디스크 I/O를 함께 쓰느라 bd 한 번이 느려집니다.
   // macOS에서는 시나리오 workspace를 RAM disk에 만들어 이 지연을 줄이고, 그만큼 worker를 늘립니다.
   // 디스크에서 worker 8개로 실행하면 저장 확인이 timeout을 넘기는 시나리오가 생깁니다.
-  globalSetup: ["./e2e/support/runQueue.ts", "./e2e/support/ramDisk.ts"],
+  globalSetup: ["./e2e/support/runQueue.ts", "./e2e/support/stress.ts", "./e2e/support/ramDisk.ts"],
   workers: usesRamDisk() ? 8 : 4,
   // bd를 동시에 실행하면 시나리오가 혼자 돌 때보다 느려져, 저장을 여러 번 확인하는 시나리오가 기본 30초를 넘길 수 있습니다.
-  timeout: 60_000,
+  // stress 모드에서는 두 timeout을 TIMEOUT_SCALE배로 늘립니다.
+  timeout: 60_000 * TIMEOUT_SCALE,
   // 같은 이유로 서버에서 목록을 받아 와야 보이는 요소가 기본 5초 안에 나타나지 않을 때가 있습니다.
-  expect: { timeout: 10_000 },
+  expect: { timeout: 10_000 * TIMEOUT_SCALE },
   retries: 0,
   forbidOnly: true,
   reporter: "list",

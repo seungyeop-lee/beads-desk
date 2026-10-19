@@ -31,6 +31,7 @@
 - bd CLI로 바꾼 내용이나 서버 알림을 기다릴 때 `page.waitForTimeout`을 쓰지 않고, 조건이 맞을 때까지 다시 확인하는 `expect(locator).toBeVisible()` 같은 assertion을 씁니다.
 - 화면에서 고친 값이 bd에 저장됐는지는 `expect.poll(() => workspace.showIssue(id)..., { timeout: SAVE_TIMEOUT })`로 확인합니다. 서버의 bd 실행 한 번이 몇 초씩 걸릴 때가 있어 기본 timeout 5초 안에 저장되지 않을 수 있습니다.
 - spec은 단독으로 실행해도 통과해야 합니다. 앞 spec이 남긴 상태에 기대지 않습니다.
+- timeout을 직접 적을 때, 화면 반영이나 저장을 기다리는 값에는 `support/stress.ts`의 `TIMEOUT_SCALE`을 곱해 stress 모드에서 함께 늘어나게 합니다. 두 변화가 동시에 일어나는지처럼 순서를 확인하는 값(`support/humanGates.ts`의 `SIMULTANEOUS_MS`)에는 곱하지 않습니다.
 
 ## 실행 비용 보고
 
@@ -47,3 +48,25 @@
 - Playwright가 마지막에 표시하는 시간에는 빌드 없이 실행했을 때 차례를 기다린 시간이 들어갑니다. 기다렸으면 `차례를 <초> 기다렸습니다.`가 따로 출력되고, `pnpm run test:e2e`는 끝에 `e2e 대기 <초>, 빌드 <초>, 시나리오 실행 <초>`를 출력합니다.
 - macOS에서는 실행하는 동안 `/Volumes/beads-desk-e2e-<실행 pid>`에 512MB RAM disk를 붙이고, 시나리오 workspace를 그 아래에 만듭니다. 실행이 끝나면 성공·실패와 관계없이 떼어 냅니다. 실행이 비정상으로 끝나 volume이 남아 있으면 다음 실행이 뗍니다. `BEADS_DESK_E2E_RAMDISK=0`을 주면 RAM disk 없이 디스크에서 실행합니다. 디스크에서는 worker들의 bd 실행이 디스크 I/O를 함께 쓰느라 느려지므로, `playwright.config.ts`가 RAM disk를 쓰지 않을 때 worker를 자동으로 4개로 줄입니다. worker 수를 따로 지정할 필요는 없습니다.
 - 시나리오가 실패하면 `packages/app/test-results`에 screenshot과 trace가 남습니다. trace는 `pnpm exec playwright show-trace <trace.zip 경로>`로 엽니다.
+
+## stress 모드로 간헐적 실패 찾기
+
+반복 실행만으로는 드러나지 않는 간헐적 실패는 bd를 늦추거나 브라우저 CPU를 제한해 찾습니다. 새 시나리오를 추가하거나 고친 뒤에도 같은 조건으로 실행해 볼 수 있습니다. 아래 환경 변수를 하나라도 주면 stress 모드가 켜지고, 주지 않으면 평소와 같이 실행됩니다.
+
+| 환경 변수                     | 값                                                           | 적용 대상                                                                                                                               |
+| ----------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `BEADS_DESK_E2E_BD_DELAY_MS`  | `<최소>-<최대>` 밀리초(예: `500-1500`). 범위 폭은 32767 이하 | 서버, fixture, git hook이 실행하는 bd가 이 범위에서 임의로 기다린 뒤 실행됩니다                                                         |
+| `BEADS_DESK_E2E_CPU_THROTTLE` | 1보다 큰 배수(예: `4`, `8`)                                  | 시나리오의 `page` fixture가 이 배수만큼 느린 CPU로 실행됩니다. `context.newPage()`로 열거나 링크로 새로 열린 page에는 적용되지 않습니다 |
+
+`packages/app`에서 아래처럼 실행합니다. spec 하나만 볼 때는 `pnpm run build` 뒤 `pnpm exec playwright test <spec 경로>`에 같은 환경 변수를 줍니다.
+
+```sh
+BEADS_DESK_E2E_BD_DELAY_MS=500-1500 BEADS_DESK_E2E_CPU_THROTTLE=8 pnpm run test:e2e
+```
+
+- stress 모드에서는 test timeout, expect timeout, `SAVE_TIMEOUT`이 모두 4배(`TIMEOUT_SCALE`)로 늘어납니다. 늦은 조회만으로는 실패하지 않으므로, 이 모드에서 나온 실패는 시나리오나 앱이 순서나 상태를 가정한 곳부터 찾습니다.
+- 실행을 시작할 때 `e2e stress 모드: bd 지연 500–1500ms, CPU 8배 제한, timeout 4배`처럼 켠 조건이 출력됩니다. 이 줄이 없으면 환경 변수가 Playwright까지 전달되지 않은 것입니다.
+- 실행이 끝나면 `e2e stress 모드 적용 결과: bd 지연 wrapper를 거친 bd 실행 서버 <횟수>번, fixture <횟수>번, git hook <횟수>번, CPU 8배 제한을 적용한 page <개수>개`가 출력됩니다. 이 줄로 조건이 실제로 적용됐는지 확인합니다.
+  - 서버나 fixture 횟수가 0이면 그쪽 bd가 wrapper를 거치지 않은 것입니다.
+  - git hook은 git 커밋을 만드는 spec(`hygiene/hygiene-page.spec.ts`, `issues/local-markdown-files.spec.ts`)을 실행했을 때만 0보다 큽니다.
+  - page 개수는 실행한 테스트 가운데 `page`를 쓰는 테스트 수와 같습니다.
