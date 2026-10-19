@@ -14,7 +14,7 @@
 
 ### 확인한 사실
 
-원인은 확인하지 못했습니다. 두 번 모두 Next.js 16.4.0에서 생겼습니다.
+원인은 확인하지 못했습니다. 세 번 모두 Next.js 16.4.0에서 생겼습니다.
 
 Next.js 서버는 브라우저가 구독할 때 보낸 `hmrVersion`이 서버의 값과 다르면 이 메시지를 보내 페이지를 다시 로드시킵니다(`node_modules/next/dist/server/dev/hot-reloader-turbopack.js`의 `turbopack-subscribe` 처리). 이 값은 연결된 모든 브라우저 탭이 함께 쓰고, 서버가 브라우저에 변경(Turbopack 업데이트나 server component 변경)을 알릴 때 올라갑니다.
 
@@ -35,6 +35,14 @@ Next.js 서버는 브라우저가 구독할 때 보낸 `hmrVersion`이 서버의
 - 자동화 탭을 `about:blank`로 옮긴 뒤에도 다시 로드 요청이 계속 들어왔습니다. 그때 연결된 크롬 탭은 `/issues?issue=vt-9kj`와 `/issues` 두 개였습니다. `vt-9kj`는 앞의 개발 서버에서만 쓴 임시 workspace의 이슈이므로, 이 탭은 그때부터 열려 있었다고 추론합니다.
 - 연결된 탭이 받은 HMR 메시지와, 그 탭을 닫으면 반복이 멈추는지는 확인하지 못했습니다.
 - `.next/dev`를 복사해 둔 뒤 지우고 개발 서버를 다시 시작하자 반복이 멈췄습니다.
+
+#### 2026-10-20 오전 8시 40분 무렵
+
+- main에 화면 파일을 바꾼 커밋 세 개를 merge한 뒤 `pnpm playground`로 개발 서버를 시작했습니다. 서버는 이전과 다른 포트에 떴고, 연결된 브라우저는 Playwright headless chromium 탭 하나뿐이었습니다. 사람이 연 크롬 탭이나 이전 개발 서버 때부터 열려 있던 탭은 없었으므로, 이 문제는 그런 탭이 없어도 생깁니다. 앞의 두 번에 있던 그런 탭이 원인과 관련 있는지는 여전히 모릅니다.
+- 그 탭이 `/epics`를 처음 열자마자 다시 로드가 30초 동안 20번 정도 반복됐고, 서버 로그에는 `GET /epics`와 `✓ Compiled in 4ms`가 번갈아 찍혔습니다.
+- 새 headless 탭을 열어 `/_next/hmr` 메시지를 6초 동안 받자 `{"type":"reloadPage","data":"HMR hash mismatch"}`가 2번 왔고, 10월 14일 오후와 같은 chunk(`static/chunks/packages_app_1anvha4rlo79g._.js`)에 대한 Turbopack `restart` 업데이트가 반복됐습니다. 그동안 `hmrVersion`은 320에서 321로 올랐습니다.
+- `sync` 메시지의 `versionInfo`는 설치된 버전을 16.4.0, 기대 버전을 16.4.2(`stale-patch`)로 알렸습니다. 16.4.2에서도 생기는지는 확인하지 못했습니다.
+- 개발 서버를 끄고 `.next/dev`를 복사해 둔 뒤 지운 다음, 테스트 데이터 workspace는 그대로 둔 채(`--keep`) `pnpm playground`를 다시 시작했습니다. 같은 방법으로 받은 메시지에는 `reloadPage`가 없었습니다.
 
 `experimental.turbopackFileSystemCacheForDev: false`로 개발 서버의 파일 cache를 끄는 방법도 있지만 쓰지 않았습니다. 복사해 둔 cache로 재현되지 않아 cache가 원인이라는 증거가 없고, cache를 끄면 개발 서버를 다시 시작할 때마다 처음부터 컴파일합니다.
 
