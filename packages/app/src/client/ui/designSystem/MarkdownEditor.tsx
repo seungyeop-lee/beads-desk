@@ -78,7 +78,7 @@ export function MarkdownEditor({
         { table },
         { toolbar },
         { languages },
-        { codeHighlighting },
+        { codeHighlighting, codeSelectionTheme },
         { editorViewCtx, editorViewOptionsCtx, serializerCtx },
         { $prose, callCommand },
         { Plugin },
@@ -110,7 +110,7 @@ export function MarkdownEditor({
         .addFeature(placeholderFeature, { text: placeholder ?? "" })
         .addFeature(codeMirror, {
           languages,
-          theme: codeHighlighting,
+          theme: [codeHighlighting, codeSelectionTheme],
           renderPreview: preview.renderPreview,
           previewLabel: labels.preview,
           previewLoading: labels.previewLoading,

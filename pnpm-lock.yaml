@@ -233,6 +233,9 @@ importers:
       '@codemirror/language-data':
         specifier: ^6.5.2
         version: 6.5.2
+      '@codemirror/view':
+        specifier: ^6.43.14
+        version: 6.43.14
       '@lezer/highlight':
         specifier: ^1.2.5
         version: 1.2.5

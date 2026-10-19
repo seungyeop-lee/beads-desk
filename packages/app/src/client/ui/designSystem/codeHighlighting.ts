@@ -1,4 +1,5 @@
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 
 /**
@@ -32,3 +33,15 @@ export const codeHighlighting = syntaxHighlighting(
     { tag: tags.invalid, color: "var(--code-invalid)" },
   ]),
 );
+
+/**
+ * 코드 블록에서 커서가 있는 줄과 고른 글자의 바탕입니다. CodeMirror 기본 테마는 dark theme 확장이 없으면 밝은 바탕에 맞춘 색을 쓰므로,
+ * 색을 markdownEditor.css의 --code-* 변수로 바꿉니다. EditorView.theme의 규칙은 기본 테마의 같은 규칙보다 우선합니다.
+ */
+export const codeSelectionTheme = EditorView.theme({
+  ".cm-activeLine": { backgroundColor: "var(--code-active-line)" },
+  ".cm-selectionBackground": { background: "var(--code-selection-unfocused)" },
+  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
+    background: "var(--code-selection)",
+  },
+});

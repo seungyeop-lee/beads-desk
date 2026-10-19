@@ -94,6 +94,17 @@
   --code-invalid: light-dark(#f00, #ff8080);
 }
 
+/*
+ * 코드 블록에서 커서가 있는 줄과 고른 글자의 바탕색입니다(codeHighlighting.ts의 codeSelectionTheme). 밝은 테마 값은 CodeMirror 기본 테마의 색 그대로입니다.
+ * 어두운 테마 값은 밝은 테마만큼 바탕과 구분되면서도, 그 위의 강조 토큰이 4.5:1 이상 대비되는 색입니다.
+ * 고른 글자의 바탕은 그 줄의 현재 줄 바탕 아래에 깔리므로, 현재 줄 바탕은 반투명이어야 합니다.
+ */
+.markdown-editor {
+  --code-active-line: light-dark(#cceeff44, #ede9e30d);
+  --code-selection: light-dark(#d7d4f0, #2d2b44);
+  --code-selection-unfocused: light-dark(#d9d9d9, #34312d);
+}
+
 .markdown-editor .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
   font-weight: 600;
 }

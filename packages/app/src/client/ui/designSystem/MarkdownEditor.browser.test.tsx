@@ -1,3 +1,4 @@
+import { EditorView } from "@codemirror/view";
 import { afterEach, expect, test } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -135,6 +136,41 @@ test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고, 코
   expect(code.isConnected).toBe(true);
 });
 
+test("어두운 테마에서도 코드 블록의 현재 줄, 고른 글자, 괄호 짝 표시는 밝은 테마만큼 바탕과 구분되고, 그 위의 강조 토큰은 4.5:1 이상 대비된다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value={TYPESCRIPT} label="설명" />
+    </LocaleProvider>,
+  );
+  await expect.poll(() => tokenColor(screen.container, "return")).not.toBe("");
+  const view = EditorView.findFromDOM(screen.container.querySelector<HTMLElement>(".cm-editor")!)!;
+  const afterBracket = view.state.doc.toString().indexOf("create(") + "create(".length;
+  view.focus();
+
+  const light = await codeIndicators(view, afterBracket);
+  // 밝은 테마는 CodeMirror 기본 테마의 색 그대로입니다.
+  expect(light.colors).toEqual({
+    activeLine: "rgba(204, 238, 255, 0.267)",
+    selection: "rgb(215, 212, 240)",
+    matchingBracket: "rgba(50, 140, 130, 0.32)",
+  });
+
+  document.documentElement.dataset.theme = "desk-dark";
+  const dark = await codeIndicators(view, afterBracket);
+  expect(dark.activeLine).toBeGreaterThanOrEqual(light.activeLine);
+  expect(dark.selection).toBeGreaterThanOrEqual(light.selection);
+  expect(dark.matchingBracket).toBeGreaterThanOrEqual(light.matchingBracket);
+  const tokens = view.dom.querySelectorAll<HTMLElement>(".cm-activeLine span");
+  expect(tokens.length).toBeGreaterThan(5);
+  for (const token of tokens) {
+    const color = getComputedStyle(token).color;
+    expect(
+      contrast(color, dark.selectedLine),
+      `${token.textContent} ${color}`,
+    ).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
 test("그림의 한글 라벨은 노드 상자 안에 들어가고, 지원하지 않는 종류의 그림은 코드로 보인다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
@@ -169,6 +205,48 @@ function selectStartOf(paragraph: Element) {
 
 function nextFrame() {
   return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+/**
+ * 코드 블록의 커서를 at에 두어 현재 줄과 괄호 짝 표시를, at 앞 열 글자를 골라 선택 영역을 그린 뒤 각 바탕색을 읽습니다.
+ * 표시마다 바로 아래 바탕과의 대비율을 돌려줍니다. 현재 줄 바탕은 반투명이라 선택 영역 위에 겹쳐 칠합니다.
+ */
+async function codeIndicators(view: EditorView, at: number) {
+  const background = getComputedStyle(view.dom).backgroundColor;
+  view.dispatch({ selection: { anchor: at } });
+  await expect.poll(() => view.dom.querySelector(".cm-matchingBracket")).not.toBeNull();
+  const activeLine = getComputedStyle(view.dom.querySelector(".cm-activeLine")!).backgroundColor;
+  const matchingBracket = getComputedStyle(
+    view.dom.querySelector(".cm-matchingBracket")!,
+  ).backgroundColor;
+  view.dispatch({ selection: { anchor: at - 10, head: at } });
+  await expect
+    .poll(() => view.dom.querySelector(".cm-selectionLayer .cm-selectionBackground"))
+    .not.toBeNull();
+  const selection = getComputedStyle(
+    view.dom.querySelector(".cm-selectionLayer .cm-selectionBackground")!,
+  ).backgroundColor;
+
+  const line = paint(background, activeLine);
+  const selectedLine = paint(background, selection, activeLine);
+  return {
+    colors: { activeLine, selection, matchingBracket },
+    selectedLine,
+    activeLine: contrast(line, background),
+    selection: contrast(selectedLine, line),
+    matchingBracket: contrast(paint(background, activeLine, matchingBracket), line),
+  };
+}
+
+/** 색을 차례로 겹쳐 칠한 결과입니다. 반투명한 표시 색을 그 아래 바탕과 합친 색을 구할 때 씁니다. */
+function paint(...colors: string[]) {
+  const context = document.createElement("canvas").getContext("2d")!;
+  for (const color of colors) {
+    context.fillStyle = color;
+    context.fillRect(0, 0, 1, 1);
+  }
+  const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 /** 그림이 그려진 블록마다 첫 노드의 채움 색을 돌려줍니다. */
