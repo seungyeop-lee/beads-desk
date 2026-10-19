@@ -99,9 +99,16 @@ function git(cwd: string, ...args: string[]): void {
   if (result.status !== 0) throw new Error(result.stderr);
 }
 
-/** `.beads`가 있는 git 저장소의 worktree를 만듭니다. worktree에는 `.beads`가 없습니다. */
-async function gitWorktree(name: string): Promise<string> {
-  const main = await workspace(`${name}-main`);
+/** `.beads`에 redirect 파일만 두어, bd가 redirect에 적힌 `.beads`의 DB를 쓰게 하는 디렉터리를 만듭니다. */
+async function redirectedWorkspace(name: string, redirect: string): Promise<string> {
+  const dir = join(root, name);
+  await mkdir(join(dir, ".beads"), { recursive: true });
+  await writeFile(join(dir, ".beads", "redirect"), `${redirect}\n`);
+  return dir;
+}
+
+/** main 디렉터리를 git 저장소로 만들고 그 worktree를 만듭니다. worktree에는 `.beads`가 없습니다. */
+async function gitWorktree(main: string, name: string): Promise<string> {
   const worktree = join(root, name);
   git(main, "init", "--quiet");
   git(
@@ -285,7 +292,7 @@ test("설정이나 DB 파일이 없는 .beads만 있는 디렉터리에서는 �
 
 test("git worktree에서 시작하면 worktree 최상위 디렉터리로 띄우고, restart도 이어받는다", async () => {
   const commands = daemon();
-  const worktree = await gitWorktree("worktree");
+  const worktree = await gitWorktree(await workspace("worktree-main"), "worktree");
   const nested = join(worktree, "packages", "app");
   await mkdir(nested, { recursive: true });
 
@@ -295,6 +302,70 @@ test("git worktree에서 시작하면 worktree 최상위 디렉터리로 띄우�
 
   expect(await workspaces()).toEqual({ current: worktree, workspaces: [worktree] });
   await commands.stop();
+});
+
+test.each([
+  ["절대 경로", (hub: string) => join(hub, ".beads")],
+  // bd는 상대 경로를 `.beads`가 아니라 그 `.beads`를 둔 디렉터리 기준으로 해석합니다.
+  ["상대 경로", () => "../hub/.beads"],
+])(
+  ".beads에 %s redirect만 있는 git 저장소에서 시작하면 redirect 대상이 아니라 그 저장소로 띄운다",
+  async (_, redirect) => {
+    const commands = daemon();
+    const hub = await workspace("hub");
+    const linked = await redirectedWorkspace("linked", redirect(hub));
+    git(linked, "init", "--quiet");
+
+    expect(await commands.start({ cwd: linked, open: false })).toBe(0);
+
+    expect(printed).toContain(`workspace: ${linked}`);
+    expect(await workspaces()).toEqual({ current: linked, workspaces: [linked] });
+    await commands.stop();
+  },
+);
+
+test("redirect만 있는 git 저장소의 worktree에서 시작하면 worktree 최상위 디렉터리로 띄운다", async () => {
+  const commands = daemon();
+  const hub = await workspace("hub");
+  const worktree = await gitWorktree(
+    await redirectedWorkspace("linked", join(hub, ".beads")),
+    "worktree",
+  );
+
+  expect(await commands.start({ cwd: worktree, open: false })).toBe(0);
+
+  expect(await workspaces()).toEqual({ current: worktree, workspaces: [worktree] });
+  await commands.stop();
+});
+
+test.each([
+  ["redirect 대상 디렉터리가 없으면", () => join(root, "missing", ".beads")],
+  [
+    "redirect 대상에 설정이나 DB 파일이 없으면",
+    async () => {
+      const target = join(root, "empty", ".beads");
+      await mkdir(target, { recursive: true });
+      return target;
+    },
+  ],
+  // bd는 redirect가 가리키는 `.beads`의 redirect를 다시 따라가지 않습니다.
+  [
+    "redirect 대상에도 redirect만 있으면",
+    async () => {
+      const hub = await workspace("hub");
+      const middle = await redirectedWorkspace("middle", join(hub, ".beads"));
+      return join(middle, ".beads");
+    },
+  ],
+])("%s 서버를 띄우지 않는다", async (_, redirect) => {
+  const commands = daemon();
+  const linked = await redirectedWorkspace("linked", await redirect());
+
+  await expect(commands.start({ cwd: linked, open: false })).rejects.toThrow(
+    `No beads workspace found: ${linked}`,
+  );
+
+  expect(await startedPids()).toEqual([]);
 });
 
 test("하위 디렉터리에서 시작하면 상위의 beads workspace로 띄운다", async () => {

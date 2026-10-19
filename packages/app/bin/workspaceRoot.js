@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 // launcher와 서버가 함께 쓰는 workspace 탐색 규칙입니다. launcher는 서버 bundle을 불러올 수 없으므로
@@ -11,6 +11,8 @@ import { dirname, join, resolve } from "node:path";
  * bd가 workspace를 찾는 방식을 따릅니다. path부터 git 저장소 최상위까지(git 밖이면 파일 시스템 루트까지) 올라가며 `.beads`를 찾고,
  * git worktree라 찾지 못했으면 bd처럼 main 저장소의 `.beads`를 씁니다. 이때 workspace는 worktree 최상위 디렉터리로 두어,
  * bd 실행과 git을 읽는 기능이 그 worktree의 브랜치를 기준으로 동작하게 합니다.
+ * `.beads/redirect`로 다른 `.beads`의 DB를 쓰는 디렉터리도 workspace는 redirect 대상이 아니라 redirect를 둔 디렉터리입니다.
+ * bd는 그 디렉터리에서 실행해도 redirect를 따라가고, git을 읽는 기능은 그 디렉터리의 저장소를 기준으로 동작해야 합니다.
  * symlink를 거친 경로와 실제 경로가 다른 workspace로 등록되지 않게 실제 경로를 돌려줍니다.
  *
  * @param {string} path
@@ -28,14 +30,34 @@ export function findWorkspaceRoot(path) {
 }
 
 // bd는 설정이나 DB 파일이 있는 `.beads`만 workspace로 봅니다. bd가 전역 상태를 두는 `~/.beads`는 workspace가 아닙니다.
+// `.beads`에 redirect만 있으면 redirect가 가리키는 `.beads`에 설정이나 DB 파일이 있어야 합니다.
+// 깨진 redirect를 workspace로 받으면 화면에는 bd 오류만 보이므로 받지 않습니다.
 function hasBeadsProject(dir) {
   const beads = join(dir, ".beads");
-  return (
-    isDirectory(beads) &&
-    readdirSync(beads).some(
-      (name) => name === "metadata.json" || name === "config.yaml" || name.endsWith(".db"),
-    )
+  if (!isDirectory(beads)) return false;
+  const target = redirectTarget(dir);
+  return hasBeadsData(beads) || (target !== null && isDirectory(target) && hasBeadsData(target));
+}
+
+function hasBeadsData(beads) {
+  return readdirSync(beads).some(
+    (name) => name === "metadata.json" || name === "config.yaml" || name.endsWith(".db"),
   );
+}
+
+/**
+ * dir의 `.beads/redirect`가 가리키는 `.beads` 경로를 돌려줍니다. redirect 파일이 없거나 경로가 적혀 있지 않으면 null을 돌려줍니다.
+ * bd 1.3.1처럼 빈 줄과 `#`으로 시작하는 줄을 건너뛰고, 상대 경로는 `.beads`가 아니라 dir을 기준으로 해석합니다.
+ * 대상의 redirect는 bd도 따라가지 않으므로 한 번만 따라갑니다.
+ */
+function redirectTarget(dir) {
+  const file = join(dir, ".beads", "redirect");
+  if (!existsSync(file) || !statSync(file).isFile()) return null;
+  const target = readFileSync(file, "utf8")
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line !== "" && !line.startsWith("#"));
+  return target ? resolve(dir, target) : null;
 }
 
 /**

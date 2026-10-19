@@ -4,7 +4,7 @@
 
 `bd-desk start`(`bd-desk.js`, 명령을 생략해도 같음)는 패키지에 포함된 `.next` 빌드를 대상으로 `next start`를 background process group으로 실행합니다. 사용자가 명령을 실행한 디렉터리는 `BEADS_DESK_WORKSPACE` 환경 변수로 서버에 전달됩니다.
 
-- workspace는 bd와 같은 기준으로 찾습니다. 지금 디렉터리부터 git 저장소 최상위까지 설정이나 DB 파일이 있는 `.beads`를 찾고, git worktree라 찾지 못했으면 main 저장소의 `.beads`를 확인해 worktree 최상위 디렉터리를 workspace로 씁니다. 이 규칙은 `workspaceRoot.js` 한 곳에 있고, launcher와 서버가 함께 import합니다.
+- workspace는 bd와 같은 기준으로 찾습니다. 지금 디렉터리부터 git 저장소 최상위까지 설정이나 DB 파일이 있는 `.beads`를 찾고, git worktree라 찾지 못했으면 main 저장소의 `.beads`를 확인해 worktree 최상위 디렉터리를 workspace로 씁니다. `.beads`에 `redirect` 파일만 있으면 그 파일이 가리키는 `.beads`에 설정이나 DB 파일이 있을 때만 인정하고, workspace는 redirect 대상이 아니라 redirect를 둔 디렉터리로 씁니다. 이 규칙은 `workspaceRoot.js` 한 곳에 있고, launcher와 서버가 함께 import합니다.
 - launcher는 서버 bundle을 불러올 수 없으므로, 둘이 같은 규칙을 써야 하는 코드는 이 디렉터리에 plain JS로 두고 패키지 `files`에도 넣습니다. launcher 실행 파일과 상대 경로 import로 연결된 파일이 `package.json`의 `files`에 포함됐는지는 `packageFiles.test.ts`가 검사하며, 누락되면 `pnpm run check`가 실패합니다. 서버에서 import할 수 있는 이 디렉터리의 파일은 `packages/app/src/server/architecture.test.ts`의 `LAUNCHER_MODULES`에 등록합니다.
 - workspace를 찾지 못하면 서버를 띄우거나 바꾸지 않고 종료 코드 1로 끝납니다.
 - 서버가 이미 실행 중이면 새로 띄우지 않고, `POST /api/workspaces`로 지금 디렉터리를 등록해 현재 workspace로 바꿉니다.
