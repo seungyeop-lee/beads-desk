@@ -49,7 +49,7 @@ test("제목으로 시작하는 본문은 읽을 때도 편집할 때도 글자�
   }
 });
 
-test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고 모든 그림을 새 테마로 다시 그린다", async () => {
+test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고, 모든 그림이 다시 그려지지 않은 채 새 테마의 색을 따른다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor value={`${DIAGRAM}\n\n${DIAGRAM}\n\n저장 전 문단`} label="설명" />
@@ -60,6 +60,7 @@ test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고 모�
   await userEvent.keyboard("{End} 고침");
   await expect.poll(() => diagramColors(screen.container)).toHaveLength(2);
   const light = diagramColors(screen.container);
+  const diagrams = Array.from(screen.container.querySelectorAll(".preview svg"));
 
   document.documentElement.dataset.theme = "desk-dark";
   await expect
@@ -70,6 +71,32 @@ test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고 모�
   document.documentElement.removeAttribute("data-theme");
   await expect.poll(() => diagramColors(screen.container)).toEqual(light);
   await expect.element(editor.getByText("저장 전 문단 고침")).toBeVisible();
+  expect(diagrams.every((diagram) => diagram.isConnected)).toBe(true);
+});
+
+test("그림의 한글 라벨은 노드 상자 안에 들어가고, 지원하지 않는 종류의 그림은 코드로 보인다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        readOnly
+        value={`\`\`\`mermaid\nzenuml\n  사용자->서버.요청()\n\`\`\`\n\n${DIAGRAM}`}
+      />
+    </LocaleProvider>,
+  );
+  await expect.poll(() => diagramColors(screen.container)).toHaveLength(1);
+  const [unsupported, diagram] = screen.container.querySelectorAll(".milkdown-code-block");
+
+  expect(unsupported!.querySelector(".preview-panel")).toBeNull();
+  await expect.element(unsupported!.querySelector<HTMLElement>(".cm-content")).toBeVisible();
+  const nodes = diagram!.querySelectorAll(".preview svg .pele-node");
+  expect(nodes).toHaveLength(2);
+  for (const node of nodes) {
+    const box = node.querySelector("rect")!.getBoundingClientRect();
+    const label = node.querySelector("text")!.getBoundingClientRect();
+    expect(label.width).toBeGreaterThan(0);
+    expect(label.left).toBeGreaterThanOrEqual(box.left);
+    expect(label.right).toBeLessThanOrEqual(box.right);
+  }
 });
 
 /** 사용자가 끌어서 고를 때처럼 문단 앞부분을 고르고, 편집기가 그 선택을 바로 읽게 selectionchange를 보냅니다. */
@@ -86,7 +113,7 @@ function nextFrame() {
 /** 그림이 그려진 블록마다 첫 노드의 채움 색을 돌려줍니다. */
 function diagramColors(container: HTMLElement) {
   return Array.from(container.querySelectorAll(".milkdown-code-block .preview svg"), (svg) => {
-    const node = svg.querySelector(".node rect");
+    const node = svg.querySelector(".pele-node rect");
     return node ? getComputedStyle(node).fill : "";
   });
 }

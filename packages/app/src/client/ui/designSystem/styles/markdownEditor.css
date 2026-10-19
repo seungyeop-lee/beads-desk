@@ -114,6 +114,25 @@
   fill: var(--color-base-content);
 }
 
+/*
+ * Mermaid 그림(pele)의 색과 글꼴입니다. 그림은 이 변수를 참조하므로, 테마가 바뀌면 다시 그리지 않아도 색이 따라 바뀝니다.
+ * pele는 간선 라벨의 바탕을 --pele-bg로 칠하므로, 코드 블록 바탕(--crepe-color-surface)과 같은 base-200으로 둡니다.
+ * mermaidPreview.ts가 편집기 root에서 --pele-font를 읽어 글자 폭을 재므로, 변수는 root를 감싸는 .markdown-editor에 둡니다.
+ */
+.markdown-editor {
+  --pele-bg: var(--color-base-200);
+  --pele-fg: var(--color-base-content);
+  --pele-muted: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  --pele-line: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+  --pele-surface: var(--color-base-100);
+  --pele-surface-alt: var(--color-base-300);
+  --pele-border: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+  --pele-accent: var(--color-base-content);
+  --pele-critical: var(--color-error);
+  --pele-font: var(--font-sans);
+  --pele-font-mono: var(--font-mono);
+}
+
 .markdown-editor .milkdown .milkdown-code-block .preview {
   overflow-x: auto;
 }

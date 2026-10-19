@@ -14,7 +14,7 @@ async function changeCode(block: Locator, content: string) {
 
 async function diagramColor(block: Locator) {
   return block
-    .locator("svg .node rect")
+    .locator("svg .pele-node rect")
     .first()
     .evaluate((node) => getComputedStyle(node).fill);
 }
@@ -23,12 +23,14 @@ test("본문·댓글·활동의 그림에 한글 노드와 간선 글자가 보�
   page,
   workspace,
 }, info) => {
+  // 접근성 제목은 SVG 안에 id로 들어가므로, 같은 제목의 그림을 여러 개 두어 id 충돌을 확인합니다.
+  const titled = (code: string) => markdown(code.replace("\n", "\n  accTitle: 처리 흐름\n"));
   const id = await workspace.createIssue(
     "Mermaid 읽기",
     "--description",
-    `${markdown()}\n\n${markdown('flowchart LR\n A["시작<br/>준비"] -->|처리| B[완료]')}`,
+    `${titled(DIAGRAM)}\n\n${titled('flowchart LR\n A["시작<br/>준비"] -->|처리| B[완료]')}`,
   );
-  await workspace.bd("comments", "add", id, markdown());
+  await workspace.bd("comments", "add", id, titled(DIAGRAM));
   await page.goto(`/issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   const blocks = dialog.locator(".milkdown-code-block");
@@ -38,23 +40,13 @@ test("본문·댓글·활동의 그림에 한글 노드와 간선 글자가 보�
     await expect(block.locator(".preview svg")).toContainText("시작");
     await expect(block.locator(".preview svg")).toContainText("처리");
     await expect(block.locator(".preview svg")).toContainText("완료");
-    const labels = await block.locator(".preview svg foreignObject").evaluateAll((nodes) =>
-      nodes.map((node) => ({
-        text: node.textContent,
-        width: node.getBoundingClientRect().width,
-        height: node.getBoundingClientRect().height,
-      })),
-    );
-    expect(labels.length).toBeGreaterThan(0);
-    expect(labels.every((label) => label.text && label.width > 0 && label.height > 0)).toBe(true);
   }
   const diagrams = blocks.locator("[data-mermaid-preview] > svg");
   await expect(diagrams).toHaveCount(3);
   const ids = await diagrams.evaluateAll((diagrams) =>
-    diagrams
-      .flatMap((diagram) => [diagram, ...diagram.querySelectorAll("[id]")])
-      .map((node) => node.id),
+    diagrams.flatMap((diagram) => Array.from(diagram.querySelectorAll("[id]"), (node) => node.id)),
   );
+  expect(ids).toHaveLength(3);
   expect(new Set(ids).size).toBe(ids.length);
   await page.screenshot({ path: info.outputPath("mermaid-readonly-light.png"), fullPage: true });
   await dialog.getByRole("tab", { name: "활동" }).click();
@@ -84,7 +76,6 @@ test("편집 미리보기는 마지막 입력만 남기고 문법 오류·언어
   await changeCode(block, "flowchart LR\n A[");
   await expect(block.locator(".preview-panel")).toHaveCount(0);
   await expect(block.locator(".cm-content")).toBeVisible();
-  await expect(page.locator("body > div > svg")).toHaveCount(0);
   await changeCode(block, DIAGRAM);
   await expect(block.locator(".preview svg")).toContainText("시작");
   await page.screenshot({ path: info.outputPath("mermaid-editor.png"), fullPage: true });
@@ -104,7 +95,7 @@ test("편집 미리보기는 마지막 입력만 남기고 문법 오류·언어
   await expect(dialog.locator(".preview-panel")).toHaveCount(0);
 });
 
-test("일반 코드에서는 Mermaid 모듈을 받지 않고 Mermaid 모듈 로드 실패 시 코드가 보인다", async ({
+test("일반 코드에서는 pele 모듈을 받지 않고 pele 모듈 로드 실패 시 코드가 보인다", async ({
   page,
   workspace,
 }) => {
@@ -112,7 +103,7 @@ test("일반 코드에서는 Mermaid 모듈을 받지 않고 Mermaid 모듈 로�
     plain: { title: "일반 코드", description: "```ts\nconst value = 1;\n```" },
     mermaid: { title: "모듈 로드 실패", description: markdown() },
   });
-  const chunks = await mermaidChunks();
+  const chunks = await peleChunks();
   const scripts = new Set<string>();
   page.on("request", (request) => {
     if (request.resourceType() === "script") scripts.add(request.url());
@@ -168,7 +159,7 @@ test("Human gate는 같은 그림을 보여 주고 설정이나 시스템에서 
   await expect(response).toHaveText("저장하지 않은 응답");
 });
 
-async function mermaidChunks() {
+async function peleChunks() {
   const directory = join(process.cwd(), ".next/static/chunks");
   const files = await readdir(directory);
   const sources = await Promise.all(
@@ -177,7 +168,7 @@ async function mermaidChunks() {
       .map(async (file) => ({ file, source: await readFile(join(directory, file), "utf8") })),
   );
   const chunks = sources
-    .filter(({ source }) => source.includes("mermaidAPI"))
+    .filter(({ source }) => source.includes("No diagram type detected"))
     .map(({ file }) => `/_next/static/chunks/${file}`);
   expect(chunks.length).toBeGreaterThan(0);
   return new Set(chunks);
