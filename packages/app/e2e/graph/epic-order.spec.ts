@@ -8,10 +8,10 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   const { epic, third } = await workspace.createIssues(
     {
       epic: { title: "순서 에픽", type: "epic" },
-      feature: { title: "순서 기능", type: "feature", parent: "epic" },
+      parent: { title: "순서 상위", parent: "epic" },
       first: { title: "순서 첫째", parent: "epic", status: "closed" },
       second: { title: "순서 둘째", parent: "epic" },
-      third: { title: "순서 셋째", parent: "feature" },
+      third: { title: "순서 셋째", parent: "parent" },
     },
     [
       ["second", "first"],

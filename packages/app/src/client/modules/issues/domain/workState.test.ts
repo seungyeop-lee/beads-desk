@@ -140,30 +140,30 @@ test("바로 작업 가능이 아닌 묶음은 대기 수와 관계없이 우선
 test("이슈 목록의 묶음 안에서는 우선순위보다 상위 관계가 앞서, 하위 이슈가 상위 이슈 바로 아래에 온다", () => {
   const groups = issueListGroups(
     [
-      issue("demo-1", { id: "feature", issueType: "feature", ready: true, priority: 2 }),
+      issue("demo-1", { id: "parent", ready: true, priority: 2 }),
       issue("demo-1", { id: "other", ready: true, priority: 1 }),
-      issue("demo-1", { id: "task", ready: true, priority: 0, parent: "feature" }),
+      issue("demo-1", { id: "task", ready: true, priority: 0, parent: "parent" }),
     ],
     NO_WAITERS,
   );
 
   expect(groups.map(({ state, issues }) => [state, issues.map(({ id }) => id)])).toEqual([
-    ["ready", ["other", "feature", "task"]],
+    ["ready", ["other", "parent", "task"]],
   ]);
 });
 
 test("이슈 목록에서 상위와 작업 상태가 다른 하위 이슈는 자기 묶음에 남는다", () => {
   const groups = issueListGroups(
     [
-      issue("demo-1", { id: "feature", issueType: "feature", ready: true }),
-      issue("demo-1", { id: "doing", status: "in_progress", parent: "feature" }),
+      issue("demo-1", { id: "parent", ready: true }),
+      issue("demo-1", { id: "doing", status: "in_progress", parent: "parent" }),
     ],
     NO_WAITERS,
   );
 
   expect(groups.map(({ state, issues }) => [state, issues.map(({ id }) => id)])).toEqual([
     ["in_progress", ["doing"]],
-    ["ready", ["feature"]],
+    ["ready", ["parent"]],
   ]);
 });
 

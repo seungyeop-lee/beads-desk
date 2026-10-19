@@ -15,7 +15,7 @@ export type EpicPlan = {
   order: ExecutionOrder;
   /** 에픽 밖에서 후손 이슈를 직접 막는 이슈의 id입니다. 이 이슈를 막는 이슈는 따라가지 않습니다. */
   outside: ReadonlySet<string>;
-  /** 그린 blocks 간선이 없는 후손 중 feature·epic을 뺀 이슈입니다. 닫히지 않은 이슈를 앞에 둡니다. */
+  /** 그린 blocks 간선이 없는 후손 중 epic을 뺀 이슈입니다. 닫히지 않은 이슈를 앞에 둡니다. */
   unordered: Issue[];
   stages: StageProgress;
 };
@@ -32,7 +32,7 @@ export function epicPlan(data: GraphData, epicId: string): EpicPlan {
     order,
     outside: new Set(outside.map((issue) => issue.id)),
     unordered: order.unlinked
-      .filter(({ issueType }) => issueType !== "feature" && issueType !== "epic")
+      .filter(({ issueType }) => issueType !== "epic")
       .toSorted(
         (a, b) =>
           Number(a.status === "closed") - Number(b.status === "closed") ||

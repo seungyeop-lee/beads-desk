@@ -51,20 +51,20 @@ describe("byPriorityThenCreated", () => {
 describe("nestUnderParents", () => {
   test("하위 이슈를 상위 이슈 바로 아래로 옮기고, 하위끼리와 손자 이슈도 정렬한 순서를 따른다", () => {
     const sorted = [
-      issue("feature-a", { createdAt: 1 }),
-      issue("feature-b", { createdAt: 2 }),
-      issue("task-b1", { parent: "feature-b", priority: 0, createdAt: 3 }),
-      issue("task-a2", { parent: "feature-a", createdAt: 4 }),
+      issue("parent-a", { createdAt: 1 }),
+      issue("parent-b", { createdAt: 2 }),
+      issue("task-b1", { parent: "parent-b", priority: 0, createdAt: 3 }),
+      issue("task-a2", { parent: "parent-a", createdAt: 4 }),
       issue("task-a1-sub", { parent: "task-a1", createdAt: 5 }),
-      issue("task-a1", { parent: "feature-a", createdAt: 6 }),
+      issue("task-a1", { parent: "parent-a", createdAt: 6 }),
     ];
 
     expect(ids(nestUnderParents(sorted))).toEqual([
-      "feature-a",
+      "parent-a",
       "task-a2",
       "task-a1",
       "task-a1-sub",
-      "feature-b",
+      "parent-b",
       "task-b1",
     ]);
   });
@@ -72,21 +72,21 @@ describe("nestUnderParents", () => {
   test("상위 이슈가 목록에 없는 하위 이슈는 정렬한 자리에 둔다", () => {
     const sorted = [
       issue("orphan-early", { parent: "elsewhere" }),
-      issue("feature"),
+      issue("parent"),
       issue("orphan-late", { parent: "elsewhere" }),
     ];
 
-    expect(ids(nestUnderParents(sorted))).toEqual(["orphan-early", "feature", "orphan-late"]);
+    expect(ids(nestUnderParents(sorted))).toEqual(["orphan-early", "parent", "orphan-late"]);
   });
 
   test("닫힘처럼 최근에 닫은 순으로 정렬한 목록도 상위 아래에서 그 순서를 지킨다", () => {
     const sorted = [
-      issue("task-new", { status: "closed", parent: "feature", closedAt: 30 }),
-      issue("feature", { status: "closed", closedAt: 20 }),
-      issue("task-old", { status: "closed", parent: "feature", closedAt: 10 }),
+      issue("task-new", { status: "closed", parent: "parent", closedAt: 30 }),
+      issue("parent", { status: "closed", closedAt: 20 }),
+      issue("task-old", { status: "closed", parent: "parent", closedAt: 10 }),
     ].sort(byClosedDesc);
 
-    expect(ids(nestUnderParents(sorted))).toEqual(["feature", "task-new", "task-old"]);
+    expect(ids(nestUnderParents(sorted))).toEqual(["parent", "task-new", "task-old"]);
   });
 
   test("상위 관계가 순환해도 모든 이슈를 한 번씩 돌려준다", () => {
@@ -102,15 +102,15 @@ describe("issueTree", () => {
 
   test("상위가 목록에 없는 행은 깊이 0이고, 하위는 한 단계마다 깊이가 1씩 늘며, 바로 아래 하위 행만 센다", () => {
     const sorted = [
-      issue("feature", { parent: "epic" }),
-      issue("task", { parent: "feature" }),
+      issue("parent", { parent: "epic" }),
+      issue("task", { parent: "parent" }),
       issue("sub", { parent: "task" }),
-      issue("task-2", { parent: "feature" }),
+      issue("task-2", { parent: "parent" }),
       issue("loose", { parent: "epic" }),
     ];
 
     expect(tree(issueTree(sorted))).toEqual([
-      ["feature", 0, 2],
+      ["parent", 0, 2],
       ["task", 1, 1],
       ["sub", 2, 0],
       ["task-2", 1, 0],
@@ -131,8 +131,8 @@ describe("issueTree", () => {
 
 describe("visibleTreeRows", () => {
   const rows = issueTree([
-    issue("feature"),
-    issue("task", { parent: "feature" }),
+    issue("parent"),
+    issue("task", { parent: "parent" }),
     issue("sub", { parent: "task" }),
     issue("loose"),
   ]);
@@ -140,13 +140,13 @@ describe("visibleTreeRows", () => {
     visibleTreeRows(rows, new Set(expanded)).map((row) => row.issue.id);
 
   test("접은 행 아래의 후손 행은 모두 숨기고, 접은 행 다음의 같은 깊이 행부터 다시 보인다", () => {
-    expect(visible([])).toEqual(["feature", "loose"]);
-    expect(visible(["task"])).toEqual(["feature", "loose"]);
+    expect(visible([])).toEqual(["parent", "loose"]);
+    expect(visible(["task"])).toEqual(["parent", "loose"]);
   });
 
   test("펼친 행의 하위 행은 보이고, 그 하위 행을 접었으면 그 아래는 숨긴다", () => {
-    expect(visible(["feature"])).toEqual(["feature", "task", "loose"]);
-    expect(visible(["feature", "task"])).toEqual(["feature", "task", "sub", "loose"]);
+    expect(visible(["parent"])).toEqual(["parent", "task", "loose"]);
+    expect(visible(["parent", "task"])).toEqual(["parent", "task", "sub", "loose"]);
   });
 });
 
