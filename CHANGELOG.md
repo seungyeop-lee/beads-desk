@@ -4,6 +4,24 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-19
+
+### Added
+
+- **Issues** screen: the filter bar has a **Labels** menu. Pick one or more labels to show only issues that have any of them, or pick **No labels** to show issues without labels. The selected labels stay in the page address.
+
+### Changed
+
+- **Issues** and **Epics** tables: the **Assignee** column is replaced by a **Labels** column. It shows the first label as a chip and counts the rest as +N, and hovering over the cell lists every label. The `human` label is left out because the **Needs human** chip next to the title already shows it.
+- Mermaid diagram previews in the Markdown editor are drawn in the current theme's colors and follow a light or dark theme switch without redrawing.
+- Live updates start faster when you navigate to another page, because the server no longer re-reads the workspace's change baseline each time.
+
+### Fixed
+
+- Code blocks in the dark theme: syntax highlighting, the current line, selected text, the caret, matching-word and search highlights, the autocomplete list, folded code, snippet fields, and the go-to-line dialog are now readable. The go-to-line dialog's close button is drawn without a border, like the search panel's close button.
+- **Needs human** screen: after you respond to or dismiss a question or human gate, including from an issue detail dialog opened on this screen, the confirmation notice appears even when the issue detail finished loading before the list.
+- `bd-desk start` finds the workspace in a repository whose `.beads` directory contains only a `redirect` file, such as a repository linked to a repo hub, as long as the redirect target has a config or database file.
+
 ## [0.2.2] - 2026-10-18
 
 ### Fixed
