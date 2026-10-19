@@ -4,6 +4,7 @@ import { afterEach, expect, test } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
+import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
 import { MarkdownEditor } from "./MarkdownEditor";
 
 const DIAGRAM = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";
@@ -88,6 +89,18 @@ test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고, 모
   await expect.poll(() => diagramColors(screen.container)).toEqual(light);
   await expect.element(editor.getByText("저장 전 문단 고침")).toBeVisible();
   expect(diagrams.every((diagram) => diagram.isConnected)).toBe(true);
+});
+
+test("코드 블록의 강조 색과 편집기 표시 색이 참조하는 --code-* 변수는 밝은 테마와 어두운 테마 모두 코드 블록 안에서 값이 있다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  const names = codeVariableNames();
+  expect(names).not.toHaveLength(0);
+
+  const missing = inBothThemes(() => {
+    const style = getComputedStyle(view.dom);
+    return names.filter((name) => style.getPropertyValue(name).trim() === "");
+  });
+  expect(missing).toEqual({ light: [], dark: [] });
 });
 
 test("어두운 테마에서 코드 블록의 모든 강조 토큰은 블록 바탕과 4.5:1 이상 대비된다", async () => {
@@ -379,6 +392,20 @@ async function renderCodeEditor(value: string) {
   const view = EditorView.findFromDOM(screen.container.querySelector<HTMLElement>(".cm-editor")!)!;
   view.focus();
   return view;
+}
+
+/**
+ * codeHighlighting.ts의 구문 강조(codeHighlighting)와 편집기 테마(codeEditorTheme)가 참조하는 --code-* 변수 이름입니다.
+ * 이름을 테스트에 손으로 다시 적으면 CSS와 어긋나는 일이 테스트에서도 생기므로, 두 확장이 만드는 CSS 규칙에서 읽습니다.
+ */
+function codeVariableNames() {
+  const view = new EditorView({ extensions: [codeHighlighting, codeEditorTheme] });
+  const rules = view.state
+    .facet(EditorView.styleModule)
+    .map((module) => module.getRules())
+    .join("\n");
+  view.destroy();
+  return [...new Set(Array.from(rules.matchAll(/var\((--code-[\w-]+)\)/g), ([, name]) => name!))];
 }
 
 /** 코드 끝에 빈 줄을 더하고 그 줄에 text를 입력합니다. 입력하는 동안 자동 완성 목록이 저절로 열립니다. */
