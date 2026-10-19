@@ -1,5 +1,6 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
@@ -41,6 +42,8 @@ export function IssueDetailDialog({
 }: Props) {
   const { issue: issueId, side } = location;
   const sideHref = (sideId: string) => detailHref({ issue: issueId, side: sideId });
+  const closeSideHref = detailHref({ issue: issueId, side: null });
+  const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   // 열 때는 머리글의 ID 복사 단추가 아니라 닫기 단추가 focus를 받아, 바로 Enter를 누르면 dialog가 닫힙니다.
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -86,7 +89,7 @@ export function IssueDetailDialog({
         <IssueSidePanel
           key={`side:${side}`}
           issueId={side}
-          closeHref={detailHref({ issue: issueId, side: null })}
+          closeHref={closeSideHref}
           openHref={detailHref({ issue: side, side: null })}
           sideHref={sideHref}
         />
@@ -114,7 +117,12 @@ export function IssueDetailDialog({
         onClose={onClose}
         onCancel={(event) => {
           // 입력 중에 누른 Escape는 편집 취소로만 쓰고 dialog를 닫지 않습니다.
+          // 옆 패널이 열려 있으면 옆 패널의 닫기 단추와 같은 주소로 옮겨 옆 패널만 닫습니다.
           if (isTyping()) event.preventDefault();
+          else if (side) {
+            event.preventDefault();
+            router.push(closeSideHref, { scroll: false });
+          }
         }}
       >
         <div

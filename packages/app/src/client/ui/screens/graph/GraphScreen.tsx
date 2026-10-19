@@ -49,7 +49,12 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
       onCancel={(event) => {
         event.preventDefault();
         if (isTyping()) return;
-        if (params.has("issue")) {
+        // Escape는 옆 패널, 상세, 그래프 순으로 한 단계씩 닫습니다. 옆 패널은 옆 패널의 닫기 단추처럼 history에 쌓아 닫습니다.
+        if (params.has("side")) {
+          const next = new URLSearchParams(params);
+          next.delete("side");
+          router.push(`?${next}`, { scroll: false });
+        } else if (params.has("issue")) {
           replaceQueryOnly((next) => {
             next.delete("issue");
             next.delete("side");

@@ -39,6 +39,55 @@ test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열려 그 �
   await expect(page).toHaveURL(detailUrl(main, null));
 });
 
+test("옆 패널이 열린 상세에서 Escape를 누르면 옆 패널만 닫혀 이전 이슈 버튼과 함께 주 상세가 남고, 한 번 더 누르면 상세가 닫힌다", async ({
+  page,
+  workspace,
+}) => {
+  const { main, dependency } = await seedDependency(workspace);
+  const dialog = page.getByRole("dialog", { name: `${dependency} 이슈` });
+  const back = dialog.getByRole("link", { name: `이전 이슈 ${main}로 돌아가기` });
+
+  await page.goto("/issues");
+  await page.getByRole("link", { name: "주 이슈" }).click();
+  await dependencyLink(page.getByRole("dialog"), dependency).click();
+  await sidePanel(page, dependency).getByRole("link", { name: "이 이슈로 이동" }).click();
+  await linkedItems(dialog)
+    .getByRole("link", { name: `${main} 주 이슈` })
+    .click();
+  const side = sidePanel(page, main);
+  await expect(side).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(side).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(detailUrl(dependency, null));
+  await expect(back).toHaveAttribute("href", detailUrl(main, dependency));
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/issues$/);
+});
+
+test("옆 패널이 열린 상세에서 본문을 편집하는 중에 Escape를 누르면 옆 패널도 상세도 닫히지 않는다", async ({
+  page,
+  workspace,
+}) => {
+  const { main, dependency } = await seedDependency(workspace);
+
+  await page.goto(`/issues?issue=${main}&side=${dependency}`);
+  const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
+  const side = sidePanel(page, dependency);
+  await expect(side).toBeVisible();
+  await dialog.getByRole("button", { name: "설명 추가" }).click();
+  const editor = dialog.getByRole("textbox", { name: "설명" });
+  await expect(editor).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(editor).toBeFocused();
+  await expect(side).toBeVisible();
+  await expect(page).toHaveURL(detailUrl(main, dependency));
+});
+
 test("옆 패널은 그 이슈의 댓글을 작성자, markdown 본문과 함께 읽기 전용으로 보인다", async ({
   page,
   workspace,

@@ -53,6 +53,40 @@ test("출발 목록을 유지하고 그래프에서 상세를 열고 닫으며 E
   await expect(page.getByRole("region", { name: `${first} 이슈 옆 패널` })).toBeVisible();
 });
 
+test("그래프 안 상세에 옆 패널을 연 뒤 Escape를 누를 때마다 옆 패널, 상세, 그래프 순으로 하나씩 닫힌다", async ({
+  page,
+  workspace,
+}) => {
+  const { first, second } = await workspace.createIssues(
+    { first: { title: "단계 닫기 선행" }, second: { title: "단계 닫기 기준" } },
+    [["second", "first"]],
+  );
+  await page.goto(`/issues?center=${second}`);
+  const canvas = page.getByRole("region", { name: "의존 그래프" });
+  await canvas.getByRole("link", { name: /단계 닫기 기준/ }).click();
+  const detail = page.getByRole("region", { name: `${second} 이슈`, exact: true });
+  await detail
+    .getByRole("region", { name: "연결된 이슈", exact: true })
+    .getByRole("link", { name: `${first} 단계 닫기 선행`, exact: true })
+    .click();
+  const side = page.getByRole("region", { name: `${first} 이슈 옆 패널` });
+  await expect(side).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(side).toHaveCount(0);
+  await expect(detail).toBeVisible();
+  await expect(page).toHaveURL(`/issues?center=${second}&issue=${second}`);
+
+  await page.keyboard.press("Escape");
+  await expect(detail).toHaveCount(0);
+  await expect(canvas).toBeVisible();
+  await expect(page).toHaveURL(`/issues?center=${second}`);
+
+  await page.keyboard.press("Escape");
+  await expect(canvas).toHaveCount(0);
+  await expect(page).toHaveURL(`/issues?issue=${second}`);
+});
+
 test("에픽 상세에서 연 그래프의 머리글 제목은 에픽 상세를 열고, 그 상세의 순서 보기로 같은 그래프를 다시 열어도 닫기는 출발 화면으로 돌아가며, 닫은 그래프를 다시 열면 다시 그린다", async ({
   page,
   workspace,
