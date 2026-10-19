@@ -13,18 +13,22 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HUMAN_DECISION_TONE } from "../issueLabels";
 import { HumanGateResponse } from "./HumanGateResponse";
 import { CopyIssueIdButton } from "../CopyIssueIdButton";
+import type { ListedIssues } from "./listedIssues";
 
 type Props = {
   issue: IssueDetail;
+  listedIssues?: ListedIssues;
   issueHref: (issueId: string) => string;
 };
 
 /** 열린 human gate가 막고 있는 작업 이슈에서, gate마다 사유를 보이고 응답하거나 응답 없이 닫게 합니다. */
-export function HumanGatePanel({ issue, issueHref }: Props) {
+export function HumanGatePanel({ issue, listedIssues, issueHref }: Props) {
   const messages = useMessages();
   const headingId = useId();
   const gates = issue.dependencies.filter(
-    (link) => link.dependencyType === "blocks" && isOpenHumanGateLink(link),
+    (link) =>
+      link.dependencyType === "blocks" &&
+      isOpenHumanGateLink({ ...link, status: listedIssues?.get(link.id)?.status ?? link.status }),
   );
   if (gates.length === 0 || issue.status === "closed") return null;
   return (

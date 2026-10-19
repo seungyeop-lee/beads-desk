@@ -33,16 +33,18 @@ import { EditableMarkdown } from "./EditableMarkdown";
 import { HumanDecisionPanel } from "./HumanDecisionPanel";
 import { HumanGatePanel } from "./HumanGatePanel";
 import { LabelEditor } from "./LabelEditor";
+import type { ListedIssues } from "./listedIssues";
 import { RelationAddForm } from "./RelationAddForm";
 
 type Props = {
   issue: IssueDetail;
   writes: IssueWrites;
+  listedIssues?: ListedIssues;
   issueHref: (issueId: string) => string;
   onDeleted: () => void;
 };
 
-export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) {
+export function IssueDetailView({ issue, writes, listedIssues, issueHref, onDeleted }: Props) {
   const { id } = issue;
   const { run, pending } = writes;
   const { update, changeStatus } = issueEdits(writes, id);
@@ -93,8 +95,8 @@ export function IssueDetailView({ issue, writes, issueHref, onDeleted }: Props) 
                 />
               ))}
             </div>
-            <HumanDecisionPanel issue={issue} writes={writes} />
-            <HumanGatePanel issue={issue} issueHref={issueHref} />
+            <HumanDecisionPanel issue={listedIssues?.get(id) ?? issue} writes={writes} />
+            <HumanGatePanel issue={issue} listedIssues={listedIssues} issueHref={issueHref} />
             <DiscussionTabs
               issue={issue}
               disabled={pending}

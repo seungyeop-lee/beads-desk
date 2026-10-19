@@ -19,6 +19,7 @@ import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { FirstBlockedLine } from "@/client/ui/issues/BlockerLine";
 import { HumanDecisionPanel } from "@/client/ui/issues/detail/HumanDecisionPanel";
+import type { ListedIssues } from "@/client/ui/issues/detail/listedIssues";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueChip, PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
@@ -58,6 +59,13 @@ export function HumanDecisionsScreen() {
       ...awaiting.questions.map((issue) => ({ kind: "question" as const, id: issue.id, issue })),
     ],
     [awaiting],
+  );
+  const listedIssues: ListedIssues = useMemo(
+    () =>
+      new Map(
+        pending.map((item) => [item.id, item.kind === "gate" ? item.summary.gate : item.issue]),
+      ),
+    [pending],
   );
   const replaceQuery = useQueryReplace();
   const searchParams = useSearchParams();
@@ -139,7 +147,7 @@ export function HumanDecisionsScreen() {
           <EmptyState message={messages.humanDecisions.empty} />
         ))}
 
-      <IssueDetailRoute />
+      <IssueDetailRoute listedIssues={listedIssues} />
     </main>
   );
 }

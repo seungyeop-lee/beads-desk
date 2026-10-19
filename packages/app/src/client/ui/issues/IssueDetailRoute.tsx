@@ -8,6 +8,7 @@ import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspa
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { readGraphScope } from "@/client/ui/screens/graph/graphAddress";
 import { IssueDetailDialog } from "./detail/IssueDetailDialog";
+import type { ListedIssues } from "./detail/listedIssues";
 
 /** 상세 dialog로 연 이슈 id를 담는 query 이름입니다. 주소를 공유하거나 새로고침해도 같은 이슈가 열립니다. */
 const ISSUE_PARAM = "issue";
@@ -36,8 +37,17 @@ export function useIssueHref(): (issueId: string) => string {
   return useCallback((issueId: string) => detailHref({ issue: issueId, side: null }), [detailHref]);
 }
 
-/** 주소에 이슈 id가 있으면 상세 dialog를 엽니다. useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다. */
-export function IssueDetailRoute({ embedded = false }: { embedded?: boolean }) {
+/**
+ * 주소에 이슈 id가 있으면 상세 dialog를 엽니다. useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
+ * listedIssues는 응답하면 행이 목록에서 빠지는 화면이 넘깁니다.
+ */
+export function IssueDetailRoute({
+  embedded = false,
+  listedIssues,
+}: {
+  embedded?: boolean;
+  listedIssues?: ListedIssues;
+}) {
   const replaceQuery = useQueryReplace();
   const detailHref = useIssueDetailHref();
   const location = useIssueDetailLocation();
@@ -70,6 +80,7 @@ export function IssueDetailRoute({ embedded = false }: { embedded?: boolean }) {
   return (
     <IssueDetailDialog
       embedded={embedded}
+      listedIssues={listedIssues}
       location={location}
       previous={trail.at(-2) ?? null}
       detailHref={detailHref}

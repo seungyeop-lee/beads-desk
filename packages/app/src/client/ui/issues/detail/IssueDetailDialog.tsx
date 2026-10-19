@@ -9,6 +9,7 @@ import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { isTyping, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { IssueDetailView } from "./IssueDetailView";
+import type { ListedIssues } from "./listedIssues";
 import { IssueSidePanel } from "./IssueSidePanel";
 import { WriteErrorAlert } from "../WriteErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -16,6 +17,7 @@ import { CopyIssueIdButton } from "../CopyIssueIdButton";
 
 type Props = {
   embedded?: boolean;
+  listedIssues?: ListedIssues;
   location: IssueDetailLocation;
   /** 이 dialog에서 지금 주 상세로 넘어오기 전에 보던 상세입니다. 없으면 null입니다. */
   previous: IssueDetailLocation | null;
@@ -35,6 +37,7 @@ export function IssueDetailDialog({
   detailHref,
   onClose,
   embedded = false,
+  listedIssues,
 }: Props) {
   const { issue: issueId, side } = location;
   const sideHref = (sideId: string) => detailHref({ issue: issueId, side: sideId });
@@ -71,6 +74,7 @@ export function IssueDetailDialog({
         issue={issue}
         error={issue ? null : error}
         loading={loading}
+        listedIssues={listedIssues}
         previous={previous}
         detailHref={detailHref}
         sideHref={sideHref}
@@ -129,6 +133,7 @@ type PanelProps = {
   issue: IssueDetail | null;
   error: string | null;
   loading: boolean;
+  listedIssues: ListedIssues | undefined;
   previous: IssueDetailLocation | null;
   detailHref: (location: IssueDetailLocation) => string;
   /** 의존 이슈를 옆 패널에 여는 주소입니다. */
@@ -143,6 +148,7 @@ function IssueDetailPanel({
   issue,
   error,
   loading,
+  listedIssues,
   previous,
   detailHref,
   sideHref,
@@ -205,6 +211,7 @@ function IssueDetailPanel({
           <IssueDetailView
             issue={issue}
             writes={writes}
+            listedIssues={listedIssues}
             issueHref={sideHref}
             onDeleted={onDeleted}
           />
