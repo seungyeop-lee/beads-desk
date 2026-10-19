@@ -132,7 +132,7 @@ export function HumanDecisionsScreen() {
             {selected.kind === "gate" ? (
               <HumanGateDecision key={selected.id} summary={selected.summary} />
             ) : (
-              <SelectedDecision key={selected.id} issueId={selected.id} />
+              <SelectedDecision key={selected.id} question={selected.issue} />
             )}
           </div>
         ) : (
@@ -185,8 +185,8 @@ function PendingRow({
   );
 }
 
-function SelectedDecision({ issueId }: { issueId: string }) {
-  const { data: issue, error } = useIssueDetail(issueId);
+function SelectedDecision({ question }: { question: Issue }) {
+  const { data: issue, error } = useIssueDetail(question.id);
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const messages = useMessages();
@@ -227,7 +227,8 @@ function SelectedDecision({ issueId }: { issueId: string }) {
             <p className="text-sm text-base-content/50">{messages.humanDecisions.noDescription}</p>
           )}
           <WriteErrorAlert writes={writes} />
-          <HumanDecisionPanel issue={issue} writes={writes} />
+          {/* 응답 패널은 상세가 아니라 목록의 이슈로 보일지 정합니다. 패널이 사라질 때 응답·닫기 알림이 뜨므로, 상세 조회가 먼저 끝나 닫힌 상태를 받아도 목록에서 행이 빠질 때까지 패널을 남겨 둡니다. */}
+          <HumanDecisionPanel issue={question} writes={writes} />
         </section>
       )}
     </LoadResult>

@@ -1,10 +1,10 @@
-import { awaitsHumanDecision, type IssueDetail } from "@beads-desk/bd/issue";
+import { awaitsHumanDecision, type Issue } from "@beads-desk/bd/issue";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanResponsePanel } from "./HumanResponsePanel";
 
 type Props = {
-  issue: IssueDetail;
+  issue: Pick<Issue, "id" | "status" | "labels">;
   writes: IssueWrites;
 };
 
