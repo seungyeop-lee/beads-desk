@@ -15,7 +15,8 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
 import { localMarkdownUrl } from "./localMarkdownUrl";
-import { createMermaidPreview } from "./mermaidPreview";
+import { MermaidDiagramDialog } from "./MermaidDiagramDialog";
+import { createMermaidPreview, diagramAt } from "./mermaidPreview";
 
 type Controls = {
   crepe: CrepeBuilder;
@@ -56,6 +57,7 @@ export function MarkdownEditor({
   const labels = useMessages().markdownEditor;
   const [controls, setControls] = useState<Controls | null>(null);
   const [headingLevel, setHeadingLevel] = useState(0);
+  const [enlarged, setEnlarged] = useState<HTMLElement | null>(null);
   const [initialValue] = useState(value);
   const content = readOnly ? value : initialValue;
   const changed = useEffectEvent((markdown: string) => onChange?.(markdown));
@@ -66,7 +68,10 @@ export function MarkdownEditor({
     if (!root) return;
     let destroy: (() => Promise<unknown>) | undefined;
     let disposed = false;
-    const preview = createMermaidPreview(root, labels.previewLoading);
+    const preview = createMermaidPreview(root, {
+      loading: labels.previewLoading,
+      enlarge: labels.enlargeDiagram,
+    });
     void (async () => {
       const [
         { CrepeBuilder },
@@ -223,28 +228,54 @@ export function MarkdownEditor({
     controls?.crepe.setReadonly(disabled);
   }, [controls, disabled]);
 
+  // 그림은 Crepe가 sanitize해서 넣는 HTML이라 처리기를 붙일 수 없으므로, 그림을 누르는 동작을 편집기 root에서 받습니다.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const onClick = (event: MouseEvent) => {
+      const diagram = diagramAt(event.target);
+      if (diagram) setEnlarged(diagram);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      const diagram = diagramAt(event.target);
+      if (!diagram || (event.key !== "Enter" && event.key !== " ")) return;
+      event.preventDefault();
+      setEnlarged(diagram);
+    };
+    root.addEventListener("click", onClick);
+    root.addEventListener("keydown", onKeyDown);
+    return () => {
+      root.removeEventListener("click", onClick);
+      root.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
   return (
-    <div
-      className="markdown-editor"
-      data-readonly={readOnly || undefined}
-      // 코드 블록의 CodeMirror는 Ctrl/Cmd+Enter를 편집기에 넘기지 않으므로, 편집기보다 먼저 받습니다.
-      onKeyDownCapture={(event) => {
-        if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey) || !onSubmit) return;
-        event.preventDefault();
-        event.stopPropagation();
-        onSubmit();
-      }}
-    >
-      {controls && (
-        <MarkdownToolbar
-          label={label ?? ""}
-          headingLevel={headingLevel}
-          disabled={disabled}
-          onHeading={controls.setHeading}
-          onFormat={controls.format}
-        />
-      )}
-      <div ref={rootRef} />
-    </div>
+    <>
+      <div
+        className="markdown-editor"
+        data-readonly={readOnly || undefined}
+        // 코드 블록의 CodeMirror는 Ctrl/Cmd+Enter를 편집기에 넘기지 않으므로, 편집기보다 먼저 받습니다.
+        onKeyDownCapture={(event) => {
+          if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey) || !onSubmit) return;
+          event.preventDefault();
+          event.stopPropagation();
+          onSubmit();
+        }}
+      >
+        {controls && (
+          <MarkdownToolbar
+            label={label ?? ""}
+            headingLevel={headingLevel}
+            disabled={disabled}
+            onHeading={controls.setHeading}
+            onFormat={controls.format}
+          />
+        )}
+        <div ref={rootRef} />
+      </div>
+      {/* 편집기 밖에 두어, dialog 안에서 누른 Ctrl/Cmd+Enter가 위의 onKeyDownCapture에 닿지 않게 합니다. */}
+      {enlarged && <MermaidDiagramDialog diagram={enlarged} onClose={() => setEnlarged(null)} />}
+    </>
   );
 }

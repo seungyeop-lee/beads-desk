@@ -201,3 +201,96 @@ test("새 이슈 작성에서도 Mermaid 미리보기를 보여 주고 Ctrl/Cmd+
     .poll(async () => (await workspace.showIssue(created)).description, { timeout: SAVE_TIMEOUT })
     .toBe(markdown());
 });
+
+test("본문·댓글·옆 패널의 그림을 누르거나 키보드로 크게 보고, Esc·닫기 단추·바깥 클릭으로 닫으면 상세로 돌아온다", async ({
+  page,
+  workspace,
+}, info) => {
+  const { main, dependency } = await workspace.createIssues(
+    {
+      main: { title: "Mermaid 확대", type: "task", description: markdown() },
+      dependency: {
+        title: "Mermaid 선행",
+        type: "task",
+        description: markdown("flowchart LR\n  C[선행 그림] --> D[후속]"),
+      },
+    },
+    [["main", "dependency"]],
+  );
+  await workspace.bd("comments", "add", main, markdown("flowchart LR\n  E[댓글 그림] --> F[답]"));
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto(`/issues?issue=${main}`);
+  const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
+  const enlarged = page.getByRole("dialog", { name: "크게 본 그림", exact: true });
+  const diagrams = dialog.getByRole("button", { name: "그림 크게 보기", exact: true });
+  await expect(diagrams).toHaveCount(2);
+
+  await diagrams.first().click();
+  await expect(enlarged).toBeVisible();
+  const width = async (locator: Locator) => (await locator.boundingBox())!.width;
+  expect(await width(enlarged.locator("svg.pele"))).toBeGreaterThan(
+    await width(diagrams.first().locator("svg")),
+  );
+  await expect(enlarged.locator(".pele-marker")).toBeVisible();
+  await page.screenshot({
+    path: info.outputPath("mermaid-enlarged-light.png"),
+    animations: "disabled",
+  });
+  await page.keyboard.press("Escape");
+  await expect(enlarged).toBeHidden();
+  await expect(dialog).toBeVisible();
+
+  // 닫으면 브라우저가 그림에 초점을 돌려주므로, Tab으로 그림을 떠났다가 다시 돌아와 Enter로 엽니다.
+  await expect(diagrams.first()).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(diagrams.first()).not.toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(diagrams.first()).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(enlarged).toBeVisible();
+  await enlarged.getByRole("button", { name: "닫기", exact: true }).first().click();
+  await expect(enlarged).toBeHidden();
+  await expect(dialog).toBeVisible();
+
+  await diagrams.nth(1).click();
+  await expect(enlarged.locator("svg.pele")).toContainText("댓글 그림");
+  await page.mouse.click(5, 5);
+  await expect(enlarged).toBeHidden();
+  await expect(dialog).toBeVisible();
+
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto(`/issues?issue=${main}&side=${dependency}`);
+  const side = page.getByRole("region", { name: `${dependency} 이슈 옆 패널` });
+  await side.getByRole("button", { name: "그림 크게 보기", exact: true }).click();
+  await expect(enlarged.locator("svg.pele")).toContainText("선행 그림");
+  await page.screenshot({
+    path: info.outputPath("mermaid-enlarged-dark.png"),
+    animations: "disabled",
+  });
+  await page.keyboard.press("Escape");
+  await expect(enlarged).toBeHidden();
+  await expect(side).toBeVisible();
+});
+
+test("설명을 편집하는 중에도 미리보기 그림을 크게 보고, 닫으면 편집 중인 내용이 남는다", async ({
+  page,
+  workspace,
+}) => {
+  const id = await workspace.createIssue("Mermaid 편집 확대", "--description", markdown());
+  await page.goto(`/issues?issue=${id}`);
+  const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
+  await dialog.getByRole("button", { name: "편집", exact: true }).click();
+  const editor = dialog.getByRole("textbox", { name: "설명", exact: true });
+  const block = editor.locator(".milkdown-code-block");
+  await changeCode(block, "flowchart LR\n  A[고친 그림] --> B");
+  await expect(block.locator(".preview svg")).toContainText("고친 그림");
+
+  await block.getByRole("button", { name: "그림 크게 보기", exact: true }).click();
+  const enlarged = page.getByRole("dialog", { name: "크게 본 그림", exact: true });
+  await expect(enlarged.locator("svg.pele")).toContainText("고친 그림");
+  await page.keyboard.press("Escape");
+  await expect(enlarged).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(block.locator(".cm-content")).toContainText("A[고친 그림]");
+  await expect(dialog.getByRole("button", { name: "저장", exact: true })).toBeVisible();
+});

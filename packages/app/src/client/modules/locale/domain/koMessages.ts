@@ -170,6 +170,8 @@ export const koMessages = {
     previewLoading: "그림을 그리는 중",
     showCode: "코드 보기",
     hideCode: "코드 숨기기",
+    enlargeDiagram: "그림 크게 보기",
+    enlargedDiagram: "크게 본 그림",
 
     toolbar: (label: string) => `${label} 서식 도구`,
     blockType: "문단 형식",

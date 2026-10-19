@@ -156,6 +156,8 @@ export const enMessages: Messages = {
     previewLoading: "Rendering diagram",
     showCode: "Show code",
     hideCode: "Hide code",
+    enlargeDiagram: "Enlarge diagram",
+    enlargedDiagram: "Enlarged diagram",
 
     toolbar: (label) => `${label} formatting`,
     blockType: "Text style",

@@ -7,7 +7,12 @@ async function renderDiagram(content: string, options: RenderOptions) {
   return (await renderAsync(content, options)).svg;
 }
 
-export function createMermaidPreview(root: HTMLElement, loading: string) {
+type Labels = { loading: string; enlarge: string };
+
+/** 그려진 그림을 감싼 요소를 찾습니다. 그리는 중인 자리 표시에는 role이 없어 찾지 않으므로 누를 수 없습니다. */
+const DIAGRAM_BUTTON = '[data-mermaid-preview][role="button"]';
+
+export function createMermaidPreview(root: HTMLElement, { loading, enlarge }: Labels) {
   let disposed = false;
   return {
     renderPreview(language: string, content: string, apply: ApplyPreview) {
@@ -29,7 +34,11 @@ export function createMermaidPreview(root: HTMLElement, loading: string) {
         fontFamilyMono: style.getPropertyValue("--pele-font-mono").trim(),
       }).then(
         (svg) => {
-          if (current()) apply(`<div data-mermaid-preview="${id}">${svg}</div>`);
+          // 누르는 동작은 MarkdownEditor가 편집기 root에서 받아 diagramAt으로 그림을 찾습니다.
+          if (current())
+            apply(
+              `<div data-mermaid-preview="${id}" role="button" tabindex="0" aria-label="${enlarge}">${svg}</div>`,
+            );
         },
         () => {
           if (current()) apply(null);
@@ -41,4 +50,26 @@ export function createMermaidPreview(root: HTMLElement, loading: string) {
       disposed = true;
     },
   };
+}
+
+/** target이 그려진 그림 안에 있으면 그 그림을 감싼 요소를 돌려줍니다. 아니면 null입니다. */
+export function diagramAt(target: EventTarget | null): HTMLElement | null {
+  return target instanceof Element ? target.closest<HTMLElement>(DIAGRAM_BUTTON) : null;
+}
+
+/**
+ * diagramAt이 찾은 그림의 SVG를 복제합니다.
+ * pele는 SVG 안의 id를 모두 idPrefix로 시작하게 만들므로, 복제본이 원래 그림과 같은 id를 갖지 않도록 접두어를 새로 바꿉니다.
+ */
+export function cloneDiagram(diagram: HTMLElement): SVGSVGElement {
+  const clone = diagram.querySelector("svg")!.cloneNode(true) as SVGSVGElement;
+  const prefix = `mermaid-${diagram.dataset.mermaidPreview}`;
+  const renamed = `mermaid-${crypto.randomUUID()}`;
+  for (const element of [clone, ...clone.querySelectorAll("*")]) {
+    for (const attribute of element.attributes) {
+      if (attribute.value.includes(prefix))
+        attribute.value = attribute.value.replaceAll(prefix, renamed);
+    }
+  }
+  return clone;
 }

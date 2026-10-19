@@ -1,8 +1,9 @@
 /// <reference types="@vitest/browser-playwright" />
 import { foldCode } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
-import { afterEach, expect, test } from "vitest";
-import { cdp, userEvent } from "vitest/browser";
+import type { FormEvent } from "react";
+import { afterEach, expect, test, vi } from "vitest";
+import { cdp, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
@@ -396,6 +397,88 @@ test("그림의 한글 라벨은 노드 상자 안에 들어가고, 지원하지
     expect(label.left).toBeGreaterThanOrEqual(box.left);
     expect(label.right).toBeLessThanOrEqual(box.right);
   }
+});
+
+test("그려진 그림만 눌러 크게 볼 수 있고, 크게 본 그림은 원래 그림과 id가 겹치지 않으며 두 테마에서 원래 그림과 같은 색을 쓴다", async () => {
+  const titled = DIAGRAM.replace("flowchart LR\n", "flowchart LR\n  accTitle: 처리 흐름\n");
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        readOnly
+        value={`\`\`\`mermaid\nzenuml\n  사용자->서버.요청()\n\`\`\`\n\n\`\`\`ts\nconst value = 1;\n\`\`\`\n\n${titled}`}
+      />
+    </LocaleProvider>,
+  );
+  await expect.poll(() => diagramColors(screen.container)).toHaveLength(1);
+  const [unsupported, plain] = screen.container.querySelectorAll<HTMLElement>(".cm-content");
+  await userEvent.click(unsupported!);
+  await userEvent.click(plain!);
+  expect(document.querySelector("dialog")).toBeNull();
+
+  await screen.getByRole("button", { name: "그림 크게 보기" }).click();
+  const dialog = page.getByRole("dialog", { name: "크게 본 그림" });
+  await expect.element(dialog).toBeVisible();
+  const original = screen.container.querySelector<SVGSVGElement>(".preview svg")!;
+  const enlarged = dialog.element().querySelector<SVGSVGElement>("svg.pele")!;
+  expect(enlarged.getBoundingClientRect().width).toBeGreaterThan(
+    original.getBoundingClientRect().width,
+  );
+  const ids = (svg: SVGSVGElement) => Array.from(svg.querySelectorAll("[id]"), (node) => node.id);
+  expect(ids(enlarged)).toHaveLength(1);
+  expect(ids(original)).not.toContain(ids(enlarged)[0]);
+  expect(enlarged.getAttribute("aria-labelledby")).toBe(ids(enlarged)[0]);
+
+  const colors = () =>
+    [original, enlarged].map((svg) => getComputedStyle(svg.querySelector(".pele-node rect")!).fill);
+  const [light] = colors();
+  expect(colors()).toEqual([light, light]);
+  document.documentElement.dataset.theme = "desk-dark";
+  const [dark] = colors();
+  expect(dark).not.toBe(light);
+  expect(colors()).toEqual([dark, dark]);
+});
+
+test("편집기를 감싼 form과 dialog는 그림 dialog를 Esc, 닫기 단추, 바깥 클릭으로 닫아도 제출되거나 닫히지 않고, 입력한 글자가 남는다", async () => {
+  const submitted = vi.fn<(event: FormEvent) => void>((event) => event.preventDefault());
+  const cancelled = vi.fn<() => void>();
+  const closed = vi.fn<() => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <dialog onCancel={cancelled} onClose={closed}>
+        <form onSubmit={submitted}>
+          <MarkdownEditor value={`${DIAGRAM}\n\n저장 전 문단`} label="설명" />
+        </form>
+      </dialog>
+    </LocaleProvider>,
+  );
+  const host = screen.container.querySelector("dialog")!;
+  host.showModal();
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText("저장 전 문단").click();
+  await userEvent.keyboard("{End} 고침");
+  const button = screen.getByRole("button", { name: "그림 크게 보기" });
+  const dialog = page.getByRole("dialog", { name: "크게 본 그림" });
+
+  await button.click();
+  await expect.element(dialog).toBeVisible();
+  await userEvent.keyboard("{Escape}");
+  await expect.element(dialog).not.toBeInTheDocument();
+
+  (button.element() as HTMLElement).focus();
+  await userEvent.keyboard("{Enter}");
+  await dialog.getByRole("button", { name: "닫기" }).first().click();
+  await expect.element(dialog).not.toBeInTheDocument();
+
+  (button.element() as HTMLElement).focus();
+  await userEvent.keyboard(" ");
+  await dialog.element().querySelector<HTMLElement>(".modal-backdrop button")!.click();
+  await expect.element(dialog).not.toBeInTheDocument();
+
+  expect(host.open).toBe(true);
+  expect(submitted).not.toHaveBeenCalled();
+  expect(cancelled).not.toHaveBeenCalled();
+  expect(closed).not.toHaveBeenCalled();
+  await expect.element(editor.getByText("저장 전 문단 고침")).toBeVisible();
 });
 
 /** 사용자가 끌어서 고를 때처럼 문단 앞부분을 고르고, 편집기가 그 선택을 바로 읽게 selectionchange를 보냅니다. */
