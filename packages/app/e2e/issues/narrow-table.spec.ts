@@ -4,7 +4,7 @@ import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorks
 
 const TITLES = {
   ko: "이슈를 작업 상태로 나눠 보이는 곳은 모두 같은 기준을 쓰고, 기준에는 bd 저장 상태와 의존 관계와 human 라벨을 씁니다",
-  en: "Issues keep a long English title readable while status, priority, and assignee stay reachable",
+  en: "Issues keep a long English title readable while status, priority, and labels stay reachable",
   blocker: "막는 작업",
 };
 const TYPES = { ko: "feature", en: "task", blocker: "bug" } as const;
@@ -12,12 +12,15 @@ const TYPES = { ko: "feature", en: "task", blocker: "bug" } as const;
 test.describe("확대율 110%, 폭 500px 창", () => {
   test.use({ deviceScaleFactor: 2.2, viewport: { width: 441, height: 900 } });
 
-  test("좁은 창에서 제목으로 상세를 열고, 표에서 우선순위를 바꾼다", async ({
+  test("좁은 창에서 bd 라벨을 표의 라벨 칸에서 보고, 제목으로 상세를 열고, 표에서 우선순위를 바꾼다", async ({
     page,
     workspace,
   }) => {
     const ids = await seedIssues(workspace);
     await page.goto("/issues");
+    await expect(
+      titleRow(page, TITLES.ko).getByRole("cell", { name: "backend +1", exact: true }),
+    ).toBeVisible();
 
     await titleRow(page, TITLES.en).getByRole("link", { name: TITLES.en, exact: true }).click();
     const dialog = page.getByRole("dialog", {
@@ -44,7 +47,7 @@ test.describe("확대율 110%, 폭 500px 창", () => {
 async function seedIssues(workspace: BdWorkspace) {
   return workspace.createIssues(
     {
-      ko: { title: TITLES.ko, type: TYPES.ko, priority: 2, assignee: "minji" },
+      ko: { title: TITLES.ko, type: TYPES.ko, priority: 2, labels: ["backend", "frontend"] },
       en: { title: TITLES.en, type: TYPES.en },
       blocker: { title: TITLES.blocker, type: TYPES.blocker },
     },

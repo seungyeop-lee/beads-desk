@@ -7,6 +7,7 @@ import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
+import { LabelEditor } from "./detail/LabelEditor";
 import { IssueTable } from "./IssueTable";
 
 /** 이슈 화면은 좌우 여백이 2rem씩이므로, e2e가 쓰던 창 폭(441~1440px)에서 64px을 뺀 폭이 표 영역의 폭입니다. */
@@ -19,13 +20,13 @@ const ISSUES: Issue[] = [
     title:
       "이슈를 작업 상태로 나눠 보이는 곳은 모두 같은 기준을 쓰고, 기준에는 bd 저장 상태와 의존 관계와 human 라벨을 씁니다",
     issueType: "feature",
-    assignee: "minji",
+    labels: ["frontend"],
     blockedBy: ["desk-blocker"],
     dependencyCount: 1,
   }),
   issue("desk-en", {
     title:
-      "Issues keep a long English title readable while status, priority, and assignee stay reachable",
+      "Issues keep a long English title readable while status, priority, and labels stay reachable",
   }),
   issue("desk-blocker", { title: "막는 작업", issueType: "bug", dependentCount: 1 }),
 ];
@@ -92,7 +93,7 @@ test("행은 짧은 ID를 복사 단추로 보이고, 표에서는 상태와 우
         issues={[
           issue("desk-row", {
             title: "표에서 볼 작업",
-            assignee: "minji",
+            labels: ["frontend"],
             dependencyCount: 1,
             dependentCount: 0,
           }),
@@ -107,10 +108,10 @@ test("행은 짧은 ID를 복사 단추로 보이고, 표에서는 상태와 우
 
   const copyButton = row.getByRole("button", { name: messages.copyId.labelOf("desk-row") });
   expect(copyButton.element().textContent).toBe(shortIssueId("desk-row"));
-  // 제목과 담당자는 단추나 입력 칸이 아닌 글자로 보입니다.
+  // 제목과 라벨은 단추나 입력 칸이 아닌 글자로 보입니다.
   expect(row.getByRole("button").elements()).toEqual([copyButton.element()]);
   expect(row.getByRole("textbox").elements()).toHaveLength(0);
-  await expect.element(row.getByRole("cell", { name: "minji", exact: true })).toBeVisible();
+  await expect.element(row.getByRole("cell", { name: "frontend", exact: true })).toBeVisible();
   const title = row.getByRole("link", { name: "표에서 볼 작업", exact: true });
   await expect.element(title).toHaveAttribute("href", "/issues?issue=desk-row");
   expect(getComputedStyle(title.element()).cursor).toBe("pointer");
@@ -146,4 +147,110 @@ test("판단을 기다리는 이슈의 행에만 판단 기다림 표시가 붙�
       .getByText(messages.humanDecision.chip, { exact: true });
   await expect.element(chip(/판단이 필요한 작업/)).toBeVisible();
   await expect.element(chip(/평범한 작업/)).not.toBeInTheDocument();
+});
+
+/** 라벨 열은 담당자 열이 쓰던 칸이라 표의 여섯째 칸(DOM 순서)입니다. */
+const LABEL_CELL = 5;
+
+function labelCell(screen: Awaited<ReturnType<typeof render>>, title: string) {
+  return screen.getByRole("link", { name: title, exact: true }).element().closest("tr")!.cells[
+    LABEL_CELL
+  ]!;
+}
+
+test("라벨 열은 human을 뺀 첫 라벨과 나머지 수(+N)를 보이고, 보일 라벨이 없으면 없음을 보인다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueTable
+        issues={[
+          issue("desk-none", { title: "라벨 없음" }),
+          issue("desk-one", { title: "라벨 하나", labels: ["frontend"] }),
+          issue("desk-three", { title: "라벨 셋", labels: ["frontend", "backend", "api"] }),
+          issue("desk-human", { title: "human만", labels: ["human"] }),
+          issue("desk-human-mix", { title: "human과 둘", labels: ["human", "backend", "api"] }),
+        ]}
+        issueHref={(id) => `/issues?issue=${id}`}
+        writes={WRITES}
+        gateTitles={new Map()}
+      />
+    </LocaleProvider>,
+  );
+
+  const header = labelCell(screen, "라벨 없음").closest("table")!.tHead!.rows[0]!;
+  expect(header.cells[LABEL_CELL]!.textContent).toBe(messages.issue.labels);
+  expect(header.textContent).not.toContain(messages.issue.assignee);
+  const shown = (title: string) => labelCell(screen, title).textContent;
+  expect(shown("라벨 없음")).toBe(messages.common.none);
+  expect(shown("라벨 하나")).toBe("frontend");
+  expect(shown("라벨 셋")).toBe("frontend+2");
+  expect(shown("human만")).toBe(messages.common.none);
+  expect(shown("human과 둘")).toBe("backend+1");
+  // 칸에 마우스를 올리면 human을 뺀 모든 라벨 이름이 보입니다.
+  expect(labelCell(screen, "라벨 셋").title).toBe("frontend, backend, api");
+  expect(labelCell(screen, "human과 둘").title).toBe("backend, api");
+});
+
+test("라벨 열의 칩은 상세 라벨 편집기의 칩보다 낮고 글자도 작다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueTable
+        issues={[issue("desk-one", { title: "라벨 하나", labels: ["frontend"] })]}
+        issueHref={(id) => `/issues?issue=${id}`}
+        writes={WRITES}
+        gateTitles={new Map()}
+      />
+      <section aria-label="상세">
+        <LabelEditor
+          labels={["frontend"]}
+          disabled={false}
+          onAdd={async () => true}
+          onRemove={() => {}}
+        />
+      </section>
+    </LocaleProvider>,
+  );
+
+  const tableChip = page.elementLocator(labelCell(screen, "라벨 하나")).getByText("frontend", {
+    exact: true,
+  });
+  const detailChip = screen.getByRole("region", { name: "상세" }).getByRole("listitem").element();
+  const fontSize = (element: Element) => parseFloat(getComputedStyle(element).fontSize);
+  expect(tableChip.element().getBoundingClientRect().height).toBeLessThan(
+    detailChip.getBoundingClientRect().height,
+  );
+  expect(fontSize(tableChip.element())).toBeLessThan(fontSize(detailChip));
+});
+
+test("9rem 라벨 칸에 긴 라벨 이름과 +N이 함께 있으면 라벨 이름만 말줄임으로 줄고 +N은 칸 안에 보인다", async () => {
+  const longLabel = "customer-onboarding-experience-improvements";
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <div style={{ width: 1376 }}>
+        <IssueTable
+          issues={[issue("desk-long", { title: "긴 라벨", labels: [longLabel, "api", "ux"] })]}
+          issueHref={(id) => `/issues?issue=${id}`}
+          writes={WRITES}
+          gateTitles={new Map()}
+        />
+      </div>
+    </LocaleProvider>,
+  );
+
+  const cellElement = labelCell(screen, "긴 라벨");
+  const cell = page.elementLocator(cellElement);
+  const style = getComputedStyle(cellElement);
+  const box = cellElement.getBoundingClientRect();
+  const contentLeft = box.left + parseFloat(style.paddingLeft);
+  const contentRight = box.right - parseFloat(style.paddingRight);
+  const chip = cell.getByText(longLabel, { exact: true }).element();
+  const more = cell.getByText("+2", { exact: true });
+
+  await expect.element(more).toBeVisible();
+  for (const element of [chip, more.element()]) {
+    const rect = element.getBoundingClientRect();
+    expect(rect.left, `${element.textContent} 왼쪽 끝`).toBeGreaterThanOrEqual(contentLeft);
+    expect(rect.right, `${element.textContent} 오른쪽 끝`).toBeLessThanOrEqual(contentRight);
+  }
+  // 라벨 이름은 칸에 다 들어가지 않으므로 잘려 보입니다.
+  expect(chip.scrollWidth).toBeGreaterThan(chip.clientWidth);
 });

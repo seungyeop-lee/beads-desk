@@ -1,4 +1,4 @@
-import type { Issue } from "@beads-desk/bd/issue";
+import { HUMAN_LABEL, type Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { memo, useMemo, useState, type ReactNode } from "react";
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
@@ -7,6 +7,7 @@ import type { IssueWrites } from "@/client/modules/issues/application/useIssueWr
 import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/domain/issueListView";
 import { BlockerLine } from "./BlockerLine";
 import { HumanDecisionChip } from "./HumanDecisionChip";
+import { LabelChip } from "./IssueChip";
 import { CopyIssueIdButton } from "./CopyIssueIdButton";
 import { DeferralLine } from "./DeferralLine";
 import { statusPrompts } from "./fields/statusPrompts";
@@ -40,7 +41,7 @@ type Props = (
   hideHeader?: boolean;
 };
 
-/** ID를 누르면 전체 ID를 복사하고, 제목을 누르면 상세를 엽니다. 상태와 우선순위는 표에서 바로 고치고, 담당자는 상세에서만 고칩니다. */
+/** ID를 누르면 전체 ID를 복사하고, 제목을 누르면 상세를 엽니다. 상태와 우선순위는 표에서 바로 고치고, 라벨과 담당자는 상세에서만 고칩니다. */
 export const IssueTable = memo(function IssueTable({
   issues,
   tree,
@@ -71,7 +72,7 @@ export const IssueTable = memo(function IssueTable({
   return (
     <div className="@container surface min-w-0 max-w-full overflow-x-auto">
       {/* 제목 열은 표 폭에서 나머지 열의 폭을 뺀 만큼 차지합니다. 표 영역이 64rem보다 좁으면 표를 64rem으로 넓히고
-          상태·우선순위·담당자·의존 열(30rem)은 가로 스크롤로 봅니다. 표 영역이 34rem보다 좁으면 64rem 대신 영역 폭(100cqw)에 그 네 열의 폭만 더해
+          상태·우선순위·라벨·의존 열(30rem)은 가로 스크롤로 봅니다. 표 영역이 34rem보다 좁으면 64rem 대신 영역 폭(100cqw)에 그 네 열의 폭만 더해
           ID와 제목 열이 스크롤하지 않아도 영역 안에 다 보이게 합니다. 이때는 유형 열(6.5rem)을 감추고 유형을 제목 앞에 보여, 그만큼 제목 칸을 넓힙니다. */}
       <table className="table w-[max(100cqw,min(100cqw_+_30rem,64rem))] table-fixed">
         <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
@@ -81,7 +82,7 @@ export const IssueTable = memo(function IssueTable({
             <th>{messages.issue.title}</th>
             <th className="w-32">{messages.issue.status}</th>
             <th className="w-32">{messages.issue.priority}</th>
-            <th className="w-36">{messages.issue.assignee}</th>
+            <th className="w-36">{messages.issue.labels}</th>
             <th className="w-20 text-right">{messages.issue.dependencyCount}</th>
           </tr>
         </thead>
@@ -196,9 +197,7 @@ function IssueRow({ issue, outline, issueHref, titleOf, gateTitles, waiters, wri
           onChange={(priority) => update({ priority })}
         />
       </td>
-      <td className="truncate text-sm" title={issue.assignee ?? undefined}>
-        {issue.assignee || <span className="text-base-content/50">{messages.common.none}</span>}
-      </td>
+      <LabelCell labels={issue.labels} />
       <td
         className={`text-right font-mono text-xs tabular-nums ${issue.dependencyCount + issue.dependentCount === 0 ? "text-base-content/30" : ""}`}
         title={messages.issueTable.dependencyCounts(issue.dependencyCount, issue.dependentCount)}
@@ -206,6 +205,36 @@ function IssueRow({ issue, outline, issueHref, titleOf, gateTitles, waiters, wri
         {issue.dependencyCount} / {issue.dependentCount}
       </td>
     </tr>
+  );
+}
+
+/**
+ * 첫 라벨만 칩으로 보이고 나머지는 +N으로 줄이며, 칸에 마우스를 올리면 모든 라벨 이름을 보입니다.
+ * human 라벨은 제목 옆의 판단 기다림 표시와 겹쳐 보이므로 칸에도 +N 수에도 넣지 않습니다.
+ */
+function LabelCell({ labels }: { labels: readonly string[] }) {
+  const messages = useMessages();
+  const shown = labels.filter((label) => label !== HUMAN_LABEL);
+  const [first] = shown;
+  if (first === undefined) {
+    return (
+      <td>
+        <span className="text-sm text-base-content/50">{messages.common.none}</span>
+      </td>
+    );
+  }
+  return (
+    <td title={shown.join(", ")}>
+      <div className="flex items-center gap-1">
+        {/* 칩은 기본으로 줄어들지 않으므로, 긴 라벨 이름이 +N을 칸 밖으로 밀지 않게 칩만 줄여 말줄임으로 보입니다. */}
+        <LabelChip label={first} className="block min-w-0 shrink truncate leading-5" />
+        {shown.length > 1 && (
+          <span className="shrink-0 text-xs text-base-content/55 tabular-nums">
+            +{shown.length - 1}
+          </span>
+        )}
+      </div>
+    </td>
   );
 }
 

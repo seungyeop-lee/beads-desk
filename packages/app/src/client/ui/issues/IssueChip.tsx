@@ -33,6 +33,10 @@ export function StatusChip({ status }: { status: string }) {
 }
 
 /** 라벨을 보입니다. 같은 라벨은 어디서나 같은 색으로 보입니다. */
-export function LabelChip({ label }: { label: string }) {
-  return <IssueChip tone={nameTone(label)}>{label}</IssueChip>;
+export function LabelChip({ label, className }: { label: string; className?: string }) {
+  return (
+    <IssueChip tone={nameTone(label)} className={className}>
+      {label}
+    </IssueChip>
+  );
 }
