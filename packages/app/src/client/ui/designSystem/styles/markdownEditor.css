@@ -73,6 +73,27 @@
   display: none;
 }
 
+/*
+ * 코드 블록의 구문 강조 색입니다(codeHighlighting.ts). 밝은 테마 값은 CodeMirror 기본 강조(defaultHighlightStyle)의 색 그대로입니다.
+ * 어두운 테마 값은 같은 색상을 밝게 올린 색으로, 코드 블록 바탕(base-200)과 7:1 이상 대비됩니다.
+ */
+.markdown-editor {
+  --code-meta: light-dark(#404740, #a3aca3);
+  --code-keyword: light-dark(#708, #d6a3ff);
+  --code-atom: light-dark(#219, #a5b4fc);
+  --code-literal: light-dark(#164, #94d9a6);
+  --code-string: light-dark(#a11, #f4a3a3);
+  --code-regexp: light-dark(#e40, #fdac74);
+  --code-definition: light-dark(#00f, #8fb8ff);
+  --code-local: light-dark(#30a, #b7a6ff);
+  --code-type: light-dark(#085, #5ed6b0);
+  --code-class: light-dark(#167, #7dd3e0);
+  --code-special: light-dark(#256, #9cc8d6);
+  --code-property: light-dark(#00c, #a5bfff);
+  --code-comment: light-dark(#940, #c9a072);
+  --code-invalid: light-dark(#f00, #ff8080);
+}
+
 .markdown-editor .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
   font-weight: 600;
 }

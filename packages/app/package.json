@@ -68,7 +68,9 @@
   },
   "devDependencies": {
     "@beads-desk/bd": "workspace:*",
+    "@codemirror/language": "^6.13.1",
     "@codemirror/language-data": "^6.5.2",
+    "@lezer/highlight": "^1.2.5",
     "@milkdown/crepe": "^7.22.3",
     "@milkdown/kit": "7.22.3",
     "@playwright/test": "^1.64.0",

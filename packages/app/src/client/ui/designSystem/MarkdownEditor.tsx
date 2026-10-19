@@ -78,6 +78,7 @@ export function MarkdownEditor({
         { table },
         { toolbar },
         { languages },
+        { codeHighlighting },
         { editorViewCtx, editorViewOptionsCtx, serializerCtx },
         { $prose, callCommand },
         { Plugin },
@@ -93,6 +94,7 @@ export function MarkdownEditor({
         import("@milkdown/crepe/feature/table"),
         import("@milkdown/crepe/feature/toolbar"),
         import("@codemirror/language-data"),
+        import("./codeHighlighting"),
         import("@milkdown/kit/core"),
         import("@milkdown/kit/utils"),
         import("@milkdown/kit/prose/state"),
@@ -108,6 +110,7 @@ export function MarkdownEditor({
         .addFeature(placeholderFeature, { text: placeholder ?? "" })
         .addFeature(codeMirror, {
           languages,
+          theme: codeHighlighting,
           renderPreview: preview.renderPreview,
           previewLabel: labels.preview,
           previewLoading: labels.previewLoading,

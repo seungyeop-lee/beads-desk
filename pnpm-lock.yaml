@@ -227,9 +227,15 @@ importers:
       '@beads-desk/bd':
         specifier: workspace:*
         version: link:../bd
+      '@codemirror/language':
+        specifier: ^6.13.1
+        version: 6.13.1
       '@codemirror/language-data':
         specifier: ^6.5.2
         version: 6.5.2
+      '@lezer/highlight':
+        specifier: ^1.2.5
+        version: 1.2.5
       '@milkdown/crepe':
         specifier: ^7.22.3
         version: 7.22.3(@typescript/typescript6@6.0.2)(prosemirror-model@1.25.12)(prosemirror-state@1.4.4)(prosemirror-view@1.42.6)(supports-color@8.1.1)
