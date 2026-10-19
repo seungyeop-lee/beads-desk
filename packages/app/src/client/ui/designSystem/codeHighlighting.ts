@@ -35,7 +35,7 @@ export const codeHighlighting = syntaxHighlighting(
 );
 
 /**
- * 코드 블록 편집기가 그리는 표시(현재 줄, 고른 글자, caret, 같은 낱말과 검색 결과 강조, 자동 완성 목록, 접힌 코드, snippet 입력 칸)의 색입니다.
+ * 코드 블록 편집기가 그리는 표시(현재 줄, 고른 글자, caret, 같은 낱말과 검색 결과 강조, 자동 완성 목록, 접힌 코드, snippet 입력 칸, 버튼)의 색입니다.
  * CodeMirror 기본 테마는 dark theme 확장이 없으면 밝은 바탕에 맞춘 색을 쓰므로, 색을 markdownEditor.css의 --code-* 변수로 바꿉니다.
  * EditorView.theme의 규칙은 기본 테마의 같은 규칙보다 우선합니다.
  */
@@ -59,4 +59,15 @@ export const codeEditorTheme = EditorView.theme({
     borderColor: "var(--code-fold-placeholder-border)",
     color: "var(--code-fold-placeholder-text)",
   },
+  // 버튼 글자색은 정하지 않아 panel 글자색을 물려받습니다. 검색 panel의 버튼은 Crepe 규칙이 바탕을 칠해 이 색을 쓰지 않습니다.
+  ".cm-button": {
+    backgroundImage: "linear-gradient(var(--code-button-top), var(--code-button-bottom))",
+  },
+  ".cm-button:active": {
+    backgroundImage:
+      "linear-gradient(var(--code-button-pressed-top), var(--code-button-pressed-bottom))",
+  },
+  // Crepe의 `.cm-panel > button` 규칙이 줄 이동 dialog의 닫기 버튼에 테두리와 굵은 글씨를 입힙니다.
+  // 검색 panel의 닫기 버튼처럼 그리려고, 그 규칙보다 구체적인 selector로 둘을 되돌립니다.
+  "& .cm-panel.cm-dialog > .cm-dialog-close": { border: "none", fontWeight: "inherit" },
 });

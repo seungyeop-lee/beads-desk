@@ -115,6 +115,10 @@
   --code-fold-placeholder: light-dark(#eee, #34312d);
   --code-fold-placeholder-border: light-dark(#ddd, #716b63);
   --code-fold-placeholder-text: light-dark(#888, #a8a29a);
+  --code-button-top: light-dark(#eff1f5, #34312d);
+  --code-button-bottom: light-dark(#d9d9df, #1f1d1b);
+  --code-button-pressed-top: light-dark(#b4b4b4, #1f1d1b);
+  --code-button-pressed-bottom: light-dark(#d0d3d6, #34312d);
 }
 
 .markdown-editor .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {

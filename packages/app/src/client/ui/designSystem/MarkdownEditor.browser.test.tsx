@@ -1,7 +1,8 @@
+/// <reference types="@vitest/browser-playwright" />
 import { foldCode } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { afterEach, expect, test } from "vitest";
-import { userEvent } from "vitest/browser";
+import { cdp, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
@@ -314,6 +315,64 @@ test("어두운 테마에서도 코드 블록의 접힌 코드 자리 표시는 
   expect(fold.dark.text).toBeGreaterThanOrEqual(4.5);
 });
 
+test("어두운 테마에서도 코드 블록의 줄 이동 dialog에 있는 go 버튼의 글자는 눌렀을 때도 버튼 바탕과 4.5:1 이상 대비된다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  const { goButton } = await openLineDialogWithSearch(view);
+  const read = () => {
+    const button = getComputedStyle(goButton);
+    const panel = getComputedStyle(goButton.closest(".cm-panel")!);
+    const stops = Array.from(button.backgroundImage.matchAll(/rgba?\([^)]*\)/g), ([stop]) => stop);
+    return {
+      colors: {
+        background: button.backgroundImage,
+        border: `${button.borderTopWidth} ${button.borderTopStyle} ${button.borderTopColor}`,
+        text: button.color,
+      },
+      panelText: panel.color,
+      text: Math.min(
+        ...stops.map((stop) => contrast(button.color, paint(panel.backgroundColor, stop))),
+      ),
+    };
+  };
+
+  const idle = inBothThemes(read);
+  const pressed = await whilePressing(goButton, () => inBothThemes(read));
+
+  // 밝은 테마는 CodeMirror 기본 테마의 모양 그대로이고, 기본 테마는 글자색을 정하지 않아 panel 글자색을 물려받습니다.
+  expect(idle.light.colors).toEqual({
+    background: "linear-gradient(rgb(239, 241, 245), rgb(217, 217, 223))",
+    border: "1px solid rgb(136, 136, 136)",
+    text: idle.light.panelText,
+  });
+  expect(pressed.light.colors.background).toBe(
+    "linear-gradient(rgb(180, 180, 180), rgb(208, 211, 214))",
+  );
+  expect(idle.dark.text).toBeGreaterThanOrEqual(4.5);
+  expect(pressed.dark.text).toBeGreaterThanOrEqual(4.5);
+});
+
+test("코드 블록의 줄 이동 dialog에 있는 닫기 버튼은 두 테마 모두 검색 panel의 닫기 버튼처럼 테두리 없이 그려진다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  const { closeButton, searchCloseButton } = await openLineDialogWithSearch(view);
+  const shape = (element: Element) => {
+    const style = getComputedStyle(element);
+    return {
+      border: `${style.borderTopWidth} ${style.borderTopStyle}`,
+      background: style.backgroundColor,
+      text: style.color,
+      font: `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
+    };
+  };
+
+  const close = inBothThemes(() => ({
+    dialog: shape(closeButton),
+    search: shape(searchCloseButton),
+  }));
+  expect(close.light.dialog.border).toBe("0px none");
+  expect(close.light.dialog).toEqual(close.light.search);
+  expect(close.dark.dialog).toEqual(close.dark.search);
+});
+
 test("그림의 한글 라벨은 노드 상자 안에 들어가고, 지원하지 않는 종류의 그림은 코드로 보인다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
@@ -419,6 +478,45 @@ async function typeOnNewLastLine(view: EditorView, text: string) {
 async function completionOption(view: EditorView) {
   await expect.poll(() => view.dom.querySelector(".cm-tooltip-autocomplete li")).not.toBeNull();
   return view.dom.querySelector<HTMLElement>(".cm-tooltip-autocomplete li")!;
+}
+
+/** 코드 블록에서 검색 panel을 연 뒤 줄 이동 dialog(Mod-Alt-g)를 열고, 두 panel의 버튼을 돌려줍니다. */
+async function openLineDialogWithSearch(view: EditorView) {
+  view.dispatch({ selection: { anchor: 0 } });
+  await userEvent.keyboard("{ControlOrMeta>}f{/ControlOrMeta}");
+  await expect.poll(() => view.dom.querySelector(".cm-search")).not.toBeNull();
+  view.focus();
+  await userEvent.keyboard("{ControlOrMeta>}{Alt>}g{/Alt}{/ControlOrMeta}");
+  await expect.poll(() => view.dom.querySelector(".cm-dialog")).not.toBeNull();
+  return {
+    goButton: view.dom.querySelector<HTMLElement>(".cm-dialog form button.cm-button")!,
+    closeButton: view.dom.querySelector<HTMLElement>(".cm-dialog-close")!,
+    searchCloseButton: view.dom.querySelector<HTMLElement>(".cm-search [name=close]")!,
+  };
+}
+
+/**
+ * element 가운데에서 마우스 왼쪽 단추를 누른 채로 read를 실행합니다. :active 모양은 실제로 누르고 있는 동안에만 계산되므로 CDP로 누릅니다.
+ * 테스트는 iframe 안에서 실행되므로, CDP에 넘기는 좌표에 iframe의 위치를 더합니다. 누른 단추는 element 밖에서 떼어 click이 일어나지 않게 합니다.
+ */
+async function whilePressing<T>(element: HTMLElement, read: () => T) {
+  const frame = window.frameElement!.getBoundingClientRect();
+  const box = element.getBoundingClientRect();
+  const mouse = (type: "mousePressed" | "mouseReleased", x: number, y: number) =>
+    cdp().send("Input.dispatchMouseEvent", {
+      type,
+      x: frame.left + x,
+      y: frame.top + y,
+      button: "left",
+      clickCount: 1,
+    });
+  await mouse("mousePressed", box.left + box.width / 2, box.top + box.height / 2);
+  try {
+    await expect.poll(() => element.matches(":active")).toBe(true);
+    return read();
+  } finally {
+    await mouse("mouseReleased", 0, 0);
+  }
 }
 
 /** 열어 둔 화면을 밝은 테마와 어두운 테마에서 차례로 읽습니다. 테마를 바꿔도 편집기를 다시 만들지 않으므로 열린 표시가 그대로 남습니다. */
