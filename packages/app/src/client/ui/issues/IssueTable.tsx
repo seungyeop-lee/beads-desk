@@ -39,6 +39,8 @@ type Props = (
   waiters?: ReadonlyMap<string, number>;
   /** 묶음마다 표를 나눠 보일 때, 첫 표가 아니면 열 이름을 감춥니다. 열 너비는 그대로 맞춥니다. */
   hideHeader?: boolean;
+  /** 주면 유형이 epic인 행의 의존 칸에 의존 수 대신, 이 주소로 그 에픽의 순서 보기를 여는 링크를 보입니다. */
+  epicOrderHref?: (epicId: string) => string;
 };
 
 /** ID를 누르면 전체 ID를 복사하고, 제목을 누르면 상세를 엽니다. 상태와 우선순위는 표에서 바로 고치고, 라벨과 담당자는 상세에서만 고칩니다. */
@@ -52,6 +54,7 @@ export const IssueTable = memo(function IssueTable({
   gateTitles,
   waiters,
   hideHeader,
+  epicOrderHref,
 }: Props) {
   const messages = useMessages();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -108,6 +111,7 @@ export const IssueTable = memo(function IssueTable({
               gateTitles={gateTitles}
               waiters={waiters?.get(row.issue.id) ?? 0}
               writes={writes}
+              epicOrderHref={epicOrderHref}
             />
           ))}
         </tbody>
@@ -133,9 +137,19 @@ type RowProps = {
   gateTitles: GateTitles;
   waiters: number;
   writes: IssueWrites;
+  epicOrderHref: ((epicId: string) => string) | undefined;
 };
 
-function IssueRow({ issue, outline, issueHref, titleOf, gateTitles, waiters, writes }: RowProps) {
+function IssueRow({
+  issue,
+  outline,
+  issueHref,
+  titleOf,
+  gateTitles,
+  waiters,
+  writes,
+  epicOrderHref,
+}: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
   const messages = useMessages();
@@ -198,12 +212,24 @@ function IssueRow({ issue, outline, issueHref, titleOf, gateTitles, waiters, wri
         />
       </td>
       <LabelCell labels={issue.labels} />
-      <td
-        className={`text-right font-mono text-xs tabular-nums ${issue.dependencyCount + issue.dependentCount === 0 ? "text-base-content/30" : ""}`}
-        title={messages.issueTable.dependencyCounts(issue.dependencyCount, issue.dependentCount)}
-      >
-        {issue.dependencyCount} / {issue.dependentCount}
-      </td>
+      {epicOrderHref && issue.issueType === "epic" ? (
+        // 의존 열(5rem)의 좌우 여백을 남기면 영어 버튼 문구가 칸 밖으로 넘치므로, 이 칸만 여백을 없앱니다.
+        <td className="px-0 text-right">
+          <Link
+            className="btn btn-ghost btn-xs rounded-full whitespace-nowrap"
+            href={epicOrderHref(issue.id)}
+          >
+            {messages.graph.epicOrder}
+          </Link>
+        </td>
+      ) : (
+        <td
+          className={`text-right font-mono text-xs tabular-nums ${issue.dependencyCount + issue.dependentCount === 0 ? "text-base-content/30" : ""}`}
+          title={messages.issueTable.dependencyCounts(issue.dependencyCount, issue.dependentCount)}
+        >
+          {issue.dependencyCount} / {issue.dependentCount}
+        </td>
+      )}
     </tr>
   );
 }

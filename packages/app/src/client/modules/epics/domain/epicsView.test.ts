@@ -2,11 +2,35 @@ import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture";
-import { epicDescendantRows, notChildCandidate, settleExpandedEpics, sortEpics } from "./epicsView";
+import {
+  epicDescendantRows,
+  notChildCandidate,
+  settleExpandedEpics,
+  sortEpics,
+  topLevelEpics,
+} from "./epicsView";
 
 function summary(id: string, status: string, priority = 2, createdAt = 0): EpicSummary {
   return { epic: issue(id, { status, priority, createdAt }), totalChildren: 0, closedChildren: 0 };
 }
+
+test("상위 이슈가 에픽인 에픽은 상위 에픽이 닫혀 있어도 카드에서 빼고, 상위가 없거나 에픽이 아닌 에픽은 남긴다", () => {
+  const epic = (id: string, parent: string | null, status = "open"): EpicSummary => ({
+    epic: issue(id, { issueType: "epic", parent, status }),
+    totalChildren: 0,
+    closedChildren: 0,
+  });
+
+  const cards = topLevelEpics([
+    epic("root", null),
+    epic("root.1", "root"),
+    epic("done", null, "closed"),
+    epic("done.1", "done"),
+    epic("task.1", "task"),
+  ]);
+
+  expect(cards.map(({ epic }) => epic.id)).toEqual(["root", "done", "task.1"]);
+});
 
 test("진행 중, 열림, 닫힘 순으로 묶고 묶음 안에서는 우선순위와 만든 시각 순으로 정렬한다", () => {
   const sorted = sortEpics([

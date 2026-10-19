@@ -7,6 +7,7 @@ import { koMessages as messages } from "@/client/modules/locale/domain/koMessage
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicDescendants, EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture";
+import { graphHref } from "@/client/ui/screens/graph/graphAddress";
 import { EpicsScreen } from "./EpicsScreen";
 
 const EPICS: EpicSummary[] = [
@@ -180,6 +181,64 @@ test("에픽과 하위 이슈의 ID는 짧은 ID 복사 단추이고, 하위 이
   });
   await expect.element(loadingPicker).toBeDisabled();
   expect(getComputedStyle(loadingPicker.element()).cursor).not.toBe("pointer");
+});
+
+test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 에픽을 펼친 하위 목록의 그 에픽 행은 의존 수 대신 순서 보기 링크를 보인다", async () => {
+  reads.epics = [
+    { epic: epic("desk-parent", "상위 에픽"), totalChildren: 2, closedChildren: 0 },
+    {
+      epic: issue("desk-parent.1", {
+        title: "하위 에픽",
+        issueType: "epic",
+        parent: "desk-parent",
+      }),
+      totalChildren: 0,
+      closedChildren: 0,
+    },
+    { epic: epic("desk-root", "상위 없는 에픽"), totalChildren: 0, closedChildren: 0 },
+    {
+      epic: issue("desk-task.1", {
+        title: "작업 아래 에픽",
+        issueType: "epic",
+        parent: "desk-task",
+      }),
+      totalChildren: 0,
+      closedChildren: 0,
+    },
+  ];
+  reads.descendants = {
+    "desk-parent": {
+      issues: [
+        issue("desk-parent.1", { title: "하위 에픽", issueType: "epic", parent: "desk-parent" }),
+        issue("desk-parent.2", { title: "하위 작업", parent: "desk-parent", dependencyCount: 1 }),
+      ],
+      waiters: {},
+    },
+  };
+  const screen = await renderScreen();
+
+  // 에픽 카드마다 진행률 막대가 하나씩 있습니다.
+  const cards = screen
+    .getByRole("progressbar")
+    .elements()
+    .map((bar) => bar.getAttribute("aria-label"));
+  expect(cards).toEqual(
+    ["desk-parent", "desk-root", "desk-task.1"].map((id) => messages.epics.progress(id)),
+  );
+  const count = screen.getByRole("heading", { level: 1 }).element().nextElementSibling;
+  expect(count?.textContent).toBe("3");
+
+  const childEpicRow = screen.getByRole("row", { name: /하위 에픽/ });
+  await expect
+    .element(childEpicRow.getByRole("link", { name: messages.graph.epicOrder }))
+    .toHaveAttribute("href", graphHref({ kind: "epic", id: "desk-parent.1" }, "/epics?"));
+  await expect
+    .element(childEpicRow.getByTitle(messages.issueTable.dependencyCounts(0, 0), { exact: true }))
+    .not.toBeInTheDocument();
+  const taskRow = screen.getByRole("row", { name: /하위 작업/ });
+  await expect
+    .element(taskRow.getByTitle(messages.issueTable.dependencyCounts(1, 0), { exact: true }))
+    .toHaveTextContent("1 / 0");
 });
 
 function renderScreen() {

@@ -10,6 +10,17 @@ import type { EpicSummary } from "@/shared/contract/epics";
 /** 지금 진행 중인 epic을 먼저 보입니다. */
 const STATUS_ORDER = ["in_progress", "open", "blocked", "deferred", "closed"];
 
+/**
+ * 에픽 화면에 카드로 보일 에픽을 고릅니다. 상위 이슈가 에픽인 에픽은 그 상위 에픽을 펼친 하위 목록에서 보이므로,
+ * 상위 에픽이 닫혀 있어도 카드로 보이지 않습니다.
+ *
+ * @param epics 워크스페이스의 모든 에픽입니다. 상위 이슈가 에픽인지는 이 목록에 그 이슈가 있는지로 판단합니다.
+ */
+export function topLevelEpics(epics: EpicSummary[]): EpicSummary[] {
+  const epicIds = new Set(epics.map(({ epic }) => epic.id));
+  return epics.filter(({ epic }) => epic.parent === null || !epicIds.has(epic.parent));
+}
+
 /** 상태로 묶어 진행 중 → 열림 → 막힘 → 보류 → 닫힘 순으로 보이고, 묶음 안에서는 우선순위와 만든 시각 순으로 정렬합니다. */
 export function sortEpics(epics: EpicSummary[]): EpicSummary[] {
   return [...epics].sort(

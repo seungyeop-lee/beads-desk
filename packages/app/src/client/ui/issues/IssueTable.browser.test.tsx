@@ -4,6 +4,7 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import { enMessages } from "@/client/modules/locale/domain/enMessages";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
@@ -254,3 +255,66 @@ test("9rem 라벨 칸에 긴 라벨 이름과 +N이 함께 있으면 라벨 이�
   // 라벨 이름은 칸에 다 들어가지 않으므로 잘려 보입니다.
   expect(chip.scrollWidth).toBeGreaterThan(chip.clientWidth);
 });
+
+test("epicOrderHref를 주지 않으면 에픽 행도 의존 칸에 의존 수를 보인다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueTable
+        issues={[
+          issue("desk-epic", { title: "목록의 에픽", issueType: "epic", dependentCount: 2 }),
+        ]}
+        issueHref={(id) => `/issues?issue=${id}`}
+        writes={WRITES}
+        gateTitles={new Map()}
+      />
+    </LocaleProvider>,
+  );
+  const row = screen.getByRole("row", { name: /목록의 에픽/ });
+
+  await expect
+    .element(row.getByTitle(messages.issueTable.dependencyCounts(0, 2), { exact: true }))
+    .toHaveTextContent("0 / 2");
+  await expect
+    .element(row.getByRole("link", { name: messages.graph.epicOrder }))
+    .not.toBeInTheDocument();
+});
+
+for (const locale of ["ko", "en"] as const) {
+  test(`epicOrderHref를 주면 에픽 행만 의존 칸에 순서 보기 링크를 칸 밖으로 넘치지 않게 보인다(${locale})`, async () => {
+    const localeMessages = locale === "ko" ? messages : enMessages;
+    const screen = await render(
+      <LocaleProvider locale={locale}>
+        <div style={{ width: 1376 }}>
+          <IssueTable
+            issues={[
+              issue("desk-epic", { title: "하위 에픽", issueType: "epic", dependencyCount: 1 }),
+              issue("desk-task", { title: "하위 작업", dependencyCount: 1 }),
+            ]}
+            issueHref={(id) => `/epics?issue=${id}`}
+            writes={WRITES}
+            gateTitles={new Map()}
+            epicOrderHref={(id) => `/epics?epic=${id}`}
+          />
+        </div>
+      </LocaleProvider>,
+    );
+    const epicRow = screen.getByRole("row", { name: /하위 에픽/ });
+    const taskRow = screen.getByRole("row", { name: /하위 작업/ });
+
+    const link = epicRow.getByRole("link", { name: localeMessages.graph.epicOrder });
+    await expect.element(link).toHaveAttribute("href", "/epics?epic=desk-epic");
+    const cell = link.element().closest("td")!.getBoundingClientRect();
+    const box = link.element().getBoundingClientRect();
+    expect(box.left).toBeGreaterThanOrEqual(cell.left);
+    expect(box.right).toBeLessThanOrEqual(cell.right);
+
+    await expect
+      .element(taskRow.getByRole("link", { name: localeMessages.graph.epicOrder }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(
+        taskRow.getByTitle(localeMessages.issueTable.dependencyCounts(1, 0), { exact: true }),
+      )
+      .toHaveTextContent("1 / 0");
+  });
+}

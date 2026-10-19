@@ -12,6 +12,7 @@ import {
   notChildCandidate,
   settleExpandedEpics,
   sortEpics,
+  topLevelEpics,
 } from "@/client/modules/epics/domain/epicsView";
 import {
   useIssueWrites,
@@ -45,7 +46,7 @@ export function EpicsScreen() {
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const [expanded, setExpanded] = useState<ReadonlySet<string> | null>(null);
-  const epics = data ? sortEpics(data) : null;
+  const epics = data ? sortEpics(topLevelEpics(data)) : null;
   const settled = epics ? settleExpandedEpics(epics, expanded) : expanded;
   if (settled !== expanded) setExpanded(settled);
   const open = settled ?? new Set<string>();
@@ -174,6 +175,7 @@ function EpicDescendants({
   const waiters = useMemo(() => new Map(Object.entries(data?.waiters ?? {})), [data]);
   const [creating, setCreating] = useState(false);
   const router = useRouter();
+  const graphHref = useGraphHref();
   const messages = useMessages();
   return (
     <div className="flex flex-col gap-3 border-t border-base-300 bg-base-200/40 p-4">
@@ -228,6 +230,7 @@ function EpicDescendants({
           issueHref={issueHref}
           writes={writes}
           emptyMessage={messages.epics.childrenEmpty}
+          epicOrderHref={(epicId) => graphHref({ kind: "epic", id: epicId })}
         />
       )}
     </div>
