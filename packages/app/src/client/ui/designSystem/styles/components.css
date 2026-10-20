@@ -322,6 +322,14 @@
 .modal[open] {
   background-color: rgb(28 25 23 / 0.4);
 }
+/* 그려지는 순간 열리는 dialog는 전환을 시작할 이전 스타일이 없어서 배경색이 처음부터 최종값으로 칠해지고, daisyUI가 @starting-style에 둔 0.1초 opacity 전환으로만 나타납니다.
+   배경색의 시작값을 투명으로 두어, 미리 그려 둔 dialog처럼 0.3초 background-color 전환으로 어두워지게 합니다.
+   시작값은 위 규칙과 우선순위가 같아서, 이 블록이 위 규칙보다 뒤에 있어야 적용됩니다. */
+@starting-style {
+  .modal[open] {
+    background-color: transparent;
+  }
+}
 
 .modal-box {
   border: 1px solid var(--color-base-300);
