@@ -27,7 +27,7 @@ import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRo
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { statusLabel, statusTone } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
-import { EpicProgress } from "@/client/ui/issues/EpicProgress";
+import { EpicProgressBar, epicPercent } from "@/client/ui/issues/EpicProgress";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
@@ -248,9 +248,12 @@ function EpicSection({
         >
           {epic.title || messages.common.untitled}
         </Link>
+        {/* 한 줄 배치에서는 오른쪽 조작마다 폭을 고정해, 상태나 개수의 글자 폭이 달라도 카드끼리 열 위치가 같게 합니다. */}
         <div className="col-span-full flex flex-wrap items-center justify-end gap-3 xl:contents">
-          <span className={`chip ${statusTone(epic.status)}`}>
-            {statusLabel(messages, epic.status)}
+          <span className="flex shrink-0 xl:min-w-24">
+            <span className={`chip ${statusTone(epic.status)}`}>
+              {statusLabel(messages, epic.status)}
+            </span>
           </span>
           {epic.status === "closed" ? (
             <ClosedEpicProgress
@@ -259,13 +262,19 @@ function EpicSection({
               total={totalChildren}
             />
           ) : (
-            <EpicProgress
-              epicId={epic.id}
-              closed={closedChildren}
-              total={totalChildren}
-              barClassName="w-40 min-w-24 shrink"
-              countClassName="min-w-20 shrink-0 text-right"
-            />
+            <>
+              <EpicProgressBar
+                epicId={epic.id}
+                closed={closedChildren}
+                total={totalChildren}
+                className="w-40 min-w-24 shrink xl:shrink-0"
+              />
+              <EpicCount
+                closed={closedChildren}
+                total={totalChildren}
+                percent={epicPercent(closedChildren, totalChildren)}
+              />
+            </>
           )}
           <Link
             className="btn btn-ghost btn-xs shrink-0 rounded-full"
@@ -288,7 +297,10 @@ function EpicSection({
   );
 }
 
-/** 닫힌 에픽은 진행률이 거의 항상 100%라, 막대 대신 닫은 날짜와 닫힌 하위 이슈 수를 보입니다. */
+/**
+ * 닫힌 에픽은 진행률이 거의 항상 100%라, 막대 대신 닫은 날짜와 닫힌 하위 이슈 수를 보입니다.
+ * 한 줄 배치에서는 닫은 날짜가 없어도 막대 열의 자리를 비워 두어, 하위 이슈 수가 열린 에픽의 분수 열에 놓이게 합니다.
+ */
 function ClosedEpicProgress({
   closedAt,
   closed,
@@ -302,9 +314,11 @@ function ClosedEpicProgress({
   const locale = useLocale();
   return (
     <>
-      {closedAt !== null && (
+      {closedAt === null ? (
+        <span className="hidden w-40 shrink-0 xl:block" />
+      ) : (
         <time
-          className="whitespace-nowrap text-xs text-base-content/55"
+          className="shrink-0 whitespace-nowrap text-xs text-base-content/55 xl:w-40"
           dateTime={new Date(closedAt).toISOString()}
         >
           {messages.epics.closedOn(
@@ -312,10 +326,38 @@ function ClosedEpicProgress({
           )}
         </time>
       )}
-      <span className="min-w-20 shrink-0 whitespace-nowrap text-right font-mono text-xs text-base-content/55 tabular-nums">
+      <EpicCount closed={closed} total={total} percent={null} />
+    </>
+  );
+}
+
+/**
+ * 진행 개수를 분수 열과 퍼센트 열로 나눠 각 열을 오른쪽에 맞추므로, 자릿수가 달라도 카드끼리 분수의 끝과 가운뎃점 위치가 같습니다.
+ * 닫힌 에픽은 퍼센트를 보이지 않지만 퍼센트 열의 자리는 남겨 둡니다.
+ */
+function EpicCount({
+  closed,
+  total,
+  percent,
+}: {
+  closed: number;
+  total: number;
+  percent: number | null;
+}) {
+  return (
+    <span className="flex shrink-0 gap-1.5 whitespace-nowrap font-mono text-xs text-base-content/55 tabular-nums">
+      <span className="w-14 text-right">
         {closed}/{total}
       </span>
-    </>
+      <span className="flex w-11 justify-between">
+        {percent !== null && (
+          <>
+            <span>·</span>
+            <span>{percent}%</span>
+          </>
+        )}
+      </span>
+    </span>
   );
 }
 

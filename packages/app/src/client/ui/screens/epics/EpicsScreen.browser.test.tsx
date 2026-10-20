@@ -3,7 +3,9 @@ import { expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import { enMessages } from "@/client/modules/locale/domain/enMessages";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
+import { statusLabel } from "@/client/ui/issues/issueLabels";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicDescendants, EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture";
@@ -56,11 +58,18 @@ for (const width of [455, 500, 1440]) {
       </LocaleProvider>,
     );
 
-    for (const countText of ["10/10 · 100%", "100/100 · 100%"]) {
-      const count = screen.getByText(countText, { exact: true }).element();
+    for (const fraction of ["10/10", "100/100"]) {
+      // 진행 개수는 분수 열과 퍼센트 열을 감싼 요소입니다.
+      const count = screen.getByText(fraction, { exact: true }).element().parentElement!;
       const card = count.closest("section")!.getBoundingClientRect();
       const box = count.getBoundingClientRect();
-      expect(lineCount(count), `${width}px ${countText} 줄 수`).toBe(1);
+      expect(count.textContent).toBe(`${fraction}·100%`);
+      expect(lineCount(count.firstElementChild!), `${width}px ${fraction} 줄 수`).toBe(1);
+      for (const column of count.children) {
+        expect(column.scrollWidth, `${width}px ${fraction} 열 넘침`).toBeLessThanOrEqual(
+          column.clientWidth,
+        );
+      }
       expect(box.left).toBeGreaterThanOrEqual(card.left);
       expect(box.right).toBeLessThanOrEqual(card.right);
     }
@@ -68,6 +77,88 @@ for (const width of [455, 500, 1440]) {
       document.documentElement.clientWidth,
     );
   });
+}
+
+// 1280px은 에픽 헤더가 한 줄에 놓이기 시작하는 xl 경계입니다.
+for (const width of [2000, 1280]) {
+  for (const locale of ["ko", "en"] as const) {
+    test(`창 폭 ${width}px에서 진행 개수의 자릿수와 닫힘 여부가 달라도 에픽 카드의 상태 칩, 막대나 닫은 날짜, 진행 개수, 순서 보기 링크의 열 위치가 같다(${locale})`, async () => {
+      reads.epics = [
+        { epic: epic("desk-a", "열린 에픽 3/8"), totalChildren: 8, closedChildren: 3 },
+        { epic: epic("desk-b", "열린 에픽 12/15"), totalChildren: 15, closedChildren: 12 },
+        { epic: epic("desk-c", "열린 에픽 0/0"), totalChildren: 0, closedChildren: 0 },
+        {
+          epic: issue("desk-d", {
+            title: "진행 중인 에픽 2/2",
+            issueType: "epic",
+            status: "in_progress",
+          }),
+          totalChildren: 2,
+          closedChildren: 2,
+        },
+        {
+          // 제목이 길면 남는 폭이 모자라 오른쪽 조작이 줄어들 수 있습니다.
+          epic: epic("desk-e", "제목이 아주 긴 열린 에픽 ".repeat(12)),
+          totalChildren: 100,
+          closedChildren: 1,
+        },
+        CLOSED_EPIC,
+        {
+          epic: issue("desk-undated", {
+            title: "닫은 날짜가 없는 에픽",
+            issueType: "epic",
+            status: "closed",
+            closedAt: null,
+          }),
+          totalChildren: 12,
+          closedChildren: 12,
+        },
+      ];
+      await page.viewport(width, 1200);
+      const screen = await render(
+        <LocaleProvider locale={locale}>
+          <EpicsScreen />
+        </LocaleProvider>,
+      );
+      await screen.getByRole("button", { expanded: false, name: /Closed epics|닫힌 에픽/ }).click();
+
+      const headers = screen.container.querySelectorAll("section.surface > header");
+      expect(headers).toHaveLength(reads.epics.length);
+      const edges = new Map<string, Set<number>>();
+      const record = (column: string, value: number) =>
+        edges.set(column, (edges.get(column) ?? new Set()).add(Math.round(value)));
+      for (const header of headers) {
+        const card = page.elementLocator(header);
+        const { epic, closedChildren, totalChildren } = reads.epics.find(({ epic }) =>
+          header.textContent!.includes(epic.title),
+        )!;
+        const chip = card.getByText(statusLabel(MESSAGES[locale], epic.status), { exact: true });
+        record("상태 칩 왼쪽", box(chip).left);
+        const middle =
+          epic.status === "closed"
+            ? header.querySelector("time")
+            : header.querySelector("progress");
+        if (middle) {
+          record("막대·닫은 날짜 왼쪽", middle.getBoundingClientRect().left);
+          record("막대·닫은 날짜 오른쪽", middle.getBoundingClientRect().right);
+        }
+        const fraction = card.getByText(`${closedChildren}/${totalChildren}`, { exact: true });
+        record("분수 왼쪽", box(fraction).left);
+        record("분수 오른쪽", box(fraction).right);
+        record("진행 개수 오른쪽", fraction.element().parentElement!.getBoundingClientRect().right);
+        const order = card.getByRole("link", { name: MESSAGES[locale].graph.epicOrder });
+        record("순서 보기 왼쪽", box(order).left);
+      }
+      for (const [column, positions] of edges) {
+        expect([...positions], `${locale} ${width}px ${column}`).toHaveLength(1);
+      }
+      // 퍼센트는 열의 오른쪽 끝에 맞춰 놓입니다.
+      const percents = ["38%", "80%", "0%", "100%", "1%"].map((text) =>
+        Math.round(box(screen.getByText(text, { exact: true })).right),
+      );
+      expect(new Set(percents).size, `${locale} ${width}px 퍼센트 오른쪽`).toBe(1);
+    });
+  }
 }
 
 test("닫힌 에픽 묶음은 처음에 접혀 있고, 묶음을 펼치면 닫힌 에픽 카드가 하위 이슈 목록을 접은 채로 보이며 펼치기 단추로 펼칠 수 있다", async () => {
@@ -421,6 +512,12 @@ for (const locale of ["ko", "en"] as const) {
     expect(lineCount(count), `${locale} 진행 개수 줄 수`).toBe(1);
     expect(cell.scrollWidth, `${locale} 제목 칸 가로 넘침`).toBeLessThanOrEqual(cell.clientWidth);
   });
+}
+
+const MESSAGES = { ko: messages, en: enMessages };
+
+function box(locator: { element(): Element }) {
+  return locator.element().getBoundingClientRect();
 }
 
 function renderScreen() {
