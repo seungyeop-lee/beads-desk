@@ -4,6 +4,24 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-20
+
+### Added
+
+- **Activity** screen, next to **Needs human** in the top tabs: issues created, closed, and commented on across the workspace, newest first. Each row shows the time, the kind of record, the issue ID and title, the author, and the close reason or the start of the comment, and clicking a row opens the issue detail on top of the screen. It shows 50 records at first and 50 more each time you click **Show more**, and you can narrow it with **Dates**. Records added since your last visit are separated by a **Seen on your last visit** divider. Gate records are left out.
+- **Browser notifications** in **Settings**: turn on **Notify me about new Needs human items** to get a system notification when a workspace open in a beads-desk tab gets a new **Needs human** item, even while you work in another window. Clicking the notification opens that workspace's **Needs human** screen in a new tab. No notification is shown while you are looking at that workspace in a focused tab.
+
+### Changed
+
+- **Issues** screen: search also finds issues by words in the design, acceptance criteria, notes, and comments, not only in the ID, title, and description. Below each matching row, the fields that matched are listed with an excerpt in which every match of the search text is bold.
+- In the **Issues** and **Epics** tables, clicking the **Awaiting human** link of an issue blocked by a human gate opens the issue detail scrolled to the gate's **Response** field.
+
+### Fixed
+
+- When a dialog opens, the page behind it dims once, evenly over 0.3 seconds, instead of in two steps or all at once.
+- **Hygiene** screen: in the wide two-column layout, each column stacks its own cards, so a long **Missing sections** list no longer pushes the **Orphaned issues** card below the first screen.
+- **Issues** screen: in a narrow window of a browser whose scrollbars take up space, the horizontal scrollbar of the view tabs no longer appears between the selected tab's underline and the line below the tabs.
+
 ## [0.4.0] - 2026-10-20
 
 ### Added
