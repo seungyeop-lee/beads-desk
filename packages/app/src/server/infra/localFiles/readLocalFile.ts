@@ -1,15 +1,66 @@
 import { execFile } from "node:child_process";
 import { constants } from "node:fs";
-import { open, realpath } from "node:fs/promises";
+import { type FileHandle, open, realpath } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, relative, sep } from "node:path";
+import { Readable } from "node:stream";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
+/** 파일 안의 byte 구간입니다. `end`도 구간에 포함합니다. */
+export type ByteRange = { start: number; end: number };
+
 type LocalFile = { status: 200; contents: Uint8Array<ArrayBuffer> } | { status: 403 | 404 };
+type LocalFilePart =
+  | { status: 206; size: number; range: ByteRange; contents: ReadableStream<Uint8Array> }
+  | { status: 416; size: number }
+  | { status: 403 | 404 };
 
 export async function readLocalFile(workspace: string, path: string): Promise<LocalFile> {
+  const opened = await openAllowedFile(workspace, path);
+  if (opened.status !== 200) return opened;
+  try {
+    return { status: 200, contents: new Uint8Array(await opened.file.readFile()) };
+  } catch {
+    return { status: 404 };
+  } finally {
+    await opened.file.close();
+  }
+}
+
+/**
+ * 파일에서 `rangeOf`가 고른 구간만 stream으로 읽습니다. 큰 영상도 메모리에 모두 올리지 않습니다.
+ * `rangeOf`는 파일 크기를 받아 구간을 고르고, 크기를 벗어나 고를 수 없으면 null을 돌려줍니다.
+ */
+export async function readLocalFileRange(
+  workspace: string,
+  path: string,
+  rangeOf: (size: number) => ByteRange | null,
+): Promise<LocalFilePart> {
+  const opened = await openAllowedFile(workspace, path);
+  if (opened.status !== 200) return opened;
+  const { file, size } = opened;
+  const range = rangeOf(size);
+  if (!range) {
+    await file.close();
+    return { status: 416, size };
+  }
+  // stream이 끝나거나 응답이 취소되면 autoClose로 파일을 닫습니다.
+  const stream = file.createReadStream({ start: range.start, end: range.end });
+  return {
+    status: 206,
+    size,
+    range,
+    contents: Readable.toWeb(stream) as ReadableStream<Uint8Array>,
+  };
+}
+
+/** 허용 루트 안의 일반 파일만 엽니다. 연 파일은 호출한 쪽이 닫습니다. */
+async function openAllowedFile(
+  workspace: string,
+  path: string,
+): Promise<{ status: 200; file: FileHandle; size: number } | { status: 403 | 404 }> {
   const roots = await allowedRoots(workspace);
   let target: string;
   try {
@@ -18,21 +69,17 @@ export async function readLocalFile(workspace: string, path: string): Promise<Lo
     return { status: 404 };
   }
   if (!roots.some((root) => contains(root, target))) return { status: 403 };
+  let file: FileHandle;
   try {
     // 최종 경로가 검사 뒤 symlink로 바뀌었으면 열지 않습니다.
-    const file = await open(
-      target,
-      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-    );
-    try {
-      if (!(await file.stat()).isFile()) return { status: 404 };
-      return { status: 200, contents: new Uint8Array(await file.readFile()) };
-    } finally {
-      await file.close();
-    }
+    file = await open(target, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   } catch {
     return { status: 404 };
   }
+  const stat = await file.stat().catch(() => null);
+  if (stat?.isFile()) return { status: 200, file, size: stat.size };
+  await file.close();
+  return { status: 404 };
 }
 
 async function allowedRoots(workspace: string): Promise<string[]> {

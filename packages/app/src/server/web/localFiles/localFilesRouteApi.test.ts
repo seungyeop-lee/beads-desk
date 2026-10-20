@@ -39,10 +39,12 @@ beforeAll(async () => {
   execFileSync("git", ["-C", root, "worktree", "add", "--quiet", "--detach", worktree]);
   await mkdir(join(parent, "repo-other"));
   await writeFile(join(parent, "repo-other", "secret.md"), "outside secret");
+  await writeFile(join(parent, "repo-other", "secret.webm"), "outside video");
   await writeFile(join(root, "조사 결과.md"), "# 조사 결과");
   await writeFile(join(worktree, "다른 결과.md"), "# worktree 결과");
   await symlink(join(parent, "repo-other"), join(root, "escape"));
   await symlink(join(parent, "repo-other", "secret.md"), join(root, "escape.md"));
+  await symlink(join(parent, "repo-other", "secret.webm"), join(root, "escape.webm"));
   await symlink(join(worktree, "다른 결과.md"), join(root, "allowed.md"));
   worktreeParent = join(parent, "repo-wt");
   await mkdir(join(worktreeParent, "review-artifacts", "bd-x"), { recursive: true });
@@ -147,8 +149,96 @@ test.each([
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(response.headers.get("Cross-Origin-Resource-Policy")).toBe("same-origin");
+    expect(response.headers.get("Accept-Ranges")).toBe("bytes");
   },
 );
+
+test.each([
+  ["bytes=2-5", "2345", "bytes 2-5/10"],
+  ["bytes=7-", "789", "bytes 7-9/10"],
+  ["bytes=-3", "789", "bytes 7-9/10"],
+  ["bytes=5-100", "56789", "bytes 5-9/10"],
+  ["bytes=-100", "0123456789", "bytes 0-9/10"],
+  ["Bytes=0-0", "0", "bytes 0-0/10"],
+])("영상의 Range 요청 %s에 그 구간만 206으로 보낸다", async (range, body, contentRange) => {
+  const file = join(root, "구간 녹화.mp4");
+  await writeFile(file, "0123456789");
+  const response = await get(file, { Range: range });
+  expect(response.status).toBe(206);
+  expect(await response.text()).toBe(body);
+  expect(response.headers.get("Content-Range")).toBe(contentRange);
+  expect(response.headers.get("Accept-Ranges")).toBe("bytes");
+  expect(response.headers.get("Content-Type")).toBe("video/mp4");
+  expect(response.headers.get("Content-Security-Policy")).toBe(
+    "default-src 'none'; media-src 'self'",
+  );
+  expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  expect(response.headers.get("Cache-Control")).toBe("no-store");
+  expect(response.headers.get("Cross-Origin-Resource-Policy")).toBe("same-origin");
+});
+
+test.each(["bytes=10-", "bytes=100-200", "bytes=-0"])(
+  "영상 크기를 벗어난 Range 요청 %s에는 416과 전체 크기를 보낸다",
+  async (range) => {
+    const file = join(root, "구간 녹화.webm");
+    await writeFile(file, "0123456789");
+    const response = await get(file, { Range: range });
+    expect(response.status).toBe(416);
+    expect(response.headers.get("Content-Range")).toBe("bytes */10");
+    expect(response.headers.get("Content-Type")).toBeNull();
+    expect(await response.text()).toBe("");
+  },
+);
+
+test.each(["bytes=abc", "items=0-1", "bytes=5-3", "bytes=0-1,4-5", "bytes=-"])(
+  "형식이 맞지 않거나 여러 구간인 Range 요청 %s는 무시하고 영상 전체를 보낸다",
+  async (range) => {
+    const file = join(root, "구간 녹화.webm");
+    await writeFile(file, "0123456789");
+    const response = await get(file, { Range: range });
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("0123456789");
+    expect(response.headers.get("Content-Range")).toBeNull();
+  },
+);
+
+test("이미지와 텍스트는 Range 요청에도 전체를 보낸다", async () => {
+  for (const [extension, contentType] of [
+    ["png", "image/png"],
+    ["md", "text/plain; charset=utf-8"],
+  ]) {
+    const file = join(root, `구간.${extension}`);
+    await writeFile(file, "0123456789");
+    const response = await get(file, { Range: "bytes=2-5" });
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("0123456789");
+    expect(response.headers.get("Content-Type")).toBe(contentType);
+    expect(response.headers.get("Content-Range")).toBeNull();
+    expect(response.headers.get("Accept-Ranges")).toBeNull();
+  }
+});
+
+test.each(["prefix", "traversal", "file-symlink", "directory-symlink"])(
+  "Range 요청도 허용 밖 영상을 차단한다: %s",
+  async (kind) => {
+    const path = {
+      prefix: join(parent, "repo-other", "secret.webm"),
+      traversal: `${root}/../repo-other/secret.webm`,
+      "file-symlink": join(root, "escape.webm"),
+      "directory-symlink": join(root, "escape", "secret.webm"),
+    }[kind]!;
+    const response = await get(path, { Range: "bytes=0-3" });
+    expect(response.status).toBe(403);
+    expect(response.headers.get("Content-Range")).toBeNull();
+    expect(await response.text()).toBe("허용 범위 밖의 파일입니다.");
+  },
+);
+
+test("Range 요청도 없는 영상과 디렉터리는 제공하지 않는다", async () => {
+  await mkdir(join(root, "폴더.webm"), { recursive: true });
+  for (const path of [join(root, "missing.webm"), join(root, "폴더.webm")])
+    expect((await get(path, { Range: "bytes=0-3" })).status).toBe(404);
+});
 
 test("다른 사이트의 파일 요청을 거부한다", async () => {
   for (const site of ["same-site", "cross-site"])

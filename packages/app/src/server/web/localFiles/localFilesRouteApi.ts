@@ -1,5 +1,9 @@
 import { isAbsolute, extname } from "node:path";
-import { readLocalFile } from "@/server/infra/localFiles/readLocalFile";
+import {
+  type ByteRange,
+  readLocalFile,
+  readLocalFileRange,
+} from "@/server/infra/localFiles/readLocalFile";
 import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
 import { isCrossSiteRequest } from "@/server/web/http/crossSiteRequest";
 import { serverMessages } from "@/server/web/locale/serverMessages";
@@ -30,6 +34,8 @@ const FILE_HEADERS: Record<string, string> = {
   "Cross-Origin-Resource-Policy": "same-origin",
 };
 
+type ServerMessages = Awaited<ReturnType<typeof serverMessages>>;
+
 export async function handleLocalFileRequest(request: Request): Promise<Response> {
   const messages = await serverMessages();
 
@@ -39,16 +45,72 @@ export async function handleLocalFileRequest(request: Request): Promise<Response
   const path = requestedPath(request);
   if (path === null) return localFileResponse(messages.invalidRequest, 400);
 
-  const file = await readLocalFile(currentWorkspaceRoot(), path);
-  if (file.status !== 200) {
-    const text = file.status === 403 ? messages.localFileForbidden : messages.localFileNotFound;
-    return localFileResponse(text, file.status);
-  }
   const extension = extname(path).toLowerCase();
   const videoType = VIDEO_TYPES[extension];
-  if (videoType) return localFileResponse(file.contents, 200, videoType, VIDEO_CSP);
+  if (videoType) return videoResponse(request, path, videoType, messages);
+
+  const file = await readLocalFile(currentWorkspaceRoot(), path);
+  if (file.status !== 200) return deniedResponse(file.status, messages);
   // HTML·SVG·스크립트도 텍스트로 응답해 앱과 같은 origin에서 실행되지 않게 합니다.
-  return localFileResponse(file.contents, 200, IMAGE_TYPES[extension] ?? TEXT_CONTENT_TYPE);
+  return localFileResponse(file.contents, 200, {
+    "Content-Type": IMAGE_TYPES[extension] ?? TEXT_CONTENT_TYPE,
+  });
+}
+
+/** 브라우저가 재생 위치를 옮길 때 보내는 Range 요청에는 그 구간만 보냅니다. */
+async function videoResponse(
+  request: Request,
+  path: string,
+  contentType: string,
+  messages: ServerMessages,
+): Promise<Response> {
+  const headers = {
+    "Content-Type": contentType,
+    "Content-Security-Policy": VIDEO_CSP,
+    "Accept-Ranges": "bytes",
+  };
+  const rangeOf = requestedRange(request.headers.get("Range"));
+  if (!rangeOf) {
+    const file = await readLocalFile(currentWorkspaceRoot(), path);
+    if (file.status !== 200) return deniedResponse(file.status, messages);
+    return localFileResponse(file.contents, 200, headers);
+  }
+  const part = await readLocalFileRange(currentWorkspaceRoot(), path, rangeOf);
+  if (part.status === 206) {
+    const { start, end } = part.range;
+    return localFileResponse(part.contents, 206, {
+      ...headers,
+      "Content-Range": `bytes ${start}-${end}/${part.size}`,
+    });
+  }
+  if (part.status === 416) {
+    return localFileResponse(null, 416, {
+      "Accept-Ranges": "bytes",
+      "Content-Range": `bytes */${part.size}`,
+    });
+  }
+  return deniedResponse(part.status, messages);
+}
+
+/**
+ * `bytes=` 단위의 구간 하나를 해석해, 파일 크기를 받아 구간을 고르는 함수로 돌려줍니다.
+ * 형식이 맞지 않거나 여러 구간을 요청하면 null을 돌려주어 Range를 무시하고 전체를 보냅니다.
+ * 고른 함수는 시작 위치가 파일 크기를 벗어나면 null을 돌려주고, 끝 위치는 파일 끝까지로 줄입니다.
+ */
+function requestedRange(header: string | null): ((size: number) => ByteRange | null) | null {
+  const match = header?.trim().match(/^bytes=(\d*)-(\d*)$/i);
+  if (!match) return null;
+  const [, first = "", last = ""] = match;
+  if (first === "") {
+    if (last === "") return null;
+    const length = Number(last);
+    return (size) =>
+      length > 0 && size > 0 ? { start: Math.max(0, size - length), end: size - 1 } : null;
+  }
+  const start = Number(first);
+  if (last !== "" && Number(last) < start) return null;
+  return (size) =>
+    start < size ? { start, end: last === "" ? size - 1 : Math.min(Number(last), size - 1) } : null;
 }
 
 /** query에서 파일 경로를 얻습니다. 절대 경로가 아니거나 null 문자가 든 경로는 null을 돌려줍니다. */
@@ -57,19 +119,19 @@ function requestedPath(request: Request): string | null {
   return path !== null && isAbsolute(path) && !path.includes("\0") ? path : null;
 }
 
-/** 보안 header를 붙여 local file 응답을 조립합니다. 본문을 성공적으로 보낼 때만 Content-Type을 정합니다. */
+function deniedResponse(status: 403 | 404, messages: ServerMessages): Response {
+  const text = status === 403 ? messages.localFileForbidden : messages.localFileNotFound;
+  return localFileResponse(text, status);
+}
+
+/** 보안 header를 붙여 local file 응답을 조립합니다. Content-Type은 본문을 제대로 보낼 때만 넘깁니다. */
 function localFileResponse(
-  body: BodyInit,
+  body: BodyInit | null,
   status: number,
-  contentType?: string,
-  csp = SANDBOX_CSP,
+  headers: Record<string, string> = {},
 ): Response {
   return new Response(body, {
     status,
-    headers: {
-      ...FILE_HEADERS,
-      "Content-Security-Policy": csp,
-      ...(contentType ? { "Content-Type": contentType } : {}),
-    },
+    headers: { ...FILE_HEADERS, "Content-Security-Policy": SANDBOX_CSP, ...headers },
   });
 }
