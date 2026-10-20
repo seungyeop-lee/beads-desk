@@ -172,5 +172,5 @@ test("페이지 끝까지 스크롤해도 상단 머리글이 화면 위에 붙�
 
   window.scrollTo({ top: document.documentElement.scrollHeight });
   expect(window.scrollY, "한 화면 높이보다 많이 스크롤함").toBeGreaterThan(600);
-  expect(screen.getByTestId("app-header").element().getBoundingClientRect().top).toBe(0);
+  expect(screen.getByRole("banner").element().getBoundingClientRect().top).toBe(0);
 });

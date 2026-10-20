@@ -38,7 +38,8 @@ vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
   useIssueHref: () => (id: string) => `/board?issue=${id}`,
 }));
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/board",
+  useParams: () => ({ workspace: "demo" }),
+  usePathname: () => "/w/demo/board",
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));

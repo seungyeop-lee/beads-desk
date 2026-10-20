@@ -61,9 +61,6 @@ vi.mock("@/client/modules/humanDecisions/application/useHumanDecisionCount", () 
 vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({
   useIssueWrites: () => SUCCEEDING_WRITES,
 }));
-vi.mock("@/client/modules/workspace/application/useWorkspaces", () => ({
-  useWorkspaces: () => ({ data: null, error: null, loading: false }),
-}));
 vi.mock("next/navigation", () => ({
   useParams: () => ({ workspace: "demo" }),
   usePathname: () => "/w/demo/human",
@@ -242,7 +239,7 @@ test("좁은 창에서 보던 질문이 닫혀 다음 질문으로 넘어가면 
   await screen.rerender(<ScreenInAppLayout />);
   const panel = screen.getByRole("region", { name: "2번째 질문" });
   await expect.element(panel.getByText("30번째 문단입니다.")).toBeInTheDocument();
-  const headerHeight = screen.getByTestId("app-header").element().getBoundingClientRect().height;
+  const headerHeight = screen.getByRole("banner").element().getBoundingClientRect().height;
   await expect
     .poll(() => panel.element().getBoundingClientRect().top)
     .toBeGreaterThanOrEqual(headerHeight);
@@ -256,7 +253,7 @@ test("페이지 끝까지 스크롤해도 상단 머리글이 화면 위에 붙�
 
   window.scrollTo({ top: document.documentElement.scrollHeight });
   expect(window.scrollY, "한 화면 높이보다 많이 스크롤함").toBeGreaterThan(600);
-  expect(screen.getByTestId("app-header").element().getBoundingClientRect().top).toBe(0);
+  expect(screen.getByRole("banner").element().getBoundingClientRect().top).toBe(0);
 });
 
 test("목록에서 다른 항목을 눌러 고르면 스크롤이 움직이지 않는다", async () => {
@@ -276,9 +273,11 @@ test("목록에서 다른 항목을 눌러 고르면 스크롤이 움직이지 �
 
 function ScreenInAppLayout() {
   return (
-    <AppLayoutFixture>
-      <Screen />
-    </AppLayoutFixture>
+    <LocaleProvider locale="ko">
+      <AppLayoutFixture>
+        <Screen />
+      </AppLayoutFixture>
+    </LocaleProvider>
   );
 }
 

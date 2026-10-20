@@ -11,7 +11,8 @@ const ISSUES = Array.from({ length: 40 }, (_, index) =>
 );
 
 // 화면이 서버에서 읽는 목록·검색·쓰기와 주소를 읽어 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
-vi.mock("@/client/modules/issues/application/useIssueList", () => ({
+vi.mock("@/client/modules/issues/application/useIssueList", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/client/modules/issues/application/useIssueList")>()),
   useIssueList: () => ({ data: ISSUES, error: null, loading: false }),
 }));
 vi.mock("@/client/modules/issues/application/useIssueTextMatches", () => ({
@@ -52,5 +53,5 @@ test("페이지 끝까지 스크롤해도 상단 머리글이 화면 위에 붙�
 
   window.scrollTo({ top: document.documentElement.scrollHeight });
   expect(window.scrollY, "한 화면 높이보다 많이 스크롤함").toBeGreaterThan(600);
-  expect(screen.getByTestId("app-header").element().getBoundingClientRect().top).toBe(0);
+  expect(screen.getByRole("banner").element().getBoundingClientRect().top).toBe(0);
 });
