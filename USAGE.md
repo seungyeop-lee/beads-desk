@@ -48,6 +48,12 @@ BEADS_DESK_LOCAL_FILE_ROOTS="<directory>:<another directory>" bd-desk start
 - Only files inside the listed directories open. Symlinks are judged by the real path they point to, so a symlink inside a listed directory does not open a file outside it. Directories that do not exist are skipped.
 - The value is read when the server starts. If a server is already running, `bd-desk start` only switches the workspace and ignores the new value. To change it, run `bd-desk restart` with the variable set. If you omit the variable on `restart`, the server restarts without the extra directories, so consider exporting it from your shell profile.
 
+An opened file is shown according to its extension:
+
+- `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`: shown as an image.
+- `.webm`, `.mp4`: played as a video.
+- Any other extension, including HTML, SVG, and script files: shown as plain text so that the file does not run in the app's origin.
+
 ## Updating and uninstalling
 
 To update, run the install command again, then run `bd-desk restart` so that a running server switches to the new version.
