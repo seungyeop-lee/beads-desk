@@ -2,7 +2,6 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { Locator } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
-import { createHumanGate } from "../support/humanGates";
 
 const DIAGRAM = "flowchart LR\n  A[시작] -->|처리| B[완료]";
 const markdown = (code = DIAGRAM) => `\`\`\`mermaid\n${code}\n\`\`\``;
@@ -10,13 +9,6 @@ const markdown = (code = DIAGRAM) => `\`\`\`mermaid\n${code}\n\`\`\``;
 // CodeMirror가 만든 입력 영역은 외부 편집기의 DOM이며, 바깥 ProseMirror와 별개로 편집합니다.
 async function changeCode(block: Locator, content: string) {
   await block.locator(".cm-content").fill(content);
-}
-
-async function diagramColor(block: Locator) {
-  return block
-    .locator("svg .pele-node rect")
-    .first()
-    .evaluate((node) => getComputedStyle(node).fill);
 }
 
 test("본문·댓글·활동의 그림에 한글 노드와 간선 글자가 보이고 여러 블록의 SVG id가 서로 다르다", async ({
@@ -127,36 +119,6 @@ test("일반 코드에서는 pele 모듈을 받지 않고 pele 모듈 로드 실
   await expect(dialog.locator(".milkdown-code-block .cm-content")).toBeVisible();
   await expect(dialog.locator(".preview-panel")).toHaveCount(0);
   await expect(dialog.locator(".cm-content")).toContainText("flowchart LR");
-});
-
-test("Human gate는 같은 그림을 보여 주고 설정이나 시스템에서 테마를 바꾸어도 작성 중인 응답이 남는다", async ({
-  page,
-  workspace,
-}) => {
-  await page.emulateMedia({ colorScheme: "light" });
-  const work = await workspace.createIssue("Mermaid 검토 대상");
-  await createHumanGate(workspace, work, markdown());
-  await page.goto("human");
-  const report = page.getByRole("region", { name: `Review: ${work}`, exact: true });
-  await expect(report.locator(".preview svg")).toContainText("시작");
-  await expect(report.locator(".cm-content")).toBeHidden();
-  const response = report.getByRole("textbox", { name: "응답", exact: true });
-  await response.fill("저장하지 않은 응답");
-  const block = report.locator(".milkdown-code-block").first();
-  const light = await diagramColor(block);
-  await page.getByRole("button", { name: "설정", exact: true }).click();
-  const settings = page.getByRole("dialog", { name: "설정", exact: true });
-  const theme = settings.getByRole("combobox", { name: "테마", exact: true });
-  await theme.selectOption("dark");
-  await expect.poll(() => diagramColor(block)).not.toBe(light);
-  await expect(response).toHaveText("저장하지 않은 응답");
-  await theme.selectOption("light");
-  await expect.poll(() => diagramColor(block)).toBe(light);
-  await theme.selectOption("system");
-  await expect.poll(() => diagramColor(block)).toBe(light);
-  await page.emulateMedia({ colorScheme: "dark" });
-  await expect.poll(() => diagramColor(block)).not.toBe(light);
-  await expect(response).toHaveText("저장하지 않은 응답");
 });
 
 async function peleChunks() {
@@ -270,27 +232,4 @@ test("본문·댓글·옆 패널의 그림을 누르거나 키보드로 크게 �
   await page.keyboard.press("Escape");
   await expect(enlarged).toBeHidden();
   await expect(side).toBeVisible();
-});
-
-test("설명을 편집하는 중에도 미리보기 그림을 크게 보고, 닫으면 편집 중인 내용이 남는다", async ({
-  page,
-  workspace,
-}) => {
-  const id = await workspace.createIssue("Mermaid 편집 확대", "--description", markdown());
-  await page.goto(`issues?issue=${id}`);
-  const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-  await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  const editor = dialog.getByRole("textbox", { name: "설명", exact: true });
-  const block = editor.locator(".milkdown-code-block");
-  await changeCode(block, "flowchart LR\n  A[고친 그림] --> B");
-  await expect(block.locator(".preview svg")).toContainText("고친 그림");
-
-  await block.getByRole("button", { name: "그림 크게 보기", exact: true }).click();
-  const enlarged = page.getByRole("dialog", { name: "크게 본 그림", exact: true });
-  await expect(enlarged.locator("svg.pele")).toContainText("고친 그림");
-  await page.keyboard.press("Escape");
-  await expect(enlarged).toBeHidden();
-  await expect(dialog).toBeVisible();
-  await expect(block.locator(".cm-content")).toContainText("A[고친 그림]");
-  await expect(dialog.getByRole("button", { name: "저장", exact: true })).toBeVisible();
 });

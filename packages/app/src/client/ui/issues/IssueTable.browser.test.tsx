@@ -150,6 +150,27 @@ test("판단을 기다리는 이슈의 행에만 판단 기다림 표시가 붙�
   await expect.element(chip(/평범한 작업/)).not.toBeInTheDocument();
 });
 
+test("기다리는 이슈가 있는 행에만 제목 옆에 대기 수가 붙는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueTable
+        issues={[
+          issue("desk-bottleneck", { title: "병목 작업" }),
+          issue("desk-plain", { title: "평범한 작업" }),
+        ]}
+        issueHref={(id) => `/issues?issue=${id}`}
+        writes={WRITES}
+        gateTitles={new Map()}
+        waiters={new Map([["desk-bottleneck", 2]])}
+      />
+    </LocaleProvider>,
+  );
+
+  const rowText = (title: RegExp) => screen.getByRole("row", { name: title }).element().textContent;
+  expect(rowText(/병목 작업/)).toContain(messages.issue.waiters(2));
+  expect(rowText(/평범한 작업/)).not.toMatch(/\d+개 대기/);
+});
+
 /** 라벨 열은 담당자 열이 쓰던 칸이라 표의 여섯째 칸(DOM 순서)입니다. */
 const LABEL_CELL = 5;
 

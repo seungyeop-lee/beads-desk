@@ -79,12 +79,16 @@ test("응답 없이 닫는 동안에는 응답 편집기가 감춰지고 취소�
   await expect(page.getByRole("region", { name: "남은 질문" })).toBeVisible();
 });
 
-test("human gate는 human 라벨이 붙어도 확인 요청 묶음에만 보이고, 오른쪽에 보이는 항목을 주소가 가리키고 새로고침해도 유지되며, 닫히면 남은 항목으로 넘어간다", async ({
+test("human gate는 human 라벨이 붙어도 확인 요청 묶음에만 보이고, 사유와 막고 있는 작업을 보이며, 오른쪽에 보이는 항목을 주소가 가리키고 새로고침해도 유지되고, 응답해 닫으면 알림과 함께 목록에서 빠져 남은 항목으로 넘어간다", async ({
   page,
   workspace,
 }) => {
   const { work, question } = await workspace.createIssues({
-    work: { title: "로그인 화면 다시 그리기", type: "task" },
+    work: {
+      title: "로그인 화면 다시 그리기",
+      type: "task",
+      description: "입력란 배치를 바꿉니다.",
+    },
     question: { title: "남은 질문", type: "task", labels: ["human"] },
   });
   const gate = await createHumanGate(workspace, work, "로그인 화면 수정 결과", {
@@ -111,15 +115,25 @@ test("human gate는 human 라벨이 붙어도 확인 요청 묶음에만 보이�
   await page.reload();
   await expect(page.getByRole("region", { name: "남은 질문" })).toBeVisible();
 
-  // 확인 요청을 다시 고르면 주소가 확인 요청을 가리킨다.
+  // 확인 요청을 다시 고르면 주소가 확인 요청을 가리키고, 사유와 막고 있는 작업의 설명을 보인다.
   await page.getByRole("button", { name: new RegExp(`Review: ${work}`) }).click();
   const decision = page.getByRole("region", { name: `Review: ${work}` });
-  await expect(decision).toBeVisible();
+  await expect(decision.getByRole("region", { name: "사유" })).toContainText(
+    "로그인 화면 수정 결과",
+  );
+  const blocks = decision.getByRole("region", { name: "막고 있는 작업" });
+  await expect(blocks.getByRole("link", { name: "로그인 화면 다시 그리기" })).toBeVisible();
+  await expect(blocks).toContainText("입력란 배치를 바꿉니다.");
 
   // 확인 요청에 응답해 닫으면 남은 질문으로 넘어가고 주소도 따라 바뀐다.
   await decision.getByRole("textbox", { name: "응답", exact: true }).click();
   await page.keyboard.type("진행합니다");
   await decision.getByRole("button", { name: "응답하고 닫기" }).click();
+  await expectRowGoneWhenNotified(
+    page,
+    `${gate}에 응답하고 닫았습니다`,
+    page.getByRole("button", { name: new RegExp(`Review: ${work}`) }),
+  );
 
   await expect
     .poll(() => workspace.showIssue(gate).then((issue) => issue.close_reason), {

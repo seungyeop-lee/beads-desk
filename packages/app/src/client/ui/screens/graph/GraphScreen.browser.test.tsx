@@ -396,6 +396,47 @@ test("순서 보기에서 화면을 옮긴 뒤 진행 중 단계로 이동 단�
   expect(graphZoom(screen)).toBe(zoom);
 });
 
+test("캔버스를 끌어 옮긴 뒤 이슈 갱신으로 선후 관계 없음 패널이 나타나 그래프 영역이 좁아져도, 옮긴 위치와 배율을 유지한다", async () => {
+  await page.viewport(1440, 900);
+  const issues: Record<string, IssueSeed> = {
+    "keep-epic": { title: "갱신 중 위치 유지", issueType: "epic" },
+    "keep-1": { title: "위치 유지 먼저", parent: "keep-epic" },
+    "keep-2": { title: "위치 유지 다음", parent: "keep-epic" },
+  };
+  const blocks = [["keep-2", "keep-1"]] as const;
+  const screen = await renderGraph("epic", "keep-epic", graphData(issues, [...blocks]));
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  const flow = canvas.element().querySelector<HTMLElement>(".react-flow")!;
+  const viewport = flow.querySelector<HTMLElement>(".react-flow__viewport")!;
+  await expect.element(canvas.getByRole("link", { name: /위치 유지 다음/ })).toBeVisible();
+  const initial = viewport.style.transform;
+  await dragCanvas(screen);
+  await expect.poll(() => viewport.style.transform).not.toBe(initial);
+  const moved = viewport.style.transform;
+  const width = flow.clientWidth;
+
+  graph = graphData(
+    { ...issues, "keep-alone": { title: "갱신으로 나타난 독립 작업", parent: "keep-epic" } },
+    [...blocks],
+  );
+  await screen.rerender(
+    <LocaleProvider locale="ko">
+      <GraphScreen />
+    </LocaleProvider>,
+  );
+  await expect
+    .element(
+      screen
+        .getByRole("region", { name: "선후 관계 없음" })
+        .getByRole("link", { name: /갱신으로 나타난 독립 작업/ }),
+    )
+    .toBeVisible();
+  await expect.poll(() => flow.clientWidth).toBeLessThan(width);
+  // 그래프 영역의 크기 변화는 ResizeObserver가 다음 frame 전에 알리므로, 그 처리가 끝난 뒤의 위치를 읽습니다.
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  expect(viewport.style.transform).toBe(moved);
+});
+
 test("패널을 펼쳐도 들어가는 짧은 에픽은 목록을 펼쳐 시작한다", async () => {
   await page.viewport(1440, 900);
   const screen = await renderGraph(

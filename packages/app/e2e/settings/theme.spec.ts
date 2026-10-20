@@ -15,16 +15,24 @@ test("테마를 고르지 않으면 운영체제 설정을 따른다", async ({ 
   await expect.poll(() => appliedScheme(page)).toBe("light");
 });
 
-test("설정에서 고른 테마는 운영체제 설정과 관계없이 적용되고, 새로고침해도 유지된다", async ({
+test("설정에서 고른 테마는 운영체제 설정과 관계없이 적용되고, 작성 중인 판단 응답을 지우지 않으며, 새로고침해도 유지된다", async ({
   page,
+  workspace,
 }) => {
+  await workspace.createIssue("테마를 바꾸는 동안 답할 질문", "--labels", "human");
   await page.emulateMedia({ colorScheme: "light" });
-  await page.goto("issues");
+  await page.goto("human");
+  const response = page
+    .getByRole("region", { name: "테마를 바꾸는 동안 답할 질문" })
+    .getByRole("textbox", { name: "응답", exact: true });
+  await response.click();
+  await page.keyboard.type("저장하지 않은 응답");
 
   await page.getByRole("button", { name: "설정" }).click();
   const settings = page.getByRole("dialog", { name: "설정" });
   await settings.getByRole("combobox", { name: "테마" }).selectOption("dark");
   await expect.poll(() => appliedScheme(page)).toBe("dark");
+  await expect(response).toHaveText("저장하지 않은 응답");
 
   await page.reload();
   await expect.poll(() => appliedScheme(page)).toBe("dark");

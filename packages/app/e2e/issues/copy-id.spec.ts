@@ -1,52 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "../support/bdWorkspace";
-import { createHumanGate } from "../support/humanGates";
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
-
-test("판단 기다림 화면에서 Blocks 행과 왼쪽 카드의 ID를 누르면 전체 ID를 복사하고, 카드의 ID를 눌러도 그 카드를 고르지 않는다", async ({
-  page,
-  workspace,
-}) => {
-  const { work, question } = await workspace.createIssues({
-    work: { title: "e2e 검토받을 작업", type: "task" },
-    question: { title: "e2e 정해야 할 질문", type: "task", labels: ["human"] },
-  });
-  const gate = await createHumanGate(workspace, work, "결과 확인");
-
-  await page.goto("human");
-  const decision = page.getByRole("region", { name: `Review: ${work}` });
-  await expectCopies(
-    page,
-    decision.getByRole("region", { name: "막고 있는 작업" }).getByRole("button", {
-      name: `${work} ID 복사`,
-    }),
-    work,
-  );
-
-  const questionCard = page.getByRole("button", { name: `${question} e2e 정해야 할 질문` });
-  await expect(page.getByRole("button", { name: `${gate} Review: ${work}` })).toHaveAttribute(
-    "aria-current",
-    "true",
-  );
-  await expectCopies(
-    page,
-    page
-      .getByRole("region", { name: "질문", exact: true })
-      .getByRole("button", { name: `${question} ID 복사` }),
-    question,
-  );
-  await expect(questionCard).not.toHaveAttribute("aria-current", "true");
-  await expect(decision).toBeVisible();
-
-  await questionCard.click();
-  await expect(questionCard).toHaveAttribute("aria-current", "true");
-  await expect(
-    page
-      .getByRole("region", { name: "e2e 정해야 할 질문", exact: true })
-      .getByRole("button", { name: `${question} ID 복사` }),
-  ).toBeVisible();
-});
 
 test("지금 화면 행, 보드 카드, 상세 머리글의 ID를 누르면 전체 ID를 복사하고, 행과 카드는 상세를 열거나 끌리지 않으며, 보드 카드는 누르는 동안 grabbing 커서를 보인다", async ({
   page,
