@@ -33,6 +33,16 @@ A URL without a workspace name, such as `http://127.0.0.1:3000/issues`, opens th
 
 While a tab is open, the server checks whether the workspace's database has changed and, when it has, tells the open tabs to read their data again. Changes made with `bd` in the terminal, by you or an agent, therefore appear within a few seconds without reloading. In embedded mode the server compares the Dolt database's `.dolt/noms/manifest` file, and in server mode it compares the database hash from `bd sql` (`DOLT_HASHOF_DB()`).
 
+## Browser notifications
+
+To be notified when your agents leave something for you, open Settings and turn on **Notify me about new Needs human items**. The browser asks for permission the first time. If the browser blocks notifications for the site, the switch cannot be turned on until you allow them in the site settings next to the address bar.
+
+- A notification appears when a workspace open in a beads-desk tab gets a new Needs human item. Items that were already there when you turned notifications on or opened the tab are not announced.
+- With several tabs open, each new item is announced once, not once per tab.
+- No notification is shown while you are looking at that workspace in a focused tab.
+- Clicking the notification opens that workspace's Needs human screen in a new tab.
+- The setting and the permission belong to the server's address. If the server starts on a different port, turn notifications on again.
+
 ## Local file links in issues
 
 Absolute-path file links and images in an issue body open when the file is in one of these directories:
