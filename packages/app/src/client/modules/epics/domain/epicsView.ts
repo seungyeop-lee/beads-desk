@@ -1,7 +1,8 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import {
+  byClosedDesc,
   byId,
-  byPriorityThenCreated,
+  byPriority,
   issueTree,
   type IssueTreeRow,
 } from "@/client/modules/issues/domain/issueListView";
@@ -21,13 +22,21 @@ export function topLevelEpics(epics: EpicSummary[]): EpicSummary[] {
   return epics.filter(({ epic }) => epic.parent === null || !epicIds.has(epic.parent));
 }
 
-/** 상태로 묶어 진행 중 → 열림 → 막힘 → 보류 → 닫힘 순으로 보이고, 묶음 안에서는 우선순위와 만든 시각 순으로 정렬합니다. */
+/**
+ * 상태로 묶어 진행 중 → 열림 → 막힘 → 보류 → 닫힘 순으로 보입니다.
+ * 닫히지 않은 묶음 안에서는 우선순위가 높은 에픽을, 우선순위가 같으면 최근에 만든 에픽을 앞에 둡니다.
+ * 닫힌 묶음 안에서는 최근에 닫은 에픽을 앞에 둡니다.
+ */
 export function sortEpics(epics: EpicSummary[]): EpicSummary[] {
   return [...epics].sort(
-    (a, b) =>
-      statusRank(a.epic.status) - statusRank(b.epic.status) ||
-      byPriorityThenCreated(a.epic, b.epic),
+    ({ epic: a }, { epic: b }) =>
+      statusRank(a.status) - statusRank(b.status) ||
+      (a.status === "closed" ? byClosedDesc(a, b) : byPriorityThenNewest(a, b)),
   );
+}
+
+function byPriorityThenNewest(a: Issue, b: Issue): number {
+  return byPriority(a, b) || b.createdAt - a.createdAt || byId(a, b);
 }
 
 function statusRank(status: string): number {

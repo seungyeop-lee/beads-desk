@@ -33,22 +33,42 @@ test("상위 이슈가 에픽인 에픽은 상위 에픽이 닫혀 있어도 카
   expect(cards.map(({ epic }) => epic.id)).toEqual(["root", "done", "task.1"]);
 });
 
-test("진행 중, 열림, 닫힘 순으로 묶고 묶음 안에서는 우선순위와 만든 시각 순으로 정렬한다", () => {
-  const sorted = sortEpics([
-    summary("closed", "closed", 0),
-    summary("open-low", "open", 3),
-    summary("open-high-late", "open", 1, 2),
-    summary("open-high", "open", 1, 1),
-    summary("doing", "in_progress", 4),
-  ]);
+describe("sortEpics", () => {
+  const ids = (epics: EpicSummary[]) => sortEpics(epics).map(({ epic }) => epic.id);
 
-  expect(sorted.map(({ epic }) => epic.id)).toEqual([
-    "doing",
-    "open-high",
-    "open-high-late",
-    "open-low",
-    "closed",
-  ]);
+  test("진행 중, 열림, 닫힘 순으로 묶는다", () => {
+    expect(
+      ids([
+        summary("closed", "closed", 0),
+        summary("open", "open", 1),
+        summary("doing", "in_progress", 4),
+      ]),
+    ).toEqual(["doing", "open", "closed"]);
+  });
+
+  test("상태와 우선순위가 같으면 최근에 만든 에픽을 앞에 둔다", () => {
+    expect(ids([summary("old", "open", 2, 1), summary("new", "open", 2, 2)])).toEqual([
+      "new",
+      "old",
+    ]);
+  });
+
+  test("우선순위가 다르면 만든 시각보다 우선순위를 먼저 비교한다", () => {
+    expect(ids([summary("low-new", "open", 3, 9), summary("high-old", "open", 1, 1)])).toEqual([
+      "high-old",
+      "low-new",
+    ]);
+  });
+
+  test("닫힌 에픽은 우선순위와 만든 시각에 관계없이 최근에 닫은 에픽을 앞에 둔다", () => {
+    const closed = (id: string, priority: number, createdAt: number, closedAt: number) => ({
+      epic: issue(id, { status: "closed", priority, createdAt, closedAt }),
+      totalChildren: 0,
+      closedChildren: 0,
+    });
+
+    expect(ids([closed("early", 0, 9, 1), closed("late", 4, 1, 2)])).toEqual(["late", "early"]);
+  });
 });
 
 describe("settleExpandedEpics", () => {
