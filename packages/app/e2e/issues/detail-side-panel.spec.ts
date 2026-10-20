@@ -68,6 +68,27 @@ test("옆 패널이 열린 상세에서 Escape를 누르면 옆 패널만 닫혀
   await expect(page).toHaveURL(/\/issues$/);
 });
 
+test("옆 패널이 열린 상세 주소로 들어와 페이지를 누르지 않고 Escape를 누르면 옆 패널, 상세 순으로 하나씩 닫힌다", async ({
+  page,
+  workspace,
+}) => {
+  const { main, dependency } = await seedDependency(workspace);
+  const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
+  const side = sidePanel(page, dependency);
+
+  await page.goto(`/issues?issue=${main}&side=${dependency}`);
+  await expect(side.getByText("선행 이슈 설명")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(side).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(detailUrl(main, null));
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/issues$/);
+});
+
 test("옆 패널이 열린 상세에서 본문을 편집하는 중에 Escape를 누르면 옆 패널도 상세도 닫히지 않는다", async ({
   page,
   workspace,

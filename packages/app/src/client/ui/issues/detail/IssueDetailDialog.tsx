@@ -7,7 +7,7 @@ import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrit
 import type { IssueDetailLocation } from "@/client/modules/issues/domain/issueDetailTrail";
 import { ChevronLeftIcon, CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
-import { isTyping, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
+import { escapeStepHandlers, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { IssueDetailView } from "./IssueDetailView";
 import type { ListedIssues } from "./listedIssues";
@@ -128,15 +128,12 @@ export function IssueDetailDialog({
         // 새로고침으로 상세와 그 위의 그래프를 함께 열어도 그래프에서 누른 Escape가 이 dialog까지 닫지 않게 합니다.
         closedby={covered ? "none" : undefined}
         onClose={onClose}
-        onCancel={(event) => {
-          // 입력 중에 누른 Escape는 편집 취소로만 쓰고 dialog를 닫지 않습니다.
-          // 옆 패널이 열려 있으면 옆 패널의 닫기 단추와 같은 주소로 옮겨 옆 패널만 닫습니다.
-          if (isTyping()) event.preventDefault();
-          else if (side) {
-            event.preventDefault();
-            router.push(closeSideHref, { scroll: false });
-          }
-        }}
+        // 옆 패널이 열려 있으면 옆 패널의 닫기 단추와 같은 주소로 옮겨 옆 패널만 닫습니다.
+        {...escapeStepHandlers(() => {
+          if (!side) return false;
+          router.push(closeSideHref, { scroll: false });
+          return true;
+        })}
       >
         <div
           className={`modal-box flex h-[85dvh] max-h-[90dvh] w-11/12 flex-col overflow-y-auto p-0 md:h-auto md:flex-row md:overflow-hidden ${side ? "max-w-[110rem]" : "max-w-6xl"}`}

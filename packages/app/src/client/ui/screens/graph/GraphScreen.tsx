@@ -10,7 +10,7 @@ import { type GraphScope } from "@/client/modules/graph/domain/graphScope";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { HelpTooltip } from "@/client/ui/designSystem/HelpTooltip";
-import { isTyping, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
+import { escapeStepHandlers, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import {
   IssueDetailRoute,
   useIssueHref,
@@ -51,10 +51,8 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
       className="modal"
       aria-label={title}
       onClose={() => router.replace(backHref, { scroll: false })}
-      onCancel={(event) => {
-        event.preventDefault();
-        if (isTyping()) return;
-        // Escape는 옆 패널, 상세, 그래프 순으로 한 단계씩 닫습니다. 옆 패널은 옆 패널의 닫기 단추처럼 history에 쌓아 닫습니다.
+      // Escape는 옆 패널, 상세, 그래프 순으로 한 단계씩 닫습니다. 옆 패널은 옆 패널의 닫기 단추처럼 history에 쌓아 닫습니다.
+      {...escapeStepHandlers(() => {
         if (params.has("side")) {
           const next = new URLSearchParams(params);
           next.delete("side");
@@ -64,8 +62,9 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
             next.delete("issue");
             next.delete("side");
           });
-        } else router.replace(backHref, { scroll: false });
-      }}
+        } else return false;
+        return true;
+      })}
     >
       <div className="modal-box flex h-[94dvh] max-h-none w-[96vw] max-w-none flex-col overflow-hidden p-0">
         <header className="flex shrink-0 items-start gap-3 border-b border-base-300 px-5 py-3">

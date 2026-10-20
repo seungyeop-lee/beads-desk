@@ -103,6 +103,40 @@ test("그래프 안 상세에 옆 패널을 연 뒤 Escape를 누를 때마다 �
   await expect(page).toHaveURL(`/issues?issue=${second}`);
 });
 
+test("상세 위에 겹쳐 연 그래프 안에 상세와 옆 패널이 열린 주소로 들어와 페이지를 누르지 않고 Escape를 누를 때마다 옆 패널, 상세, 그래프 순으로 하나씩 닫힌다", async ({
+  page,
+  workspace,
+}) => {
+  const { first, second } = await workspace.createIssues(
+    { first: { title: "누르지 않고 닫기 선행" }, second: { title: "누르지 않고 닫기 기준" } },
+    [["second", "first"]],
+  );
+  const origin = `/issues?issue=${second}`;
+  const returnTo = `returnTo=${encodeURIComponent(origin)}`;
+  await page.goto(`/issues?center=${second}&issue=${second}&side=${first}&${returnTo}`);
+  const screenDetail = page.getByRole("dialog", { name: `${second} 이슈` });
+  const canvas = page.getByRole("region", { name: "의존 그래프" });
+  const detail = page.getByRole("region", { name: `${second} 이슈`, exact: true });
+  const side = page.getByRole("region", { name: `${first} 이슈 옆 패널` });
+  await expect(canvas.getByRole("link", { name: /누르지 않고 닫기 기준/ })).toBeVisible();
+  await expect(side).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(side).toHaveCount(0);
+  await expect(detail).toBeVisible();
+  await expect(page).toHaveURL(`/issues?center=${second}&issue=${second}&${returnTo}`);
+
+  await page.keyboard.press("Escape");
+  await expect(detail).toHaveCount(0);
+  await expect(canvas).toBeVisible();
+  await expect(page).toHaveURL(`/issues?center=${second}&${returnTo}`);
+
+  await page.keyboard.press("Escape");
+  await expect(canvas).toHaveCount(0);
+  await expect(page).toHaveURL(origin);
+  await expect(screenDetail).toBeVisible();
+});
+
 test("에픽 상세에서 연 그래프의 머리글 제목은 에픽 상세를 열고, 그 상세의 순서 보기로 같은 그래프를 다시 열어도 닫기는 출발 화면으로 돌아가며, 닫은 그래프를 다시 열면 다시 그린다", async ({
   page,
   workspace,
