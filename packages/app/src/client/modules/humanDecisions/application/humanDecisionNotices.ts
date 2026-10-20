@@ -11,7 +11,10 @@ import {
   subscribeNoticePreference,
 } from "@/client/infra/notifications/browserNotifications";
 import { subscribeWatchedWorkspaceChanges } from "@/client/infra/workspaceEvents/workspaceEventSource";
-import { attendedWorkspace } from "@/client/infra/workspaces/documentWorkspace";
+import {
+  attendedWorkspaces,
+  holdWorkspaceAttention,
+} from "@/client/infra/workspaces/workspaceAttention";
 import {
   createHumanDecisionTracker,
   type HumanDecisionNotice,
@@ -28,9 +31,11 @@ const reading = new Map<string, { changedAgain: boolean }>();
  * 판단 기다림이 새로 생기면 브라우저 알림을 띄웁니다. 알릴지는 SSE 연결을 연 탭 하나만 판단하므로 탭이 여러 개여도 한 번만 뜨고,
  * 그 연결이 감시하는 workspace, 곧 열린 탭들이 보는 workspace를 모두 알립니다.
  * 상단 탭의 개수는 가려진 탭에서 갱신되지 않으므로 쓰지 않고, 변경 알림을 받을 때마다 그 workspace를 지정해 따로 읽습니다.
+ * 연결을 연 탭이 다른 탭에서 보고 있는 workspace도 알리지 않도록, 탭마다 사용자가 이 탭의 workspace를 보고 있는지 표시합니다.
  */
-export function useHumanDecisionNotices() {
+export function useHumanDecisionNotices(workspace: string) {
   useEffect(watchHumanDecisionNotices, []);
+  useEffect(() => holdWorkspaceAttention(workspace), [workspace]);
 }
 
 export function watchHumanDecisionNotices(): () => void {
@@ -98,9 +103,10 @@ async function read(workspace: string) {
     do {
       current.changedAgain = false;
       const result = await readHumanDecisionItems(workspace);
+      const attended = await attendedWorkspaces();
       // 읽는 동안 알림을 껐거나 연결이 그 workspace를 감시하지 않게 됐으면, 그 결과를 기준으로 남기지 않습니다.
       if (result.ok && humanDecisionNoticesEnabled() && watched.includes(workspace)) {
-        const notice = tracker.observe(workspace, result.data, attendedWorkspace());
+        const notice = tracker.observe(workspace, result.data, attended);
         if (notice) show(notice);
       }
     } while (current.changedAgain);

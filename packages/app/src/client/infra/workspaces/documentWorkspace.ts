@@ -8,8 +8,3 @@ import { workspaceOfPathname } from "@/shared/contract/workspaces";
 export function documentWorkspace(): string | null {
   return workspaceOfPathname(location.pathname);
 }
-
-/** 이 탭이 화면에 보이고 focus를 가진 동안 보는 workspace의 이름입니다. 사용자가 이 탭을 보고 있지 않으면 null입니다. */
-export function attendedWorkspace(): string | null {
-  return document.visibilityState === "visible" && document.hasFocus() ? documentWorkspace() : null;
-}

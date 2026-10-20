@@ -13,7 +13,10 @@ import {
   subscribeWatchedWorkspaceChanges,
   type WatchedWorkspaceChange,
 } from "@/client/infra/workspaceEvents/workspaceEventSource";
-import { attendedWorkspace } from "@/client/infra/workspaces/documentWorkspace";
+import {
+  attendedWorkspaces,
+  holdWorkspaceAttention,
+} from "@/client/infra/workspaces/workspaceAttention";
 import { MESSAGES } from "@/client/modules/locale/domain/messages";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 import type { HumanDecisionItem } from "@/shared/contract/humanDecisions";
@@ -32,8 +35,9 @@ vi.mock("@/client/infra/notifications/browserNotifications", () => ({
 vi.mock("@/client/infra/workspaceEvents/workspaceEventSource", () => ({
   subscribeWatchedWorkspaceChanges: vi.fn<typeof subscribeWatchedWorkspaceChanges>(),
 }));
-vi.mock("@/client/infra/workspaces/documentWorkspace", () => ({
-  attendedWorkspace: vi.fn<typeof attendedWorkspace>(() => null),
+vi.mock("@/client/infra/workspaces/workspaceAttention", () => ({
+  attendedWorkspaces: vi.fn<typeof attendedWorkspaces>(),
+  holdWorkspaceAttention: vi.fn<typeof holdWorkspaceAttention>(),
 }));
 vi.mock("@/client/infra/locale/documentLocale", () => ({
   documentMessages: () => MESSAGES.ko,
@@ -63,6 +67,7 @@ beforeEach(() => {
   decisions.clear();
   vi.mocked(loadNoticePreference).mockReturnValue(false);
   vi.mocked(notificationAccess).mockReturnValue("default");
+  vi.mocked(attendedWorkspaces).mockResolvedValue([]);
   vi.mocked(subscribeWatchedWorkspaceChanges).mockImplementation((listener) => {
     announce = listener;
     return () => {};
@@ -124,18 +129,22 @@ test("바뀐 workspace를 지정해 읽고, 새로 생긴 판단 기다림을 �
   });
 });
 
-test("사용자가 그 workspace를 보고 있으면 알리지 않는다", async () => {
+test("사용자가 어느 탭에서든 보고 있는 workspace는 알리지 않고, 보고 있지 않은 workspace만 알린다", async () => {
   enable();
-  vi.mocked(attendedWorkspace).mockReturnValue("a");
+  // 연결을 연 이 탭이 아니라 다른 탭에서 a를 보고 있어도 lock 목록에 들어 있습니다.
+  vi.mocked(attendedWorkspaces).mockResolvedValue(["a"]);
   await startWatching();
-  announce({ watched: ["a"], changed: ["a"] });
+  announce({ watched: ["a", "b"], changed: ["a", "b"] });
   await flush();
 
   decisions.set("a", [{ id: "q-1", title: "어느 방식으로 할까요" }]);
-  announce({ watched: ["a"], changed: ["a"] });
+  decisions.set("b", [{ id: "q-2", title: "이름을 바꿀까요" }]);
+  announce({ watched: ["a", "b"], changed: ["a", "b"] });
   await flush();
 
-  expect(showBrowserNotification).not.toHaveBeenCalled();
+  expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ tag: "beads-desk.human-decisions:b" }),
+  );
 });
 
 test("읽는 중에 같은 workspace의 변경 알림이 여러 번 오면 읽기가 끝난 뒤 한 번만 다시 읽는다", async () => {
