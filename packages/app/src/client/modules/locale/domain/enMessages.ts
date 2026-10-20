@@ -494,6 +494,26 @@ export const enMessages: Messages = {
     noticeTitle: (workspace) => `${workspace}: Needs human`,
     noticeBody: (title, moreCount) => (moreCount > 0 ? `${title} and ${moreCount} more` : title),
   },
+  activityFeed: {
+    title: "Activity",
+    description:
+      "Issues created, closed, and commented on across the workspace, newest first. Gate records are left out.",
+    loadFailed: (error) => `Could not load activity: ${error}`,
+    entries: "Activity records",
+    empty: "No activity yet.",
+    emptyInRange: "No activity in the selected dates.",
+    kinds: {
+      created: "Created",
+      closed: "Closed",
+      commented: "Comment",
+    },
+    dates: "Dates",
+    dateFrom: "From",
+    dateTo: "To",
+    clearDates: "Clear dates",
+    seenBefore: "Seen on your last visit",
+    showMore: "Show more",
+  },
   workspaces: {
     selectTitle: "Choose a workspace",
     selectDescription:

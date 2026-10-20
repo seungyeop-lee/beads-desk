@@ -15,8 +15,7 @@ export type IssueDateFilter = {
 /** 날짜가 하나도 없으면 거르지 않습니다. 닫은 날 기준이면 닫히지 않은 이슈는 빠집니다. 순서는 바꾸지 않습니다. */
 export function filterByDate(issues: Issue[], { field, from, to }: IssueDateFilter): Issue[] {
   if (from === null && to === null) return issues;
-  const start = from === null ? -Infinity : localDayStart(from);
-  const end = to === null ? Infinity : localDayStart(to, 1);
+  const { start, end } = localDayRange(from, to);
   return issues.filter((issue) => {
     const time = field === "closed" ? issue.closedAt : issue.createdAt;
     return time !== null && time >= start && time < end;
@@ -31,9 +30,28 @@ export function parseIssueDateFilter(
 ): IssueDateFilter {
   return {
     field: field === "closed" ? "closed" : "created",
-    from: isLocalDay(from) ? from : null,
-    to: isLocalDay(to) ? to : null,
+    from: parseLocalDay(from),
+    to: parseLocalDay(to),
   };
+}
+
+/**
+ * 시작일과 종료일("YYYY-MM-DD")이 덮는 시각 범위입니다. start 이상 end 미만이 범위 안이고, 두 날 모두 하루 전체를 포함합니다.
+ * 날짜가 null인 쪽은 끝을 열어 두어 -Infinity나 Infinity입니다. 날짜로 기록을 거르는 화면은 모두 이 경계를 씁니다.
+ */
+export function localDayRange(
+  from: string | null,
+  to: string | null,
+): { start: number; end: number } {
+  return {
+    start: from === null ? -Infinity : localDayStart(from),
+    end: to === null ? Infinity : localDayStart(to, 1),
+  };
+}
+
+/** 주소에서 읽은 날짜가 실제로 있는 "YYYY-MM-DD" 날짜면 그대로, 아니면 null을 돌려줍니다. */
+export function parseLocalDay(value: string | null): string | null {
+  return isLocalDay(value) ? value : null;
 }
 
 /** 시각이 속한 현지 날짜를 "YYYY-MM-DD"로 돌려줍니다. 지금 화면 통계가 하루씩 셀 때 이 필터와 같은 경계를 씁니다. */

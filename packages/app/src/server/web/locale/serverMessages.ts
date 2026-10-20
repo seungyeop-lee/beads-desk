@@ -9,6 +9,7 @@ const ko = {
   invalidIssueStatus: "조회할 이슈 상태가 올바르지 않습니다.",
   invalidStaleDays: "오래 방치된 이슈의 기준 일수가 올바르지 않습니다.",
   emptyTextSearch: "검색어가 비어 있습니다.",
+  invalidActivityFeedQuery: "활동 기록의 조회 범위나 개수가 올바르지 않습니다.",
   unknownWorkspace: (root: string) =>
     `등록되지 않은 workspace입니다: ${root}. 그 디렉터리에서 bd-desk start를 실행해 등록해 주세요.`,
   bdErrors: {
@@ -38,6 +39,7 @@ const MESSAGES: Record<Locale, typeof ko> = {
     invalidIssueStatus: "The requested issue status is not valid.",
     invalidStaleDays: "The stale threshold in days is not valid.",
     emptyTextSearch: "The search text is empty.",
+    invalidActivityFeedQuery: "The activity range or count is not valid.",
     unknownWorkspace: (root) =>
       `This workspace is not registered: ${root}. Run bd-desk start in that directory to register it.`,
     bdErrors: {

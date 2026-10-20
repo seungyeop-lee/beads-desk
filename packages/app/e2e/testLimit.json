@@ -1,5 +1,7 @@
 {
   "baseline": 86,
-  "limit": 86,
-  "reasons": []
+  "limit": 87,
+  "reasons": [
+    "e2e/activity/activity-feed.spec.ts: bd에 심은 기록을 서버가 bd export로 읽어 쪽 단위로 더 읽고, 주소에 남은 날짜 범위가 새로고침 뒤에도 유지되며, CLI로 단 댓글이 서버 알림(SSE)으로 피드에 반영되는 흐름"
+  ]
 }

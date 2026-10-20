@@ -1,6 +1,7 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { RelationKind } from "@/client/modules/issues/domain/issueRelations";
+import type { ActivityKind } from "@/shared/contract/activityFeed";
 import type { Replacement } from "@/shared/contract/issueActions";
 import type { ThemeChoice } from "@/shared/contract/theme";
 
@@ -508,6 +509,27 @@ export const koMessages = {
     noticeTitle: (workspace: string) => `${workspace}: 판단 기다림`,
     noticeBody: (title: string, moreCount: number) =>
       moreCount > 0 ? `${title} 외 ${moreCount}건` : title,
+  },
+  activityFeed: {
+    title: "활동",
+    description:
+      "workspace 전체에서 이슈를 만들고 닫고 댓글을 단 기록을 새것부터 보여 줍니다. gate의 기록은 뺍니다.",
+    loadFailed: (error: string) => `활동 기록을 불러오지 못했습니다: ${error}`,
+    entries: "활동 기록",
+    empty: "아직 기록이 없습니다.",
+    emptyInRange: "고른 기간에 남은 기록이 없습니다.",
+    kinds: {
+      created: "만듦",
+      closed: "닫음",
+      commented: "댓글",
+    } satisfies Record<ActivityKind, string>,
+    dates: "기간",
+    dateFrom: "시작일",
+    dateTo: "종료일",
+    clearDates: "날짜 지우기",
+    /** 마지막으로 본 시각의 구분선입니다. 이 선 아래의 기록은 지난번에 화면을 열었을 때 이미 있던 기록입니다. */
+    seenBefore: "여기부터 지난번에 본 기록",
+    showMore: "더 보기",
   },
   workspaces: {
     selectTitle: "workspace 고르기",

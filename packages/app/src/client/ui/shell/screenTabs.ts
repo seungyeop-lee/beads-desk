@@ -2,6 +2,7 @@
 export const SCREEN_TABS = [
   { href: "/focus", screen: "focus", tone: "tone-peach" },
   { href: "/human", screen: "humanDecisions", tone: "tone-lavender" },
+  { href: "/activity", screen: "activityFeed", tone: "tone-sky" },
   { href: "/issues", screen: "issues", tone: "tone-azure" },
   { href: "/epics", screen: "epics", tone: "tone-lilac" },
   { href: "/hygiene", screen: "hygiene", tone: "tone-sage" },
