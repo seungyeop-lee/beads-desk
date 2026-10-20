@@ -565,7 +565,7 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
         "Summary is in the beta feedback doc. Dark mode and annual billing were the top asks.",
     },
 
-    // 결정: acme-b3s는 import 뒤에 bd supersede로 acme-t8w에 대체됩니다.
+    // 결정: acme-b3s와 acme-d2p는 import 뒤에 bd supersede로 각각 acme-t8w와 acme-n5e에 대체됩니다.
     {
       id: "acme-b3s",
       title: "Sign in with email and password, with optional 2FA",
@@ -615,6 +615,15 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
         "A second provider for redundancy. It can wait until we sell in regions Stripe doesn't cover.",
       ].join("\n"),
       createdAt: ago(14),
+    },
+    {
+      id: "acme-d2p",
+      title: "Offer PayPal alongside cards at launch",
+      type: "decision",
+      priority: 2,
+      description:
+        "Offer PayPal next to card payments so customers in Germany and the Netherlands can pay the way they prefer.",
+      createdAt: ago(16),
     },
     {
       id: "acme-r7u",
@@ -756,6 +765,7 @@ export function addCliActivity(bd: RunBd, git: RunBd, workspace: string): void {
     "jordan",
   );
   bd("supersede", "acme-b3s", "--with", "acme-t8w", "--actor", "sam");
+  bd("supersede", "acme-d2p", "--with", "acme-n5e", "--actor", "leo");
 
   const banner = createIssue(bd, "sam", "Add a cookie consent banner for EU visitors", [
     "--type=feature",

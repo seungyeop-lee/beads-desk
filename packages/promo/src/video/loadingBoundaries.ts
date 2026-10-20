@@ -1,9 +1,9 @@
-import { clipFrames, FPS, msToFrames, type Clip, type Shot } from "./introTimeline.ts";
+import { clipFrames, FPS, msToFrames, type Clip, type Tour } from "./introTimeline.ts";
 import type { Frame } from "./recordingFrames.ts";
 
 /**
  * 경계 frame과 비교할 구간 안쪽의 길이입니다.
- * 장면의 동작(클릭, 스크롤)이 이 안에서 화면을 바꾸면 로딩으로 잘못 알리므로, 지금 녹화에서 경계와 첫 동작 사이(1.3초 이상)보다 짧게 둡니다.
+ * 장면의 동작(클릭, 스크롤)이 이 안에서 화면을 바꾸면 로딩으로 잘못 알리므로, 지금 녹화에서 경계와 가장 가까운 동작 사이(약 1.2초)보다 짧게 둡니다.
  * 목록이 빈 채 불러오는 시간(약 1.5초)보다도 짧아서, 경계가 빈 목록이 나타나고 약 0.5초 안에 걸리면 잡지 못합니다.
  */
 const WINDOW_FRAMES = msToFrames(1000);
@@ -24,32 +24,33 @@ type Edge = "fromMs" | "toMs";
 const EDGES: Edge[] = ["fromMs", "toMs"];
 
 /**
- * 장면마다 각 녹화 구간의 첫 frame과 마지막 frame을, 구간 안쪽 1초 동안의 frame과 비교합니다.
- * 크게 다른 frame이 있으면 장면과 경계를 적은 문장을 돌려줍니다. 경계가 화면을 불러오는 동안에 걸렸거나,
+ * 각 녹화 구간의 첫 frame과 마지막 frame을, 구간 안쪽 1초 동안의 frame과 비교합니다.
+ * 크게 다른 frame이 있으면 구간과 경계를 적은 문장을 돌려줍니다. 경계가 화면을 불러오는 동안에 걸렸거나,
  * 경계에서 1초 안에 장면의 동작이 화면을 바꾼 경우입니다.
  */
-export async function findLoadingBoundaries(shots: Shot[], read: ReadFrames): Promise<string[]> {
+export async function findLoadingBoundaries(
+  { recording, clips }: Pick<Tour, "recording" | "clips">,
+  read: ReadFrames,
+): Promise<string[]> {
+  const boundaries = clips.flatMap((clip, index) =>
+    EDGES.map((edge) => ({ clip, index, edge, frames: boundaryFrames(clip, edge) })),
+  );
+  const frames = await read(recording, [...new Set(boundaries.flatMap((b) => b.frames))]);
   const problems: string[] = [];
-  for (const shot of shots) {
-    const boundaries = shot.clips.flatMap((clip, index) =>
-      EDGES.map((edge) => ({ clip, index, edge, frames: boundaryFrames(clip, edge) })),
+  for (const {
+    clip,
+    index,
+    edge,
+    frames: [boundary, ...inward],
+  } of boundaries) {
+    const changedAt = inward.find(
+      (frame) => changedShare(frames.get(boundary!)!, frames.get(frame)!) > LOADING_CHANGE,
     );
-    const frames = await read(shot.recording, [...new Set(boundaries.flatMap((b) => b.frames))]);
-    for (const {
-      clip,
-      index,
-      edge,
-      frames: [boundary, ...inward],
-    } of boundaries) {
-      const changedAt = inward.find(
-        (frame) => changedShare(frames.get(boundary!)!, frames.get(frame)!) > LOADING_CHANGE,
-      );
-      if (changedAt === undefined) continue;
-      problems.push(
-        `"${shot.caption.title}" 장면(${shot.recording}.webm)의 ${index + 1}번째 구간 ${edge} ${clip[edge]}: ` +
-          `경계 frame이 구간 안쪽 ${frameMs(changedAt)}ms의 화면과 다릅니다.`,
-      );
-    }
+    if (changedAt === undefined) continue;
+    problems.push(
+      `${recording}.webm의 ${index + 1}번째 구간 ${edge} ${clip[edge]}: ` +
+        `경계 frame이 구간 안쪽 ${frameMs(changedAt)}ms의 화면과 다릅니다.`,
+    );
   }
   return problems;
 }

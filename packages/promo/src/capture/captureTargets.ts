@@ -1,18 +1,22 @@
 import type { Locator, Page } from "playwright";
 
-/** 녹화하는 동안 장면이 쓰는 동작입니다. `pause` 말고는 모두 포인터가 대상으로 옮겨 가는 모습을 녹화에 남깁니다. */
+/**
+ * 녹화하는 동안 장면이 쓰는 동작입니다. `pause`와 `mark` 말고는 모두 포인터가 대상으로 옮겨 가는 모습을 녹화에 남깁니다.
+ * `name`을 받는 동작은 그 이름과 녹화 시각을 `<녹화 이름>.events.json`에 남기고, 소개 영상은 이 이름으로 자막, 확대, 구간의 시각을 정합니다.
+ */
 export type Scene = {
   page: Page;
   /** 보는 사람이 화면을 읽을 수 있도록 기다립니다. */
   pause(ms: number): Promise<void>;
-  /** 포인터를 `target`으로 옮겨 잠시 멈춘 뒤 클릭합니다. */
-  click(target: Locator): Promise<void>;
-  /** `target`을 클릭한 뒤, 사람이 입력하는 속도로 `text`를 한 글자씩 입력합니다. */
-  type(target: Locator, text: string): Promise<void>;
-  /** 포인터를 `over` 위로 옮긴 뒤 마우스 휠로 천천히 스크롤합니다. 한 번에 옮기면 녹화에서 화면이 순간 이동한 것처럼 보입니다. */
-  scroll(deltaY: number, over: Locator): Promise<void>;
-  /** 포인터를 옮기지 않고 키를 누릅니다. */
-  press(key: string): Promise<void>;
+  /** 포인터를 `target`으로 옮겨 잠시 멈춘 뒤 클릭합니다. 클릭한 시각을 남깁니다. */
+  click(target: Locator, name: string): Promise<void>;
+  /**
+   * 포인터를 `over` 위로 옮긴 뒤 마우스 휠로 천천히 스크롤하고, 스크롤을 마친 시각을 남깁니다.
+   * 한 번에 옮기면 녹화에서 화면이 순간 이동한 것처럼 보입니다.
+   */
+  scroll(deltaY: number, over: Locator, name: string): Promise<void>;
+  /** 동작 없이 지금 시각을 남깁니다. 클릭한 뒤 화면을 다 그린 순간처럼, 영상이 기준으로 삼을 시각에 씁니다. */
+  mark(name: string): void;
 };
 
 /** 열 주소와, 그 주소의 데모 데이터를 다 불러왔다고 판단할 때 화면에 보여야 하는 문구입니다. */
@@ -67,15 +71,11 @@ const ACTIVITY: View = {
     });
   },
 };
-const BOARD: View = {
-  path: "/board",
-  shows: [
-    "Build the checkout page with card and Apple Pay",
-    "Add a cookie consent banner for EU visitors",
-  ],
-};
+const CHECKOUT_EPIC_TITLE = "Checkout and billing ready for launch";
 const CHECKOUT_ISSUE = "acme-k3v.3";
 const CHECKOUT_TITLE = "Build the checkout page with card and Apple Pay";
+const STRIPE_DECISION = "Use Stripe as the only payment provider at launch";
+const PAYPAL_DECISION = "Offer PayPal alongside cards at launch";
 
 /**
  * 단계와 human gate까지 보이는 epic의 View order 그래프입니다.
@@ -107,16 +107,20 @@ function navLink(page: Page, name: string): Locator {
   return page.getByRole("navigation", { name: "Screens" }).getByRole("link", { name });
 }
 
+/** 에픽 화면에서 제목이 `title`인 에픽 카드의 머리 줄입니다. 순서 보기 링크가 이 줄에 있습니다. */
+function epicHeader(page: Page, title: string): Locator {
+  return page
+    .locator("header")
+    .filter({ has: page.getByRole("link", { name: title, exact: true }) });
+}
+
 /** 이슈 상세입니다. 화면 위에 열면 dialog이고, 그래프 위에 열면 region입니다. */
 function issueDetail(page: Page, id: string): Locator {
   const name = `Issue ${id}`;
   return page.getByRole("dialog", { name }).or(page.getByRole("region", { name }));
 }
 
-/**
- * README와 소개 영상이 보여 주는 특장점마다 캡처할 화면입니다. 스크린샷을 모두 찍은 뒤, 이 순서대로 녹화합니다.
- * gate 응답 녹화는 데모 workspace의 이슈를 바꾸므로 맨 뒤에 녹화해, 다른 녹화의 Needs human 개수가 응답하기 전의 값으로 남게 합니다.
- */
+/** README가 보여 주는 특장점마다 캡처할 화면과 소개 영상의 녹화입니다. 스크린샷을 모두 찍은 뒤, 이 순서대로 녹화합니다. */
 export const CAPTURE_TARGETS: CaptureTarget[] = [
   { name: "now", screenshot: NOW },
   {
@@ -158,99 +162,80 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
     },
   },
   { name: "hygiene", screenshot: HYGIENE },
+  { name: "decisions", screenshot: DECISIONS },
   {
-    // 결제 epic의 View order에서 진행 중인 결제 화면 이슈를 열고, 설명의 Mermaid 그림, 스크린샷, 녹화를 차례로 봅니다.
-    name: "plan-and-attachments",
+    // 결제 epic 하나를 따라가며 순서 보기, 결제 화면 이슈의 Mermaid 그림과 스크린샷, 결제와 같은 주제의 결정과 그 결정이 대체한 이전 결정을 봅니다.
+    // 장면은 포인터의 클릭으로 이어지도록, dialog도 Escape가 아니라 닫기 버튼을 눌러 닫습니다.
+    // 이슈에 붙인 녹화 링크는 누르지 않습니다. 탭이 브라우저의 동영상 화면으로 넘어가 beads-desk 밖으로 나가기 때문입니다.
+    // pause 길이는 영상의 자막을 읽고 확대 영역이 옮겨 갈 시간이므로, 바꾸면 introTimeline.ts의 TOUR도 함께 확인합니다.
+    name: "tour",
     recording: {
-      path: "/epics?epic=acme-k3v",
-      shows: ["Stage 4", CHECKOUT_TITLE],
-      async play({ page, pause, click, scroll, press }) {
-        await pause(1500);
+      path: "/epics",
+      shows: [CHECKOUT_EPIC_TITLE, "View order"],
+      // 에픽 화면은 첫 에픽의 하위 이슈를 펼쳐 두어 결제 epic이 화면 아래로 밀려나므로, 접어서 열린 에픽 카드가 모두 보이게 합니다.
+      async frame(page) {
+        await page.getByRole("button", { name: "Collapse child issues of acme-p8d" }).click();
+      },
+      async play({ page, pause, click, scroll, mark }) {
+        await pause(2200);
         await click(
-          page
-            .getByRole("region", { name: "Dependency graph" })
-            .getByRole("link", { name: new RegExp(CHECKOUT_TITLE) }),
+          epicHeader(page, CHECKOUT_EPIC_TITLE).getByRole("link", { name: "View order" }),
+          "open-plan",
         );
+        const plan = page.getByRole("dialog", { name: `${CHECKOUT_EPIC_TITLE} · Order` });
+        const graph = plan.getByRole("region", { name: "Dependency graph" });
+        await graph.getByText("Stage 4", { exact: false }).waitFor();
+        mark("plan-shown");
+        await pause(2200);
+
+        await click(graph.getByRole("link", { name: new RegExp(CHECKOUT_TITLE) }), "open-checkout");
         const detail = issueDetail(page, CHECKOUT_ISSUE);
         const diagram = detail.getByRole("button", { name: "Enlarge diagram", exact: true });
         await diagram.waitFor();
-        // 그림을 누르면 상세가 그림까지 스크롤하므로, 상세를 다 그린 뒤 2초 넘게 멈춰 두어 장면을 그 사이에서 나눌 수 있게 합니다.
-        await pause(2000);
-        await click(diagram);
-        await page.getByRole("dialog", { name: "Enlarged diagram", exact: true }).waitFor();
+        mark("checkout-shown");
+        await pause(2700);
+        await click(diagram, "enlarge-diagram");
+        const enlarged = page.getByRole("dialog", { name: "Enlarged diagram", exact: true });
+        await enlarged.waitFor();
         await pause(1500);
-        await press("Escape");
-        await pause(500);
-        // 제목이 상세의 머리글 바로 아래에 오도록 스크롤해, 결제 화면 스크린샷과 녹화 링크가 함께 보이게 합니다.
-        // 포인터는 보이는 그림 위에 둡니다. 화면 밖의 제목 위로 옮기면 Playwright가 먼저 제목까지 한 번에 스크롤합니다.
-        const heading = (await detail.getByText("Staging check", { exact: true }).boundingBox())!;
-        await scroll(heading.y - 160, diagram);
-        await pause(1200);
-        await click(detail.getByRole("link", { name: "Recording of the test payment" }));
-        await page.locator("video").waitFor();
-        await pause(3500);
-      },
-    },
-  },
-  {
-    // 대체한 결정의 상세에서 Linked issues의 Supersedes 링크로 대체된 이전 결정을 옆 패널에 엽니다.
-    name: "decisions",
-    screenshot: DECISIONS,
-    recording: {
-      ...DECISIONS,
-      async play({ page, pause, click }) {
-        await pause(1000);
-        await click(page.getByRole("link", { name: "Sign in with passwordless magic links" }));
-        const detail = issueDetail(page, "acme-t8w");
-        await detail
-          .getByText("Support tickets from the beta were mostly password resets.")
-          .waitFor();
-        await pause(1300);
-        await click(detail.getByRole("link", { name: /Sign in with email and password/ }));
-        await page
-          .getByRole("region", { name: "Side panel for issue acme-b3s" })
-          .getByText("Start with the most familiar sign-in flow")
-          .waitFor();
-        await pause(1800);
-      },
-    },
-  },
-  {
-    // Legal review gate는 acme-w2n.4만 막으므로, 응답하면 그 카드만 Blocked에서 Ready로 옮겨 갑니다.
-    name: "respond-to-gate",
-    recording: {
-      ...BOARD,
-      async play({ page, pause, click, type }) {
-        await pause(1200);
-        await click(navLink(page, "Needs human"));
-        const card = page
-          .getByRole("region", { name: "Human gates" })
-          .getByRole("button", { name: /Legal review of the privacy policy/ });
-        await card.waitFor();
-        await pause(500);
-        await click(card);
-        const gate = page.getByRole("region", { name: "Legal review of the privacy policy" });
-        await gate.waitFor();
-        await pause(600);
-        await type(
-          gate.getByRole("textbox", { name: "Response", exact: true }),
-          "Approved by legal.",
+        // dialog 바깥 배경도 이름이 Close인 버튼이므로, 머리글의 닫기 버튼을 고릅니다.
+        await click(
+          enlarged.getByRole("banner").getByRole("button", { name: "Close", exact: true }),
+          "close-diagram",
         );
+        await enlarged.waitFor({ state: "hidden" });
+        await pause(600);
+        // 녹화 링크의 아래 끝이 상세 아래쪽(y 676)에 오도록 스크롤해, 그 위의 Staging check 제목과 결제 화면 스크린샷이 함께 보이게 합니다.
+        const link = (await detail
+          .getByRole("link", { name: "Recording of the test payment" })
+          .boundingBox())!;
+        await scroll(link.y + link.height - 676, diagram, "scroll-to-screenshot");
+        await pause(1700);
+
+        // 순서 보기 dialog의 머리글 닫기 버튼입니다. 상세의 닫기 버튼보다 앞에 있습니다.
+        await click(plan.getByRole("link", { name: "Close", exact: true }).first(), "close-plan");
+        await plan.waitFor({ state: "hidden" });
         await pause(300);
-        await click(gate.getByRole("button", { name: "Respond and close" }));
-        await gate.waitFor({ state: "detached" });
-        await pause(1200);
-        await click(navLink(page, "Board"));
+        await click(navLink(page, "Decisions"), "open-decisions");
+        const stripe = page.getByRole("link", { name: STRIPE_DECISION });
+        await stripe.waitFor();
+        mark("decisions-shown");
+        await pause(2400);
+        await click(stripe, "open-decision");
+        const decision = issueDetail(page, "acme-n5e");
+        await decision.getByText("Stripe covers cards").waitFor();
+        mark("decision-shown");
+        await pause(1500);
+        await click(
+          decision.getByRole("link", { name: new RegExp(PAYPAL_DECISION) }),
+          "open-replaced",
+        );
         await page
-          .getByRole("region", { name: "Ready", exact: true })
-          .getByText("Publish the updated privacy policy and terms of service")
+          .getByRole("region", { name: "Side panel for issue acme-d2p" })
+          .getByText("Offer PayPal next to card payments", { exact: false })
           .waitFor();
-        // 보드는 카드를 먼저 그리고 human gate 제목을 나중에 불러오므로, 다른 카드의 막힘 표시까지 다 그릴 때까지 기다립니다.
-        await page
-          .getByRole("region", { name: "Blocked", exact: true })
-          .getByText("Awaiting human")
-          .waitFor();
-        await pause(3000);
+        mark("replaced-shown");
+        await pause(2800);
       },
     },
   },

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,7 +7,7 @@ import { parseArgs } from "node:util";
 import { chromium, type BrowserContext, type Locator, type Page } from "playwright";
 import { isolatedBdEnv } from "../seed/isolatedBdEnv.ts";
 import { startAppServer } from "./appServer.ts";
-import { RECORDING_SIZE } from "../video/introTimeline.ts";
+import { RECORDING_SIZE, type RecordingEvent } from "../video/introTimeline.ts";
 import { CAPTURE_TARGETS, type CaptureTarget, type View } from "./captureTargets.ts";
 
 /** README가 참조하는 스크린샷입니다. 저장소에 commit합니다. */
@@ -37,8 +37,8 @@ const POINTER_REST = { x: 900, y: 90 };
 /** 휠 스크롤을 나누는 횟수와, 나눈 휠 입력 사이의 간격입니다. */
 const WHEEL_STEPS = 20;
 const WHEEL_STEP_MS = 25;
-/** 한 글자를 입력하는 간격입니다. */
-const TYPE_KEY_MS = 40;
+/** 휠 입력을 마친 뒤 스크롤이 멈췄는지 확인하는 간격입니다. */
+const SCROLL_SETTLE_POLL_MS = 50;
 const { values } = parseArgs({ options: { workspace: { type: "string" } } });
 
 const home = mkdtempSync(join(tmpdir(), "beads-desk-promo-home-"));
@@ -79,7 +79,9 @@ async function captureAll(baseURL: string): Promise<void> {
   mkdirSync(RECORDING_DIR, { recursive: true });
   mkdirSync(SCREENSHOT_DIR, { recursive: true });
 
-  const browser = await chromium.launch();
+  // 부드러운 스크롤은 마지막 휠 입력 뒤에도 한동안 이어져, 스크롤이 끝나는 시각이 녹화마다 달라집니다.
+  // 휠 입력을 나눠 보내는 것만으로 녹화에서는 천천히 스크롤하는 것처럼 보이므로, 부드러운 스크롤을 끕니다.
+  const browser = await chromium.launch({ args: ["--disable-smooth-scrolling"] });
   try {
     const context = await browser.newContext({
       baseURL,
@@ -102,7 +104,6 @@ async function captureAll(baseURL: string): Promise<void> {
       { name: "beads-desk-locale", value: "en", url: baseURL },
       { name: "beads-desk-theme", value: "light", url: baseURL },
     ]);
-    // 녹화 가운데 데모 workspace의 이슈를 바꾸는 것이 있으므로, 스크린샷을 모두 먼저 찍습니다.
     for (const target of CAPTURE_TARGETS) {
       if (target.screenshot) await takeScreenshot(context, target.name, target.screenshot);
     }
@@ -150,37 +151,60 @@ async function record(
     path: join(RECORDING_DIR, `${name}.webm`),
     size: page.viewportSize()!,
   });
+  const startedAt = performance.now();
+  const events: RecordingEvent[] = [];
+  const note = (event: string, kind: RecordingEvent["kind"]) =>
+    events.push({ name: event, kind, atMs: Math.round(performance.now() - startedAt) });
 
-  async function click(element: Locator) {
+  // Playwright의 hover와 click은 대상이 화면에 다 들어오지 않으면 먼저 한 번에 스크롤해서, 녹화에 화면이 순간 이동한 모습이 남습니다.
+  // 포인터를 대상에서 화면에 보이는 부분의 가운데로 직접 옮겨, 스크롤하지 않고 누릅니다.
+  async function pointAt(element: Locator): Promise<{ x: number; y: number }> {
+    await element.waitFor();
+    const box = (await element.boundingBox())!;
+    const viewport = page.viewportSize()!;
+    const top = Math.max(box.y, 0);
+    const bottom = Math.min(box.y + box.height, viewport.height);
+    const point = { x: box.x + box.width / 2, y: (top + bottom) / 2 };
     await showPointer(POINTER_MOVE_MS);
-    await element.hover();
-    await showPointer(POINTER_PRESS_MS, PRESS_MARK);
-    await element.click();
+    await page.mouse.move(point.x, point.y);
+    return point;
   }
 
   await recording.play({
     page,
     pause: (ms) => page.waitForTimeout(ms),
-    click,
-    async type(element, text) {
-      await click(element);
-      // 키 입력은 showActions의 duration만큼 기다리지 않으므로, 입력 간격을 따로 줍니다.
-      await page.keyboard.type(text, { delay: TYPE_KEY_MS });
+    async click(element, event) {
+      const { x, y } = await pointAt(element);
+      await showPointer(POINTER_PRESS_MS, PRESS_MARK);
+      await page.mouse.click(x, y);
+      note(event, "click");
     },
-    async scroll(deltaY, over) {
-      await showPointer(POINTER_MOVE_MS);
-      await over.hover();
+    async scroll(deltaY, over, event) {
+      const { x, y } = await pointAt(over);
       // 포인터를 보이는 동안에는 휠 입력마다 showActions의 duration만큼 기다리므로, 그 시간을 휠 입력 간격으로 씁니다.
       await showPointer(WHEEL_STEP_MS);
       for (let step = 0; step < WHEEL_STEPS; step += 1) {
         await page.mouse.wheel(0, deltaY / WHEEL_STEPS);
       }
+      // mouse.wheel은 스크롤이 끝나기를 기다리지 않으므로, `over`가 멈춘 뒤의 시각을 남깁니다.
+      let top = (await over.boundingBox())!.y;
+      for (;;) {
+        await page.waitForTimeout(SCROLL_SETTLE_POLL_MS);
+        const next = (await over.boundingBox())!.y;
+        if (next === top) break;
+        top = next;
+      }
+      // screencast는 화면을 다시 그릴 때만 frame을 받아, 스크롤의 마지막 frame이 다음 화면 변화 때에야 녹화에 남습니다.
+      // 포인터를 1px 옮겨 화면을 다시 그리게 해, 스크롤을 마친 화면이 이 시각에 녹화되게 합니다.
+      await page.mouse.move(x, y + 1);
+      note(event, "scroll");
     },
-    press: (key) => page.keyboard.press(key),
+    mark: (event) => note(event, "mark"),
   });
 
   await page.screencast.stop();
   await page.close();
+  writeFileSync(join(RECORDING_DIR, `${name}.events.json`), JSON.stringify(events, null, 2));
 }
 
 /** 화면을 열고 데모 데이터가 다 보일 때까지 기다립니다. */

@@ -7,17 +7,18 @@ import {
   placeInOrder,
   RECORDING_SIZE,
   type Clip,
-  type Shot,
+  type Focus,
+  type Tour,
 } from "./introTimeline.ts";
 
 const TITLE_BAR_HEIGHT = 30;
 
 /**
- * 장면의 녹화 구간을 차례로 브라우저 창 모양 안에 녹화 크기 그대로 보입니다.
- * `zoom`이면 장면의 `focus` 영역을 창 크기로 확대합니다.
+ * 본편의 녹화 구간을 차례로 브라우저 창 모양 안에 녹화 크기 그대로 보입니다.
+ * `zoom`이면 본편의 `focus` 영역을 창 크기로 확대합니다.
  */
-export function BrowserWindow({ shot, zoom }: { shot: Shot; zoom: boolean }) {
-  const clips = placeInOrder(shot.clips, clipFrames);
+export function BrowserWindow({ tour, zoom }: { tour: Tour; zoom: boolean }) {
+  const clips = placeInOrder(tour.clips, clipFrames);
   return (
     <div
       style={{
@@ -32,11 +33,7 @@ export function BrowserWindow({ shot, zoom }: { shot: Shot; zoom: boolean }) {
       <div style={{ ...RECORDING_SIZE, position: "relative", overflow: "hidden" }}>
         {clips.map((clip) => (
           <Sequence key={clip.fromMs} from={clip.from} durationInFrames={clip.frames} layout="none">
-            <ClipVideo
-              recording={shot.recording}
-              clip={clip}
-              focus={zoom ? (shot.focus ?? []) : []}
-            />
+            <ClipVideo recording={tour.recording} clip={clip} focus={zoom ? tour.focus : []} />
           </Sequence>
         ))}
       </div>
@@ -44,15 +41,7 @@ export function BrowserWindow({ shot, zoom }: { shot: Shot; zoom: boolean }) {
   );
 }
 
-function ClipVideo({
-  recording,
-  clip,
-  focus,
-}: {
-  recording: string;
-  clip: Clip;
-  focus: NonNullable<Shot["focus"]>;
-}) {
+function ClipVideo({ recording, clip, focus }: { recording: string; clip: Clip; focus: Focus[] }) {
   const ms = clip.fromMs + (useCurrentFrame() * 1000) / FPS;
   const { x, y, width } = focusAt(focus, ms);
   const scale = RECORDING_SIZE.width / width;
