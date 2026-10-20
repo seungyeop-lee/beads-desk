@@ -40,7 +40,7 @@ const WRITES: IssueWrites = {
 };
 
 for (const width of AREA_WIDTHS) {
-  test(`표 영역 폭 ${width}px에서 ID·유형·제목이 가로 스크롤 없이 표 영역 안에 다 보인다`, async () => {
+  test(`표 영역 폭 ${width}px에서 ID·유형·제목이 가로 스크롤 없이 표 영역 안에 다 보이고, 상태·우선순위 입력은 표 안에서 스크롤하면 영역 안에 다 보인다`, async () => {
     const screen = await render(
       <LocaleProvider locale="ko">
         <div style={{ width }}>
@@ -82,6 +82,19 @@ for (const width of AREA_WIDTHS) {
         expect(box.right, `${where} ${element.textContent} 오른쪽 끝`).toBeLessThanOrEqual(
           area.right,
         );
+      }
+    }
+
+    // 상태와 우선순위 열은 좁은 표 영역에서 가로 스크롤로 봅니다.
+    const scroller = screen.container.querySelector("table")!.parentElement!;
+    const area = scroller.getBoundingClientRect();
+    for (const { id } of ISSUES) {
+      for (const name of [messages.issueTable.statusOf(id), messages.issueTable.priorityOf(id)]) {
+        const control = screen.getByRole("combobox", { name }).element();
+        control.scrollIntoView({ block: "nearest", inline: "nearest" });
+        const box = control.getBoundingClientRect();
+        expect(box.left, `${width}px ${name} 왼쪽 끝`).toBeGreaterThanOrEqual(area.left);
+        expect(box.right, `${width}px ${name} 오른쪽 끝`).toBeLessThanOrEqual(area.right);
       }
     }
   });

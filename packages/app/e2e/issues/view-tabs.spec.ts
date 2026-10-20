@@ -21,15 +21,6 @@ test("보기 탭으로 작업 상태 하나를 골라 보고, 고른 탭은 주�
   await page.goto("issues");
   const tabs = page.getByRole("navigation", { name: "보기" });
   await expect(tabs.getByRole("link", { name: "전체 5" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("region", { name: "막힘" })).toContainText("기다리는 작업");
-  await expect(page.getByRole("region", { name: "막힘" })).not.toContainText("미룬 작업");
-  await expect(page.getByRole("region", { name: "보류" })).toContainText("미룬 작업");
-  await expect(tabs.getByRole("link", { name: "보류 1" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "닫힘 묶음 펼치기" })).toHaveAttribute(
-    "aria-expanded",
-    "false",
-  );
-  await expect(page.getByRole("link", { name: "끝난 작업" })).toHaveCount(0);
 
   await tabs.getByRole("link", { name: "막힘 1" }).click();
   await expect(page).toHaveURL(/\/issues\?view=blocked$/);

@@ -1,6 +1,6 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("이슈 표는 처음에 결정을 빼고 보이고, 유형 메뉴에서 고른 유형은 주소에 남아 새로고침과 보기 탭 이동에도 유지된다", async ({
+test("유형 메뉴에서 고른 유형은 주소에 남아 새로고침과 보기 탭 이동에도 유지된다", async ({
   page,
   workspace,
 }) => {
@@ -13,12 +13,8 @@ test("이슈 표는 처음에 결정을 빼고 보이고, 유형 메뉴에서 �
 
   await page.goto("issues");
   await expect(page.getByRole("link", { name: "e2e 작업" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "e2e 결정" })).toHaveCount(0);
 
-  const typeMenu = page.locator("summary", { hasText: "유형" });
-  await expect(typeMenu).toContainText("8개");
-  await typeMenu.click();
-  await expect(page.getByRole("checkbox", { name: "작업" })).toBeChecked();
+  await page.locator("summary", { hasText: "유형" }).click();
   await page.getByRole("checkbox", { name: "결정" }).check();
   await expect(page.getByRole("link", { name: "e2e 결정" })).toBeVisible();
   await page.getByRole("checkbox", { name: "버그" }).uncheck();

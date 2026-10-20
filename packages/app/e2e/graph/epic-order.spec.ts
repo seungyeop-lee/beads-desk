@@ -3,7 +3,7 @@ import { expect, test } from "../support/bdWorkspace";
 test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 후손 이슈를 그래프로 열며, 노드를 눌러 연 상세를 Escape로 닫는다", async ({
   page,
   workspace,
-}, testInfo) => {
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const { epic, third } = await workspace.createIssues(
     {
@@ -41,7 +41,6 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   const node = (title: string) => canvas.getByRole("link", { name: new RegExp(title) });
   await expect(node("순서 첫째")).toBeVisible();
   await expect(node("순서 셋째")).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath("epic-order.png") });
 
   await node("순서 셋째").click();
   await expect(page.getByRole("region", { name: `${third} 이슈` })).toBeVisible();

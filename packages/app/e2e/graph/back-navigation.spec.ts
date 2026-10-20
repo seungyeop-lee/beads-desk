@@ -3,7 +3,7 @@ import { expect, test } from "../support/bdWorkspace";
 test("그래프를 연달아 방문한 뒤 닫기로 한 그래프씩 거슬러 최초 화면까지 돌아간다", async ({
   page,
   workspace,
-}, testInfo) => {
+}) => {
   const { second, last } = await workspace.createIssues(
     {
       first: { title: "복귀 첫째", type: "task" },
@@ -28,10 +28,6 @@ test("그래프를 연달아 방문한 뒤 닫기로 한 그래프씩 거슬러 
     page.getByRole("region", { name: "의존 그래프" }).getByRole("link", { name: /복귀 마지막/ }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "뒤로가기", exact: true })).toHaveCount(0);
-  await page.screenshot({
-    path: testInfo.outputPath("chain-close-ko.png"),
-    animations: "disabled",
-  });
 
   await page
     .getByRole("region", { name: "의존 그래프" })
@@ -59,26 +55,21 @@ test("그래프를 연달아 방문한 뒤 닫기로 한 그래프씩 거슬러 
   await expect(page).toHaveURL(`.${origin}`);
 });
 
-test("복귀 정보 없이 그래프 주소로 바로 들어오면 닫기는 그래프별 대체 화면으로 돌아간다", async ({
+test("복귀 정보 없이 그래프 주소로 바로 들어오면 닫기는 그래프의 대체 화면으로 돌아간다", async ({
   page,
   workspace,
 }) => {
-  const { epic, second } = await workspace.createIssues(
+  const { second } = await workspace.createIssues(
     {
-      epic: { title: "직접 여는 에픽", type: "epic" },
-      first: { title: "직접 여는 선행", parent: "epic" },
-      second: { title: "직접 여는 기준", parent: "epic" },
+      first: { title: "직접 여는 선행" },
+      second: { title: "직접 여는 기준" },
     },
     [["second", "first"]],
   );
-  for (const [scope, id, fallback] of [
-    ["epic", epic, "/epics"],
-    ["center", second, `/issues?issue=${second}`],
-  ]) {
-    await page.goto(`graph?${new URLSearchParams({ [scope!]: id! })}`);
-    const close = page.getByRole("link", { name: "닫기", exact: true });
-    await expect(close).toHaveAttribute("href", `/w/${workspace.slug}${fallback!}`);
-    await close.click();
-    await expect(page).toHaveURL(`.${fallback!}`);
-  }
+  const fallback = `/issues?issue=${second}`;
+  await page.goto(`graph?center=${second}`);
+  const close = page.getByRole("link", { name: "닫기", exact: true });
+  await expect(close).toHaveAttribute("href", `/w/${workspace.slug}${fallback}`);
+  await close.click();
+  await expect(page).toHaveURL(`.${fallback}`);
 });

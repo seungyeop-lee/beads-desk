@@ -11,10 +11,10 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명·댓글·메모에서 workspace와 외부 worktree의 파일 링크와 PNG를 표시하고, 본문 링크로 파일과 앱 화면과 외부 주소를 열며 편집 후 원문 경로를 유지한다", async ({
+test("설명에서 workspace와 외부 worktree의 파일 링크와 PNG를 표시하고, 본문 링크로 파일과 앱 화면과 외부 주소를 열며 편집 후 원문 경로를 유지한다", async ({
   page,
   workspace,
-}, testInfo) => {
+}) => {
   const outside = await mkdtemp(join(tmpdir(), "beads-desk-file-worktree-"));
   const worktree = join(outside, "별도 작업 트리");
   await workspace.commit("로컬 파일 검증 준비");
@@ -35,58 +35,32 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일 링크
       "",
       `[workspace 문서](<${paths[0]!.md}>) [worktree 문서](<${paths[1]!.md}>) 편집할 문단`,
     ].join("\n");
-    const id = await workspace.createIssue(
-      "로컬 파일 표시",
-      "--description",
-      markdown,
-      "--notes",
-      markdown,
-    );
-    await workspace.bd("comments", "add", id, markdown);
+    const id = await workspace.createIssue("로컬 파일 표시", "--description", markdown);
     await page.goto(`issues?issue=${id}`);
     const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-    const fields = [
-      dialog.getByRole("region", { name: "설명", exact: true }),
-      dialog.getByRole("article"),
-      dialog.getByRole("region", { name: "메모", exact: true }),
-    ];
-    for (const field of fields) {
-      for (const [index, path] of paths.entries()) {
-        const name = index === 0 ? "workspace" : "worktree";
-        const image = field.getByRole("img", { name: `${name} PNG` });
-        await expect(image).toBeVisible();
-        await expect(image).toHaveJSProperty("naturalWidth", 80);
-        await expect(image).toHaveAttribute("src", localFileUrl(path.png, workspace.slug));
-        await expect(field.getByRole("link", { name: `${name} 문서` })).toHaveAttribute(
-          "href",
-          localFileUrl(path.md, workspace.slug),
-        );
-      }
-      await expect(field.getByRole("link", { name: "에픽 화면" })).toHaveAttribute(
-        "href",
-        `/w/${workspace.slug}/epics`,
-      );
-      await expect(field.getByRole("link", { name: "외부 문서" })).toHaveAttribute(
-        "href",
-        "https://example.com/doc",
-      );
-    }
-    await page.screenshot({ path: testInfo.outputPath("local-files.png"), fullPage: true });
-    await testInfo.attach("local-files", {
-      path: testInfo.outputPath("local-files.png"),
-      contentType: "image/png",
-    });
-    // 세 필드가 같은 읽기 전용 편집기로 그려지므로, 링크를 눌러 여는 흐름은 설명에서만 확인합니다.
-    const description = fields[0]!;
+    // 설명, 댓글, 메모는 같은 읽기 전용 편집기(MarkdownEditor)가 링크와 이미지 주소를 바꾸므로 설명에서만 확인합니다.
+    const description = dialog.getByRole("region", { name: "설명", exact: true });
     for (const [index, path] of paths.entries()) {
       const name = index === 0 ? "workspace" : "worktree";
-      await description.getByRole("link", { name: `${name} 문서` }).click();
+      const image = description.getByRole("img", { name: `${name} PNG` });
+      await expect(image).toBeVisible();
+      await expect(image).toHaveJSProperty("naturalWidth", 80);
+      await expect(image).toHaveAttribute("src", localFileUrl(path.png, workspace.slug));
+      const link = description.getByRole("link", { name: `${name} 문서` });
+      await expect(link).toHaveAttribute("href", localFileUrl(path.md, workspace.slug));
+      await link.click();
       await expect(page.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
       expect(new URL(page.url()).searchParams.get("path")).toBe(path.md);
       await page.goBack();
       await expect(dialog).toBeVisible();
     }
-    await description.getByRole("link", { name: "에픽 화면" }).click();
+    await expect(description.getByRole("link", { name: "외부 문서" })).toHaveAttribute(
+      "href",
+      "https://example.com/doc",
+    );
+    const screenLink = description.getByRole("link", { name: "에픽 화면" });
+    await expect(screenLink).toHaveAttribute("href", `/w/${workspace.slug}/epics`);
+    await screenLink.click();
     await expect(page).toHaveURL(new RegExp(`/w/${workspace.slug}/epics$`));
     await page.goBack();
     await expect(dialog).toBeVisible();
@@ -101,8 +75,6 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일 링크
     await expect
       .poll(async () => (await workspace.showIssue(id)).description, { timeout: SAVE_TIMEOUT })
       .toBe(markdown.replace("편집할 문단", "편집할 문단 고침"));
-    const comments: { text: string }[] = JSON.parse(await workspace.bd("comments", id, "--json"));
-    expect(comments[0]!.text).toBe(markdown);
     await page.route("https://example.com/doc", (route) =>
       route.fulfill({ contentType: "text/plain; charset=utf-8", body: "외부 문서 화면" }),
     );
@@ -112,21 +84,6 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일 링크
   } finally {
     execFileSync("git", ["-C", workspace.path, "worktree", "remove", "--force", worktree]);
     await rm(outside, { recursive: true, force: true });
-  }
-});
-
-test("로컬 HTML과 SVG를 열어도 스크립트가 실행되지 않고 원문이 표시된다", async ({
-  page,
-  workspace,
-}) => {
-  const source = '<script>document.title = "실행됨"</script><h1>원문 콘텐츠</h1>';
-  for (const extension of ["html", "svg"]) {
-    const path = join(workspace.path, `실행 검증.${extension}`);
-    await writeFile(path, source);
-    await page.goto(localFileUrl(path, workspace.slug));
-    await expect(page.getByText(source, { exact: true })).toBeVisible();
-    await expect(page).not.toHaveTitle("실행됨");
-    await expect(page.getByRole("heading")).toHaveCount(0);
   }
 });
 

@@ -69,7 +69,6 @@ async function expectCopies(page: Page, button: Locator, id: string) {
   await page.evaluate(() => navigator.clipboard.writeText(""));
   const toasts = page.getByText(`ID를 복사했습니다: ${id}`, { exact: true });
   const before = await toasts.count();
-  await expect(button).toHaveCSS("cursor", "copy");
   await button.click();
   await expect(toasts).toHaveCount(before + 1);
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(id);

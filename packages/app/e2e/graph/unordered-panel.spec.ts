@@ -4,8 +4,6 @@ test("선후 관계 없음 목록에서 사용자가 펼친 상태는 bd로 이�
   page,
   workspace,
 }) => {
-  // 4단계 에픽은 1440px 창에서 목록을 펼치면 그래프가 들어가지 않아, 목록을 접은 채로 시작합니다.
-  await page.setViewportSize({ width: 1440, height: 900 });
   const { epic, alone } = await workspace.createIssues(
     {
       epic: { title: "패널 공간 확인", type: "epic" },
@@ -23,10 +21,9 @@ test("선후 관계 없음 목록에서 사용자가 펼친 상태는 bd로 이�
   );
   await page.goto(`graph?epic=${epic}`);
   const panel = page.getByRole("region", { name: "선후 관계 없음" });
+  // 4단계 에픽은 기본 창 폭(1280px)에서 그래프와 펼친 목록이 함께 들어가지 않아 목록이 접힌 채로 시작합니다.
+  // 처음에 접히는 조건은 GraphScreen 컴포넌트 테스트가 확인합니다.
   const expand = panel.getByRole("button", { name: "선후 관계 없는 이슈 목록 펼치기" });
-  await expect(expand).toHaveAttribute("aria-expanded", "false");
-  await expect(panel.getByRole("link")).toHaveCount(0);
-
   await expand.focus();
   await page.keyboard.press("Enter");
   const collapse = panel.getByRole("button", { name: "선후 관계 없는 이슈 목록 접기" });

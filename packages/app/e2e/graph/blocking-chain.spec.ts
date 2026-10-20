@@ -1,10 +1,10 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("상세의 선행·후속 그래프를 누르면 그 이슈의 사슬을 그래프로 열고, 노드를 눌러 연 상세를 Escape로 닫으며, related 관계만 있는 이슈의 상세에서도 그래프를 연다", async ({
+test("상세의 선행·후속 그래프를 누르면 그 이슈의 사슬을 그래프로 열고, related 관계만 있는 이슈의 상세에서도 그래프를 연다", async ({
   page,
   workspace,
 }) => {
-  const { center, before, note } = await workspace.createIssues(
+  const { center, note } = await workspace.createIssues(
     {
       root: { title: "사슬 맨 앞" },
       before: { title: "사슬 앞" },
@@ -35,13 +35,6 @@ test("상세의 선행·후속 그래프를 누르면 그 이슈의 사슬을 �
   await expect(node("사슬 맨 앞")).toBeVisible();
   await expect(node("사슬 뒤")).toBeVisible();
   await expect(node("related 이슈")).toBeVisible();
-
-  await node("사슬 앞").click();
-  await expect(page.getByRole("region", { name: `${before} 이슈` })).toBeVisible();
-  await expect(page).toHaveURL(new RegExp(`center=${center}(?:&returnTo=[^&]+)?&issue=${before}$`));
-  await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(new RegExp(`/issues\\?center=${center}(?:&returnTo=[^&]+)?$`));
-  await expect(node("사슬 뒤")).toBeVisible();
 
   await page.goto(`issues?issue=${note}`);
   await page
