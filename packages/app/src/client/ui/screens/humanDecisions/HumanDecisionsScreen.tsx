@@ -3,7 +3,7 @@
 import { awaitingHuman, type Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
 import { sortByRequestedAt } from "@/client/modules/humanDecisions/domain/humanDecisionsView";
@@ -75,15 +75,36 @@ export function HumanDecisionsScreen() {
   const select = (id: string) => {
     replaceQuery((params) => params.set(ITEM_PARAM, id));
   };
+  const mainRef = useRef<HTMLElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // 직전에 오른쪽에 보인 항목 id입니다. 주소가 가리키는 항목을 보이다가 그 항목이 목록에서 빠진 경우만 골라 스크롤하려고 둡니다.
+  const shownIdRef = useRef<string | null>(null);
+  const stopFollowingRef = useRef<(() => void) | null>(null);
   // 주소가 오른쪽에 보이는 항목과 어긋나면 고칩니다. 처음 진입해 맨 위 항목을 자동으로 보일 때와, 고른 항목이 닫혀 다른 항목으로 넘어갈 때입니다. 조회가 끝나기 전에는 목록이 비어 있을 뿐이므로 loaded일 때만 고칩니다.
   useEffect(() => {
     if (!loaded) return;
+    const shownClosed =
+      shownIdRef.current !== null &&
+      shownIdRef.current === selectedId &&
+      selected?.id !== selectedId;
+    shownIdRef.current = selected?.id ?? null;
     if (selectedId === (selected?.id ?? null)) return;
     replaceQuery((params) => {
       if (selected) params.set(ITEM_PARAM, selected.id);
       else params.delete(ITEM_PARAM);
     });
+    // 보던 항목이 닫혀 다음 항목으로 넘어가면 화면이 같은 위치에 머물러 바뀐 것을 알아보기 어려우므로, 새 항목의 시작으로 스크롤합니다.
+    if (shownClosed && mainRef.current && listRef.current && panelRef.current) {
+      stopFollowingRef.current?.();
+      stopFollowingRef.current = keepPanelStartInView(
+        mainRef.current,
+        listRef.current,
+        panelRef.current,
+      );
+    }
   }, [selectedId, loaded, selected, replaceQuery]);
+  useEffect(() => () => stopFollowingRef.current?.(), []);
   const groups = [
     {
       label: messages.humanDecisions.gates,
@@ -96,7 +117,7 @@ export function HumanDecisionsScreen() {
   ].filter((group) => group.items.length > 0);
 
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-6 px-8 pb-16">
+    <main ref={mainRef} className="mx-auto flex max-w-[96rem] flex-col gap-6 px-8 pb-16">
       <ScreenHeader
         title={messages.humanDecisions.title}
         tone={screenTone("/human")}
@@ -114,7 +135,7 @@ export function HumanDecisionsScreen() {
       {loaded &&
         (selected ? (
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            <div className="flex flex-col gap-5">
+            <div ref={listRef} className="flex flex-col gap-5">
               {groups.map((group) => (
                 <section key={group.label} aria-label={group.label} className="flex flex-col gap-2">
                   <h2 className="flex items-baseline gap-2 px-1 text-[15px] font-bold">
@@ -137,11 +158,13 @@ export function HumanDecisionsScreen() {
                 </section>
               ))}
             </div>
-            {selected.kind === "gate" ? (
-              <HumanGateDecision key={selected.id} summary={selected.summary} />
-            ) : (
-              <SelectedDecision key={selected.id} question={selected.issue} />
-            )}
+            <div ref={panelRef} className="min-w-0">
+              {selected.kind === "gate" ? (
+                <HumanGateDecision key={selected.id} summary={selected.summary} />
+              ) : (
+                <SelectedDecision key={selected.id} question={selected.issue} />
+              )}
+            </div>
           </div>
         ) : (
           <EmptyState message={messages.humanDecisions.empty} />
@@ -150,6 +173,41 @@ export function HumanDecisionsScreen() {
       <IssueDetailRoute listedIssues={listedIssues} />
     </main>
   );
+}
+
+/** 좁은 폭에서 스크롤한 뒤 상단 머리글과 패널 사이에 두는 간격(px)입니다. 목록과 패널 사이 간격(gap-6)과 같게 둡니다. */
+const PANEL_SCROLL_GAP = 24;
+
+/** 사용자가 스크롤하거나 누르거나 키를 누르면, 그 뒤로는 패널 위치를 다시 맞추지 않습니다. */
+const USER_SCROLL_EVENTS = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+
+/**
+ * 오른쪽 패널의 시작이 보이게 페이지를 스크롤하고, 돌려준 함수를 부르거나 사용자가 화면을 움직일 때까지 패널 크기가 바뀔 때마다 다시 맞춥니다.
+ * 새 항목의 상세와 본문은 패널이 그려진 뒤에 도착하므로, 처음 맞출 때는 페이지가 짧아 원하는 위치까지 스크롤되지 않을 수 있습니다.
+ */
+function keepPanelStartInView(main: HTMLElement, list: HTMLElement, panel: HTMLElement) {
+  const observer = new ResizeObserver(() => scrollToPanelStart(main, list, panel));
+  const stop = () => {
+    observer.disconnect();
+    for (const type of USER_SCROLL_EVENTS)
+      window.removeEventListener(type, stop, { capture: true });
+  };
+  observer.observe(panel);
+  for (const type of USER_SCROLL_EVENTS) window.addEventListener(type, stop, { capture: true });
+  return stop;
+}
+
+/**
+ * 넓은 폭에서는 패널이 목록 옆에 놓이므로 페이지 맨 위로 올립니다.
+ * 좁은 폭에서는 패널이 목록 아래에 놓여 맨 위로 올리면 목록만 보이므로, 패널 맨 위가 상단 머리글 바로 아래에 오게 합니다.
+ * main은 상단 머리글(AppHeader) 바로 아래에서 시작하므로, main 맨 위에서 패널까지의 거리만큼 스크롤하면 패널이 머리글 높이만큼 아래에 놓여 sticky 머리글에 가리지 않습니다.
+ */
+function scrollToPanelStart(main: HTMLElement, list: HTMLElement, panel: HTMLElement) {
+  const panelTop = panel.getBoundingClientRect().top;
+  const besideList = panelTop <= list.getBoundingClientRect().top;
+  window.scrollTo({
+    top: besideList ? 0 : panelTop - main.getBoundingClientRect().top - PANEL_SCROLL_GAP,
+  });
 }
 
 function PendingRow({

@@ -1,6 +1,6 @@
 import type { Issue, IssueDetail, IssueLink } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
@@ -67,7 +67,13 @@ vi.mock("next/navigation", () => ({
   useParams: () => ({ workspace: "demo" }),
   usePathname: () => "/w/demo/human",
   useSearchParams: () => reads.search,
-  useRouter: () => ({ push: () => {}, replace: () => {} }),
+  // 화면이 바꾼 주소를 다음 렌더링에서 읽도록 query만 옮겨 둡니다.
+  useRouter: () => ({
+    push: () => {},
+    replace: (href: string) => {
+      reads.search = new URLSearchParams(href.split("?")[1] ?? "");
+    },
+  }),
 }));
 
 test("응답한 질문의 상세가 목록보다 먼저 닫힌 상태로 조회돼도 알리지 않고, 목록에서 행이 빠질 때 알린다", async () => {
@@ -180,6 +186,96 @@ test("판단 기다림 화면 위에서 막힌 작업의 dialog를 열고 gate�
   await expect.element(screen.getByRole("status")).toHaveTextContent(notice);
   await expect.element(row).not.toBeInTheDocument();
 });
+
+/** 목록이 화면보다 길어 스크롤되도록 질문을 여러 개 심고, 고를 항목을 주소에 둡니다. 질문 본문은 패널이 화면 높이보다 길도록 문단을 여럿 둡니다. */
+function seedLongList(selectedId: string) {
+  const gate: HumanGateSummary = {
+    gate: issue(GATE_ID, { title: GATE_TITLE, issueType: "gate" }),
+    reason: "",
+    blocks: [issue(WORK_ID)],
+    previousGateCount: 0,
+  };
+  const questions = Array.from({ length: 20 }, (_, index) =>
+    issue(`desk-s${index + 1}`, { title: `${index + 1}번째 질문`, labels: ["human"] }),
+  );
+  const description = Array.from({ length: 30 }, (_, index) => `${index + 1}번째 문단입니다.`).join(
+    "\n\n",
+  );
+  reads.gates = [gate];
+  reads.issues = questions;
+  reads.details = Object.fromEntries(
+    questions.map((question) => [
+      question.id,
+      issueDetail(question.id, { ...question, description }),
+    ]),
+  );
+  reads.search = new URLSearchParams({ item: selectedId });
+}
+
+test("넓은 창에서 보던 gate나 질문이 닫혀 다음 항목으로 넘어가면 페이지 맨 위로 올라간다", async () => {
+  await page.viewport(1440, 900);
+  seedLongList(GATE_ID);
+  const screen = await render(<ScreenInAppLayout />);
+
+  window.scrollTo({ top: 600 });
+  reads.gates = [];
+  await screen.rerender(<ScreenInAppLayout />);
+  await expect.element(screen.getByRole("region", { name: "1번째 질문" })).toBeInTheDocument();
+  await expect.poll(() => window.scrollY).toBe(0);
+
+  window.scrollTo({ top: 600 });
+  reads.issues = reads.issues.slice(1);
+  await screen.rerender(<ScreenInAppLayout />);
+  await expect.element(screen.getByRole("region", { name: "2번째 질문" })).toBeInTheDocument();
+  await expect.poll(() => window.scrollY).toBe(0);
+});
+
+test("좁은 창에서 보던 질문이 닫혀 다음 질문으로 넘어가면 목록 아래에 놓인 새 질문 패널의 맨 위가 상단 머리글 바로 아래에 보인다", async () => {
+  await page.viewport(500, 900);
+  seedLongList("desk-s1");
+  reads.gates = [];
+  const screen = await render(<ScreenInAppLayout />);
+
+  window.scrollTo({ top: 300 });
+  reads.issues = reads.issues.slice(1);
+  await screen.rerender(<ScreenInAppLayout />);
+  const panel = screen.getByRole("region", { name: "2번째 질문" });
+  await expect.element(panel.getByText("30번째 문단입니다.")).toBeInTheDocument();
+  // body 높이가 화면 높이라 한 화면 넘게 스크롤하면 sticky 머리글도 함께 올라가므로, 머리글 위치가 아니라 높이와 비교합니다.
+  const headerHeight = screen.getByTestId("app-header").element().getBoundingClientRect().height;
+  await expect
+    .poll(() => panel.element().getBoundingClientRect().top)
+    .toBeGreaterThanOrEqual(headerHeight);
+  expect(panel.element().getBoundingClientRect().top).toBeLessThan(headerHeight + 48);
+});
+
+test("목록에서 다른 항목을 눌러 고르면 스크롤이 움직이지 않는다", async () => {
+  await page.viewport(1440, 900);
+  seedLongList(GATE_ID);
+  const screen = await render(<ScreenInAppLayout />);
+  const row = screen.getByRole("button", { name: "desk-s10 10번째 질문" });
+  row.element().scrollIntoView({ block: "center" });
+  const scrollY = window.scrollY;
+  expect(scrollY).toBeGreaterThan(0);
+
+  await row.click();
+  await screen.rerender(<ScreenInAppLayout />);
+  await expect.element(screen.getByRole("region", { name: "10번째 질문" })).toBeInTheDocument();
+  expect(window.scrollY).toBe(scrollY);
+});
+
+/** app의 body(`flex h-dvh flex-col`)와 sticky AppHeader(h-14)를 흉내 낸 배치입니다. 좁은 창에서 패널이 머리글에 가리지 않는지 검사합니다. */
+function ScreenInAppLayout() {
+  return (
+    <div className="flex h-dvh min-h-screen flex-col [&>main]:w-full">
+      <div
+        data-testid="app-header"
+        className="sticky top-0 z-20 h-14 shrink-0 border-b border-base-300 bg-base-100"
+      />
+      <Screen />
+    </div>
+  );
+}
 
 function Screen() {
   return (
