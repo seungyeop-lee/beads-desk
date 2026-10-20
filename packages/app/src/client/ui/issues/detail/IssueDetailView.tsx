@@ -40,11 +40,20 @@ type Props = {
   issue: IssueDetail;
   writes: IssueWrites;
   listedIssues?: ListedIssues;
+  /** true면 상세를 연 뒤 human gate 응답 칸이 보이도록 스크롤합니다. */
+  scrollToHumanGate?: boolean;
   issueHref: (issueId: string) => string;
   onDeleted: () => void;
 };
 
-export function IssueDetailView({ issue, writes, listedIssues, issueHref, onDeleted }: Props) {
+export function IssueDetailView({
+  issue,
+  writes,
+  listedIssues,
+  scrollToHumanGate = false,
+  issueHref,
+  onDeleted,
+}: Props) {
   const { id } = issue;
   const { run, pending } = writes;
   const { update, changeStatus } = issueEdits(writes, id);
@@ -96,7 +105,12 @@ export function IssueDetailView({ issue, writes, listedIssues, issueHref, onDele
               ))}
             </div>
             <HumanDecisionPanel issue={listedIssues?.get(id) ?? issue} writes={writes} />
-            <HumanGatePanel issue={issue} listedIssues={listedIssues} issueHref={issueHref} />
+            <HumanGatePanel
+              issue={issue}
+              listedIssues={listedIssues}
+              issueHref={issueHref}
+              scrollIntoView={scrollToHumanGate}
+            />
             <DiscussionTabs
               issue={issue}
               disabled={pending}

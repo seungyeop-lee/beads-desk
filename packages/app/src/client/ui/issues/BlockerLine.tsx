@@ -6,6 +6,7 @@ import {
   type GateTitles,
 } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import type { IssueHref } from "./IssueDetailRoute";
 import { HumanGateChip } from "./HumanGateChip";
 import { IssueChip } from "./IssueChip";
 
@@ -20,12 +21,13 @@ type Props = {
   /** 표에 없는 이슈면 undefined를 돌려줍니다. 그때는 id만 보입니다. */
   titleOf: (issueId: string) => string | undefined;
   gateTitles: GateTitles;
-  issueHref: (issueId: string) => string;
+  issueHref: IssueHref;
 };
 
 /**
  * 의존 관계 때문에 막힌 이슈가 무엇을 기다리는지 한 줄로 보여 줍니다. 첫 번째 선행 이슈의 상세를 바로 열 수 있습니다.
- * 열린 human gate가 막고 있으면 그 gate를 먼저 보이고, 누르면 막힌 이슈의 상세를 엽니다. 상세에서 gate를 바로 승인할 수 있습니다.
+ * 열린 human gate가 막고 있으면 그 gate를 먼저 보이고, 누르면 gate가 아니라 막힌 이슈의 상세를 gate 응답 칸까지 스크롤해 엽니다.
+ * gate에 응답하는 칸은 막힌 이슈의 상세에 있습니다.
  */
 export function BlockerLine({ issueId, blockedBy, titleOf, gateTitles, issueHref }: Props) {
   const messages = useMessages();
@@ -38,7 +40,7 @@ export function BlockerLine({ issueId, blockedBy, titleOf, gateTitles, issueHref
         <>
           <HumanGateChip />
           <Link
-            href={issueHref(issueId)}
+            href={issueHref(issueId, "human-gate")}
             scroll={false}
             className="min-w-0 truncate hover:underline"
             aria-label={messages.humanGate.waitingOn(title)}

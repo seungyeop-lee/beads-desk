@@ -14,17 +14,33 @@ import type { ListedIssues } from "./detail/listedIssues";
 const ISSUE_PARAM = "issue";
 /** 상세 dialog 옆 패널에 연 이슈 id를 담는 query 이름입니다. */
 const SIDE_PARAM = "side";
+/**
+ * 상세 dialog를 열면서 스크롤해 보일 영역을 담는 query 이름입니다.
+ * 상세 안에서 옆 패널을 열거나 다른 이슈로 옮기거나 dialog를 닫으면 지우므로, 이 주소로 연 상세에서만 그 영역으로 스크롤합니다.
+ */
+const SECTION_PARAM = "section";
+
+/** 상세 dialog를 열 때 스크롤해 보일 영역입니다. human-gate는 막힌 이슈 상세의 human gate 응답 칸입니다. */
+export type IssueDetailSection = "human-gate";
+
+/** 이슈 상세 dialog를 여는 주소를 만듭니다. section을 주면 상세가 그 영역까지 스크롤된 채로 열립니다. */
+export type IssueHref = (issueId: string, section?: IssueDetailSection) => string;
 
 /** 지금 화면 위에 이슈 상세 dialog를 여는 주소를 만듭니다. 화면이 쓰는 다른 query(이슈 목록의 보기 탭 등)는 그대로 둡니다. */
-function useIssueDetailHref(): (location: IssueDetailLocation) => string {
+function useIssueDetailHref(): (
+  location: IssueDetailLocation,
+  section?: IssueDetailSection,
+) => string {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   return useCallback(
-    (location: IssueDetailLocation) => {
+    (location: IssueDetailLocation, section?: IssueDetailSection) => {
       const params = new URLSearchParams(searchParams);
       params.set(ISSUE_PARAM, location.issue);
       if (location.side) params.set(SIDE_PARAM, location.side);
       else params.delete(SIDE_PARAM);
+      if (section) params.set(SECTION_PARAM, section);
+      else params.delete(SECTION_PARAM);
       return `${pathname}?${params}`;
     },
     [pathname, searchParams],
@@ -32,9 +48,13 @@ function useIssueDetailHref(): (location: IssueDetailLocation) => string {
 }
 
 /** 지금 화면 위에 옆 패널 없이 이슈 상세 dialog를 여는 주소를 만듭니다. */
-export function useIssueHref(): (issueId: string) => string {
+export function useIssueHref(): IssueHref {
   const detailHref = useIssueDetailHref();
-  return useCallback((issueId: string) => detailHref({ issue: issueId, side: null }), [detailHref]);
+  return useCallback(
+    (issueId: string, section?: IssueDetailSection) =>
+      detailHref({ issue: issueId, side: null }, section),
+    [detailHref],
+  );
 }
 
 /**
@@ -57,6 +77,7 @@ export function IssueDetailRoute({
     replaceQuery((params) => {
       params.delete(ISSUE_PARAM);
       params.delete(SIDE_PARAM);
+      params.delete(SECTION_PARAM);
     });
   }, [replaceQuery]);
 
@@ -74,6 +95,7 @@ export function IssueDetailRoute({
       onShownChange={embedded ? undefined : setScreenDetailShown}
       listedIssues={listedIssues}
       location={location}
+      scrollToHumanGate={searchParams.get(SECTION_PARAM) === "human-gate"}
       previous={trail.at(-2) ?? null}
       detailHref={detailHref}
       onClose={close}

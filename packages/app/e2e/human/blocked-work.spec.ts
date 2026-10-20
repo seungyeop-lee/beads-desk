@@ -1,7 +1,7 @@
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { createHumanGate } from "../support/humanGates";
 
-test("human gate가 막는 작업의 상세에서 gate에 응답하면 gate가 닫히고 사람 확인 안내가 사라진다", async ({
+test("목록의 gate 링크로 human gate가 막는 작업의 상세를 응답 칸 주소로 열어 응답하면 gate가 닫히고 사람 확인 안내가 사라지며, 상세를 닫으면 주소에서 응답 칸 표시도 지운다", async ({
   page,
   workspace,
 }) => {
@@ -12,6 +12,8 @@ test("human gate가 막는 작업의 상세에서 gate에 응답하면 gate가 �
   await page.goto("issues");
   await page.getByRole("link", { name: `사람 확인 기다림: ${gateTitle}` }).click();
   const dialog = page.getByRole("dialog", { name: `${work} 이슈` });
+  // gate 링크로 연 상세만 응답 칸까지 스크롤합니다. 스크롤 위치는 IssueDetailDialog 컴포넌트 테스트가 확인합니다.
+  await expect(page).toHaveURL(new RegExp(`[?&]issue=${work}&section=human-gate$`));
   const panel = dialog.getByRole("region", { name: "사람의 확인을 기다리는 작업입니다" });
   const item = panel.getByRole("region", { name: gateTitle });
   await expect(item.getByRole("region", { name: "사유" })).toContainText("로그인 화면 수정 결과");
@@ -26,6 +28,10 @@ test("human gate가 막는 작업의 상세에서 gate에 응답하면 gate가 �
     })
     .toBe("Responded");
   await expect(panel).toHaveCount(0);
+
+  await dialog.getByRole("button", { name: "닫기", exact: true }).first().click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).not.toHaveURL(/section=/);
 });
 
 test("열린 gate 목록을 받기 전에는 human gate에 막힌 작업에 다른 막는 이슈를 보이지 않고, 받은 뒤 지금 화면, 보드, 목록에서 사람 확인 기다림을 보인다", async ({

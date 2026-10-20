@@ -24,6 +24,8 @@ type Props = {
   onShownChange?: (shown: boolean) => void;
   listedIssues?: ListedIssues;
   location: IssueDetailLocation;
+  /** true면 주 상세를 연 뒤 human gate 응답 칸이 보이도록 스크롤합니다. */
+  scrollToHumanGate?: boolean;
   /** 이 dialog에서 지금 주 상세로 넘어오기 전에 보던 상세입니다. 없으면 null입니다. */
   previous: IssueDetailLocation | null;
   detailHref: (location: IssueDetailLocation) => string;
@@ -38,6 +40,7 @@ type Props = {
  */
 export function IssueDetailDialog({
   location,
+  scrollToHumanGate = false,
   previous,
   detailHref,
   onClose,
@@ -88,6 +91,7 @@ export function IssueDetailDialog({
         error={issue ? null : error}
         loading={loading}
         listedIssues={listedIssues}
+        scrollToHumanGate={scrollToHumanGate}
         previous={previous}
         detailHref={detailHref}
         sideHref={sideHref}
@@ -152,6 +156,7 @@ type PanelProps = {
   error: string | null;
   loading: boolean;
   listedIssues: ListedIssues | undefined;
+  scrollToHumanGate: boolean;
   previous: IssueDetailLocation | null;
   detailHref: (location: IssueDetailLocation) => string;
   /** 의존 이슈를 옆 패널에 여는 주소입니다. */
@@ -167,6 +172,7 @@ function IssueDetailPanel({
   error,
   loading,
   listedIssues,
+  scrollToHumanGate,
   previous,
   detailHref,
   sideHref,
@@ -230,6 +236,7 @@ function IssueDetailPanel({
             issue={issue}
             writes={writes}
             listedIssues={listedIssues}
+            scrollToHumanGate={scrollToHumanGate}
             issueHref={sideHref}
             onDeleted={onDeleted}
           />

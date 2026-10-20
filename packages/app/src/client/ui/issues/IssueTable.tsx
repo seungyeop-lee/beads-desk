@@ -11,6 +11,7 @@ import {
   type IssueTreeRow,
 } from "@/client/modules/issues/domain/issueListView";
 import { BlockerLine } from "./BlockerLine";
+import type { IssueHref } from "./IssueDetailRoute";
 import { HumanDecisionChip } from "./HumanDecisionChip";
 import { LabelChip } from "./IssueChip";
 import { CopyIssueIdButton } from "./CopyIssueIdButton";
@@ -35,7 +36,7 @@ type Props = (
       tree: readonly IssueTreeRow[];
     }
 ) & {
-  issueHref: (issueId: string) => string;
+  issueHref: IssueHref;
   writes: IssueWrites;
   /** 없으면 필터에 맞는 이슈가 없다고 안내합니다. */
   emptyMessage?: string;
@@ -149,7 +150,7 @@ type RowOutline = {
 type RowProps = {
   issue: Issue;
   outline?: RowOutline | undefined;
-  issueHref: (issueId: string) => string;
+  issueHref: IssueHref;
   /** 막고 있는 이슈의 제목을 표에서 찾습니다. */
   titleOf: (issueId: string) => string | undefined;
   gateTitles: GateTitles;
