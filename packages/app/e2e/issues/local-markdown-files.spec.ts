@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { localFileUrl } from "../../src/shared/contract/localFiles";
@@ -88,19 +88,14 @@ test("설명에서 workspace와 외부 worktree의 파일 링크와 PNG를 표�
 });
 
 test("본문의 로컬 webm 링크를 열면 영상이 재생되고 재생 위치를 옮길 수 있다", async ({
-  browser,
   page,
   workspace,
 }) => {
-  // 리뷰 보고서가 거는 영상과 같은 Playwright 녹화 파일을 시나리오 안에서 만듭니다.
-  // 재생 위치를 옮겨 볼 수 있도록 몇 초 동안 녹화합니다.
+  // 리뷰 보고서가 거는 영상과 같은 Playwright 녹화 파일을 씁니다. 이 파일은 Playwright 1.64.0에서
+  // recordVideo 기본 설정으로 연 context에 `<h1>녹화할 화면</h1>`을 띄우고 3초 동안 녹화해 만들었습니다.
+  // 재생 위치를 옮겨 보려면 영상이 2초보다 길어야 하므로, 다시 녹화할 때도 3초 안팎으로 녹화합니다.
   const path = join(workspace.path, "화면 녹화.webm");
-  const recorder = await browser.newContext({ recordVideo: { dir: workspace.path } });
-  const recording = await recorder.newPage();
-  await recording.setContent("<h1>녹화할 화면</h1>");
-  await recording.waitForTimeout(3_000);
-  await recorder.close();
-  await recording.video()!.saveAs(path);
+  await copyFile(join(import.meta.dirname, "playwright-recording.webm"), path);
   const id = await workspace.createIssue("영상 링크", "--description", `[화면 녹화](<${path}>)`);
 
   await page.goto(`issues?issue=${id}`);
