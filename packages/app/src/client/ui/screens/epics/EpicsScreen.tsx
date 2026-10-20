@@ -177,7 +177,7 @@ function EpicGroupSection({
   const messages = useMessages();
   const label = messages.epics.groups[kind];
   return (
-    <section aria-label={label} className="flex flex-col gap-3">
+    <section aria-label={label} className="flex flex-col gap-2">
       <h2 className="px-1">
         <button
           type="button"
@@ -226,7 +226,7 @@ function EpicSection({
   const messages = useMessages();
   return (
     <section className="surface">
-      <header className="grid grid-cols-[2rem_3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 py-3.5 xl:flex xl:gap-4 pr-5 pl-3">
+      <header className="grid grid-cols-[2rem_3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 py-2 xl:flex xl:gap-4 pr-5 pl-3">
         <button
           type="button"
           className="btn btn-ghost btn-sm btn-square text-base-content/50"
