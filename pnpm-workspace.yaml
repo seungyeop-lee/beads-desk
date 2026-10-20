@@ -5,3 +5,8 @@ allowBuilds:
   lefthook: true
   # Remotion bundler가 쓰는 esbuild는 platform별 binary package를 함께 설치하므로, 설치 검사 script를 실행하지 않아도 동작합니다.
   esbuild: false
+
+# pnpm install은 공개된 지 1440분(기본 minimumReleaseAge)이 지나지 않은 버전을 설치하면 그 버전을 이 목록에 넣습니다.
+# pele 1.7.0은 2026-10-19T18:21Z에 공개되었으므로, 2026-10-20T18:21Z가 지나면 이 항목을 지워도 됩니다.
+minimumReleaseAgeExclude:
+  - pele@1.7.0
