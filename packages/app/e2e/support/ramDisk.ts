@@ -30,7 +30,11 @@ export default async function mountRamDisk(): Promise<(() => Promise<void>) | un
   let device: string | undefined;
   try {
     device = (await diskutil("image", "attach", "--noMount", `ram://${SECTORS}`)).trim();
-    await diskutil("erasevolume", "APFS", volumeName, device);
+    // `diskutil erasevolume APFS`는 같은 volume을 만드는 데 약 1.8초가 걸려, spec 하나만 실행할 때 시작 시간의 절반을 차지했습니다.
+    // `newfs_apfs`로 포맷하고 붙이면 0.3초 안에 끝납니다. 포맷한 volume은 RAM 장치가 아니라 새로 생긴 APFS container에 있으므로,
+    // RAM 장치를 `mount`하면 실패하고 `mountDisk`로 장치에 딸린 volume을 붙여야 합니다.
+    await execFileAsync("newfs_apfs", ["-v", volumeName, device]);
+    await diskutil("mountDisk", device);
     await mkdir(tmp);
   } catch (error) {
     if (device) await diskutil("eject", device);
