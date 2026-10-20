@@ -85,10 +85,11 @@ export const SHOTS: Shot[] = [
   {
     // Needs human에서 Legal review gate에 응답하고, 보드의 Ready 열에서 그 gate가 막던 카드를 보입니다.
     // 화면을 불러오는 동안과, 응답을 보낸 뒤 bd가 gate를 닫기까지 기다리는 동안을 뺍니다.
+    // 응답 알림 toast는 응답이 끝나고 TOAST_DURATION_MS(5초)가 지나면 사라지므로, 보드 구간은 toast가 사라지기 전에 끝냅니다.
     recording: "respond-to-gate",
     clips: [
       { fromMs: 4200, toMs: 10700 },
-      { fromMs: 15900, toMs: 17400 },
+      { fromMs: 15500, toMs: 16900 },
     ],
     caption: {
       title: "Needs human",
