@@ -23,8 +23,18 @@
 - 가로 넘침, 줄 수, 요소 위치처럼 배치를 검사하는 시나리오는 만들지 않습니다. 배치는 컴포넌트 테스트(`*.browser.test.tsx`)로 확인합니다.
 - 선택지 계산, 정렬, 필터 같은 규칙은 `src`의 unit test(`*.test.ts`)로 확인합니다.
 - 좁은 창에서만 생기는 흐름은 대표 너비 하나에서 확인합니다. 너비, 확대율, 언어 같은 조건을 곱해 같은 흐름을 반복하지 않습니다. 조건마다 흐름이 달라 곱해야 한다면 그 이유를 spec에 주석으로 적습니다.
+- 기존 test가 심은 데이터로 확인할 수 있는 변형은 새 test로 만들지 않고 그 test에 단계로 더합니다. 진입 방법(주소로 바로 열기, 페이지를 누르지 않고 키보드만 쓰기), 닫는 방법, 입력 방법만 다른 변형이 여기에 해당합니다. 앞 단계가 바꾼 화면에서 다시 시작해야 하면 `page.goto`로 다시 들어와 이어 갑니다.
+- 같은 작업에서 컴포넌트 테스트를 더했으면, 그 테스트가 확인한 동작을 e2e에서 다시 확인하지 않습니다. 컴포넌트 테스트가 실제 화면 대신 dialog나 form으로 감싸 확인했어도 같습니다. 컴포넌트 테스트는 bd와 서버 없이 실행되고 Server Action을 실행하지 않으므로(`packages/app/src/client/ui/AGENTS.md`), e2e에는 bd에 저장하거나 bd에서 읽어 온 데이터, 서버 알림, 주소와 화면 이동을 확인하는 단계만 남깁니다.
+- 결과를 확인하지 않는 `page.screenshot`을 spec에 남기지 않습니다. 화면을 눈으로 보려고 spec에 넣은 `page.screenshot`은 본 뒤에 지웁니다. 실패한 시나리오의 screenshot은 `playwright.config.ts`의 설정이 남깁니다.
 - 같은 종류의 검사를 하는 spec이 있으면 새 파일을 만들지 않고 그 spec에 시나리오를 더합니다.
 - 앱 코드를 바꾸지 않은 작업에서는 새 spec을 만들지 않습니다.
+
+## 테스트 수 상한
+
+`pnpm run check`는 `pnpm exec playwright test --list`의 전체 테스트 수가 `testLimit.json`의 `limit`을 넘으면 실패합니다. 위 "시나리오 범위"의 기준을 따져도 새 test가 필요할 때만 `limit`을 올립니다.
+
+- `limit`을 올린 수만큼 `reasons`에 `"<spec 경로>: <unit·컴포넌트 테스트로 확인할 수 없는 흐름>"` 항목을 하나씩 더합니다. `limit`에서 `baseline`을 뺀 수와 `reasons`의 항목 수가 다르면 검사가 실패합니다.
+- e2e를 정리할 때는 `reasons`에 적힌 이유가 아직 맞는지부터 확인합니다. 정리로 테스트 수를 줄였으면 `baseline`과 `limit`을 정리한 뒤의 테스트 수로 맞추고 `reasons`를 비웁니다.
 
 ## 작성 방법
 
@@ -42,6 +52,7 @@
 - 추가하거나 지운 테스트 수와 작업 후 전체 테스트 수. 전체 테스트 수는 `packages/app`에서 `pnpm exec playwright test --list`를 실행하면 마지막 줄 `Total: <개수> tests in <파일 수> files`에 나옵니다. 이 명령은 시나리오를 실행하지 않습니다.
 - 바꾼 spec을 단독으로 실행했을 때 테스트마다 걸린 시간과 그 합. `pnpm run build`로 빌드한 뒤 `packages/app`에서 `pnpm exec playwright test <spec 경로>`를 실행하면, 테스트 이름 뒤 괄호에 그 테스트의 시간이 표시됩니다. 마지막 줄 `<개수> passed (<초>)`에는 서버를 띄우는 시간이 들어가고 테스트를 여러 worker에 나눠 실행한 결과라서, spec의 비용으로 쓰지 않습니다.
 - 그 spec에서 가장 오래 걸린 테스트가 시나리오 도중 bd에 쓰는 횟수. 화면에서 저장하는 동작과 `workspace.bd` 실행을 셉니다.
+- `testLimit.json`의 `limit`을 올렸으면 올린 수와 `reasons`에 적은 이유.
 
 ## `pnpm run test:e2e` 실행 방식
 

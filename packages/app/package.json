@@ -59,7 +59,8 @@
     "install:global": "pnpm run pack:local && pnpm add -g \"$PWD\"/seungyeop-lee-beads-desk-*.tgz; EXIT=$?; rm -f seungyeop-lee-beads-desk-*.tgz; exit $EXIT",
     "uninstall:global": "pnpm remove -g @seungyeop-lee/beads-desk",
     "test:e2e": "node e2e/support/runE2e.ts",
-    "test:e2e:install": "playwright install chromium"
+    "test:e2e:install": "playwright install chromium",
+    "test:e2e:limit": "node e2e/support/checkTestLimit.ts"
   },
   "dependencies": {
     "next": "^16.4.0",

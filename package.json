@@ -20,7 +20,8 @@
     "test:components": "vitest run --config packages/app/vitest.browser.config.ts",
     "test:e2e": "pnpm --filter @seungyeop-lee/beads-desk run test:e2e",
     "test:e2e:install": "pnpm --filter @seungyeop-lee/beads-desk run test:e2e:install",
-    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run test:components"
+    "test:e2e:limit": "pnpm --filter @seungyeop-lee/beads-desk run test:e2e:limit",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test && pnpm run test:components && pnpm run test:e2e:limit"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

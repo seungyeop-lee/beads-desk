@@ -20,7 +20,7 @@
 - `packages/bd`를 고치거나 bd를 업데이트했을 때: `packages/bd/AGENTS.md`
 - launcher(`packages/app/bin`)나 배포 패키지 구성(`files`, 의존성)을 바꿀 때: `packages/app/bin/AGENTS.md`
 - 컴포넌트 테스트(`*.browser.test.tsx`)를 쓰거나 고칠 때: `packages/app/src/client/ui/AGENTS.md`
-- e2e 시나리오를 추가하거나 고칠 때, `pnpm run test:e2e`의 실행 방식을 알아볼 때: `packages/app/e2e/AGENTS.md`
+- e2e 시나리오를 추가하거나 고칠 때, `pnpm run check`가 e2e 테스트 수 상한으로 실패했을 때, `pnpm run test:e2e`의 실행 방식을 알아볼 때: `packages/app/e2e/AGENTS.md`
 - `.github/workflows/`를 고칠 때: `.github/AGENTS.md`
 - `packages/app/package.json`의 `version`을 바꾸거나 릴리스할 때, 릴리스가 게시되지 않았을 때, prerelease를 낼 때: `docs/release.md`
 
@@ -106,7 +106,7 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 
 ## 검증
 
-`pnpm run check`가 typecheck, lint, format 검사, unit test, 컴포넌트 테스트를 차례로 실행합니다. lefthook이 pre-commit에서 staged 파일의 format과 lint를, pre-push에서 `pnpm run check`를 실행합니다. hook은 `pnpm install` 때 설치됩니다.
+`pnpm run check`가 typecheck, lint, format 검사, unit test, 컴포넌트 테스트, e2e 테스트 수 상한 검사를 차례로 실행합니다. lefthook이 pre-commit에서 staged 파일의 format과 lint를, pre-push에서 `pnpm run check`를 실행합니다. hook은 `pnpm install` 때 설치됩니다.
 
 아래 확인은 `pnpm run check`와 hook에서 실행되지 않으므로, 조건에 해당하면 따로 실행합니다. 절차는 각 문서에 있습니다.
 
@@ -116,7 +116,7 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 
 컴포넌트의 가로 넘침, 줄 수, 경계 좌표처럼 CSS 배치로 정해지는 결과는 컴포넌트 테스트(`*.browser.test.tsx`)로 검사합니다.
 
-화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e도 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없으면, unit test나 컴포넌트 테스트로 확인할 수 없는지 먼저 따져 본 뒤 시나리오를 추가합니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
+화면 동작은 `packages/app/e2e`의 Playwright 시나리오로 확인합니다. e2e 시나리오는 hook과 `pnpm run check`에서 실행되지 않으므로, 화면이나 화면이 부르는 API를 바꾼 작업은 아래 순서로 확인합니다. 바뀐 동작을 다루는 시나리오가 없어도 바로 추가하지 않고, unit test, 컴포넌트 테스트, 기존 시나리오의 단계로 확인할 수 없을 때만 추가합니다. 기준은 `packages/app/e2e/AGENTS.md`의 "시나리오 범위" 절에 있습니다. 처음 한 번은 `pnpm run test:e2e:install`로 chromium을 설치합니다.
 
 1. 작업하는 동안에는 `pnpm run build`로 빌드한 뒤, `packages/app`에서 `pnpm exec playwright test <spec 경로>`로 바꾼 동작을 다루는 spec만 실행합니다. 이 명령은 빌드하지 않고 마지막 build 결과를 띄우므로, app 코드를 고칠 때마다 다시 빌드합니다.
 2. 화면을 바꿨으면 바뀐 화면을 스크린샷으로 직접 확인합니다. 화면 관련 작업의 스크린샷은 `/tmp` 폴더에 저장하고, 보고할 때 마크다운 링크로 제시합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.

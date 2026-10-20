@@ -52,11 +52,13 @@ Run these after changing code:
 
 | Command             | When to run                                                           | What it runs                                                                                          |
 | ------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `pnpm run check`    | Always                                                                | Typecheck, lint, format check, unit tests, and component tests                                        |
+| `pnpm run check`    | Always                                                                | Typecheck, lint, format check, unit tests, component tests, and the e2e test count limit              |
 | `pnpm run test:e2e` | You changed a screen or an API that a screen calls                    | Builds the app for production and runs the Playwright scenarios in `packages/app/e2e`                 |
 | `pnpm run test:bd`  | You changed how `packages/bd` parses `bd` output, or you updated `bd` | Runs the `packages/bd` adapter against the installed `bd` in a temporary workspace (about 15 seconds) |
 
 If `pnpm run check` fails only on formatting, run `pnpm run format` to fix it.
+
+If it fails because the number of e2e tests exceeds `limit` in `packages/app/e2e/testLimit.json`, first try to cover the new behavior with a unit test, a component test, or extra steps in an existing e2e test. If a new e2e test is still needed, raise `limit` and add one entry to `reasons` for each added test, naming the spec and the flow that unit and component tests cannot check.
 
 ## Commit messages
 
