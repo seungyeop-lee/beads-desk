@@ -120,4 +120,6 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 2. 화면을 바꿨으면 바뀐 화면을 스크린샷으로 직접 확인합니다. 화면 관련 작업의 스크린샷은 `/tmp` 폴더에 저장하고, 보고할 때 마크다운 링크로 제시합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.
 3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다. 다른 worktree의 e2e가 실행 중이면 그 실행이 끝난 뒤에 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다.
 
+route 폴더를 옮기거나 지운 뒤 `pnpm run typecheck`나 `pnpm run build`가 `.next/dev/types/validator.ts`에서 `Cannot find module '../../../src/app/...'`나 `__InvalidParamMatchingKeys` 오류로 실패하면, 전에 띄운 `next dev`가 만든 route 타입이 옛 경로를 가리키는 것입니다. `tsconfig.json`이 이 파일을 포함하지만 `next typegen`과 `next build`는 다시 만들지 않습니다. 저장소 루트에서 `pnpm dev`를 실행해 `Ready`가 출력되면 끄고, 실패한 명령을 다시 실행합니다.
+
 `next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) `docs/troubleshooting.md`의 절차를 따릅니다. `packages/app/.next/dev`를 지우기 전에 남겨야 할 자료가 그 문서에 있습니다.
