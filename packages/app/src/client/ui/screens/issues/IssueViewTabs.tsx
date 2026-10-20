@@ -41,29 +41,30 @@ export function IssueViewTabs({ view, filters, groups }: Props) {
 
   // 탭 줄의 아래 선은 border가 아니라 안쪽 그림자로 그려서, 고른 탭의 밑줄이 탭 줄 안에서 그 선을 덮게 합니다.
   // border를 쓰고 탭을 1px 내려 겹치면, 가로 스크롤 때문에 넘친 내용을 잘라 내는 탭 줄이 그 1px만큼 세로로도 스크롤됩니다.
+  // 선은 스크롤되는 nav가 아니라 탭 묶음에 그립니다. 스크롤바가 자리를 차지하는 브라우저에서는 가로 스크롤바가 nav 안쪽
+  // 맨 아래에 그려지므로, nav에 그리면 밑줄과 선 사이에 스크롤바가 끼어 밑줄이 선에서 떨어져 보입니다.
   return (
-    <nav
-      className="flex items-end gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-base-300)]"
-      aria-label={messages.issues.views}
-    >
-      {tabs.map((tab) => {
-        const current = tab.state === view;
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            scroll={false}
-            aria-current={current ? "page" : undefined}
-            className={`flex shrink-0 items-center whitespace-nowrap gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-base-content/55 hover:text-base-content"}`}
-          >
-            {tab.state && <span className={`tone-dot ${workStateTone(tab.state)}`} />}
-            {tab.label}
-            <span className="font-mono text-xs font-normal text-base-content/45 tabular-nums">
-              {tab.count}
-            </span>
-          </Link>
-        );
-      })}
+    <nav className="overflow-x-auto" aria-label={messages.issues.views}>
+      <div className="flex w-max min-w-full items-end gap-1 shadow-[inset_0_-1px_0_var(--color-base-300)]">
+        {tabs.map((tab) => {
+          const current = tab.state === view;
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              scroll={false}
+              aria-current={current ? "page" : undefined}
+              className={`flex shrink-0 items-center whitespace-nowrap gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-base-content/55 hover:text-base-content"}`}
+            >
+              {tab.state && <span className={`tone-dot ${workStateTone(tab.state)}`} />}
+              {tab.label}
+              <span className="font-mono text-xs font-normal text-base-content/45 tabular-nums">
+                {tab.count}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }
