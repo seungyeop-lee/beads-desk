@@ -93,11 +93,12 @@ export const TOUR: TourPlan = {
     // 스크롤한 상세에서 Staging check 제목부터 결제 화면 스크린샷 아래의 녹화 링크까지 함께 들어오는 너비입니다.
     { at: { after: "close-diagram", ms: 550 }, x: 330, y: 146, width: 950 },
     { at: { after: "scroll-to-screenshot", ms: 1100 }, ...FULL },
-    // 결정 목록은 Supersession 열까지 들어오는 너비로 봅니다. 상세에서는 Linked issues가 있는 오른쪽 열을, 옆 패널이 열리면 이전 결정을 봅니다.
-    // 두 영역은 왼쪽 경계(x 680)를 상세 본문 글이 끝나는 곳 바로 뒤에 두어, 잘린 글자가 보이지 않게 합니다.
+    // 결정 목록은 Supersession 열까지 들어오는 너비로 봅니다. 상세가 열리면 Supersedes 링크를 누르기 전에 전체 화면으로 돌아가,
+    // 이전 결정이 상세 옆 패널에 열리는 모습을 끝까지 전체 화면으로 보입니다.
+    // 상세의 오른쪽 열만 확대하면 옆 패널이 상세 옆에 열린다는 관계가 드러나지 않고, 옆 패널이 열린 뒤에는 상세가 좁아지며
+    // Linked issues가 화면 아래로 내려가므로 상세와 옆 패널을 함께 담으면서 확대할 영역이 없습니다.
     { at: { after: "decisions-shown", ms: 750 }, x: 28, y: 64, width: 972 },
-    { at: { after: "decision-shown", ms: 200 }, x: 680, y: 60, width: 600 },
-    { at: { after: "replaced-shown", ms: 600 }, x: 680, y: 40, width: 600 },
+    { at: { after: "decision-shown", ms: 200 }, ...FULL },
   ],
   captions: [
     { at: { ms: 0 }, title: "Plan", text: "See each epic's plan, stage by stage" },
