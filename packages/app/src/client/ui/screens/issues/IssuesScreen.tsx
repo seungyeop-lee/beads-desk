@@ -1,8 +1,8 @@
 "use client";
 
 import { useDeferredValue, useMemo, useState } from "react";
-import { useDescriptionMatches } from "@/client/modules/issues/application/useDescriptionMatches";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
+import { useIssueTextMatches } from "@/client/modules/issues/application/useIssueTextMatches";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
@@ -34,8 +34,8 @@ export function IssuesScreen() {
   const { view, dates, types, labels } = address;
   // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
   const deferredSearch = useDeferredValue(search);
-  const description = useDescriptionMatches(search);
-  const descriptionMatches = description.matches;
+  const textSearch = useIssueTextMatches(search);
+  const textMatches = textSearch.matches;
   // 대기 수는 거르기 전의 전체 목록으로 세야, 걸러진 이슈를 거쳐 이어지는 사슬도 셉니다.
   const waiters = useMemo(() => waiterCounts(issues ?? []), [issues]);
   const groups = useMemo(
@@ -46,12 +46,12 @@ export function IssuesScreen() {
               types,
               labels,
               search: deferredSearch,
-              descriptionMatches,
+              textMatches,
             })
           : [],
         waiters,
       ),
-    [issues, waiters, types, labels, deferredSearch, descriptionMatches, dates],
+    [issues, waiters, types, labels, deferredSearch, textMatches, dates],
   );
   const viewIssues = view
     ? (groups.find((group) => group.state === view)?.issues ?? [])
@@ -86,8 +86,8 @@ export function IssuesScreen() {
 
       {error && <ErrorAlert>{messages.issues.loadFailed(error)}</ErrorAlert>}
 
-      {description.error && (
-        <ErrorAlert>{messages.issues.descriptionSearchFailed(description.error)}</ErrorAlert>
+      {textSearch.error && (
+        <ErrorAlert>{messages.issues.textSearchFailed(textSearch.error)}</ErrorAlert>
       )}
 
       <WriteErrorAlert writes={writes} />
@@ -101,6 +101,7 @@ export function IssuesScreen() {
             titleSource={issues}
             gateTitles={gateTitles}
             waiters={waiters}
+            searchHits={textMatches}
           />
         ) : (
           <IssueGroups
@@ -110,6 +111,7 @@ export function IssuesScreen() {
             waiters={waiters}
             issueHref={issueHref}
             writes={writes}
+            searchHits={textMatches}
           />
         ))}
 

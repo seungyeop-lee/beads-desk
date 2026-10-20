@@ -337,15 +337,16 @@ export const enMessages: Messages = {
   issues: {
     title: "Issues",
     loadFailed: (error) => `Could not load issues: ${error}`,
-    descriptionSearchFailed: (error) =>
-      `Could not search descriptions, so only ID and title matches are shown: ${error}`,
+    textSearchFailed: (error) =>
+      `Could not search issue bodies and comments, so only ID and title matches are shown: ${error}`,
     allStatuses: "All",
     allTypes: "All",
     typeCount: (count) => `${count}`,
     allLabels: "All",
     labelCount: (count) => `${count}`,
     noLabel: "No labels",
-    searchPlaceholder: "Search ID, title, or description",
+    searchPlaceholder: "Search ID, title, body, or comments",
+    commentHit: "Comment",
     search: "Search",
     views: "View",
     dates: "Dates",

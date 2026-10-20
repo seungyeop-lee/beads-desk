@@ -25,7 +25,7 @@ import { ClaimButton } from "../ClaimButton";
 import { formatTime, deferUntilLabel } from "../issueTime";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { BlockerBanner } from "./BlockerBanner";
-import { BODY_FIELDS } from "./bodyFields";
+import { BODY_FIELDS } from "@/shared/domain/issues/bodyFields";
 import { CloseAsReplacedForm } from "./CloseAsReplacedForm";
 import { DependencyList } from "./DependencyList";
 import { DiscussionTabs } from "./DiscussionTabs";

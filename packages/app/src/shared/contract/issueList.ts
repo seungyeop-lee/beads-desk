@@ -1,8 +1,9 @@
 import { ISSUE_STATUSES, type IssueStatus } from "@beads-desk/bd/issue";
+import type { BodyField } from "@/shared/domain/issues/bodyFields";
 
 export const ISSUE_LIST_PATH = "/api/issues";
 
-/** 설명에 검색어가 든 이슈의 id 목록을 돌려주는 경로입니다. /api/issues/[id]와 겹치지 않도록 따로 둡니다. */
+/** 본문 필드나 댓글에 검색어가 든 이슈를 돌려주는 경로입니다. /api/issues/[id]와 겹치지 않도록 따로 둡니다. */
 const ISSUE_SEARCH_PATH = "/api/issue-search";
 
 /**
@@ -36,12 +37,21 @@ export function isIssueStatus(value: unknown): value is IssueStatus {
   return (ISSUE_STATUSES as readonly unknown[]).includes(value);
 }
 
-export function descriptionSearchPath(text: string): string {
-  return `${ISSUE_SEARCH_PATH}?${new URLSearchParams({ description: text })}`;
+/** 검색어가 든 곳입니다. comment가 아니면 상세 화면의 본문 필드 이름입니다. */
+export type IssueTextHitField = BodyField | "comment";
+
+/** 검색어가 든 곳 하나와, 그곳에서 검색어 주변을 잘라 낸 짧은 발췌입니다. */
+export type IssueTextHit = { field: IssueTextHitField; excerpt: string };
+
+/** 본문 필드나 댓글에 검색어가 든 이슈 하나입니다. hits에는 맞은 곳을 앞에서부터 몇 곳만 담습니다. */
+export type IssueTextMatch = { id: string; hits: IssueTextHit[] };
+
+export function issueTextSearchPath(text: string): string {
+  return `${ISSUE_SEARCH_PATH}?${new URLSearchParams({ text })}`;
 }
 
 /** 검색어가 없거나 공백뿐이면 null을 돌려줍니다. */
-export function parseDescriptionSearch(params: URLSearchParams): string | null {
-  const text = params.get("description")?.trim() ?? "";
+export function parseIssueTextSearch(params: URLSearchParams): string | null {
+  const text = params.get("text")?.trim() ?? "";
   return text === "" ? null : text;
 }

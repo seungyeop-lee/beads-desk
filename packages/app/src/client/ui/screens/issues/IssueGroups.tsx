@@ -2,6 +2,7 @@ import type { Issue } from "@beads-desk/bd/issue";
 import { useState } from "react";
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import type { IssueTextHits } from "@/client/modules/issues/domain/issueListView";
 import type { WorkState, WorkStateGroup } from "@/client/modules/issues/domain/workState";
 import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
@@ -17,6 +18,8 @@ type Props = {
   waiters: ReadonlyMap<string, number>;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
+  /** 본문 필드나 댓글에서 검색어가 맞은 곳입니다. 맞은 행 아래에 보입니다. */
+  searchHits?: IssueTextHits | undefined;
 };
 
 /** 전체 보기에서 작업 상태 묶음마다 표를 나눠 보입니다. 처음에는 닫힘 묶음만 접어 둡니다. */
@@ -27,6 +30,7 @@ export function IssueGroups({
   waiters,
   issueHref,
   writes,
+  searchHits,
 }: Props) {
   const messages = useMessages();
   const [collapsed, setCollapsed] = useState<ReadonlySet<WorkState>>(new Set(["closed"]));
@@ -79,6 +83,7 @@ export function IssueGroups({
                 gateTitles={gateTitles}
                 waiters={waiters}
                 hideHeader={group.state !== headerGroup}
+                searchHits={searchHits}
               />
             )}
           </section>

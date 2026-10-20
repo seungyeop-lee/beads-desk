@@ -346,15 +346,17 @@ export const koMessages = {
   issues: {
     title: "이슈",
     loadFailed: (error: string) => `이슈 목록을 불러오지 못했습니다: ${error}`,
-    descriptionSearchFailed: (error: string) =>
-      `설명을 검색하지 못해 ID와 제목으로 찾은 이슈만 보입니다: ${error}`,
+    textSearchFailed: (error: string) =>
+      `본문과 댓글을 검색하지 못해 ID와 제목으로 찾은 이슈만 보입니다: ${error}`,
     allStatuses: "전체",
     allTypes: "전체",
     typeCount: (count: number) => `${count}개`,
     allLabels: "전체",
     labelCount: (count: number) => `${count}개`,
     noLabel: "라벨 없음",
-    searchPlaceholder: "ID, 제목, 설명 검색",
+    searchPlaceholder: "ID, 제목, 본문, 댓글 검색",
+    /** 검색어가 댓글에서 맞았을 때 발췌 앞에 붙이는 이름입니다. 본문 필드는 issue.bodyFields의 이름을 씁니다. */
+    commentHit: "댓글",
     search: "검색",
     views: "보기",
     dates: "날짜",

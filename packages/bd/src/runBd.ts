@@ -37,7 +37,6 @@ export type BdErrorKind =
   | "emptyResponse"
   | "emptyLabel"
   | "notAwaitingHumanDecision"
-  | "emptyDescriptionSearch"
   | "invalidStaleDays"
   | "unparsableOutput"
   | "missingCreatedIssueId"

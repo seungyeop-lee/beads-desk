@@ -10,10 +10,10 @@ import {
   duplicateCandidates,
   epicDescendants,
   epicStatuses,
+  exportedIssues,
   humanDecisionIssues,
   humanGates,
   issueEvents,
-  issueIdsByDescription,
   lintFindings,
   listIssues,
   openChangeFingerprint,
@@ -1190,36 +1190,113 @@ describe("issueEvents", () => {
   });
 });
 
-describe("issueIdsByDescription", () => {
-  test("설명에 검색어가 든 이슈의 id만 상태와 관계없이 개수 제한 없이 읽는다", async () => {
+describe("exportedIssues", () => {
+  // bd 1.3.1의 bd export 출력에서 필드 이름과 형태를 옮긴 레코드입니다. 값이 빈 필드는 bd가 출력하지 않습니다.
+  const exported = [
+    {
+      _type: "issue",
+      id: "t-1",
+      title: "로그인 오류",
+      description: "세션 토큰이 만료된다",
+      design: "토큰을 다시 받는다",
+      acceptance_criteria: "다시 로그인하지 않는다",
+      notes: "재현은 하루 뒤에 된다",
+      status: "closed",
+      priority: 1,
+      issue_type: "bug",
+      created_at: "2026-10-18T10:35:58Z",
+      created_by: "agent-1",
+      updated_at: "2026-10-18T10:44:41Z",
+      closed_at: "2026-10-18T10:44:41Z",
+      close_reason: "고쳤습니다",
+      comments: [
+        {
+          id: "c-1",
+          issue_id: "t-1",
+          author: "agent-1",
+          text: "Commit: abc123 fix: 토큰 갱신",
+          created_at: "2026-10-18T10:44:40Z",
+        },
+      ],
+      dependency_count: 0,
+      dependent_count: 1,
+      comment_count: 1,
+    },
+    {
+      _type: "issue",
+      id: "t-2",
+      title: "Review: t-1",
+      description: "Ad-hoc gate blocking t-1",
+      status: "open",
+      priority: 2,
+      issue_type: "gate",
+      await_type: "human",
+      created_at: "2026-10-18T11:00:00Z",
+      created_by: "agent-1",
+      updated_at: "2026-10-18T11:00:00Z",
+      dependency_count: 0,
+      dependent_count: 1,
+      comment_count: 0,
+    },
+  ];
+
+  test("닫힌 이슈와 gate까지 레코드마다 본문 필드, 댓글, 만든 사람과 닫은 기록을 읽는다", async () => {
     await useFakeBd({
-      "list --json --tree=false --all --brief --limit 0 --desc-contains=session token": {
-        stdout: JSON.stringify([
-          { id: "t-1", status: "closed" },
-          { id: "t-2", status: "open" },
-        ]),
-      },
+      export: { stdout: exported.map((record) => JSON.stringify(record)).join("\n") + "\n" },
     });
 
-    const result = await issueIdsByDescription(fakeBd.workDir, " session token ");
+    const result = await exportedIssues(fakeBd.workDir);
 
-    expect(result).toEqual({ ok: true, value: ["t-1", "t-2"] });
-  });
-
-  test("검색어가 -로 시작해도 bd 옵션으로 해석되지 않게 넘긴다", async () => {
-    await useFakeBd({
-      "list --json --tree=false --all --brief --limit 0 --desc-contains=--all": { stdout: "[]" },
+    expect(result).toMatchObject({
+      ok: true,
+      value: [
+        {
+          id: "t-1",
+          status: "closed",
+          issueType: "bug",
+          description: "세션 토큰이 만료된다",
+          design: "토큰을 다시 받는다",
+          acceptanceCriteria: "다시 로그인하지 않는다",
+          notes: "재현은 하루 뒤에 된다",
+          createdAt: Date.parse("2026-10-18T10:35:58Z"),
+          createdBy: "agent-1",
+          closedAt: Date.parse("2026-10-18T10:44:41Z"),
+          closeReason: "고쳤습니다",
+          comments: [
+            {
+              id: "c-1",
+              author: "agent-1",
+              text: "Commit: abc123 fix: 토큰 갱신",
+              createdAt: Date.parse("2026-10-18T10:44:40Z"),
+            },
+          ],
+        },
+        {
+          id: "t-2",
+          issueType: "gate",
+          awaitType: "human",
+          description: "Ad-hoc gate blocking t-1",
+          notes: "",
+          closeReason: null,
+          comments: [],
+        },
+      ],
     });
-
-    expect(await issueIdsByDescription(fakeBd.workDir, "--all")).toEqual({ ok: true, value: [] });
   });
 
-  test("검색어가 비어 있으면 bd를 실행하지 않고 거부한다", async () => {
-    await useFakeBd({});
+  // 가짜 bd는 인자 문자열 전체가 같을 때만 응답하므로, 응답을 받았다면 다른 옵션 없이 실행한 것입니다.
+  test("memory를 함께 내놓는 --all과 --include-memories 없이 실행한다", async () => {
+    await useFakeBd({ export: { stdout: "" } });
 
-    expect(await issueIdsByDescription(fakeBd.workDir, "  ")).toMatchObject({
+    expect(await exportedIssues(fakeBd.workDir)).toEqual({ ok: true, value: [] });
+  });
+
+  test("JSON으로 읽을 수 없는 줄이 있으면 오류를 돌려준다", async () => {
+    await useFakeBd({ export: { stdout: `${JSON.stringify(exported[0])}\nnot json\n` } });
+
+    expect(await exportedIssues(fakeBd.workDir)).toMatchObject({
       ok: false,
-      error: { kind: "emptyDescriptionSearch", exitCode: null },
+      error: { kind: "unparsableOutput", exitCode: 0 },
     });
   });
 });

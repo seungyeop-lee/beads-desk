@@ -222,13 +222,49 @@ export function parseIssueDetail(value: unknown): IssueDetail | null {
     closeReason: stringOr(value.close_reason, null),
     dependencies: recordsOf(value.dependencies).map(parseIssueLink),
     dependents: recordsOf(value.dependents).map(parseIssueLink),
-    comments: recordsOf(value.comments).map((comment) => ({
-      id: stringOr(comment.id, ""),
-      author: stringOr(comment.author, ""),
-      text: stringOr(comment.text, ""),
-      createdAt: timestampOr(comment.created_at, 0),
-    })),
+    comments: parseComments(value.comments),
   };
+}
+
+/**
+ * `bd export`가 이슈마다 내놓는 레코드입니다. gate도 담습니다. 시각은 epoch ms입니다.
+ * bd는 값이 빈 필드를 출력하지 않으므로, 없는 본문 필드는 빈 문자열로 읽습니다.
+ */
+export type ExportedIssue = Issue & {
+  description: string;
+  design: string;
+  acceptanceCriteria: string;
+  notes: string;
+  /** 이슈를 만든 actor입니다. 기록되지 않았으면 빈 문자열입니다. */
+  createdBy: string;
+  closeReason: string | null;
+  comments: IssueComment[];
+};
+
+export function parseExportedIssue(value: unknown): ExportedIssue | null {
+  const issue = parseIssue(value);
+  if (!issue || !isRecord(value)) {
+    return null;
+  }
+  return {
+    ...issue,
+    description: stringOr(value.description, ""),
+    design: stringOr(value.design, ""),
+    acceptanceCriteria: stringOr(value.acceptance_criteria, ""),
+    notes: stringOr(value.notes, ""),
+    createdBy: stringOr(value.created_by, ""),
+    closeReason: stringOr(value.close_reason, null),
+    comments: parseComments(value.comments),
+  };
+}
+
+function parseComments(value: unknown): IssueComment[] {
+  return recordsOf(value).map((comment) => ({
+    id: stringOr(comment.id, ""),
+    author: stringOr(comment.author, ""),
+    text: stringOr(comment.text, ""),
+    createdAt: timestampOr(comment.created_at, 0),
+  }));
 }
 
 /** bd show는 이슈 하나를 내놓을 때도 배열과 객체를 섞어 출력하므로, 어느 형태든 첫 레코드를 꺼냅니다. */

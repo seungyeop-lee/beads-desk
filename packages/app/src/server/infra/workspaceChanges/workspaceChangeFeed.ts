@@ -1,5 +1,5 @@
-import { openChangeFingerprint, type ChangeFingerprint } from "@beads-desk/bd";
 import { globalState } from "@/server/infra/globalState/globalState";
+import { changeFingerprintReader } from "./changeFingerprintReader";
 
 type Listener = () => void;
 
@@ -7,7 +7,7 @@ type Feed = {
   listeners: Set<Listener>;
   /** 구독자가 있는 동안의 주기 조회입니다. 구독자가 모두 떠나면 null입니다. */
   timer: ReturnType<typeof setInterval> | null;
-  fingerprint: ChangeFingerprint | null;
+  readFingerprint: () => Promise<string | null>;
   last: string | null;
   /** 처음 조회를 마쳤는지입니다. 처음 조회는 DB 상태를 읽지 못해도 알립니다. */
   settled: boolean;
@@ -43,18 +43,18 @@ export function subscribeWorkspaceChanges(
     feed = {
       listeners: new Set(),
       timer: null,
-      fingerprint: null,
+      readFingerprint: changeFingerprintReader(workspaceRoot),
       last: null,
       settled: false,
       polling: null,
     };
     feeds().set(workspaceRoot, feed);
-    void poll(workspaceRoot, feed);
+    void poll(feed);
   }
   const subscribed = feed;
   if (!subscribed.timer) {
     subscribed.timer = setInterval(
-      () => void poll(workspaceRoot, subscribed),
+      () => void poll(subscribed),
       options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS,
     );
     subscribed.timer.unref();
@@ -84,39 +84,23 @@ export async function checkWorkspaceChangesNow(workspaceRoot: string): Promise<v
   if (!feed || feed.listeners.size === 0) return;
   // 진행 중인 조회는 쓰기 전에 값을 읽었을 수 있으므로 끝나기를 기다렸다가 새로 읽습니다.
   await feed.polling;
-  await poll(workspaceRoot, feed);
+  await poll(feed);
 }
 
 // server mode에서는 조회 한 번이 bd 실행이라 주기보다 오래 걸릴 수 있습니다. 진행 중이면 새로 시작하지 않고 그 조회를 돌려줍니다.
-function poll(workspaceRoot: string, feed: Feed): Promise<void> {
-  feed.polling ??= readFingerprint(workspaceRoot, feed).finally(() => {
+function poll(feed: Feed): Promise<void> {
+  feed.polling ??= notifyIfChanged(feed).finally(() => {
     feed.polling = null;
   });
   return feed.polling;
 }
 
-async function readFingerprint(workspaceRoot: string, feed: Feed): Promise<void> {
-  const current = await currentFingerprint(workspaceRoot, feed);
+async function notifyIfChanged(feed: Feed): Promise<void> {
+  const current = await feed.readFingerprint();
   const first = !feed.settled;
   feed.settled = true;
   if (first || (current !== null && current !== feed.last)) {
     for (const listener of feed.listeners) listener();
   }
   if (current !== null) feed.last = current;
-}
-
-/**
- * DB 상태를 비교할 값을 읽습니다. 읽지 못하면 null을 돌려줍니다.
- * 읽지 못하면 읽는 방법을 버리고 다음 조회에서 `dolt show`로 다시 정합니다. feed는 구독자가 모두 떠난 뒤에도 남으므로,
- * 그동안 workspace의 Dolt mode나 DB 위치가 바뀌어 남은 방법으로 읽지 못하게 되면 새 방법으로 바꿔야 합니다.
- */
-async function currentFingerprint(workspaceRoot: string, feed: Feed): Promise<string | null> {
-  if (!feed.fingerprint) {
-    const opened = await openChangeFingerprint(workspaceRoot);
-    if (!opened.ok) return null;
-    feed.fingerprint = opened.value;
-  }
-  const current = await feed.fingerprint();
-  if (current === null) feed.fingerprint = null;
-  return current;
 }

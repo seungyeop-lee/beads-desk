@@ -14,6 +14,7 @@ import {
   deferIssue,
   dependencyGraph,
   dismissHuman,
+  exportedIssues,
   duplicateCandidates,
   humanDecisionIssues,
   humanGates,
@@ -26,6 +27,7 @@ import {
   readyIssues,
   respondToHuman,
   showIssue,
+  updateIssueFields,
 } from "..";
 import type { BdOutcome } from "../runBd";
 
@@ -338,6 +340,42 @@ test("판단을 셀 때 열린 human gate와 human 라벨이 붙은 닫히지 �
   expect(labeled.map(({ id }) => id)).toEqual(expect.arrayContaining([question, deferred]));
   expect(labeled.map(({ id }) => id)).not.toContain(answered);
   expect(labeled.map(({ id }) => id)).not.toContain(work);
+});
+
+test("bd export 레코드에서 본문 필드 네 개와 댓글, 만든 사람과 닫은 기록을 읽고 gate도 함께 읽는다", async () => {
+  const id = value(await createIssue(cwd, { title: "내보낼 작업", description: "내보낼 설명" }));
+  value(
+    await updateIssueFields(cwd, id, {
+      design: "내보낼 설계",
+      acceptanceCriteria: "내보낼 수용 기준",
+      notes: "내보낼 메모",
+    }),
+  );
+  value(await addComment(cwd, id, "내보낼 댓글"));
+  const gateId: string = JSON.parse(
+    await run("bd", "gate", "create", "--blocks", id, "--title", `Review: ${id}`, "--json"),
+  ).id;
+  await run("bd", "gate", "resolve", gateId, "--reason", "확인 완료");
+  expect((await closeIssue(cwd, id, { reason: "내보내기 확인" })).ok).toBe(true);
+
+  const records = value(await exportedIssues(cwd));
+  expect(records.find((record) => record.id === id)).toMatchObject({
+    status: "closed",
+    description: "내보낼 설명",
+    design: "내보낼 설계",
+    acceptanceCriteria: "내보낼 수용 기준",
+    notes: "내보낼 메모",
+    createdBy: expect.stringMatching(/.+/),
+    closedAt: expect.any(Number),
+    closeReason: "내보내기 확인",
+    comments: [
+      { text: "내보낼 댓글", author: expect.stringMatching(/.+/), createdAt: expect.any(Number) },
+    ],
+  });
+  expect(records.find((record) => record.id === gateId)).toMatchObject({
+    issueType: "gate",
+    status: "closed",
+  });
 });
 
 test("셸에 BD_JSON_ENVELOPE, BD_JSON, BEADS_DIR가 있어도 지정한 workspace의 이슈를 읽는다", async () => {

@@ -4,7 +4,7 @@ import type { Messages } from "@/client/modules/locale/domain/messages";
 import type { Locale } from "@/shared/contract/locale";
 import { dependencyLabel, priorityLabel, statusLabel, typeLabel } from "../issueLabels";
 import { formatTime } from "../issueTime";
-import { BODY_FIELDS } from "./bodyFields";
+import { BODY_FIELDS } from "@/shared/domain/issues/bodyFields";
 
 /** 활동 기록의 한 줄을 화면 문장으로 바꿉니다. */
 export function activityLineText(messages: Messages, locale: Locale, line: ActivityLine): string {

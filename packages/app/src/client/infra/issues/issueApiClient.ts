@@ -3,10 +3,11 @@ import { readApi } from "@/client/infra/api/readApi";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 import { issueDetailPath, issueHistoryPath } from "@/shared/contract/issueDetail";
 import {
-  descriptionSearchPath,
   ISSUE_LIST_PATH,
   issueListSearchParams,
+  issueTextSearchPath,
   type IssueListFilter,
+  type IssueTextMatch,
 } from "@/shared/contract/issueList";
 
 export function readIssueList(filter: IssueListFilter): Promise<ApiResponse<Issue[]>> {
@@ -22,6 +23,6 @@ export function readIssueHistory(issueId: string): Promise<ApiResponse<IssueEven
   return readApi(issueHistoryPath(issueId));
 }
 
-export function readDescriptionMatches(text: string): Promise<ApiResponse<string[]>> {
-  return readApi(descriptionSearchPath(text));
+export function readIssueTextMatches(text: string): Promise<ApiResponse<IssueTextMatch[]>> {
+  return readApi(issueTextSearchPath(text));
 }

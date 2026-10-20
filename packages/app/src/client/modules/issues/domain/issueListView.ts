@@ -1,6 +1,10 @@
 import { ISSUE_STATUSES, type Issue } from "@beads-desk/bd/issue";
+import type { IssueTextHit } from "@/shared/contract/issueList";
 import { matchesLabels } from "./issueLabelFilter";
 import { matchesQuery } from "./issueSearch";
+
+/** 본문 필드나 댓글에 검색어가 든 이슈의 id마다 맞은 곳입니다. 목록 데이터에 본문과 댓글이 없어 서버가 따로 찾아 줍니다. */
+export type IssueTextHits = ReadonlyMap<string, readonly IssueTextHit[]>;
 
 /** 서버에서 받은 목록을 화면에서 더 좁히는 조건입니다. */
 export type IssueListRefinement = {
@@ -9,11 +13,11 @@ export type IssueListRefinement = {
   /** 비어 있으면 라벨로 거르지 않습니다. 규칙은 matchesLabels에 있습니다. */
   labels: readonly string[];
   search: string;
-  /** 설명에 search가 든 이슈의 id입니다. 목록 데이터에 설명이 없어 서버가 따로 찾아 줍니다. */
-  descriptionMatches?: ReadonlySet<string>;
+  /** 본문 필드나 댓글에 search가 든 이슈입니다. */
+  textMatches?: IssueTextHits;
 };
 
-/** 유형, 라벨, 검색어(id나 제목, 대소문자 무시) 또는 설명 검색 결과로 거릅니다. 순서는 바꾸지 않습니다. */
+/** 유형, 라벨, 검색어(id나 제목, 대소문자 무시) 또는 본문·댓글 검색 결과로 거릅니다. 순서는 바꾸지 않습니다. */
 export function refineIssues(issues: Issue[], refinement: IssueListRefinement): Issue[] {
   const search = refinement.search.trim().toLowerCase();
   return issues.filter(
@@ -22,7 +26,7 @@ export function refineIssues(issues: Issue[], refinement: IssueListRefinement): 
       matchesLabels(issue, refinement.labels) &&
       (search === "" ||
         matchesQuery(issue, search) ||
-        (refinement.descriptionMatches?.has(issue.id) ?? false)),
+        (refinement.textMatches?.has(issue.id) ?? false)),
   );
 }
 

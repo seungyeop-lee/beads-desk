@@ -5,16 +5,22 @@ import type { ChildProgress } from "@/client/modules/epics/domain/epicsView";
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { visibleTreeRows, type IssueTreeRow } from "@/client/modules/issues/domain/issueListView";
+import {
+  visibleTreeRows,
+  type IssueTextHits,
+  type IssueTreeRow,
+} from "@/client/modules/issues/domain/issueListView";
 import { BlockerLine } from "./BlockerLine";
 import { HumanDecisionChip } from "./HumanDecisionChip";
 import { LabelChip } from "./IssueChip";
 import { CopyIssueIdButton } from "./CopyIssueIdButton";
 import { EpicProgress } from "./EpicProgress";
 import { DeferralLine } from "./DeferralLine";
+import { SearchHitLines } from "./SearchHitLines";
 import { statusPrompts } from "./fields/statusPrompts";
 import { PrioritySelect } from "./fields/PrioritySelect";
 import { StatusSelect } from "./fields/StatusSelect";
+import type { IssueTextHit } from "@/shared/contract/issueList";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -45,6 +51,8 @@ type Props = (
   epicOrderHref?: (epicId: string) => string;
   /** 주면 유형이 epic인 행의 제목 옆에 하위 행 수 대신 이 진행도를 막대와 `닫힌 수/전체 수 · %`로 보입니다. 없는 에픽은 하위 이슈가 없는 것으로 봅니다. */
   epicProgress?: ReadonlyMap<string, ChildProgress>;
+  /** 주면 본문 필드나 댓글에서 검색어가 맞은 행의 제목 아래에 맞은 곳과 발췌를 보입니다. */
+  searchHits?: IssueTextHits;
 };
 
 /** ID를 누르면 전체 ID를 복사하고, 제목을 누르면 상세를 엽니다. 상태와 우선순위는 표에서 바로 고치고, 라벨과 담당자는 상세에서만 고칩니다. */
@@ -60,6 +68,7 @@ export const IssueTable = memo(function IssueTable({
   hideHeader,
   epicOrderHref,
   epicProgress,
+  searchHits,
 }: Props) {
   const messages = useMessages();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -118,6 +127,7 @@ export const IssueTable = memo(function IssueTable({
               writes={writes}
               epicOrderHref={epicOrderHref}
               epicProgress={epicProgress}
+              searchHits={searchHits?.get(row.issue.id)}
             />
           ))}
         </tbody>
@@ -147,6 +157,7 @@ type RowProps = {
   writes: IssueWrites;
   epicOrderHref: ((epicId: string) => string) | undefined;
   epicProgress: ReadonlyMap<string, ChildProgress> | undefined;
+  searchHits: readonly IssueTextHit[] | undefined;
 };
 
 function IssueRow({
@@ -159,6 +170,7 @@ function IssueRow({
   writes,
   epicOrderHref,
   epicProgress,
+  searchHits,
 }: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
@@ -215,6 +227,7 @@ function IssueRow({
             />
           )}
           <DeferralLine issue={issue} />
+          <SearchHitLines hits={searchHits} />
         </TitleOutline>
       </td>
       <td>

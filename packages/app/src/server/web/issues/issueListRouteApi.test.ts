@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { fakeBdWorkspace } from "@/server/infra/fakeBd";
-import { handleDescriptionSearchRequest, handleIssueListRequest } from "./issueListRouteApi";
+import { handleIssueTextSearchRequest, handleIssueListRequest } from "./issueListRouteApi";
 
 // Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.
 vi.mock("@/server/web/locale/requestLocale", () => ({
@@ -119,25 +119,39 @@ test("bd가 실패하면 bd의 오류 메시지와 500을 돌려준다", async (
   expect(await response.json()).toEqual({ ok: false, error: "database is locked" });
 });
 
-test("설명 검색은 설명에 검색어가 든 이슈의 id만 돌려준다", async () => {
-  await useFakeBd("list --json --tree=false --all --brief --limit 0 --desc-contains=token", {
-    stdout: issues,
+test("본문 검색은 notes나 댓글에 검색어가 든 이슈와 맞은 곳을 돌려주고, gate에서 맞은 결과는 버린다", async () => {
+  const exported = [
+    { id: "demo-1", title: "첫 이슈", issue_type: "task", notes: "토큰 만료를 재현했다" },
+    {
+      id: "demo-2",
+      title: "둘째 이슈",
+      issue_type: "task",
+      comments: [{ id: "c-1", author: "agent", text: "토큰을 다시 받는다" }],
+    },
+    { id: "demo-gate", title: "Review", issue_type: "gate", description: "토큰 리뷰" },
+  ];
+  await fakeBd.useFakeBd({
+    "dolt show --json": { stdout: JSON.stringify({ embedded: false, database: "demo" }) },
+    "sql SELECT DOLT_HASHOF_DB() AS h --json": { stdout: JSON.stringify([{ h: "hash-1" }]) },
+    export: { stdout: exported.map((record) => JSON.stringify(record)).join("\n") },
   });
 
-  const response = await handleDescriptionSearchRequest(
-    request("/api/issue-search?description=token"),
-  );
+  const response = await handleIssueTextSearchRequest(request("/api/issue-search?text=토큰"));
 
   expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ ok: true, data: ["demo-1", "demo-2"] });
+  expect(await response.json()).toEqual({
+    ok: true,
+    data: [
+      { id: "demo-1", hits: [{ field: "notes", excerpt: "토큰 만료를 재현했다" }] },
+      { id: "demo-2", hits: [{ field: "comment", excerpt: "토큰을 다시 받는다" }] },
+    ],
+  });
 });
 
-test("설명 검색어가 비어 있으면 bd를 실행하지 않고 400을 돌려준다", async () => {
+test("본문 검색어가 비어 있으면 bd를 실행하지 않고 400을 돌려준다", async () => {
   await useFakeBd("unused", {});
 
-  const response = await handleDescriptionSearchRequest(
-    request("/api/issue-search?description=%20"),
-  );
+  const response = await handleIssueTextSearchRequest(request("/api/issue-search?text=%20"));
 
   expect(response.status).toBe(400);
   expect((await response.json()).ok).toBe(false);

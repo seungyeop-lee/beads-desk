@@ -8,7 +8,7 @@ import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { statusLabel, statusTone } from "../issueLabels";
 import { IssueTypeTag } from "../IssueTypeTag";
 import { DependencyList } from "./DependencyList";
-import { BODY_FIELDS } from "./bodyFields";
+import { BODY_FIELDS } from "@/shared/domain/issues/bodyFields";
 import { CommentTimeline } from "./CommentList";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { CopyIssueIdButton } from "../CopyIssueIdButton";

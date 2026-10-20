@@ -12,10 +12,12 @@ import {
   parseIssueDependencies,
   parseIssueDetail,
   parseIssueEvents,
+  parseExportedIssue,
   parseIssues,
   recordsOf,
   showRecordOf,
   stringOr,
+  type ExportedIssue,
   type Issue,
   type IssueComment,
   type IssueDependency,
@@ -24,7 +26,14 @@ import {
   type IssueStatus,
   workState,
 } from "./issue";
-import { inputError, outputError, runBdJson, trimmedId, type BdOutcome } from "./runBd";
+import {
+  inputError,
+  outputError,
+  runBdChecked,
+  runBdJson,
+  trimmedId,
+  type BdOutcome,
+} from "./runBd";
 
 export type EpicStatus = {
   epic: Issue;
@@ -145,31 +154,27 @@ export async function issueEvents(cwd: string, issueId: string): Promise<BdOutco
 }
 
 /**
- * 설명에 text가 든(대소문자 무시) 이슈의 id를 상태와 관계없이 읽습니다.
- * 목록 응답에 설명을 담으면 응답이 몇 배로 커지므로 설명 검색은 bd에 맡깁니다.
- * bd query의 description 조건은 한글 검색어를 찾지 못해 bd list --desc-contains를 씁니다.
+ * 이슈마다 본문 필드와 댓글까지 담은 레코드를 닫힌 이슈와 gate까지 모두 읽습니다.
+ * bd 1.3.1의 export는 help 설명과 달리 `--all` 없이도 gate를 내놓습니다.
+ * `--all`이나 `--include-memories`를 주면 bd가 민감한 에이전트 정보가 담길 수 있다며 기본 출력에서 뺀 memory도 함께 나오므로, 두 옵션을 주지 않습니다.
  */
-export async function issueIdsByDescription(
-  cwd: string,
-  text: string,
-): Promise<BdOutcome<string[]>> {
-  const search = text.trim();
-  if (search.length === 0) {
-    return inputError("emptyDescriptionSearch");
+export async function exportedIssues(cwd: string): Promise<BdOutcome<ExportedIssue[]>> {
+  const result = await runBdChecked(cwd, ["export"]);
+  if (!result.ok) return result;
+  const issues: ExportedIssue[] = [];
+  // export는 JSON 배열이 아니라 레코드마다 한 줄씩 출력합니다.
+  for (const line of result.value.split("\n")) {
+    if (line.trim() === "") continue;
+    let record: unknown;
+    try {
+      record = JSON.parse(line);
+    } catch {
+      return outputError("unparsableOutput");
+    }
+    const issue = parseExportedIssue(record);
+    if (issue) issues.push(issue);
   }
-  // --brief는 출력에서 설명 같은 본문을 빼지만 --desc-contains는 설명으로 거릅니다.
-  // 검색어가 -로 시작해도 옵션으로 해석되지 않도록 = 로 붙여 넘깁니다.
-  const result = await queryIssues(cwd, [
-    "list",
-    "--json",
-    "--tree=false",
-    "--all",
-    "--brief",
-    "--limit",
-    LIST_LIMIT,
-    `--desc-contains=${search}`,
-  ]);
-  return result.ok ? { ok: true, value: result.value.map((issue) => issue.id) } : result;
+  return { ok: true, value: issues };
 }
 
 /** 바로 작업할 수 있는 이슈를 읽습니다. decision, epic, milestone은 빼고 돌려줍니다. */

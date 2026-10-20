@@ -1,4 +1,4 @@
-import type { Issue, IssueDetail } from "@beads-desk/bd/issue";
+import type { ExportedIssue, Issue, IssueDetail } from "@beads-desk/bd/issue";
 
 /**
  * 테스트가 기본값이 채워진 이슈를 만드는 팩토리입니다. 바꾸는 필드만 fields에 넘깁니다.
@@ -36,6 +36,21 @@ export function issueDetail(id: string, fields: Partial<IssueDetail> = {}): Issu
     closeReason: null,
     dependencies: [],
     dependents: [],
+    comments: [],
+    ...fields,
+  };
+}
+
+/** `bd export` 레코드를 다루는 테스트가 쓰는, 본문과 댓글이 비어 있는 이슈를 만듭니다. */
+export function exportedIssue(id: string, fields: Partial<ExportedIssue> = {}): ExportedIssue {
+  return {
+    ...issue(id, fields),
+    description: "",
+    design: "",
+    acceptanceCriteria: "",
+    notes: "",
+    createdBy: "",
+    closeReason: null,
     comments: [],
     ...fields,
   };

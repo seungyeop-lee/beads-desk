@@ -8,7 +8,7 @@ const ko = {
   invalidRequest: "요청 형식이 올바르지 않습니다.",
   invalidIssueStatus: "조회할 이슈 상태가 올바르지 않습니다.",
   invalidStaleDays: "오래 방치된 이슈의 기준 일수가 올바르지 않습니다.",
-  emptyDescriptionSearch: "설명 검색어가 비어 있습니다.",
+  emptyTextSearch: "검색어가 비어 있습니다.",
   unknownWorkspace: (root: string) =>
     `등록되지 않은 workspace입니다: ${root}. 그 디렉터리에서 bd-desk start를 실행해 등록해 주세요.`,
   bdErrors: {
@@ -22,7 +22,6 @@ const ko = {
     emptyResponse: "응답이 비어 있습니다.",
     emptyLabel: "라벨이 비어 있습니다.",
     notAwaitingHumanDecision: "사람 판단을 기다리는 이슈가 아닙니다.",
-    emptyDescriptionSearch: "설명 검색어가 비어 있습니다.",
     invalidStaleDays: "기준 일수는 1 이상의 정수여야 합니다.",
     unparsableOutput: "bd 출력을 JSON으로 해석하지 못했습니다.",
     missingCreatedIssueId: "bd create 출력에 이슈 id가 없습니다.",
@@ -38,7 +37,7 @@ const MESSAGES: Record<Locale, typeof ko> = {
     invalidRequest: "The request is malformed.",
     invalidIssueStatus: "The requested issue status is not valid.",
     invalidStaleDays: "The stale threshold in days is not valid.",
-    emptyDescriptionSearch: "The description search text is empty.",
+    emptyTextSearch: "The search text is empty.",
     unknownWorkspace: (root) =>
       `This workspace is not registered: ${root}. Run bd-desk start in that directory to register it.`,
     bdErrors: {
@@ -52,7 +51,6 @@ const MESSAGES: Record<Locale, typeof ko> = {
       emptyResponse: "The response is empty.",
       emptyLabel: "The label is empty.",
       notAwaitingHumanDecision: "This issue is not waiting for a human decision.",
-      emptyDescriptionSearch: "The description search text is empty.",
       invalidStaleDays: "The threshold in days must be an integer of 1 or more.",
       unparsableOutput: "Could not parse the bd output as JSON.",
       missingCreatedIssueId: "The bd create output has no issue ID.",

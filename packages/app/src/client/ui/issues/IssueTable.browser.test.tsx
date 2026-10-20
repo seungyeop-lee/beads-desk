@@ -100,6 +100,66 @@ for (const width of AREA_WIDTHS) {
   });
 }
 
+// 서버는 검색어 앞을 8자만 남겨 발췌를 자릅니다(server/modules/issueSearch/domain/issueTextSearch.ts).
+const COMMENT_EXCERPT =
+  "…리뷰에서 여백을 정했고 픽셀 단위로 맞추며, 버튼과 입력 칸 사이 간격은 8픽셀로 통일하고 아이콘 버튼은 예외로 둔다…";
+const SEARCH_TERM = "픽셀";
+
+for (const width of [AREA_WIDTHS[0]!, AREA_WIDTHS.at(-1)!]) {
+  test(`표 영역 폭 ${width}px에서 본문·댓글 검색으로 맞은 행에만 제목 아래에 맞은 필드와 발췌가 보이고, 발췌의 검색어는 제목 칸 안에서 잘리지 않는다`, async () => {
+    const screen = await render(
+      <LocaleProvider locale="ko">
+        <div style={{ width }}>
+          <IssueTable
+            issues={[
+              issue("desk-hit", { title: "댓글로 찾은 작업" }),
+              issue("desk-title", { title: "제목으로 찾은 작업" }),
+            ]}
+            issueHref={(id) => `/issues?issue=${id}`}
+            writes={WRITES}
+            gateTitles={new Map()}
+            searchHits={
+              new Map([
+                [
+                  "desk-hit",
+                  [
+                    { field: "comment", excerpt: COMMENT_EXCERPT },
+                    { field: "notes", excerpt: "메모에 남긴 픽셀 기준" },
+                  ],
+                ],
+              ])
+            }
+          />
+        </div>
+      </LocaleProvider>,
+    );
+    const hitRow = screen.getByRole("row", { name: /댓글로 찾은 작업/ });
+    const titleRow = screen.getByRole("row", { name: /제목으로 찾은 작업/ });
+
+    await expect
+      .element(hitRow.getByText(messages.issues.commentHit, { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(hitRow.getByText(messages.issue.bodyFields.notes, { exact: true }))
+      .toBeVisible();
+    await expect.element(hitRow.getByText("메모에 남긴 픽셀 기준", { exact: true })).toBeVisible();
+    expect(titleRow.element().textContent).not.toContain(SEARCH_TERM);
+
+    const excerpt = hitRow.getByText(COMMENT_EXCERPT, { exact: true }).element();
+    const titleCell = excerpt.closest("td")!.getBoundingClientRect();
+    const excerptBox = excerpt.getBoundingClientRect();
+    expect(excerptBox.right, "발췌 오른쪽 끝").toBeLessThanOrEqual(titleCell.right);
+    // 발췌는 한 줄로 보이고 넘치는 끝은 말줄임으로 잘리므로, 검색어 글자가 보이는 발췌 영역 안에 있는지 잽니다.
+    const term = document.createRange();
+    const start = COMMENT_EXCERPT.indexOf(SEARCH_TERM);
+    term.setStart(excerpt.firstChild!, start);
+    term.setEnd(excerpt.firstChild!, start + SEARCH_TERM.length);
+    expect(term.getBoundingClientRect().right, "검색어 오른쪽 끝").toBeLessThanOrEqual(
+      excerptBox.right,
+    );
+  });
+}
+
 test("행은 짧은 ID를 복사 단추로 보이고, 표에서는 상태와 우선순위만 고치며, 의존 칸은 선행·후속 개수를 이름으로 알려 준다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
