@@ -191,6 +191,7 @@ async function open(
 ): Promise<Page> {
   const page = await context.newPage();
   await page.setViewportSize(viewport);
+  await view.prepare?.(page);
   await page.goto(view.path);
   for (const text of view.shows) {
     await page.getByText(text).filter({ visible: true }).first().waitFor({ timeout: 30_000 });

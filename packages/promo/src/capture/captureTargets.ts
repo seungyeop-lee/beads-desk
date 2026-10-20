@@ -21,6 +21,8 @@ export type View = {
   shows: string[];
   /** 스크린샷의 viewport 높이(CSS 픽셀)입니다. 화면 내용이 기본 높이에 다 들어가지 않거나 남을 때만 줍니다. */
   height?: number;
+  /** 주소를 열기 전에 page를 준비합니다. 화면이 처음 그릴 때 읽는 browser 저장소 값을 미리 넣을 때 씁니다. */
+  prepare?(page: Page): Promise<void>;
   /** 화면을 다 불러온 뒤, 스크린샷을 찍거나 녹화를 시작하기 전에 구도를 맞춥니다. */
   frame?(page: Page): Promise<void>;
 };
@@ -48,6 +50,22 @@ const HYGIENE: View = {
     "Private beta with the first 50 customers",
     "Add the Apple Pay domain verification file (acme-k3v.3)",
   ],
+};
+/**
+ * 활동 화면은 이 브라우저가 그 workspace의 활동 화면을 마지막으로 연 시각을 localStorage에서 읽어 구분선을 그립니다.
+ * capture의 browser context는 처음 쓰는 것이라 그 값이 없으므로, 한 시간 전에 본 것으로 넣어 seed가 마지막에 남긴 기록 아래에 구분선이 보이게 합니다.
+ */
+const ACTIVITY: View = {
+  path: "/activity",
+  shows: ["Translate the checkout page into German and French", "Seen on your last visit"],
+  async prepare(page) {
+    await page.addInitScript(() => {
+      const [, prefix, workspace] = location.pathname.split("/");
+      if (prefix !== "w" || !workspace) return;
+      const key = `beads-desk.activity-seen.${decodeURIComponent(workspace)}`;
+      localStorage.setItem(key, String(Date.now() - 60 * 60 * 1000));
+    });
+  },
 };
 const BOARD: View = {
   path: "/board",
@@ -121,6 +139,7 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
       },
     },
   },
+  { name: "activity", screenshot: ACTIVITY },
   { name: "graph", screenshot: GRAPH },
   {
     name: "attachments",
