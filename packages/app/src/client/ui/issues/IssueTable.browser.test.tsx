@@ -39,8 +39,12 @@ const WRITES: IssueWrites = {
   run: (write) => write("demo"),
 };
 
-for (const width of AREA_WIDTHS) {
-  test(`표 영역 폭 ${width}px에서 ID·유형·제목이 가로 스크롤 없이 표 영역 안에 다 보이고, 상태·우선순위 입력은 표 안에서 스크롤하면 영역 안에 다 보인다`, async () => {
+// 순서 보기 링크를 보이는 표는 의존 열이 넓어 표 폭 계산이 달라지므로 따로 검사합니다.
+for (const [width, epicOrder] of AREA_WIDTHS.flatMap((width) => [
+  [width, false] as const,
+  [width, true] as const,
+])) {
+  test(`표 영역 폭 ${width}px${epicOrder ? "의 순서 보기 링크를 보이는 표" : ""}에서 ID·유형·제목이 가로 스크롤 없이 표 영역 안에 다 보이고, 상태·우선순위 입력은 표 안에서 스크롤하면 영역 안에 다 보인다`, async () => {
     const screen = await render(
       <LocaleProvider locale="ko">
         <div style={{ width }}>
@@ -49,6 +53,7 @@ for (const width of AREA_WIDTHS) {
             issueHref={(id) => `/issues?issue=${id}`}
             writes={WRITES}
             gateTitles={new Map()}
+            {...(epicOrder && { epicOrderHref: (id: string) => `/epics?epic=${id}` })}
           />
         </div>
       </LocaleProvider>,
@@ -459,10 +464,20 @@ for (const locale of ["ko", "en"] as const) {
 
     const link = epicRow.getByRole("link", { name: localeMessages.graph.epicOrder });
     await expect.element(link).toHaveAttribute("href", "/epics?epic=desk-epic");
-    const cell = link.element().closest("td")!.getBoundingClientRect();
+    // 링크도 다른 칸처럼 칸의 좌우 여백 안에 놓여, 표 오른쪽 끝에 붙지 않아야 합니다.
+    const cellElement = link.element().closest("td")!;
+    const cell = cellElement.getBoundingClientRect();
+    const style = getComputedStyle(cellElement);
     const box = link.element().getBoundingClientRect();
-    expect(box.left).toBeGreaterThanOrEqual(cell.left);
-    expect(box.right).toBeLessThanOrEqual(cell.right);
+    const table = cellElement.closest("table")!.getBoundingClientRect();
+    expect(parseFloat(style.paddingRight), "칸 오른쪽 여백").toBeGreaterThan(0);
+    expect(box.left, "링크 왼쪽 끝").toBeGreaterThanOrEqual(
+      cell.left + parseFloat(style.paddingLeft),
+    );
+    expect(box.right, "링크 오른쪽 끝").toBeLessThanOrEqual(
+      cell.right - parseFloat(style.paddingRight),
+    );
+    expect(table.right - box.right, "링크와 표 오른쪽 끝 사이 여백").toBeGreaterThan(0);
 
     await expect
       .element(taskRow.getByRole("link", { name: localeMessages.graph.epicOrder }))

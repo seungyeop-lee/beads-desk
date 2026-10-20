@@ -93,12 +93,14 @@ export const IssueTable = memo(function IssueTable({
   if (rows.length === 0) {
     return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
+  const widths = epicOrderHref ? EPIC_ORDER_WIDTHS : DEPENDENCY_COUNT_WIDTHS;
   return (
     <div className="@container surface min-w-0 max-w-full overflow-x-auto">
       {/* 제목 열은 표 폭에서 나머지 열의 폭을 뺀 만큼 차지합니다. 표 영역이 64rem보다 좁으면 표를 64rem으로 넓히고
-          상태·우선순위·라벨·의존 열(30rem)은 가로 스크롤로 봅니다. 표 영역이 34rem보다 좁으면 64rem 대신 영역 폭(100cqw)에 그 네 열의 폭만 더해
-          ID와 제목 열이 스크롤하지 않아도 영역 안에 다 보이게 합니다. 이때는 유형 열(6.5rem)을 감추고 유형을 제목 앞에 보여, 그만큼 제목 칸을 넓힙니다. */}
-      <table className="table w-[max(100cqw,min(100cqw_+_30rem,64rem))] table-fixed">
+          상태·우선순위·라벨·의존 열(의존 수를 보이는 표는 30rem, 순서 보기 링크를 보이는 표는 32rem)은 가로 스크롤로 봅니다. 표 영역이 64rem에서 그 네 열의 폭을 뺀 폭보다 좁으면
+          64rem 대신 영역 폭(100cqw)에 네 열의 폭만 더해 ID와 제목 열이 스크롤하지 않아도 영역 안에 다 보이게 합니다.
+          표 영역이 34rem보다 좁으면 유형 열(6.5rem)을 감추고 유형을 제목 앞에 보여, 그만큼 제목 칸을 넓힙니다. */}
+      <table className={`table ${widths.table} table-fixed`}>
         <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
           <tr>
             <th className="w-24">ID</th>
@@ -107,7 +109,9 @@ export const IssueTable = memo(function IssueTable({
             <th className="w-32">{messages.issue.status}</th>
             <th className="w-32">{messages.issue.priority}</th>
             <th className="w-36">{messages.issue.labels}</th>
-            <th className="w-20 text-right">{messages.issue.dependencyCount}</th>
+            <th className={`${widths.dependencyColumn} text-right`}>
+              {messages.issue.dependencyCount}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -143,6 +147,21 @@ export const IssueTable = memo(function IssueTable({
     </div>
   );
 });
+
+/** 의존 칸에 의존 수만 보이는 표의 열 폭입니다. 오른쪽 네 열(상태 8rem, 우선순위 8rem, 라벨 9rem, 의존 5rem)의 합은 30rem입니다. */
+const DEPENDENCY_COUNT_WIDTHS = {
+  table: "w-[max(100cqw,min(100cqw_+_30rem,64rem))]",
+  dependencyColumn: "w-20",
+};
+
+/**
+ * 에픽 행의 의존 칸에 순서 보기 링크를 보이는 표의 열 폭입니다.
+ * 영어 링크 문구가 칸의 좌우 여백 안에 들어가도록 의존 열을 7rem으로 넓혀, 오른쪽 네 열의 합이 32rem이 됩니다.
+ */
+const EPIC_ORDER_WIDTHS = {
+  table: "w-[max(100cqw,min(100cqw_+_32rem,64rem))]",
+  dependencyColumn: "w-28",
+};
 
 const NO_CHILDREN: ChildProgress = { closed: 0, total: 0 };
 
@@ -257,8 +276,7 @@ function IssueRow({
       </td>
       <LabelCell labels={issue.labels} />
       {epicOrderHref && issue.issueType === "epic" ? (
-        // 의존 열(5rem)의 좌우 여백을 남기면 영어 버튼 문구가 칸 밖으로 넘치므로, 이 칸만 여백을 없앱니다.
-        <td className="px-0 text-right">
+        <td className="text-right">
           <Link
             className="btn btn-ghost btn-xs rounded-full whitespace-nowrap"
             href={epicOrderHref(issue.id)}
