@@ -1,4 +1,5 @@
 import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
+import { ISSUE_DETAIL_PARAMS } from "@/client/ui/issues/issueDetailParams";
 import { SCREEN_TABS } from "@/client/ui/shell/screenTabs";
 
 /**
@@ -24,7 +25,7 @@ export function graphHref(scope: GraphScope, from?: string): string {
   if (sourceScope?.kind !== scope.kind || sourceScope.id !== scope.id) {
     trail.push(`${source.pathname}${source.search}`);
   }
-  for (const key of ["epic", "center", "issue", "side"]) source.searchParams.delete(key);
+  for (const key of ["epic", "center", ...ISSUE_DETAIL_PARAMS]) source.searchParams.delete(key);
   for (const [key, value] of source.searchParams) params.append(key, value);
   for (const address of trail) params.append(RETURN_PARAM, address);
   return `${source.pathname}?${params}`;

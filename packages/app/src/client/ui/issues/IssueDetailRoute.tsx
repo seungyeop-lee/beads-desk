@@ -9,16 +9,7 @@ import { useScreenPathname } from "@/client/ui/address/workspaceAddress";
 import { graphOriginParams, readGraphScope } from "@/client/ui/screens/graph/graphAddress";
 import { IssueDetailDialog } from "./detail/IssueDetailDialog";
 import type { ListedIssues } from "./detail/listedIssues";
-
-/** 상세 dialog로 연 이슈 id를 담는 query 이름입니다. 주소를 공유하거나 새로고침해도 같은 이슈가 열립니다. */
-const ISSUE_PARAM = "issue";
-/** 상세 dialog 옆 패널에 연 이슈 id를 담는 query 이름입니다. */
-const SIDE_PARAM = "side";
-/**
- * 상세 dialog를 열면서 스크롤해 보일 영역을 담는 query 이름입니다.
- * 상세 안에서 옆 패널을 열거나 다른 이슈로 옮기거나 dialog를 닫으면 지우므로, 이 주소로 연 상세에서만 그 영역으로 스크롤합니다.
- */
-const SECTION_PARAM = "section";
+import { ISSUE_DETAIL_PARAMS, ISSUE_PARAM, SECTION_PARAM, SIDE_PARAM } from "./issueDetailParams";
 
 /** 상세 dialog를 열 때 스크롤해 보일 영역입니다. human-gate는 막힌 이슈 상세의 human gate 응답 칸입니다. */
 export type IssueDetailSection = "human-gate";
@@ -75,9 +66,7 @@ export function IssueDetailRoute({
   const covered = !embedded && readGraphScope(new URLSearchParams(searchParams)) !== null;
   const close = useCallback(() => {
     replaceQuery((params) => {
-      params.delete(ISSUE_PARAM);
-      params.delete(SIDE_PARAM);
-      params.delete(SECTION_PARAM);
+      for (const name of ISSUE_DETAIL_PARAMS) params.delete(name);
     });
   }, [replaceQuery]);
 

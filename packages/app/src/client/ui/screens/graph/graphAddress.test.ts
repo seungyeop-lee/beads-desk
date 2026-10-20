@@ -32,6 +32,13 @@ test("출발 화면의 보기·유형·날짜와 상세·옆 패널 query를 보
   expect(graphBackHref(center, params(graphHref(center, origin)))).toBe(origin);
 });
 
+test("응답 칸까지 스크롤해 연 상세에서 그래프를 열면 그래프 주소에는 응답 칸 query가 없고, 돌아가면 원래 주소로 간다", () => {
+  const origin = "/issues?view=blocked&issue=demo-2&section=human-gate";
+  const graph = graphHref(center, origin);
+  expect(params(graph).has("section")).toBe(false);
+  expect(graphBackHref(center, params(graph))).toBe(origin);
+});
+
 test("그래프를 이어 열면 복귀 주소를 중첩 인코딩하지 않고 순서대로 돌아간다", () => {
   const first = graphHref(epic, "/epics");
   const detail = `${first}&issue=demo-2&side=demo-3`;
