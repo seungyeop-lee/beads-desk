@@ -105,6 +105,48 @@ for (const [width, epicOrder] of AREA_WIDTHS.flatMap((width) => [
   });
 }
 
+/** 열 이름 순서(ID, 유형, 제목, 상태, 우선순위, 라벨, 의존)대로 머리 칸의 폭(px)입니다. 제목 열은 남는 폭을 차지하므로 null입니다. */
+const COLUMN_WIDTHS = {
+  dependencyCount: [96, 104, null, 128, 128, 144, 80],
+  epicOrder: [96, 104, null, 128, 128, 144, 112],
+};
+
+// 표 영역은 좌우 테두리가 1px씩이라, 표가 차지할 수 있는 폭은 영역 폭보다 2px 좁습니다.
+for (const [width, epicOrder, tableWidth] of [
+  [377, false, 855],
+  [377, true, 887],
+  [704, false, 1024],
+  [704, true, 1024],
+  [1376, false, 1374],
+  [1376, true, 1374],
+] as const) {
+  test(`표 영역 폭 ${width}px${epicOrder ? "의 순서 보기 링크를 보이는 표" : ""}에서 열 폭과 표 폭은 ${tableWidth}px로 정해진다`, async () => {
+    const screen = await render(
+      <LocaleProvider locale="ko">
+        <div style={{ width }}>
+          <IssueTable
+            issues={ISSUES}
+            issueHref={(id) => `/issues?issue=${id}`}
+            writes={WRITES}
+            gateTitles={new Map()}
+            {...(epicOrder && { epicOrderHref: (id: string) => `/epics?epic=${id}` })}
+          />
+        </div>
+      </LocaleProvider>,
+    );
+
+    const table = screen.container.querySelector("table")!;
+    expect(table.getBoundingClientRect().width, "표 폭").toBe(tableWidth);
+    const expected = COLUMN_WIDTHS[epicOrder ? "epicOrder" : "dependencyCount"];
+    Array.from(table.tHead!.rows[0]!.cells).forEach((cell, index) => {
+      const columnWidth = expected[index];
+      // 좁은 표 영역에서 감춘 유형 열은 폭을 재지 않습니다.
+      if (columnWidth == null || !cell.checkVisibility()) return;
+      expect(cell.getBoundingClientRect().width, `${cell.textContent} 열 폭`).toBe(columnWidth);
+    });
+  });
+}
+
 // 서버는 검색어 앞을 8자만 남겨 발췌를 자릅니다(server/modules/issueSearch/domain/issueTextSearch.ts).
 const COMMENT_EXCERPT =
   "…리뷰에서 여백을 정했고 픽셀 단위로 맞추며, 버튼과 입력 칸 사이 간격은 8픽셀로 통일하고 아이콘 버튼은 예외로 둔다…";
