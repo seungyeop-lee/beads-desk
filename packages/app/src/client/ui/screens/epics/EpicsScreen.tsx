@@ -8,6 +8,7 @@ import { useEpicDescendants, useEpics } from "@/client/modules/epics/application
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
 import {
+  childProgress,
   epicDescendantRows,
   notChildCandidate,
   settleExpandedEpics,
@@ -24,6 +25,7 @@ import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRo
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { statusLabel, statusTone } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
+import { EpicProgress } from "@/client/ui/issues/EpicProgress";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
@@ -100,7 +102,6 @@ type SectionProps = {
 function EpicSection({ summary, expanded, onToggle, gateTitles, issueHref, writes }: SectionProps) {
   const { epic, totalChildren, closedChildren } = summary;
   const graphHref = useGraphHref();
-  const percent = totalChildren === 0 ? 0 : Math.round((closedChildren / totalChildren) * 100);
   const messages = useMessages();
   return (
     <section className="surface">
@@ -130,15 +131,13 @@ function EpicSection({ summary, expanded, onToggle, gateTitles, issueHref, write
           <span className={`chip ${statusTone(epic.status)}`}>
             {statusLabel(messages, epic.status)}
           </span>
-          <progress
-            className="progress h-1.5 w-40 min-w-24 shrink text-[color-mix(in_oklab,var(--color-sage),#3f6212_40%)]"
-            value={closedChildren}
-            max={Math.max(totalChildren, 1)}
-            aria-label={messages.epics.progress(epic.id)}
+          <EpicProgress
+            epicId={epic.id}
+            closed={closedChildren}
+            total={totalChildren}
+            barClassName="w-40 min-w-24 shrink"
+            countClassName="min-w-20 shrink-0 text-right"
           />
-          <span className="min-w-20 shrink-0 text-right whitespace-nowrap font-mono text-xs text-base-content/55 tabular-nums">
-            {closedChildren}/{totalChildren} · {percent}%
-          </span>
           <Link
             className="btn btn-ghost btn-xs shrink-0 rounded-full"
             href={graphHref({ kind: "epic", id: epic.id })}
@@ -173,6 +172,7 @@ function EpicDescendants({
   const { data, error } = useEpicDescendants(epic.id);
   const descendants = data?.issues;
   const waiters = useMemo(() => new Map(Object.entries(data?.waiters ?? {})), [data]);
+  const progress = useMemo(() => childProgress(data?.issues ?? []), [data]);
   const [creating, setCreating] = useState(false);
   const router = useRouter();
   const graphHref = useGraphHref();
@@ -231,6 +231,7 @@ function EpicDescendants({
           writes={writes}
           emptyMessage={messages.epics.childrenEmpty}
           epicOrderHref={(epicId) => graphHref({ kind: "epic", id: epicId })}
+          epicProgress={progress}
         />
       )}
     </div>

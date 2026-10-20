@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import {
+  childProgress,
   epicDescendantRows,
   notChildCandidate,
   settleExpandedEpics,
@@ -116,4 +117,18 @@ test("에픽의 후손 이슈는 상태와 우선순위와 관계없이 형제�
     ["x.2.1", 1],
     ["x.10", 0],
   ]);
+});
+
+test("후손 이슈마다 직접 하위 이슈만 세어 닫힌 수와 전체 수를 내고, 하위 이슈가 없는 이슈는 담지 않는다", () => {
+  const progress = childProgress([
+    issue("a.1", { issueType: "epic", parent: "a" }),
+    issue("a.1.1", { parent: "a.1", status: "closed" }),
+    issue("a.1.2", { parent: "a.1" }),
+    issue("a.1.3", { parent: "a.1", status: "in_progress" }),
+    issue("a.1.1.1", { parent: "a.1.1", status: "closed" }),
+  ]);
+
+  expect(progress.get("a.1")).toEqual({ closed: 1, total: 3 });
+  expect(progress.get("a.1.1")).toEqual({ closed: 1, total: 1 });
+  expect(progress.has("a.1.2")).toBe(false);
 });

@@ -217,10 +217,11 @@ test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 �
   };
   const screen = await renderScreen();
 
-  // 에픽 카드마다 진행률 막대가 하나씩 있습니다.
+  // 에픽 카드마다 머리에 진행률 막대가 하나씩 있습니다.
   const cards = screen
     .getByRole("progressbar")
     .elements()
+    .filter((bar) => bar.closest("header"))
     .map((bar) => bar.getAttribute("aria-label"));
   expect(cards).toEqual(
     ["desk-parent", "desk-root", "desk-task.1"].map((id) => messages.epics.progress(id)),
@@ -241,6 +242,60 @@ test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 �
     .toHaveTextContent("1 / 0");
 });
 
+test("펼친 하위 목록의 에픽 행은 하위 수 대신 그 에픽의 직접 하위 이슈 진행률을 보이고, 작업 행은 하위 수를 그대로 보인다", async () => {
+  reads.epics = [{ epic: epic("desk-a", "상위 에픽"), totalChildren: 2, closedChildren: 0 }];
+  reads.descendants = { "desk-a": { issues: NESTED_EPIC_DESCENDANTS, waiters: {} } };
+  const screen = await renderScreen();
+
+  const childEpicRow = screen.getByRole("row", { name: /하위 에픽 B/ });
+  await expect
+    .element(childEpicRow.getByRole("progressbar", { name: messages.epics.progress("desk-a.1") }))
+    .toHaveAttribute("value", "1");
+  await expect.element(childEpicRow.getByText("1/3 · 33%", { exact: true })).toBeVisible();
+  await expect
+    .element(childEpicRow.getByText(messages.issueTable.childCount(3)))
+    .not.toBeInTheDocument();
+  // 하위 에픽 행의 접기·펼치기 단추는 그대로 남습니다.
+  await expect
+    .element(
+      childEpicRow.getByRole("button", {
+        name: messages.issueTable.toggleChildren("desk-a.1", false),
+      }),
+    )
+    .toBeVisible();
+
+  const taskRow = screen.getByRole("row", { name: /하위 작업 C/ });
+  await expect.element(taskRow.getByText(messages.issueTable.childCount(1))).toBeVisible();
+  await expect.element(taskRow.getByRole("progressbar")).not.toBeInTheDocument();
+});
+
+// 455px는 Chrome 110%에서 가장 좁힌 창입니다.
+for (const locale of ["ko", "en"] as const) {
+  test(`창 폭 455px에서 하위 에픽 행의 진행률은 제목 칸 밖으로 넘치지 않는다(${locale})`, async () => {
+    reads.epics = [{ epic: epic("desk-a", "상위 에픽"), totalChildren: 2, closedChildren: 0 }];
+    reads.descendants = { "desk-a": { issues: NESTED_EPIC_DESCENDANTS, waiters: {} } };
+    await page.viewport(455, 900);
+    const screen = await render(
+      <LocaleProvider locale={locale}>
+        <EpicsScreen />
+      </LocaleProvider>,
+    );
+
+    const count = screen.getByText("1/3 · 33%", { exact: true }).element();
+    const cell = count.closest("td")!;
+    const cellBox = cell.getBoundingClientRect();
+    for (const element of [count, count.previousElementSibling!]) {
+      const box = element.getBoundingClientRect();
+      expect(box.left, `${locale} ${element.tagName} 왼쪽 끝`).toBeGreaterThanOrEqual(cellBox.left);
+      expect(box.right, `${locale} ${element.tagName} 오른쪽 끝`).toBeLessThanOrEqual(
+        cellBox.right,
+      );
+    }
+    expect(lineCount(count), `${locale} 진행 개수 줄 수`).toBe(1);
+    expect(cell.scrollWidth, `${locale} 제목 칸 가로 넘침`).toBeLessThanOrEqual(cell.clientWidth);
+  });
+}
+
 function renderScreen() {
   return render(
     <LocaleProvider locale="ko">
@@ -258,6 +313,20 @@ function lineCount(element: Element) {
   range.selectNodeContents(element);
   return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
 }
+
+/** 에픽 A 아래에 하위 이슈 3개 중 1개가 닫힌 에픽 B와, 하위 이슈가 1개인 작업 C가 있습니다. */
+const NESTED_EPIC_DESCENDANTS: Issue[] = [
+  issue("desk-a.1", {
+    title: "하위 에픽 B는 제목이 길어서 좁은 창에서는 제목 칸 안에서 여러 줄로 나뉘어 보입니다",
+    issueType: "epic",
+    parent: "desk-a",
+  }),
+  issue("desk-a.1.1", { title: "B의 닫힌 작업", parent: "desk-a.1", status: "closed" }),
+  issue("desk-a.1.2", { title: "B의 열린 작업", parent: "desk-a.1" }),
+  issue("desk-a.1.3", { title: "B의 진행 중 작업", parent: "desk-a.1", status: "in_progress" }),
+  issue("desk-a.2", { title: "하위 작업 C", parent: "desk-a" }),
+  issue("desk-a.2.1", { title: "C의 하위 작업", parent: "desk-a.2" }),
+];
 
 function epic(id: string, title: string): Issue {
   return issue(id, { title, issueType: "epic" });

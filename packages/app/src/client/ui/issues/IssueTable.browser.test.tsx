@@ -279,6 +279,31 @@ test("epicOrderHref를 주지 않으면 에픽 행도 의존 칸에 의존 수�
     .not.toBeInTheDocument();
 });
 
+test("epicProgress를 주지 않으면 tree의 에픽 행도 제목 옆에 하위 수를 보이고 진행률 막대를 보이지 않는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueTable
+        tree={[
+          {
+            issue: issue("desk-epic", { title: "목록의 에픽", issueType: "epic" }),
+            depth: 0,
+            childCount: 2,
+          },
+          { issue: issue("desk-epic.1", { parent: "desk-epic" }), depth: 1, childCount: 0 },
+          { issue: issue("desk-epic.2", { parent: "desk-epic" }), depth: 1, childCount: 0 },
+        ]}
+        issueHref={(id) => `/issues?issue=${id}`}
+        writes={WRITES}
+        gateTitles={new Map()}
+      />
+    </LocaleProvider>,
+  );
+  const row = screen.getByRole("row", { name: /목록의 에픽/ });
+
+  await expect.element(row.getByText(messages.issueTable.childCount(2))).toBeVisible();
+  await expect.element(row.getByRole("progressbar")).not.toBeInTheDocument();
+});
+
 for (const locale of ["ko", "en"] as const) {
   test(`epicOrderHref를 주면 에픽 행만 의존 칸에 순서 보기 링크를 칸 밖으로 넘치지 않게 보인다(${locale})`, async () => {
     const localeMessages = locale === "ko" ? messages : enMessages;

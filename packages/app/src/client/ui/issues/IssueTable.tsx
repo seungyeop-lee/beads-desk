@@ -1,6 +1,7 @@
 import { HUMAN_LABEL, type Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { memo, useMemo, useState, type ReactNode } from "react";
+import type { ChildProgress } from "@/client/modules/epics/domain/epicsView";
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
@@ -9,6 +10,7 @@ import { BlockerLine } from "./BlockerLine";
 import { HumanDecisionChip } from "./HumanDecisionChip";
 import { LabelChip } from "./IssueChip";
 import { CopyIssueIdButton } from "./CopyIssueIdButton";
+import { EpicProgress } from "./EpicProgress";
 import { DeferralLine } from "./DeferralLine";
 import { statusPrompts } from "./fields/statusPrompts";
 import { PrioritySelect } from "./fields/PrioritySelect";
@@ -41,6 +43,8 @@ type Props = (
   hideHeader?: boolean;
   /** 주면 유형이 epic인 행의 의존 칸에 의존 수 대신, 이 주소로 그 에픽의 순서 보기를 여는 링크를 보입니다. */
   epicOrderHref?: (epicId: string) => string;
+  /** 주면 유형이 epic인 행의 제목 옆에 하위 행 수 대신 이 진행도를 막대와 `닫힌 수/전체 수 · %`로 보입니다. 없는 에픽은 하위 이슈가 없는 것으로 봅니다. */
+  epicProgress?: ReadonlyMap<string, ChildProgress>;
 };
 
 /** ID를 누르면 전체 ID를 복사하고, 제목을 누르면 상세를 엽니다. 상태와 우선순위는 표에서 바로 고치고, 라벨과 담당자는 상세에서만 고칩니다. */
@@ -55,6 +59,7 @@ export const IssueTable = memo(function IssueTable({
   waiters,
   hideHeader,
   epicOrderHref,
+  epicProgress,
 }: Props) {
   const messages = useMessages();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -112,6 +117,7 @@ export const IssueTable = memo(function IssueTable({
               waiters={waiters?.get(row.issue.id) ?? 0}
               writes={writes}
               epicOrderHref={epicOrderHref}
+              epicProgress={epicProgress}
             />
           ))}
         </tbody>
@@ -119,6 +125,8 @@ export const IssueTable = memo(function IssueTable({
     </div>
   );
 });
+
+const NO_CHILDREN: ChildProgress = { closed: 0, total: 0 };
 
 /** tree로 그릴 때 제목 칸의 들여쓰기와 접기 버튼을 정합니다. */
 type RowOutline = {
@@ -138,6 +146,7 @@ type RowProps = {
   waiters: number;
   writes: IssueWrites;
   epicOrderHref: ((epicId: string) => string) | undefined;
+  epicProgress: ReadonlyMap<string, ChildProgress> | undefined;
 };
 
 function IssueRow({
@@ -149,6 +158,7 @@ function IssueRow({
   waiters,
   writes,
   epicOrderHref,
+  epicProgress,
 }: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
@@ -179,10 +189,21 @@ function IssueRow({
           </Link>
           <HumanDecisionChip issue={issue} className="ml-2" />
           <WaiterCount count={waiters} className="ml-2" />
-          {outline && outline.childCount > 0 && (
-            <span className="ml-2 font-mono text-xs text-base-content/45 tabular-nums">
-              {messages.issueTable.childCount(outline.childCount)}
+          {epicProgress && issue.issueType === "epic" ? (
+            <span className="ml-2 inline-flex items-center gap-1.5 align-middle">
+              <EpicProgress
+                epicId={issue.id}
+                {...(epicProgress.get(issue.id) ?? NO_CHILDREN)}
+                barClassName="w-16"
+              />
             </span>
+          ) : (
+            outline &&
+            outline.childCount > 0 && (
+              <span className="ml-2 font-mono text-xs text-base-content/45 tabular-nums">
+                {messages.issueTable.childCount(outline.childCount)}
+              </span>
+            )
           )}
           {issue.blockedBy && (
             <BlockerLine
