@@ -1,6 +1,6 @@
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 
-test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은 창의 헤더에서 화면 이동·설정·workspace 전환·새 이슈 만들기를 한다", async ({
+test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은 창의 헤더에서 묶음 순서대로 놓인 화면 탭으로 이동하고 설정·workspace 전환·새 이슈 만들기를 한다", async ({
   page,
   workspace,
 }) => {
@@ -34,6 +34,19 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
     await expect(page).toHaveURL(/\/focus$/);
     await expect(next.getByRole("listitem")).toHaveCount(1);
     await expect(screens.getByRole("link", { name: "판단 기다림 1개", exact: true })).toBeVisible();
+    // 묶음 사이의 구분선은 장식이라, 스크린리더는 탭 이름만 순서대로 읽습니다.
+    await expect(screens).toMatchAriaSnapshot(`
+      - navigation:
+        - /children: equal
+        - link "지금"
+        - link "판단 기다림 1개"
+        - link "활동"
+        - link "이슈"
+        - link "에픽"
+        - link "보드"
+        - link "결정"
+        - link "정리"
+    `);
     await expect(picker).toHaveCount(1);
     await expect(epicProgress).toHaveCount(0);
   } finally {

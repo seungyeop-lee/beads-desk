@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useHumanDecisionNotices } from "@/client/modules/humanDecisions/application/humanDecisionNotices";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
 import {
@@ -16,7 +16,7 @@ import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { SettingsDialog } from "@/client/ui/settings/SettingsDialog";
 import { LOGO_BEADS } from "./logoBeads";
-import { SCREEN_TABS } from "./screenTabs";
+import { SCREEN_TAB_GROUPS } from "./screenTabs";
 import { WorkspacePicker } from "./WorkspacePicker";
 
 /** 화면 이동 탭과, 어느 화면에서나 설정을 열거나 새 이슈를 만들고 그 화면 위에 상세를 여는 버튼입니다. */
@@ -44,24 +44,29 @@ export function AppHeader() {
           className="order-last flex w-full min-w-0 items-center gap-1 overflow-x-auto xl:order-none xl:w-auto"
           aria-label={messages.shell.screens}
         >
-          {SCREEN_TABS.map((tab) => (
-            <Link
-              key={tab.href}
-              href={workspaceHref(tab.href)}
-              aria-current={screenPathname === tab.href ? "page" : undefined}
-              className={`nav-tab ${tab.tone}`}
-            >
-              {messages[tab.screen].title}
-              {tab.href === "/human" && humanDecisionCount > 0 && (
-                <span className="nav-tab-count">
-                  <span aria-hidden="true">{humanDecisionCount}</span>
-                  <span className="sr-only">
-                    {" "}
-                    {messages.shell.awaitingCount(humanDecisionCount)}
-                  </span>
-                </span>
-              )}
-            </Link>
+          {SCREEN_TAB_GROUPS.map((group, index) => (
+            <Fragment key={group[0].href}>
+              {index > 0 && <span className="nav-tab-divider" aria-hidden="true" />}
+              {group.map((tab) => (
+                <Link
+                  key={tab.href}
+                  href={workspaceHref(tab.href)}
+                  aria-current={screenPathname === tab.href ? "page" : undefined}
+                  className={`nav-tab ${tab.tone}`}
+                >
+                  {messages[tab.screen].title}
+                  {tab.href === "/human" && humanDecisionCount > 0 && (
+                    <span className="nav-tab-count">
+                      <span aria-hidden="true">{humanDecisionCount}</span>
+                      <span className="sr-only">
+                        {" "}
+                        {messages.shell.awaitingCount(humanDecisionCount)}
+                      </span>
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </Fragment>
           ))}
         </nav>
         <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3 xl:flex-none">

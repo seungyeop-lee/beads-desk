@@ -198,6 +198,15 @@
     font-weight: 700;
   }
 
+  /* 탭 묶음 사이의 세로 구분선입니다. 장식이라 스크린리더가 읽지 않게 aria-hidden으로 둡니다. */
+  .nav-tab-divider {
+    flex-shrink: 0;
+    width: 1px;
+    height: 1rem;
+    margin-inline: 0.375rem;
+    background-color: var(--color-base-300);
+  }
+
   /* 탭 이름 옆에 붙이는 기다리는 일의 개수입니다. 고른 탭은 바탕이 탭 색이라 숫자 바탕을 반대로 둡니다. */
   .nav-tab-count {
     display: inline-grid;
