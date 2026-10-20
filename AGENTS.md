@@ -24,6 +24,8 @@
 - `.github/workflows/`를 고칠 때: `.github/AGENTS.md`
 - `packages/app/package.json`의 `version`을 바꾸거나 릴리스할 때, 릴리스가 게시되지 않았을 때, prerelease를 낼 때: `docs/release.md`
 
+이 문서에는 모르면 어기게 되는 규칙과 작업별로 읽을 문서만 적습니다. 동작 방식과 문제 해결 절차는 코드 주석, 하위 `AGENTS.md`, `docs/`에 적고, 규칙의 이유는 그 이유를 모르면 규칙을 잘못 적용하게 될 때만 적습니다.
+
 하위 디렉터리에 `AGENTS.md`를 새로 만들면 이 목록에 그 문서를 읽을 작업을 적습니다. 저장소에는 `CLAUDE.md`나 `CLAUDE.local.md`를 만들지 않습니다. 작업 디렉터리나 그 위 디렉터리에 이 파일이 하나라도 있으면 Claude Code가 `AGENTS.md`를 읽지 않습니다.
 
 `packages/bd` 같은 내부 패키지는 빌드 때 app의 server bundle에 포함되므로 app의 `devDependencies`에만 둡니다. `dependencies`에 넣으면 게시된 패키지를 설치할 때 찾을 수 없는 의존성이 됩니다.
@@ -38,7 +40,7 @@
 
 - app의 전역 상태는 `packages/app/src/server/infra/` 아래에 구현합니다. 서버가 시작될 때 준비해야 하는 상태(bd 버전)는 `src/instrumentation.ts`에서 시작하고, DB 변경 감시는 첫 SSE 구독이 들어올 때 시작합니다.
 - 등록한 workspace 목록은 서버 전체에서 하나입니다. 서버에는 "현재 workspace"가 없고, 탭이 보는 workspace는 그 탭의 화면 주소 `/w/<workspace 이름>`이 정합니다. 그래서 탭마다 다른 workspace를 동시에 볼 수 있습니다.
-  - workspace 이름은 등록한 디렉터리 이름으로 server가 정합니다(`server/modules/workspaces/domain/workspaceSlugs.ts`). 먼저 등록한 workspace가 이름을 그대로 가지므로, 등록 순서를 지키면 이름이 바뀌지 않습니다.
+  - workspace 이름은 등록한 디렉터리 이름으로 server가 정합니다(`server/modules/workspaces/domain/workspaceSlugs.ts`).
   - client는 읽기 요청의 `workspace` query, Server Action의 첫 인자, SSE 주소의 `workspace` query로 이 이름을 보냅니다. server는 등록한 이름만 디렉터리로 풀어 bd를 실행하고, 디렉터리 경로는 받지 않습니다.
 - bd 실행 큐는 `@beads-desk/bd`가 첫 호출 때 직접 만듭니다. app에서 bd 실행을 따로 직렬화하지 않습니다.
 
@@ -62,9 +64,9 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 
 - 읽기는 client infra → `/api/...` Route Handler → `server/web/*RouteApi.ts` → `@beads-desk/bd` 순서로 연결합니다. bd 호출을 넘어서는 조립이 필요한 읽기는 그 사이에서 `server/modules/<기능>/application`이 조립합니다.
 - 쓰기는 `server/web`의 Server Action(`*Action.ts`, `*Actions.ts`)으로 처리합니다. client는 server에서 이 파일만 import합니다. Server Action은 쓰기가 성공하면 `checkWorkspaceChangesNow`를 호출해, 다음 polling 주기를 기다리지 않고 변경을 알립니다. client는 쓰기 결과로 화면 데이터를 직접 고치지 않고 이 알림으로 다시 조회합니다.
-- `src/proxy.ts`가 모든 요청에서 Host를 검사해, `localhost`·`127.0.0.1`·`[::1]`이 아니면 403으로 거부합니다. DNS rebinding으로 다른 사이트가 API와 Server Action을 호출하지 못하게 막는 검사이므로, Route API와 Server Action에서 Host를 다시 검사하지 않습니다. Server Action은 화면 경로로 POST되므로 proxy에 matcher를 두어 경로를 좁히지 않습니다.
-- 변경 알림은 `/api/events` SSE 하나로 보냅니다. workspace DB가 바뀌면 다시 읽을 데이터 없이 바뀐 workspace의 이름만 담아 `invalidate` 이벤트를 보내고, 그 workspace를 보는 탭이 보고 있는 데이터를 다시 조회합니다. 등록한 workspace 목록이 바뀌면 이름 없이 보내 모든 탭이 다시 조회합니다. 서버는 SSE 연결이 있는 동안에만 DB 상태를 주기적으로 확인하므로, bd CLI로 바꾼 내용도 알림이 갑니다. 새로 구독하는 연결마다 기준값 알림을 한 번 보내고, 연결을 처음 여는 탭은 그 알림을 받은 뒤 첫 조회를 시작합니다.
-- 브라우저에서는 탭 하나만 SSE를 열고 다른 탭에 알림을 전달합니다. 탭마다 연결을 열면 브라우저의 host별 연결 한도를 넘어 조회가 멈추므로, 서버 이벤트는 `client/infra/workspaceEvents`로만 구독하고 `EventSource`를 따로 열지 않습니다. 그 연결 하나가 탭들이 보는 workspace를 모두 감시하고, 어느 탭이 새 workspace를 열면 그 workspace까지 감시하도록 다시 연결합니다.
+- Host 검사는 `src/proxy.ts`가 모든 요청에 대해 맡습니다. Route API와 Server Action에서 Host를 다시 검사하지 않고, proxy에 matcher를 두어 경로를 좁히지 않습니다.
+- 변경 알림은 `/api/events` SSE 하나로 보냅니다. workspace DB가 바뀌면 바뀐 workspace의 이름만 담아 `invalidate` 이벤트를 보내고, 등록한 workspace 목록이 바뀌면 이름 없이 보냅니다. 알림을 받은 탭은 보고 있는 데이터를 다시 조회합니다. 서버는 SSE 연결이 있는 동안 DB 상태를 주기적으로 확인하므로 bd CLI로 바꾼 내용도 알림이 갑니다.
+- 서버 이벤트는 `client/infra/workspaceEvents`로만 구독합니다. 이 module이 탭 하나만 SSE를 열고 다른 탭에 알림을 전달합니다.
 - 화면 사이를 오가는 주소(`/issues?view=ready`, 그래프의 복귀 주소)는 workspace 없는 화면 경로로 만들고, 링크와 router에 넘길 때 `client/ui/address/workspaceAddress.ts`의 `useWorkspaceHref`로 workspace 주소로 바꿉니다. 지금 주소의 화면 경로는 `useScreenPathname`으로 읽습니다. browser에서만 실행되는 코드는 `documentWorkspace()`로 탭의 workspace 이름을 읽습니다.
 - `@beads-desk/bd`는 server에서만 import합니다. client와 shared는 bd를 실행하지 않는 이슈 model(`@beads-desk/bd/issue`)만 import합니다.
 - 화면 문구는 `client/modules/locale/domain`의 `koMessages.ts`와 `enMessages.ts`에 모두 넣습니다. 두 사전은 같은 type이라 한쪽에만 넣으면 typecheck가 실패합니다. 영어 문구는 bd CLI 출력의 용어(`DEPENDS ON`, `BLOCKS`, `ready` 등)를 따릅니다.
@@ -120,6 +122,6 @@ AI 에이전트는 이슈마다 저장소 밖에 git worktree를 만들어 작�
 2. 화면을 바꿨으면 바뀐 화면을 스크린샷으로 직접 확인합니다. 화면 관련 작업의 스크린샷은 `/tmp` 폴더에 저장하고, 보고할 때 마크다운 링크로 제시합니다. 전체 실행을 마친 뒤에 화면 문제를 고치면 전체 실행을 다시 해야 합니다.
 3. 끝내기 전에 `pnpm run test:e2e`로 전체 시나리오를 한 번 실행합니다. 다른 worktree의 e2e가 실행 중이면 그 실행이 끝난 뒤에 시작합니다. 실행 하나가 CPU를 거의 다 써서, 겹쳐 돌리면 둘 다 느려지고 조회가 timeout을 넘겨 실패합니다.
 
-route 폴더를 옮기거나 지운 뒤 `pnpm run typecheck`나 `pnpm run build`가 `.next/dev/types/validator.ts`에서 `Cannot find module '../../../src/app/...'`나 `__InvalidParamMatchingKeys` 오류로 실패하면, 전에 띄운 `next dev`가 만든 route 타입이 옛 경로를 가리키는 것입니다. `tsconfig.json`이 이 파일을 포함하지만 `next typegen`과 `next build`는 다시 만들지 않습니다. 저장소 루트에서 `pnpm dev`를 실행해 `Ready`가 출력되면 끄고, 실패한 명령을 다시 실행합니다.
+route 폴더를 옮기거나 지운 뒤 `pnpm run typecheck`나 `pnpm run build`가 `.next/dev/types/validator.ts`에서 `Cannot find module '../../../src/app/...'`나 `__InvalidParamMatchingKeys` 오류로 실패하면 `docs/troubleshooting.md`의 절차를 따릅니다.
 
 `next dev`에서 페이지가 끝없이 다시 로드되면(HMR 메시지 `reloadPage: HMR hash mismatch`가 반복됨) `docs/troubleshooting.md`의 절차를 따릅니다. `packages/app/.next/dev`를 지우기 전에 남겨야 할 자료가 그 문서에 있습니다.

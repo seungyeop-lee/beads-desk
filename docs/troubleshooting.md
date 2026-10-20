@@ -2,6 +2,22 @@
 
 개발하다 가끔 생기는 문제와 지금까지 확인한 내용을 적습니다. 원인을 확인하지 못한 문제는 다시 생겼을 때 남길 증거도 함께 적습니다.
 
+## route 폴더를 옮긴 뒤 typecheck와 build가 `.next/dev/types`에서 실패함
+
+### 증상
+
+route 폴더를 옮기거나 지운 뒤 `pnpm run typecheck`나 `pnpm run build`가 `.next/dev/types/validator.ts`에서 `Cannot find module '../../../src/app/...'`나 `__InvalidParamMatchingKeys` 오류로 실패합니다.
+
+### 원인
+
+전에 띄운 `next dev`가 만든 route 타입이 옛 경로를 가리킵니다. `packages/app/tsconfig.json`이 `.next/dev/types`를 포함하지만, `next typegen`과 `next build`는 이 파일을 다시 만들지 않습니다.
+
+### 해결 절차
+
+1. 저장소 루트에서 `pnpm dev`를 실행합니다.
+2. `Ready`가 출력되면 개발 서버를 끕니다.
+3. 실패한 명령을 다시 실행합니다.
+
 ## `next dev`에서 페이지가 끝없이 다시 로드됨
 
 ### 증상
