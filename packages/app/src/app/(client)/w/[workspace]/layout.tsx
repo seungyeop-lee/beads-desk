@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GraphScreen } from "@/client/ui/screens/graph/GraphScreen";
 import { WorkspaceNotFoundScreen } from "@/client/ui/screens/workspaces/WorkspaceNotFoundScreen";
 import { AppHeader } from "@/client/ui/shell/AppHeader";
 import { findRegisteredWorkspace } from "@/server/web/workspaces/registeredWorkspaces";
+
+/** 등록하지 않은 workspace 주소는 제목을 정하지 않아 루트 layout의 기본 제목을 씁니다. */
+export async function generateMetadata({
+  params,
+}: LayoutProps<"/w/[workspace]">): Promise<Metadata> {
+  const workspace = findRegisteredWorkspace((await params).workspace);
+  return workspace ? { title: workspace.slug } : {};
+}
 
 /**
  * 주소의 workspace 이름으로 등록한 workspace를 찾아 그 workspace의 화면을 그립니다.

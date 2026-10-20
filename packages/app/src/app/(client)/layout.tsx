@@ -13,8 +13,12 @@ import { requestTheme } from "@/server/web/theme/requestTheme";
 
 import "@/client/ui/designSystem/styles/index.css";
 
+/**
+ * 탭이 많아지면 제목이 뒷부분부터 잘리므로, 하위 segment가 정한 workspace 이름을 앞에 둡니다.
+ * 하위 segment가 제목을 정하지 않은 화면은 `beads-desk`만 보입니다.
+ */
 export const metadata: Metadata = {
-  title: "beads-desk",
+  title: { default: "beads-desk", template: "%s · beads-desk" },
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
