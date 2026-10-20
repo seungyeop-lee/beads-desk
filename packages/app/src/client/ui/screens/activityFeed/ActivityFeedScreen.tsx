@@ -50,35 +50,29 @@ export function ActivityFeedScreen() {
         <DateRangeFields range={range} onChange={setRange} />
       </ScreenHeader>
 
-      {/* 넓은 창에서도 시각, 제목, 작성자를 한 눈에 읽도록 목록 폭을 제한합니다. */}
-      <div className="flex max-w-5xl flex-col gap-4">
-        {error && <ErrorAlert>{text.loadFailed(error)}</ErrorAlert>}
+      {error && <ErrorAlert>{text.loadFailed(error)}</ErrorAlert>}
 
-        {rows &&
-          (rows.length === 0 ? (
-            <EmptyState message={hasDateRange(range) ? text.emptyInRange : text.empty} />
-          ) : (
-            <ol
-              aria-label={text.entries}
-              className="surface flex flex-col divide-y divide-base-300"
-            >
-              {rows.map((row) => (
-                <FeedRow key={rowKey(row)} row={row} />
-              ))}
-            </ol>
-          ))}
+      {rows &&
+        (rows.length === 0 ? (
+          <EmptyState message={hasDateRange(range) ? text.emptyInRange : text.empty} />
+        ) : (
+          <ol aria-label={text.entries} className="surface flex flex-col divide-y divide-base-300">
+            {rows.map((row) => (
+              <FeedRow key={rowKey(row)} row={row} />
+            ))}
+          </ol>
+        ))}
 
-        {page?.hasMore && (
-          <button
-            type="button"
-            className="btn btn-sm self-center rounded-full border-base-300 bg-base-100 px-6"
-            disabled={loading}
-            onClick={showMore}
-          >
-            {text.showMore}
-          </button>
-        )}
-      </div>
+      {page?.hasMore && (
+        <button
+          type="button"
+          className="btn btn-sm self-center rounded-full border-base-300 bg-base-100 px-6"
+          disabled={loading}
+          onClick={showMore}
+        >
+          {text.showMore}
+        </button>
+      )}
 
       <IssueDetailRoute />
     </main>

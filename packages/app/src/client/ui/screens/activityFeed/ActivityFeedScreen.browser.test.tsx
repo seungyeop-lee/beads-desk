@@ -1,4 +1,5 @@
 import { beforeEach, expect, test, vi } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
@@ -134,4 +135,24 @@ test("저장된 값이 없으면 구분선을 그리지 않고, 다른 workspace
   await vi.waitFor(() => expect(tab.seen.get("alpha")).toBeDefined());
   expect(feedShape()).toEqual(["t-new", "t-old"]);
   expect(tab.seen.get("beta")).toBe(otherSeenAt);
+});
+
+test("넓은 창에서는 목록이 화면 틀의 폭을 다 써서 오른쪽 끝이 날짜 입력칸과 맞는다", async () => {
+  await page.viewport(1440, 900);
+
+  const screen = await openScreen();
+
+  await expect.element(screen.getByText("t-new 제목")).toBeVisible();
+  const list = screen.getByRole("list", { name: messages.activityFeed.entries }).element();
+  const dateTo = screen.getByLabelText(messages.activityFeed.dateTo).element();
+  expect(list.getBoundingClientRect().right).toBeCloseTo(dateTo.getBoundingClientRect().right, 0);
+});
+
+test("좁은 창에서도 목록과 날짜 입력칸이 가로로 넘치지 않는다", async () => {
+  await page.viewport(441, 900);
+
+  const screen = await openScreen();
+
+  await expect.element(screen.getByText("t-new 제목")).toBeVisible();
+  expect(document.documentElement.scrollWidth).toBe(document.documentElement.clientWidth);
 });
