@@ -4,6 +4,21 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-10-20
+
+### Added
+
+- **Epics** screen: a **Search ID or title** field. While you search, only matching epics are shown, and a collapsed group or an epic card whose child epic matches is expanded. Clearing the search restores the groups and cards you had expanded before.
+
+### Changed
+
+- **Epics** screen: epics are split into **Open epics** and **Closed epics** groups, and **Closed epics** is collapsed at first. A closed epic card shows the date it was closed and its closed/total child issues instead of a progress bar.
+- **Epics** screen: among open epics with the same priority, the most recently created one comes first, and closed epics are listed with the most recently closed first.
+
+### Fixed
+
+- **Needs human** browser notifications are no longer shown for a workspace you are looking at in any focused beads-desk tab. Before, only the tab that held the connection to the server was checked, so you could be notified about the workspace on your screen.
+
 ## [0.5.0] - 2026-10-20
 
 ### Added
