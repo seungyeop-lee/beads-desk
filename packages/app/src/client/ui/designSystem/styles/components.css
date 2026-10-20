@@ -317,7 +317,9 @@
   border-bottom-color: color-mix(in oklab, var(--color-base-300) 70%, #0000);
 }
 
-.modal-backdrop {
+/* 덮개 색은 .modal-backdrop이 아니라 열린 .modal에 칠합니다. .modal-backdrop에 칠하면 .modal의 0.1초 opacity 전환과 함께 먼저 어두워지고,
+   daisyUI가 .modal에 칠하는 0.3초 background-color 전환이 뒤이어 한 번 더 어둡게 해서 배경이 두 단계로 깜빡입니다. */
+.modal[open] {
   background-color: rgb(28 25 23 / 0.4);
 }
 
