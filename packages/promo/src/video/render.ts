@@ -26,10 +26,10 @@ const OUTPUTS: Output[] = [
   { file: "beads-desk-intro.mp4", props: { zoom: false }, options: { codec: "h264" } },
   {
     file: "beads-desk-intro.gif",
-    // 전체 장면을 담으면서 용량을 줄이도록, 25fps의 네 frame마다 하나를 써 6.25fps로, 크기는 README 본문 폭에 맞춰 960×600으로 줄입니다.
+    // 확대 영역이 움직일 때 끊겨 보이지 않으면서 10MB 안에 들도록, 25fps의 두 frame마다 하나를 써 12.5fps로, 크기는 README 본문 폭에 맞춰 880×550으로 줄입니다.
     // 줄인 크기에서도 UI 글자를 읽을 수 있도록, 장면마다 보여 줄 영역을 확대합니다.
     props: { zoom: true },
-    options: { codec: "gif", scale: 2 / 3, everyNthFrame: 4, numberOfGifLoops: null },
+    options: { codec: "gif", scale: 11 / 18, everyNthFrame: 2, numberOfGifLoops: null },
   },
 ];
 
