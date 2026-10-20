@@ -1,3 +1,11 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  CHECKOUT_RECORDING,
+  CHECKOUT_SCREENSHOT,
+  writeCheckoutAttachments,
+} from "./checkoutAttachments.ts";
+
 /** 소개 자료에 쓰는 데모 프로젝트의 이슈 prefix입니다. */
 export const ACME_PREFIX = "acme";
 
@@ -27,16 +35,21 @@ export type DemoIssue = {
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
+/** 에이전트가 남긴 확인 자료를 두는 workspace 안의 디렉터리입니다. 로컬 파일 링크는 workspace 안의 파일만 엽니다. */
+const QA_DIRECTORY = "qa";
+
 /**
  * "웹 앱 출시 준비"를 주제로 한 데모 이슈입니다. 시각은 모두 now 기준의 상대값입니다.
  * 지금 화면의 Flow 통계는 오늘을 포함한 최근 7일만 집계하고 보드의 Closed 열은 기본으로 오늘 닫힌 이슈만 보이므로,
  * 고정 날짜를 넣으면 며칠 뒤에는 두 화면이 비게 됩니다.
+ * 로컬 파일 링크는 절대 경로만 받으므로, 본문의 첨부 파일 경로는 workspace 경로로 채웁니다. 파일은 addCliActivity가 만듭니다.
  */
-export function acmeIssues(now: number): DemoIssue[] {
+export function acmeIssues(now: number, workspace: string): DemoIssue[] {
   const ago = (days: number, hours = 0) => now - days * DAY - hours * HOUR;
   const startOfToday = new Date(now).setHours(0, 0, 0, 0);
   // 자정 직후에 seed를 실행해도 오늘 닫힌 것으로 보이도록, 자정과 지금 사이의 시각에 닫습니다.
   const earlierToday = startOfToday + (now - startOfToday) / 2;
+  const qaFile = (name: string) => join(workspace, QA_DIRECTORY, name);
 
   return [
     // 결제 epic: 닫힌 child와 여러 단계의 blocks 사슬(.1 → .3 → .4 → .5), epic 바깥의 blocker(acme-7qx)가 있습니다.
@@ -47,6 +60,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 1,
       description:
         "Everything a customer needs on launch day to pick a plan, pay, and get a receipt.\n\nOut of scope: invoicing for enterprise accounts. Sales handles those manually for now.",
+      acceptance: "- A customer can pick a plan, pay, and get a receipt on production",
       createdAt: ago(13),
     },
     {
@@ -86,8 +100,31 @@ export function acmeIssues(now: number): DemoIssue[] {
       title: "Build the checkout page with card and Apple Pay",
       type: "feature",
       priority: 1,
-      description:
+      description: [
         "Single-page checkout using Stripe Elements. Show the plan, the price with tax, and the payment form side by side.",
+        "",
+        "```mermaid",
+        "sequenceDiagram",
+        "  participant B as Browser",
+        "  participant A as API",
+        "  participant S as Stripe",
+        "  B->>A: POST /api/billing/intents",
+        "  A->>S: Create payment intent",
+        "  S-->>A: Client secret",
+        "  A-->>B: Client secret",
+        "  B->>S: Confirm card with Stripe.js",
+        "  S->>A: payment_intent.succeeded",
+        "  A-->>B: Subscription active",
+        "```",
+        "",
+        "### Staging check",
+        "",
+        "Test payment with a Stripe test card on staging.",
+        "",
+        `![Checkout page on staging](<${qaFile(CHECKOUT_SCREENSHOT)}>)`,
+        "",
+        `[Recording of the test payment](<${qaFile(CHECKOUT_RECORDING)}>)`,
+      ].join("\n"),
       acceptance:
         "- Card and Apple Pay both complete a test payment on staging\n- Errors from Stripe are shown inline next to the form",
       assignee: "maya",
@@ -116,6 +153,8 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 2,
       description:
         "Send a receipt with the plan, amount, tax, and a link to the billing portal as soon as the payment succeeds.",
+      acceptance:
+        "- The receipt arrives within a minute of the payment\n- The billing portal link opens the customer's own invoices",
       labels: ["backend", "email"],
       parent: "acme-k3v",
       blockedBy: ["acme-k3v.3", "acme-7qx"],
@@ -128,6 +167,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 2,
       description:
         "Cover plan selection, a successful card payment, a declined card, and the receipt email using Stripe test cards.",
+      acceptance: "- The suite runs in CI on every pull request to main",
       labels: ["qa"],
       parent: "acme-k3v",
       blockedBy: ["acme-k3v.4"],
@@ -140,6 +180,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 1,
       description:
         'Map Stripe decline codes to messages a customer can act on, like "Your card has insufficient funds. Try another card."',
+      acceptance: "- Every decline code Stripe returns on staging shows a specific message",
       labels: ["frontend", "payments"],
       parent: "acme-k3v",
       blockedBy: ["acme-k3v.1"],
@@ -170,6 +211,8 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 0,
       description:
         "Production has to handle launch traffic, page us when it doesn't, and give us a tested plan for the switch-over.",
+      acceptance:
+        "- Production handles twice the expected launch traffic\n- On-call is paged within two minutes of an outage",
       createdAt: ago(15),
     },
     {
@@ -245,6 +288,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 0,
       description:
         "Walk through the checklist with engineering, support, and marketing and record who signed off on each item.",
+      acceptance: "- Every checklist item has a named sign-off",
       assignee: "sam",
       labels: ["ops"],
       parent: "acme-p8d",
@@ -270,6 +314,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 1,
       description:
         "Check the app, the API, and the checkout page every minute from three regions and page whoever is on call.",
+      acceptance: "- A test outage pages the on-call engineer within two minutes",
       labels: ["infra", "ops"],
       parent: "acme-p8d",
       createdAt: ago(5),
@@ -283,6 +328,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 2,
       description:
         "New visitors should understand the product from the landing page and get to their first project in under two minutes.",
+      acceptance: "- A new visitor gets to their first project in under two minutes",
       createdAt: ago(11),
     },
     {
@@ -307,6 +353,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 2,
       description:
         "Who the product is for, the three things it does best, and a link to the pricing page.",
+      acceptance: "- Marketing has reviewed the post and scheduled it for launch morning",
       assignee: "sam",
       labels: ["marketing"],
       parent: "acme-w2n",
@@ -330,6 +377,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 1,
       description:
         "The new versions cover payment data and the analytics we collect. Link both from the signup form and the footer.",
+      acceptance: "- Both pages are linked from the signup form and the footer",
       labels: ["legal"],
       parent: "acme-w2n",
       createdAt: ago(5),
@@ -341,6 +389,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 2,
       description:
         "Three emails over the first week: getting started, inviting the team, and connecting integrations.",
+      acceptance: "- All three emails send on schedule in staging",
       labels: ["email", "growth"],
       parent: "acme-w2n",
       blockedBy: ["acme-7qx"],
@@ -367,6 +416,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 1,
       description:
         "Steps to reproduce:\n\n1. Open checkout and wait for the session to expire\n2. Submit the payment form\n\nExpected: a prompt to sign in again. Actual: a blank page and a 500 in the logs.",
+      acceptance: "- An expired session shows the sign-in prompt and keeps the selected plan",
       labels: ["backend", "payments"],
       discoveredFrom: "acme-k3v.3",
       createdAt: ago(1, 3),
@@ -401,6 +451,7 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 1,
       description:
         "Limit by IP and by email so a burst of bots can't exhaust the auth provider's quota for everyone else.",
+      acceptance: "- More than 10 attempts a minute from one IP or email get a 429",
       labels: ["backend", "security"],
       discoveredFrom: "acme-p8d.3",
       createdAt: ago(1, 2),
@@ -436,8 +487,82 @@ export function acmeIssues(now: number): DemoIssue[] {
       priority: 1,
       description:
         "Annual plans bring cash up front, but they lock in prices we haven't validated yet.\n\n- **Option A:** offer annual billing at launch with a 15% discount\n- **Option B:** monthly only until we have three months of churn data\n\nThe checkout page and the pricing page change depending on the answer.",
+      acceptance: "- The pricing and checkout pages match the chosen option",
       labels: ["human", "payments"],
       createdAt: ago(2, 2),
+    },
+
+    // Hygiene: 30일 넘게 손대지 않은 이슈, 제목과 설명이 거의 같은 두 이슈, 하위 이슈가 모두 닫힌 epic입니다.
+    // 열린 이슈를 언급하는 commit은 addCliActivity가 만듭니다. bd lint가 권하는 섹션은 acme-p8d.6, acme-w2n.3, acme-j4m에만 빠져 있습니다.
+    // Hygiene 화면은 빠진 섹션 목록 아래에 commit 카드를 두므로, 목록이 길어지면 README 스크린샷에서 commit 카드가 잘립니다.
+    {
+      id: "acme-v6s",
+      title: "Pick a status page provider for incident updates",
+      type: "chore",
+      priority: 3,
+      description: "Compare hosted status pages on price, custom domains, and subscriber emails.",
+      labels: ["ops"],
+      createdAt: ago(41),
+    },
+    {
+      id: "acme-j3m",
+      title: "Magic link emails land in the spam folder",
+      type: "bug",
+      priority: 1,
+      description:
+        "Beta users on Gmail and Outlook find the magic link email in spam and can't sign in.\n\nSteps to reproduce:\n\n1. Sign in with a new Gmail address\n2. Look for the magic link email in the inbox and in spam",
+      acceptance: "- The magic link email lands in the inbox for Gmail and Outlook",
+      labels: ["email"],
+      createdAt: ago(1, 7),
+    },
+    {
+      id: "acme-j4m",
+      title: "Magic link emails go to the spam folder",
+      type: "bug",
+      priority: 1,
+      description:
+        "Beta users on Gmail and Outlook find the magic link email in the spam folder and cannot sign in.",
+      labels: ["email"],
+      createdAt: ago(0, 9),
+    },
+    {
+      id: "acme-z5b",
+      title: "Private beta with the first 50 customers",
+      type: "epic",
+      priority: 2,
+      description:
+        "Invite the first customers, watch how they use the product, and collect feedback.",
+      acceptance: "- All 50 customers are invited and their top requests are filed as issues",
+      createdAt: ago(30),
+    },
+    {
+      id: "acme-z5b.1",
+      title: "Invite the first 50 beta customers",
+      type: "task",
+      priority: 2,
+      description: "Send invites to the waitlist in signup order.",
+      assignee: "sam",
+      labels: ["growth"],
+      parent: "acme-z5b",
+      createdAt: ago(30),
+      startedAt: ago(28),
+      closedAt: ago(24),
+      closeReason: "All 50 invites sent. 44 customers signed up.",
+    },
+    {
+      id: "acme-z5b.2",
+      title: "Collect feedback from the beta customers",
+      type: "task",
+      priority: 2,
+      description: "Run a survey and five interviews, and file the top requests as issues.",
+      assignee: "sam",
+      labels: ["growth"],
+      parent: "acme-z5b",
+      createdAt: ago(30),
+      startedAt: ago(20),
+      closedAt: ago(9),
+      closeReason:
+        "Summary is in the beta feedback doc. Dark mode and annual billing were the top asks.",
     },
 
     // 결정: acme-b3s는 import 뒤에 bd supersede로 acme-t8w에 대체됩니다.
@@ -455,8 +580,19 @@ export function acmeIssues(now: number): DemoIssue[] {
       title: "Sign in with passwordless magic links",
       type: "decision",
       priority: 1,
-      description:
+      description: [
+        "### Decision",
+        "",
+        "Sign in with passwordless magic links instead of passwords.",
+        "",
+        "### Rationale",
+        "",
         "Support tickets from the beta were mostly password resets. Magic links remove that flow entirely and make the signup form shorter.",
+        "",
+        "### Alternatives considered",
+        "",
+        "Email and password with optional 2FA, and sign-in with Google only.",
+      ].join("\n"),
       related: ["acme-w2n.1"],
       createdAt: ago(6),
     },
@@ -465,8 +601,19 @@ export function acmeIssues(now: number): DemoIssue[] {
       title: "Use Stripe as the only payment provider at launch",
       type: "decision",
       priority: 1,
-      description:
-        "Stripe covers cards, Apple Pay, and tax calculation in every launch country. A second provider can wait until we sell in regions Stripe doesn't cover.",
+      description: [
+        "### Decision",
+        "",
+        "Use Stripe as the only payment provider at launch.",
+        "",
+        "### Rationale",
+        "",
+        "Stripe covers cards, Apple Pay, and tax calculation in every launch country.",
+        "",
+        "### Alternatives considered",
+        "",
+        "A second provider for redundancy. It can wait until we sell in regions Stripe doesn't cover.",
+      ].join("\n"),
       createdAt: ago(14),
     },
     {
@@ -474,8 +621,19 @@ export function acmeIssues(now: number): DemoIssue[] {
       title: "Run the API in a single region at launch",
       type: "decision",
       priority: 2,
-      description:
-        "Almost all beta customers are in North America. Start in us-east-1 and plan a second region once EU usage passes 20%.",
+      description: [
+        "### Decision",
+        "",
+        "Run the API in a single region, us-east-1, at launch.",
+        "",
+        "### Rationale",
+        "",
+        "Almost all beta customers are in North America.",
+        "",
+        "### Alternatives considered",
+        "",
+        "Two regions from day one. We plan a second region once EU usage passes 20%.",
+      ].join("\n"),
       createdAt: ago(10),
     },
     {
@@ -554,12 +712,20 @@ function optionalRfc3339(time: number | undefined): string | undefined {
 export type RunBd = (...args: string[]) => string;
 
 /**
- * import로 넣을 수 없는 관계와 활동 기록을 CLI로 더합니다.
+ * import로 넣을 수 없는 관계와 활동 기록을 CLI로 더하고, 이슈가 가리키는 workspace의 파일과 commit을 만듭니다.
  * human gate와 supersede는 bd 명령이 만드는 관계라 import 뒤에 만듭니다.
  * 상세 화면의 활동 기록은 `bd history --events`로 읽어 import한 이슈에는 created 하나만 남으므로,
  * 활동 기록을 보여 줄 이슈는 여기서 만들고 claim하고 닫습니다. 이 이슈들의 시각은 seed를 실행한 시각입니다.
  */
-export function addCliActivity(bd: RunBd): void {
+export function addCliActivity(bd: RunBd, git: RunBd, workspace: string): void {
+  writeCheckoutAttachments(join(workspace, QA_DIRECTORY));
+  // Hygiene의 bd orphans는 아직 닫히지 않은 이슈의 ID를 언급하는 commit을 찾습니다.
+  const verificationFile = ".well-known/apple-developer-merchantid-domain-association";
+  mkdirSync(join(workspace, ".well-known"), { recursive: true });
+  writeFileSync(join(workspace, verificationFile), "acme-staging-merchant\n");
+  git("add", verificationFile);
+  git("commit", "--quiet", "-m", "Add the Apple Pay domain verification file (acme-k3v.3)");
+
   const legalReview = bd(
     "gate",
     "create",

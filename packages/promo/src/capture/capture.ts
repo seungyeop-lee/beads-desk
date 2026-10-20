@@ -7,6 +7,7 @@ import { parseArgs } from "node:util";
 import { chromium, type BrowserContext, type Locator, type Page } from "playwright";
 import { isolatedBdEnv } from "../seed/isolatedBdEnv.ts";
 import { startAppServer } from "./appServer.ts";
+import { RECORDING_SIZE } from "../video/introTimeline.ts";
 import { CAPTURE_TARGETS, type CaptureTarget, type View } from "./captureTargets.ts";
 
 /** README가 참조하는 스크린샷입니다. 저장소에 commit합니다. */
@@ -16,7 +17,8 @@ const RECORDING_DIR = fileURLToPath(new URL("../../recordings/", import.meta.url
 const SEED_SCRIPT = fileURLToPath(new URL("../seed/seed.ts", import.meta.url));
 /** 화면 머리글에 workspace 디렉터리 이름이 보이므로, 새로 만드는 데모 workspace는 이 이름의 디렉터리에 둡니다. */
 const DEMO_DIRECTORY_NAME = "acme-web";
-const VIEWPORT = { width: 1440, height: 900 };
+/** README 스크린샷의 viewport입니다. 녹화는 소개 영상에 맞춘 RECORDING_SIZE로 합니다. */
+const SCREENSHOT_VIEWPORT = { width: 1440, height: 900 };
 const DEVICE_SCALE_FACTOR = 2;
 /** 데모 데이터를 불러온 뒤 차트 animation과 글꼴 적용이 끝나기를 기다리는 시간입니다. */
 const SETTLE_MS = 1500;
@@ -24,32 +26,19 @@ const SETTLE_MS = 1500;
  * 녹화에서 포인터가 대상으로 옮겨 가는 시간입니다. 이 시간이 지나야 실제 마우스가 옮겨 가서 대상에 hover 표시가 생깁니다.
  * Playwright는 이 시간의 60%와 400ms 가운데 짧은 쪽 동안 포인터를 곡선으로 옮기고, 남은 시간에는 멈춰 둡니다.
  */
-const POINTER_MOVE_MS = 700;
+const POINTER_MOVE_MS = 550;
 /** 포인터가 대상에 멈춘 뒤 클릭하기까지의 시간입니다. 클릭 지점 표시가 이 시간 동안 흐려지다가 클릭할 때 사라집니다. */
-const POINTER_PRESS_MS = 500;
+const POINTER_PRESS_MS = 350;
 /** 클릭 지점 표시입니다. 화면을 가리지 않도록 옅은 원으로 둡니다. */
 const PRESS_MARK =
   "width: 28px; height: 28px; border-radius: 50%; background: rgba(28, 25, 23, 0.1); box-shadow: 0 0 0 1.5px rgba(28, 25, 23, 0.3)";
 /** 장면을 시작할 때 포인터를 두는 곳입니다. 어느 화면에서나 제목 줄 오른쪽의 빈 곳이라 hover 표시가 생기지 않습니다. */
-const POINTER_REST = { x: 1000, y: 90 };
+const POINTER_REST = { x: 900, y: 90 };
 /** 휠 스크롤을 나누는 횟수와, 나눈 휠 입력 사이의 간격입니다. */
 const WHEEL_STEPS = 20;
 const WHEEL_STEP_MS = 25;
 /** 한 글자를 입력하는 간격입니다. */
 const TYPE_KEY_MS = 40;
-/** 카드를 끌어 옮기는 동안 포인터를 옮기는 횟수와, 그 사이의 간격입니다. */
-const DRAG_STEPS = 25;
-const DRAG_STEP_MS = 40;
-/** 끄는 동안 포인터를 따라 움직이는 카드 사본의 모양입니다. */
-const DRAG_GHOST_STYLE = {
-  position: "fixed",
-  margin: "0",
-  zIndex: "2147483647",
-  pointerEvents: "none",
-  rotate: "2deg",
-  boxShadow: "0 12px 28px rgba(28, 25, 23, 0.22)",
-};
-
 const { values } = parseArgs({ options: { workspace: { type: "string" } } });
 
 const home = mkdtempSync(join(tmpdir(), "beads-desk-promo-home-"));
@@ -94,7 +83,7 @@ async function captureAll(baseURL: string): Promise<void> {
   try {
     const context = await browser.newContext({
       baseURL,
-      viewport: VIEWPORT,
+      viewport: SCREENSHOT_VIEWPORT,
       deviceScaleFactor: DEVICE_SCALE_FACTOR,
       locale: "en-US",
       colorScheme: "light",
@@ -108,7 +97,8 @@ async function captureAll(baseURL: string): Promise<void> {
       if (target.screenshot) await takeScreenshot(context, target.name, target.screenshot);
     }
     for (const target of CAPTURE_TARGETS) {
-      await record(context, target);
+      if (!target.recording) continue;
+      await record(context, target.name, target.recording);
       console.log(`${target.name} 화면을 녹화했습니다.`);
     }
   } finally {
@@ -118,13 +108,20 @@ async function captureAll(baseURL: string): Promise<void> {
 
 /** 녹화와 다른 page에서 찍으므로, 녹화용 포인터와 클릭 지점 표시가 스크린샷에 들어가지 않습니다. */
 async function takeScreenshot(context: BrowserContext, name: string, shot: View): Promise<void> {
-  const page = await open(context, shot);
+  const page = await open(context, shot, {
+    ...SCREENSHOT_VIEWPORT,
+    height: shot.height ?? SCREENSHOT_VIEWPORT.height,
+  });
   await page.screenshot({ path: join(SCREENSHOT_DIR, `${name}.png`), animations: "disabled" });
   await page.close();
 }
 
-async function record(context: BrowserContext, target: CaptureTarget): Promise<void> {
-  const page = await open(context, target.recording);
+async function record(
+  context: BrowserContext,
+  name: string,
+  recording: NonNullable<CaptureTarget["recording"]>,
+): Promise<void> {
+  const page = await open(context, recording, RECORDING_SIZE);
   // 포인터는 처음 나타날 때는 제자리에 그려지고, 그 뒤로는 앞 위치에서 다음 위치로 옮겨 가며 그려집니다.
   // 녹화를 시작하기 전에 쉬는 위치에 한 번 그려 두어, 첫 동작부터 포인터가 옮겨 가는 모습이 남게 합니다.
   const showPointer = (duration: number, point?: string) =>
@@ -140,7 +137,7 @@ async function record(context: BrowserContext, target: CaptureTarget): Promise<v
   // screencast frame은 deviceScaleFactor와 관계없이 CSS 픽셀 크기로 옵니다.
   // 더 큰 size를 주면 화면이 확대되지 않고 왼쪽 위에 놓인 채 나머지가 회색으로 채워집니다.
   await page.screencast.start({
-    path: join(RECORDING_DIR, `${target.name}.webm`),
+    path: join(RECORDING_DIR, `${name}.webm`),
     size: page.viewportSize()!,
   });
 
@@ -151,7 +148,7 @@ async function record(context: BrowserContext, target: CaptureTarget): Promise<v
     await element.click();
   }
 
-  await target.recording.play({
+  await recording.play({
     page,
     pause: (ms) => page.waitForTimeout(ms),
     click,
@@ -169,42 +166,7 @@ async function record(context: BrowserContext, target: CaptureTarget): Promise<v
         await page.mouse.wheel(0, deltaY / WHEEL_STEPS);
       }
     },
-    async drag(card, onto) {
-      await showPointer(POINTER_MOVE_MS);
-      await card.hover();
-      const from = (await card.boundingBox())!;
-      const to = (await onto.boundingBox())!;
-      const ghost = await card.evaluateHandle((element, style) => {
-        const rect = element.getBoundingClientRect();
-        const copy = element.cloneNode(true) as HTMLElement;
-        Object.assign(copy.style, style, {
-          left: `${rect.left}px`,
-          top: `${rect.top}px`,
-          width: `${rect.width}px`,
-          height: `${rect.height}px`,
-        });
-        document.body.append(copy);
-        return copy;
-      }, DRAG_GHOST_STYLE);
-      await showPointer(DRAG_STEP_MS);
-      await page.mouse.down();
-      const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
-      const end = { x: to.x + to.width / 2, y: to.y + to.height / 2 };
-      for (let step = 1; step <= DRAG_STEPS; step += 1) {
-        const offset = {
-          x: ((end.x - start.x) * step) / DRAG_STEPS,
-          y: ((end.y - start.y) * step) / DRAG_STEPS,
-        };
-        await page.mouse.move(start.x + offset.x, start.y + offset.y);
-        await ghost.evaluate((copy, { x, y }) => {
-          copy.style.translate = `${x}px ${y}px`;
-        }, offset);
-      }
-      await page.mouse.up();
-      // 놓은 뒤 bd가 상태를 바꾸고 보드가 다시 조회하기 전에는 카드가 원래 열에 남아 있으므로, 그동안 사본을 놓은 자리에 둡니다.
-      await card.waitFor({ state: "detached" });
-      await ghost.evaluate((copy) => copy.remove());
-    },
+    press: (key) => page.keyboard.press(key),
   });
 
   await page.screencast.stop();
@@ -212,9 +174,13 @@ async function record(context: BrowserContext, target: CaptureTarget): Promise<v
 }
 
 /** 화면을 열고 데모 데이터가 다 보일 때까지 기다립니다. */
-async function open(context: BrowserContext, view: View): Promise<Page> {
+async function open(
+  context: BrowserContext,
+  view: View,
+  viewport: { width: number; height: number },
+): Promise<Page> {
   const page = await context.newPage();
-  await page.setViewportSize({ ...VIEWPORT, height: view.height ?? VIEWPORT.height });
+  await page.setViewportSize(viewport);
   await page.goto(view.path);
   for (const text of view.shows) {
     await page.getByText(text).filter({ visible: true }).first().waitFor({ timeout: 30_000 });

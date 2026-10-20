@@ -1,0 +1,46 @@
+name: pages
+
+# README 맨 위 GIF가 링크로 여는 소개 영상(docs/beads-desk-intro.mp4)을 GitHub Pages로 제공합니다.
+# 릴리스 asset과 raw.githubusercontent.com은 MP4를 내려받게 응답하므로, 브라우저에서 재생되는 Pages 주소를 씁니다.
+# README는 https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4를 가리키므로, 사이트의 파일 이름을 바꾸면 README.md와 README.ko.md도 함께 바꿉니다.
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/beads-desk-intro.mp4
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 배포가 겹치면 먼저 시작한 배포를 끝까지 마치고 다음 배포를 시작합니다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pages-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Pages 사이트에는 소개 영상만 올립니다.
+      - run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          cp docs/beads-desk-intro.mp4 "$RUNNER_TEMP/site/"
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ runner.temp }}/site
+
+  pages-deploy:
+    needs: pages-artifact
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}beads-desk-intro.mp4
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

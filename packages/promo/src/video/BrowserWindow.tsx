@@ -1,22 +1,27 @@
-import { OffthreadVideo, Sequence, staticFile } from "remotion";
+import { OffthreadVideo, Sequence, staticFile, useCurrentFrame } from "remotion";
 import {
   clipFrames,
+  focusAt,
+  FPS,
   msToFrames,
   placeInOrder,
-  RECORDING_WIDTH,
+  RECORDING_SIZE,
+  type Clip,
   type Shot,
 } from "./introTimeline.ts";
 
 const TITLE_BAR_HEIGHT = 30;
 
-/** 장면의 녹화 구간을 차례로 브라우저 창 모양 안에 `scale`배로 줄여 보입니다. 창의 높이는 녹화의 비율을 따릅니다. */
-export function BrowserWindow({ shot, scale }: { shot: Shot; scale: number }) {
-  const width = RECORDING_WIDTH * scale;
+/**
+ * 장면의 녹화 구간을 차례로 브라우저 창 모양 안에 녹화 크기 그대로 보입니다.
+ * `zoom`이면 장면의 `focus` 영역을 창 크기로 확대합니다.
+ */
+export function BrowserWindow({ shot, zoom }: { shot: Shot; zoom: boolean }) {
   const clips = placeInOrder(shot.clips, clipFrames);
   return (
     <div
       style={{
-        width,
+        width: RECORDING_SIZE.width,
         borderRadius: 12,
         overflow: "hidden",
         background: "#ffffff",
@@ -24,20 +29,47 @@ export function BrowserWindow({ shot, scale }: { shot: Shot; scale: number }) {
       }}
     >
       <TitleBar />
-      {clips.map((clip) => (
-        <Sequence key={clip.fromMs} from={clip.from} durationInFrames={clip.frames} layout="none">
-          <OffthreadVideo
-            src={staticFile(`${shot.recording}.webm`)}
-            trimBefore={msToFrames(clip.fromMs)}
-            muted
-            style={{ display: "block", width }}
-          />
-        </Sequence>
-      ))}
+      <div style={{ ...RECORDING_SIZE, position: "relative", overflow: "hidden" }}>
+        {clips.map((clip) => (
+          <Sequence key={clip.fromMs} from={clip.from} durationInFrames={clip.frames} layout="none">
+            <ClipVideo
+              recording={shot.recording}
+              clip={clip}
+              focus={zoom ? (shot.focus ?? []) : []}
+            />
+          </Sequence>
+        ))}
+      </div>
     </div>
   );
 }
 
+function ClipVideo({
+  recording,
+  clip,
+  focus,
+}: {
+  recording: string;
+  clip: Clip;
+  focus: NonNullable<Shot["focus"]>;
+}) {
+  const ms = clip.fromMs + (useCurrentFrame() * 1000) / FPS;
+  const { x, y, width } = focusAt(focus, ms);
+  const scale = RECORDING_SIZE.width / width;
+  return (
+    <OffthreadVideo
+      src={staticFile(`${recording}.webm`)}
+      trimBefore={msToFrames(clip.fromMs)}
+      muted
+      style={{
+        display: "block",
+        ...RECORDING_SIZE,
+        transformOrigin: "0 0",
+        transform: `scale(${scale}) translate(${-x}px, ${-y}px)`,
+      }}
+    />
+  );
+}
 function TitleBar() {
   return (
     <div

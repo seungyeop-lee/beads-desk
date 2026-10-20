@@ -61,3 +61,13 @@ act workflow_run -W .github/workflows/release.yml -e <payload 파일> -P ubuntu-
 ```
 
 위 payload로 실행하면 `version` job이 `HEAD is now at <커밋>`과 `published on npm: true`를 출력하고 `publish` job 없이 끝나야 통과입니다. `conclusion`을 `failure`로 바꾸거나 `event`를 `pull_request`로 바꾸면 job이 하나도 실행되지 않고 종료 코드 0으로 끝나야 통과입니다.
+
+## pages.yml
+
+main에 push한 커밋에서 `docs/beads-desk-intro.mp4`나 이 workflow가 바뀌면, 그 MP4를 GitHub Pages에 배포합니다. README 맨 위 GIF는 배포된 주소 `https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4`를 링크로 엽니다. 저장소 Settings의 Pages에서 Source가 "GitHub Actions"여야 배포됩니다. Pages를 켜기 전에 push해서 배포가 실패했으면, Pages를 켠 뒤 Actions 화면에서 이 workflow를 수동 실행(`workflow_dispatch`)합니다.
+
+act로는 배포할 파일을 묶는 단계까지만 확인할 수 있습니다. 아래 명령에서 `Archive artifact` 단계가 `./beads-desk-intro.mp4`를 출력하면 통과입니다. 그 뒤의 `Upload artifact` 단계는 act 0.2.89의 artifact server가 `upload-artifact` v7의 요청을 받지 못해 `unknown field "mime_type"`으로 실패합니다([nektos/act#6022](https://github.com/nektos/act/issues/6022)). 그래서 업로드와 배포는 push한 뒤 GitHub Actions 실행 결과로 확인합니다.
+
+```sh
+act workflow_dispatch -W .github/workflows/pages.yml -j pages-artifact -P ubuntu-latest=catthehacker/ubuntu:act-latest --artifact-server-path /tmp/act-artifacts --rm
+```

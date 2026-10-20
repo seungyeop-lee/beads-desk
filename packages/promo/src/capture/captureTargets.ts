@@ -11,18 +11,15 @@ export type Scene = {
   type(target: Locator, text: string): Promise<void>;
   /** 포인터를 `over` 위로 옮긴 뒤 마우스 휠로 천천히 스크롤합니다. 한 번에 옮기면 녹화에서 화면이 순간 이동한 것처럼 보입니다. */
   scroll(deltaY: number, over: Locator): Promise<void>;
-  /**
-   * `card`를 집어 `onto` 위로 천천히 끌어 와 놓고, 놓은 결과로 `card`가 원래 자리에서 사라질 때까지 기다립니다.
-   * 브라우저가 그리는 drag image는 녹화에 남지 않으므로, 카드의 사본을 포인터와 함께 옮겨 보이다가 `card`가 사라질 때 지웁니다.
-   */
-  drag(card: Locator, onto: Locator): Promise<void>;
+  /** 포인터를 옮기지 않고 키를 누릅니다. */
+  press(key: string): Promise<void>;
 };
 
 /** 열 주소와, 그 주소의 데모 데이터를 다 불러왔다고 판단할 때 화면에 보여야 하는 문구입니다. */
 export type View = {
   path: string;
   shows: string[];
-  /** viewport 높이(CSS 픽셀)입니다. 화면 내용이 기본 높이에 다 들어가지 않거나 남을 때만 줍니다. 녹화도 이 높이로 저장됩니다. */
+  /** 스크린샷의 viewport 높이(CSS 픽셀)입니다. 화면 내용이 기본 높이에 다 들어가지 않거나 남을 때만 줍니다. */
   height?: number;
   /** 화면을 다 불러온 뒤, 스크린샷을 찍거나 녹화를 시작하기 전에 구도를 맞춥니다. */
   frame?(page: Page): Promise<void>;
@@ -33,26 +30,35 @@ export type CaptureTarget = {
   name: string;
   /** README에 넣을 스크린샷의 화면입니다. 녹화만 하는 대상은 비워 둡니다. */
   screenshot?: View;
-  /** 녹화를 시작하는 화면과, 녹화하는 동안의 동작입니다. 장면 안에서는 주소로 이동하지 않고 클릭으로 화면을 바꿉니다. */
-  recording: View & { play(scene: Scene): Promise<void> };
+  /**
+   * 소개 영상에 쓰는 녹화를 시작하는 화면과, 녹화하는 동안의 동작입니다. 스크린샷만 찍는 대상은 비워 둡니다.
+   * 장면 안에서는 주소로 이동하지 않고 클릭으로 화면을 바꿉니다.
+   */
+  recording?: View & { play(scene: Scene): Promise<void> };
 };
 
 const NOW: View = { path: "/focus", shows: ["Checkout and billing ready for launch", "Flow"] };
-const NEEDS_HUMAN: View = {
-  path: "/human",
-  shows: [
-    "Go/no-go call for the launch",
-    "Offer annual billing at launch, or wait until after beta?",
-  ],
-};
 const DECISIONS: View = { path: "/decisions", shows: ["Sign in with passwordless magic links"] };
-const EPICS: View = {
-  path: "/epics",
+const HYGIENE: View = {
+  path: "/hygiene",
   shows: [
-    "Production infrastructure and launch day",
-    "Set up a staging environment that mirrors production",
+    "Pick a status page provider for incident updates",
+    "Magic link emails land in the spam folder",
+    "Replace placeholder screenshots on the landing page",
+    "Private beta with the first 50 customers",
+    "Add the Apple Pay domain verification file (acme-k3v.3)",
   ],
 };
+const BOARD: View = {
+  path: "/board",
+  shows: [
+    "Build the checkout page with card and Apple Pay",
+    "Add a cookie consent banner for EU visitors",
+  ],
+};
+const CHECKOUT_ISSUE = "acme-k3v.3";
+const CHECKOUT_TITLE = "Build the checkout page with card and Apple Pay";
+
 /**
  * 단계와 human gate까지 보이는 epic의 View order 그래프입니다.
  * 그래프는 가로로 길어서 canvas 너비에 맞춰 줄어들고, 높이가 900이면 위아래가 크게 빕니다.
@@ -77,51 +83,144 @@ const GRAPH: View = {
     await page.mouse.move(0, 0);
   },
 };
-const BOARD: View = {
-  path: "/board",
-  shows: [
-    "Build the checkout page with card and Apple Pay",
-    "Add a cookie consent banner for EU visitors",
-  ],
-};
 
 /** 머리글의 화면 이동 링크입니다. 장면은 이 링크를 클릭해 다음 화면으로 넘어갑니다. */
 function navLink(page: Page, name: string): Locator {
   return page.getByRole("navigation", { name: "Screens" }).getByRole("link", { name });
 }
 
+/** 이슈 상세입니다. 화면 위에 열면 dialog이고, 그래프 위에 열면 region입니다. */
+function issueDetail(page: Page, id: string): Locator {
+  const name = `Issue ${id}`;
+  return page.getByRole("dialog", { name }).or(page.getByRole("region", { name }));
+}
+
 /**
  * README와 소개 영상이 보여 주는 특장점마다 캡처할 화면입니다. 스크린샷을 모두 찍은 뒤, 이 순서대로 녹화합니다.
- * gate 응답과 카드 이동 녹화는 데모 workspace의 이슈를 바꿉니다. 응답은 소개 영상의 첫 장면이므로 맨 앞에 녹화해,
- * 영상에서 그 뒤에 오는 장면이 응답한 뒤의 데이터를 보이게 합니다. 카드 이동은 다른 녹화에 보이지 않도록 맨 뒤에 녹화합니다.
+ * gate 응답 녹화는 데모 workspace의 이슈를 바꾸므로 맨 뒤에 녹화해, 다른 녹화의 Needs human 개수가 응답하기 전의 값으로 남게 합니다.
  */
 export const CAPTURE_TARGETS: CaptureTarget[] = [
+  { name: "now", screenshot: NOW },
+  {
+    // 응답을 입력한 채로 찍고 보내지 않으므로, 데모 workspace의 이슈는 바뀌지 않습니다.
+    name: "needs-human",
+    screenshot: {
+      path: "/human",
+      shows: ["Go/no-go call for the launch", "Legal review of the privacy policy"],
+      async frame(page) {
+        await page
+          .getByRole("region", { name: "Human gates" })
+          .getByRole("button", { name: /Go\/no-go call for the launch/ })
+          .click();
+        const gate = page.getByRole("region", { name: "Go/no-go call for the launch" });
+        await gate
+          .getByRole("textbox", { name: "Response", exact: true })
+          .fill("Go. The checklist is signed off and support is staffed for launch day.");
+        await gate.getByRole("button", { name: "Respond and close" }).waitFor();
+        await page.mouse.move(0, 0);
+      },
+    },
+  },
+  { name: "graph", screenshot: GRAPH },
+  {
+    name: "attachments",
+    screenshot: {
+      path: `/issues?issue=${CHECKOUT_ISSUE}`,
+      shows: ["Staging check", "Test payment with a Stripe test card on staging."],
+      async frame(page) {
+        // 그림 전체와 그 아래 결제 화면 스크린샷이 함께 보이도록, 그림을 상세의 맨 위로 올립니다.
+        await issueDetail(page, CHECKOUT_ISSUE)
+          .getByRole("button", { name: "Enlarge diagram", exact: true })
+          .evaluate((element) => element.scrollIntoView({ block: "start" }));
+        await issueDetail(page, CHECKOUT_ISSUE)
+          .getByRole("img", { name: "Checkout page on staging" })
+          .evaluate((image: HTMLImageElement) => image.decode());
+      },
+    },
+  },
+  { name: "hygiene", screenshot: HYGIENE },
+  {
+    // 결제 epic의 View order에서 진행 중인 결제 화면 이슈를 열고, 설명의 Mermaid 그림, 스크린샷, 녹화를 차례로 봅니다.
+    name: "plan-and-attachments",
+    recording: {
+      path: "/epics?epic=acme-k3v",
+      shows: ["Stage 4", CHECKOUT_TITLE],
+      async play({ page, pause, click, scroll, press }) {
+        await pause(1500);
+        await click(
+          page
+            .getByRole("region", { name: "Dependency graph" })
+            .getByRole("link", { name: new RegExp(CHECKOUT_TITLE) }),
+        );
+        const detail = issueDetail(page, CHECKOUT_ISSUE);
+        const diagram = detail.getByRole("button", { name: "Enlarge diagram", exact: true });
+        await diagram.waitFor();
+        // 그림을 누르면 상세가 그림까지 스크롤하므로, 상세를 다 그린 뒤 2초 넘게 멈춰 두어 장면을 그 사이에서 나눌 수 있게 합니다.
+        await pause(2000);
+        await click(diagram);
+        await page.getByRole("dialog", { name: "Enlarged diagram", exact: true }).waitFor();
+        await pause(1500);
+        await press("Escape");
+        await pause(500);
+        // 제목이 상세의 머리글 바로 아래에 오도록 스크롤해, 결제 화면 스크린샷과 녹화 링크가 함께 보이게 합니다.
+        // 포인터는 보이는 그림 위에 둡니다. 화면 밖의 제목 위로 옮기면 Playwright가 먼저 제목까지 한 번에 스크롤합니다.
+        const heading = (await detail.getByText("Staging check", { exact: true }).boundingBox())!;
+        await scroll(heading.y - 160, diagram);
+        await pause(1200);
+        await click(detail.getByRole("link", { name: "Recording of the test payment" }));
+        await page.locator("video").waitFor();
+        await pause(3500);
+      },
+    },
+  },
+  {
+    // 대체한 결정의 상세에서 Linked issues의 Supersedes 링크로 대체된 이전 결정을 옆 패널에 엽니다.
+    name: "decisions",
+    screenshot: DECISIONS,
+    recording: {
+      ...DECISIONS,
+      async play({ page, pause, click }) {
+        await pause(1000);
+        await click(page.getByRole("link", { name: "Sign in with passwordless magic links" }));
+        const detail = issueDetail(page, "acme-t8w");
+        await detail
+          .getByText("Support tickets from the beta were mostly password resets.")
+          .waitFor();
+        await pause(1300);
+        await click(detail.getByRole("link", { name: /Sign in with email and password/ }));
+        await page
+          .getByRole("region", { name: "Side panel for issue acme-b3s" })
+          .getByText("Start with the most familiar sign-in flow")
+          .waitFor();
+        await pause(1800);
+      },
+    },
+  },
   {
     // Legal review gate는 acme-w2n.4만 막으므로, 응답하면 그 카드만 Blocked에서 Ready로 옮겨 갑니다.
     name: "respond-to-gate",
     recording: {
       ...BOARD,
       async play({ page, pause, click, type }) {
-        await pause(2000);
-        await click(navLink(page, "Needs human"));
-        // 보드 카드에도 gate 제목이 보이므로, Needs human 목록 안에서 찾아야 화면이 바뀐 뒤까지 기다립니다.
-        const gate = page
-          .getByRole("region", { name: "Human gates" })
-          .getByText("Legal review of the privacy policy");
-        await gate.waitFor();
-        await pause(1000);
-        await click(gate);
-        const decision = page.getByRole("region", { name: "Legal review of the privacy policy" });
-        await decision.waitFor();
         await pause(1200);
+        await click(navLink(page, "Needs human"));
+        const card = page
+          .getByRole("region", { name: "Human gates" })
+          .getByRole("button", { name: /Legal review of the privacy policy/ });
+        await card.waitFor();
+        await pause(500);
+        await click(card);
+        const gate = page.getByRole("region", { name: "Legal review of the privacy policy" });
+        await gate.waitFor();
+        await pause(600);
         await type(
-          decision.getByRole("textbox", { name: "Response", exact: true }),
+          gate.getByRole("textbox", { name: "Response", exact: true }),
           "Approved by legal.",
         );
-        await pause(500);
-        await click(decision.getByRole("button", { name: "Respond and close" }));
-        await decision.waitFor({ state: "detached" });
-        await pause(1500);
+        await pause(300);
+        await click(gate.getByRole("button", { name: "Respond and close" }));
+        await gate.waitFor({ state: "detached" });
+        await pause(1200);
         await click(navLink(page, "Board"));
         await page
           .getByRole("region", { name: "Ready", exact: true })
@@ -133,162 +232,6 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
           .getByText("Awaiting human")
           .waitFor();
         await pause(3000);
-      },
-    },
-  },
-  {
-    name: "now",
-    screenshot: NOW,
-    recording: {
-      ...NOW,
-      async play({ page, pause, scroll }) {
-        await pause(2000);
-        await scroll(
-          450,
-          page
-            .getByRole("region", { name: "In progress", exact: true })
-            .getByRole("link", { name: /Write the launch day runbook/ }),
-        );
-        await pause(2500);
-      },
-    },
-  },
-  {
-    name: "needs-human",
-    screenshot: NEEDS_HUMAN,
-    recording: {
-      ...NOW,
-      async play({ page, pause, click }) {
-        await pause(1000);
-        await click(navLink(page, "Needs human"));
-        await page.getByText("Go/no-go call for the launch").first().waitFor();
-        await pause(2000);
-        await click(page.getByText("Offer annual billing at launch, or wait until after beta?"));
-        await page.getByText("Annual plans bring cash up front").waitFor();
-        await pause(3000);
-      },
-    },
-  },
-  {
-    name: "decisions",
-    screenshot: DECISIONS,
-    recording: {
-      ...NEEDS_HUMAN,
-      async play({ page, pause, click }) {
-        await pause(1000);
-        await click(navLink(page, "Decisions"));
-        const decision = page.getByRole("link", { name: "Sign in with passwordless magic links" });
-        await decision.waitFor();
-        await pause(1500);
-        await click(decision);
-        await page
-          .getByText("Support tickets from the beta were mostly password resets.")
-          .waitFor();
-        await pause(3000);
-      },
-    },
-  },
-  {
-    name: "linked-issues",
-    screenshot: {
-      path: "/issues?issue=acme-k3v.3&side=acme-k3v.4",
-      shows: [
-        "Single-page checkout using Stripe Elements.",
-        "Send a receipt with the plan, amount, tax",
-      ],
-    },
-    recording: {
-      ...DECISIONS,
-      async play({ page, pause, click, scroll }) {
-        await pause(1000);
-        await click(navLink(page, "Issues"));
-        const issue = page.getByRole("link", {
-          name: "Build the checkout page with card and Apple Pay",
-          exact: true,
-        });
-        await issue.waitFor();
-        await pause(1500);
-        await click(issue);
-        const description = page.getByText("Single-page checkout using Stripe Elements.");
-        await description.waitFor();
-        await pause(1500);
-        await scroll(700, description);
-        await pause(1000);
-        await click(
-          page.getByRole("link", {
-            name: "acme-k3v.4 Send a receipt email after a successful payment",
-          }),
-        );
-        await page.getByText("Send a receipt with the plan, amount, tax").waitFor();
-        await pause(3000);
-      },
-    },
-  },
-  {
-    // README의 그래프 스크린샷은 단계와 human gate까지 보이는 epic의 View order로 찍고, Blocks graph는 녹화로만 보여 줍니다.
-    name: "graph",
-    screenshot: GRAPH,
-    recording: {
-      // View order를 눌러 열면 그래프를 그리기까지 빈 창이 보이므로, 그래프를 그리고 구도를 맞춘 상태에서 녹화합니다.
-      ...GRAPH,
-      async play({ pause }) {
-        await pause(5500);
-      },
-    },
-  },
-  {
-    name: "blocks-graph",
-    recording: {
-      ...EPICS,
-      async play({ page, pause, click }) {
-        await pause(1500);
-        await click(
-          page.getByRole("link", { name: "Sign off the go-live checklist", exact: true }),
-        );
-        const blocksGraph = page.getByRole("link", { name: "Blocks graph" });
-        await blocksGraph.waitFor();
-        await pause(2000);
-        await click(blocksGraph);
-        await page.getByText("· Blocks chain", { exact: true }).waitFor();
-        await pause(3500);
-      },
-    },
-  },
-  {
-    name: "board",
-    // Blocked 열의 카드가 기본 높이(900)에서는 끝까지 보이지 않으므로, 모든 열의 카드가 다 보이는 높이로 찍습니다.
-    screenshot: { ...BOARD, height: 1000 },
-    recording: {
-      ...EPICS,
-      async play({ page, pause, click, scroll }) {
-        await pause(1000);
-        await click(navLink(page, "Board"));
-        const blocked = page.getByRole("region", { name: "Blocked", exact: true });
-        await blocked.getByText("Sign off the go-live checklist").waitFor();
-        await pause(2500);
-        // 900 높이에서는 Blocked 열의 마지막 카드가 가려지므로, 열을 스크롤해 끝까지 보여 줍니다.
-        await scroll(
-          400,
-          blocked.getByRole("link", { name: /^End-to-end tests for the checkout flow/ }),
-        );
-        await pause(2500);
-      },
-    },
-  },
-  {
-    // acme-k3v.6은 다른 이슈를 막지 않으므로, In progress로 옮겨도 다른 카드는 움직이지 않습니다.
-    name: "drag-card",
-    recording: {
-      ...BOARD,
-      async play({ page, pause, drag }) {
-        await pause(2000);
-        await drag(
-          page
-            .getByRole("region", { name: "Ready", exact: true })
-            .getByRole("link", { name: /^Show a clear message when a card is declined/ }),
-          page.getByRole("region", { name: "In progress", exact: true }),
-        );
-        await pause(2500);
       },
     },
   },

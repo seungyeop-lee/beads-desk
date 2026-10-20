@@ -13,8 +13,8 @@ const workspace = resolve(process.env.INIT_CWD ?? process.cwd(), target);
 try {
   seedWorkspace(workspace, {
     prefix: ACME_PREFIX,
-    issues: acmeIssues(Date.now()),
-    addActivity: addCliActivity,
+    issues: acmeIssues(Date.now(), workspace),
+    addActivity: (bd, git) => addCliActivity(bd, git, workspace),
   });
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);

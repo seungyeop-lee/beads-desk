@@ -12,18 +12,22 @@ import {
 const BACKGROUND = "#efece6";
 const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 /** 자막 띠의 높이입니다. 화면 아래쪽 이 높이에는 창을 두지 않아, 자막이 녹화를 가리지 않습니다. */
-const CAPTION_HEIGHT = 110;
-const BROWSER_SCALE = 0.8;
+const CAPTION_HEIGHT = 120;
+
+export type IntroProps = {
+  /** README GIF처럼 줄여 보이는 영상에서, 장면마다 보여 줄 영역을 확대합니다. */
+  zoom: boolean;
+};
 
 /** 장면을 차례로 이어 붙이고 마지막에 설치 안내를 보이는 소개 영상입니다. */
-export function IntroVideo() {
+export function IntroVideo({ zoom }: IntroProps) {
   const { shots, outro } = INTRO_SCHEDULE;
   return (
     <AbsoluteFill style={{ background: BACKGROUND, fontFamily: FONT }}>
       {shots.map((shot) => (
         <FadingSequence key={shot.recording} slot={shot}>
           <SceneLayout caption={shot.caption}>
-            <BrowserWindow shot={shot} scale={BROWSER_SCALE} />
+            <BrowserWindow shot={shot} zoom={zoom} />
           </SceneLayout>
         </FadingSequence>
       ))}

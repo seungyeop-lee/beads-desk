@@ -21,6 +21,8 @@ pnpm playground [상위 디렉터리] [--keep]
 
 ## 실행 환경
 
+seed는 acme 데이터의 첨부 파일을 Playwright의 chromium으로 만듭니다. chromium이 없어 실패하면 저장소 루트에서 `pnpm run test:e2e:install`을 한 번 실행합니다.
+
 서버와 seed가 실행하는 bd는 실행한 사람의 bd 설정을 읽지 않습니다. HOME을 `<상위 디렉터리>/.home`으로 바꾸고 `BD_*`, `BEADS_*` 환경 변수를 뺍니다(`packages/promo/src/seed/isolatedBdEnv.ts`). 그래서 셸에 export한 `BD_BIN`과 `BEADS_DESK_LOCAL_FILE_ROOTS`도 적용되지 않습니다.
 
 ## 테스트 데이터

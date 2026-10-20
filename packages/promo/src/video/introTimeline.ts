@@ -1,18 +1,29 @@
 /** Playwright 녹화가 25fps라서, 영상도 25fps로 만들어 녹화의 frame을 하나씩 그대로 씁니다. */
 export const FPS = 25;
-/** 녹화의 너비는 1440이고, 높이는 화면마다 다를 수 있습니다(captureTargets.ts의 `height`). */
-export const RECORDING_WIDTH = 1440;
-export const VIDEO_SIZE = { width: 1600, height: 900 };
+/**
+ * 녹화의 viewport(CSS 픽셀)입니다. 녹화 frame은 CSS 픽셀 크기로 저장되므로, MP4는 녹화를 줄이거나 키우지 않고 그대로 놓아 글자가 흐려지지 않게 합니다.
+ * README 폭에 맞춰 줄이는 GIF에서는 이 크기의 UI 글자를 읽을 수 없어서, 장면마다 보여 줄 영역(`focus`)을 확대합니다.
+ */
+export const RECORDING_SIZE = { width: 1280, height: 720 };
+export const VIDEO_SIZE = { width: 1440, height: 900 };
 /** 렌더링 명령이 고르는 composition입니다. MP4와 README GIF가 함께 씁니다. */
 export const INTRO_ID = "intro";
 /** 장면이 바뀔 때 앞 장면이 흐려지고 다음 장면이 나타나는 시간입니다. */
 export const FADE_FRAMES = 8;
-export const OUTRO_FRAMES = 3 * FPS;
+export const OUTRO_FRAMES = msToFrames(2500);
+/** 앞 focus에서 다음 focus로 옮겨 가는 시간입니다. */
+export const FOCUS_MOVE_MS = 600;
 
 export type Caption = { title: string; text: string };
 
 /** 녹화에서 잘라 쓰는 구간입니다. 시각은 그 녹화의 시작부터 지난 밀리초입니다. */
 export type Clip = { fromMs: number; toMs: number };
+
+/**
+ * GIF에서 창 크기로 확대할 녹화의 영역입니다. 좌표와 너비는 녹화의 CSS 픽셀이고, 높이는 녹화의 비율을 따릅니다.
+ * 녹화 시각 `atMs`부터 FOCUS_MOVE_MS 동안 앞 영역에서 이 영역으로 옮겨 갑니다.
+ */
+export type Focus = { atMs: number; x: number; y: number; width: number };
 
 /** 자막 하나 아래 보이는 장면입니다. 구간이 여럿이면 화면을 불러오는 동안을 빼고 끊김 없이 이어 붙입니다. */
 export type Shot = {
@@ -20,6 +31,8 @@ export type Shot = {
   recording: string;
   clips: Clip[];
   caption: Caption;
+  /** 녹화 시각 순서로 둡니다. 첫 영역은 그 시각 전에도 쓰고, 비워 두면 녹화 전체를 보입니다. */
+  focus?: Focus[];
 };
 
 /**
@@ -28,41 +41,64 @@ export type Shot = {
  */
 export const SHOTS: Shot[] = [
   {
-    // 보드에서 Legal review gate가 막은 카드를 보인 뒤 Needs human으로 옮겨 가 그 gate에 응답하고, 보드로 돌아옵니다.
-    // 화면을 옮길 때마다 목록이 빈 채 불러오는 동안과, 보드가 human gate 제목을 불러와 다른 카드의 막힘 표시를 바꾸는 동안을 뺍니다.
+    // 결제 epic의 단계를 보인 뒤, 진행 중인 결제 화면 이슈를 눌러 상세를 엽니다.
+    recording: "plan-and-attachments",
+    clips: [{ fromMs: 800, toMs: 4200 }],
+    caption: { title: "Plan", text: "Follow the plan your agents laid out, stage by stage." },
+    focus: [
+      { atMs: 0, x: 30, y: 90, width: 1180 },
+      { atMs: 2600, x: 388, y: 80, width: 860 },
+    ],
+  },
+  {
+    // 설명의 Mermaid 그림을 크게 본 뒤, 닫고 스크롤하는 동안을 빼고 결제 화면 스크린샷에서 이어 갑니다. 녹화 링크를 눌러 영상을 재생합니다.
+    recording: "plan-and-attachments",
+    clips: [
+      { fromMs: 4200, toMs: 8000 },
+      { fromMs: 10400, toMs: 16400 },
+    ],
+    caption: {
+      title: "Attachments",
+      text: "Open the diagrams, screenshots, and recordings they attach.",
+    },
+    focus: [
+      { atMs: 4200, x: 388, y: 80, width: 860 },
+      { atMs: 5800, x: 90, y: 50, width: 1100 },
+      { atMs: 9500, x: 356, y: 165, width: 922 },
+      { atMs: 12400, x: 160, y: 72, width: 960 },
+    ],
+  },
+  {
+    // 결정 목록에서 결정을 열고 Supersedes 링크로 이전 결정을 옆 패널에 엽니다. 상세와 옆 패널이 내용을 불러오는 동안을 뺍니다.
+    recording: "decisions",
+    clips: [
+      { fromMs: 600, toMs: 2380 },
+      { fromMs: 2800, toMs: 5100 },
+      { fromMs: 5500, toMs: 6800 },
+    ],
+    caption: { title: "Decisions", text: "Look back at what was decided, and what it replaced." },
+    focus: [
+      { atMs: 0, x: 20, y: 60, width: 1000 },
+      { atMs: 2500, x: 53, y: 36, width: 1174 },
+    ],
+  },
+  {
+    // Needs human에서 Legal review gate에 응답하고, 보드의 Ready 열에서 그 gate가 막던 카드를 보입니다.
+    // 화면을 불러오는 동안과, 응답을 보낸 뒤 bd가 gate를 닫기까지 기다리는 동안을 뺍니다.
     recording: "respond-to-gate",
     clips: [
-      { fromMs: 0, toMs: 3250 },
-      { fromMs: 5400, toMs: 18400 },
-      { fromMs: 20000, toMs: 23300 },
+      { fromMs: 4200, toMs: 10700 },
+      { fromMs: 15900, toMs: 17400 },
     ],
     caption: {
       title: "Needs human",
-      text: "Answer the gates your agents leave, and the work they held back is Ready.",
+      text: "Answer their questions, and the work they held moves to Ready.",
     },
-  },
-  {
-    // 첫 pause가 끝나면 In progress 목록 위로 포인터가 옮겨 가 스크롤합니다.
-    recording: "now",
-    clips: [{ fromMs: 600, toMs: 5400 }],
-    caption: { title: "Now", text: "What is in progress, up next, and blocked, at a glance." },
-  },
-  {
-    recording: "graph",
-    clips: [{ fromMs: 0, toMs: 5000 }],
-    caption: { title: "Graph", text: "See which work can run in parallel, stage by stage." },
-  },
-  {
-    // Decisions 목록이 나타난 뒤부터 씁니다. 결정을 클릭해 내용을 엽니다.
-    recording: "decisions",
-    clips: [{ fromMs: 3000, toMs: 8200 }],
-    caption: { title: "Decisions", text: "Look back at what was decided, and why." },
-  },
-  {
-    // 카드를 Ready에서 In progress로 끌어 옮깁니다.
-    recording: "drag-card",
-    clips: [{ fromMs: 1200, toMs: 7400 }],
-    caption: { title: "Board", text: "Drag a card to change its status." },
+    focus: [
+      { atMs: 0, x: 0, y: 0, width: 1280 },
+      { atMs: 5600, x: 534, y: 140, width: 740 },
+      { atMs: 14500, x: 20, y: 60, width: 800 },
+    ],
   },
 ];
 
@@ -102,3 +138,28 @@ export function introSchedule(shots: Shot[]): IntroSchedule {
 
 export const INTRO_SCHEDULE = introSchedule(SHOTS);
 export const INTRO_FRAMES = INTRO_SCHEDULE.outro.from + INTRO_SCHEDULE.outro.frames;
+
+/** 녹화 시각 ms에 보일 영역입니다. 옮겨 가는 동안에는 천천히 출발해 천천히 멈추고, 녹화 밖으로 나가지 않게 자릅니다. */
+export function focusAt(focus: Focus[], ms: number): Omit<Focus, "atMs"> {
+  const index = focus.findLastIndex((area) => area.atMs <= ms);
+  const target = focus[Math.max(index, 0)];
+  if (target === undefined) return { x: 0, y: 0, width: RECORDING_SIZE.width };
+  const previous = focus[index - 1];
+  const progress = (ms - target.atMs) / FOCUS_MOVE_MS;
+  if (previous === undefined || progress >= 1) return clampFocus(target);
+  const eased = (1 - Math.cos(Math.PI * progress)) / 2;
+  const between = (key: "x" | "y" | "width") =>
+    previous[key] + (target[key] - previous[key]) * eased;
+  return clampFocus({ x: between("x"), y: between("y"), width: between("width") });
+}
+
+function clampFocus({ x, y, width }: Omit<Focus, "atMs">): Omit<Focus, "atMs"> {
+  const { width: fullWidth, height: fullHeight } = RECORDING_SIZE;
+  const clampedWidth = Math.min(width, fullWidth);
+  const height = (clampedWidth * fullHeight) / fullWidth;
+  return {
+    x: Math.min(Math.max(x, 0), fullWidth - clampedWidth),
+    y: Math.min(Math.max(y, 0), fullHeight - height),
+    width: clampedWidth,
+  };
+}

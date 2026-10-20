@@ -32,9 +32,9 @@ try {
     const now = Date.now();
     seedWorkspace(dataWorkspace, {
       prefix: ACME_PREFIX,
-      issues: [...acmeIssues(now), ...edgeCaseIssues(now, dataWorkspace)],
+      issues: [...acmeIssues(now, dataWorkspace), ...edgeCaseIssues(now, dataWorkspace)],
       addActivity: (bd, git) => {
-        addCliActivity(bd);
+        addCliActivity(bd, git, dataWorkspace);
         addEdgeCaseActivity(bd, git, dataWorkspace);
       },
     });

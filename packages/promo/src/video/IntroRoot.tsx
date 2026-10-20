@@ -1,6 +1,8 @@
 import { Composition } from "remotion";
 import { FPS, INTRO_FRAMES, INTRO_ID, VIDEO_SIZE } from "./introTimeline.ts";
-import { IntroVideo } from "./IntroVideo.tsx";
+import { IntroVideo, type IntroProps } from "./IntroVideo.tsx";
+
+const DEFAULT_PROPS: IntroProps = { zoom: false };
 
 export function IntroRoot() {
   return (
@@ -10,6 +12,7 @@ export function IntroRoot() {
       fps={FPS}
       durationInFrames={INTRO_FRAMES}
       {...VIDEO_SIZE}
+      defaultProps={DEFAULT_PROPS}
     />
   );
 }

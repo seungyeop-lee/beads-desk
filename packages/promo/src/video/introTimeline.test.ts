@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
+  FOCUS_MOVE_MS,
+  focusAt,
   FPS,
   INTRO_FRAMES,
   introSchedule,
@@ -30,12 +32,35 @@ describe("장면 일정", () => {
   });
 });
 
-test("소개 영상은 30초 이상 45초 이하다", () => {
-  expect(INTRO_FRAMES / FPS).toBeGreaterThanOrEqual(30);
-  expect(INTRO_FRAMES / FPS).toBeLessThanOrEqual(45);
+test("소개 영상은 25초 이상 30초 이하다", () => {
+  expect(INTRO_FRAMES / FPS).toBeGreaterThanOrEqual(25);
+  expect(INTRO_FRAMES / FPS).toBeLessThanOrEqual(30);
 });
 
 test("모든 구간은 녹화 시작 이후에 시작하고, 시작보다 늦게 끝난다", () => {
   const clips = SHOTS.flatMap((shot) => shot.clips);
   expect(clips.filter(({ fromMs, toMs }) => fromMs < 0 || toMs <= fromMs)).toEqual([]);
+});
+
+describe("확대 영역", () => {
+  const focus = [
+    { atMs: 1000, x: 0, y: 0, width: 1280 },
+    { atMs: 3000, x: 400, y: 100, width: 640 },
+  ];
+
+  test("첫 영역의 시각 전에는 첫 영역을, 옮겨 간 뒤에는 다음 영역을 보인다", () => {
+    expect(focusAt(focus, 0)).toEqual({ x: 0, y: 0, width: 1280 });
+    expect(focusAt(focus, 3000 + FOCUS_MOVE_MS)).toEqual({ x: 400, y: 100, width: 640 });
+  });
+
+  test("옮겨 가는 동안에는 두 영역 사이를 지난다", () => {
+    const { x, width } = focusAt(focus, 3000 + FOCUS_MOVE_MS / 2);
+    expect(x).toBeCloseTo(200);
+    expect(width).toBeCloseTo(960);
+  });
+
+  test("녹화 밖으로 나가는 영역은 녹화 안으로 자른다", () => {
+    const area = focusAt([{ atMs: 0, x: 1000, y: 600, width: 640 }], 0);
+    expect(area).toEqual({ x: 1280 - 640, y: 720 - 360, width: 640 });
+  });
 });

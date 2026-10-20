@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition, type RenderMediaOptions } from "@remotion/renderer";
 import { INTRO_ID, SHOTS } from "./introTimeline.ts";
+import type { IntroProps } from "./IntroVideo.tsx";
 import { findLoadingBoundaries } from "./loadingBoundaries.ts";
 import { openRecordingFrames } from "./recordingFrames.ts";
 
@@ -17,15 +18,18 @@ const GIF_MAX_BYTES = 10 * 1024 * 1024;
 
 type Output = {
   file: string;
+  props: IntroProps;
   options: Pick<RenderMediaOptions, "codec" | "scale" | "everyNthFrame" | "numberOfGifLoops">;
 };
 
 const OUTPUTS: Output[] = [
-  { file: "beads-desk-intro.mp4", options: { codec: "h264" } },
+  { file: "beads-desk-intro.mp4", props: { zoom: false }, options: { codec: "h264" } },
   {
     file: "beads-desk-intro.gif",
-    // 전체 장면을 담으면서 용량을 줄이도록, 25fps의 네 frame마다 하나를 써 6.25fps로, 크기는 README 본문 폭에 맞춰 960×540으로 줄입니다.
-    options: { codec: "gif", scale: 0.6, everyNthFrame: 4, numberOfGifLoops: null },
+    // 전체 장면을 담으면서 용량을 줄이도록, 25fps의 네 frame마다 하나를 써 6.25fps로, 크기는 README 본문 폭에 맞춰 960×600으로 줄입니다.
+    // 줄인 크기에서도 UI 글자를 읽을 수 있도록, 장면마다 보여 줄 영역을 확대합니다.
+    props: { zoom: true },
+    options: { codec: "gif", scale: 2 / 3, everyNthFrame: 4, numberOfGifLoops: null },
   },
 ];
 
@@ -59,11 +63,11 @@ const serveUrl = await bundle({
   rootDir: PACKAGE_DIR,
   publicDir: RECORDING_DIR,
 });
-const composition = await selectComposition({ serveUrl, id: INTRO_ID });
-
 for (const output of OUTPUTS) {
   const outputLocation = join(OUTPUT_DIR, output.file);
-  await renderMedia({ serveUrl, composition, outputLocation, ...output.options });
+  const inputProps = output.props;
+  const composition = await selectComposition({ serveUrl, id: INTRO_ID, inputProps });
+  await renderMedia({ serveUrl, composition, inputProps, outputLocation, ...output.options });
 
   const bytes = statSync(outputLocation).size;
   const scale = output.options.scale ?? 1;

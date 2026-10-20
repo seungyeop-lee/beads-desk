@@ -3,8 +3,9 @@ import { acmeIssues } from "@beads-desk/promo/seed/acmeProject";
 import { edgeCaseIssues } from "./edgeCases.ts";
 
 const now = new Date(2026, 9, 15, 12, 0).getTime();
-const edgeCases = edgeCaseIssues(now, "/tmp/playground/acme-web");
-const issues = [...acmeIssues(now), ...edgeCases];
+const workspace = "/tmp/playground/acme-web";
+const edgeCases = edgeCaseIssues(now, workspace);
+const issues = [...acmeIssues(now, workspace), ...edgeCases];
 
 test("acme 데이터와 ID가 겹치지 않는다", () => {
   const ids = issues.map(({ id }) => id);

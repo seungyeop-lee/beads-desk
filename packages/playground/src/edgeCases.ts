@@ -7,8 +7,8 @@ const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
 /** 상세 화면의 로컬 파일 미리보기에 쓰는 그림입니다. 저장소 안에 있으므로 workspace 밖의 경로(403)로도 씁니다. */
-const SAMPLE_IMAGE = fileURLToPath(new URL("../../../docs/screenshots/board.png", import.meta.url));
-const IMAGE_IN_WORKSPACE = "docs/sample-board.png";
+const SAMPLE_IMAGE = fileURLToPath(new URL("../../../docs/screenshots/now.png", import.meta.url));
+const IMAGE_IN_WORKSPACE = "docs/sample-now.png";
 
 /**
  * acme 데모 데이터에 더하는 수동 테스트용 이슈입니다. 데모 데이터에 없는 상태와, 화면 배치를 흔드는 경계 데이터를 담습니다.
@@ -811,7 +811,7 @@ function richMarkdown(workspace: string): string {
     "",
     "An image inside the workspace renders:",
     "",
-    `![board](${join(workspace, IMAGE_IN_WORKSPACE)})`,
+    `![now](${join(workspace, IMAGE_IN_WORKSPACE)})`,
     "",
     `A file outside the workspace is refused: [outside](${SAMPLE_IMAGE})`,
     "",

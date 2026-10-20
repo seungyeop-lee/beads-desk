@@ -70,20 +70,20 @@ async function waitUntilServing(url: string, workspace: string, exited: () => bo
         "app 서버가 시작하지 못하고 끝났습니다. `pnpm run build`를 먼저 실행했는지 확인합니다.",
       );
     }
-    if ((await workspaceRootOf(url)) === workspace) return;
+    if ((await workspacesOf(url)).includes(workspace)) return;
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
   throw new Error(`app 서버가 ${START_TIMEOUT}ms 안에 응답하지 않았습니다.`);
 }
 
-async function workspaceRootOf(url: string): Promise<string | undefined> {
+async function workspacesOf(url: string): Promise<string[]> {
   try {
     const response = await fetch(`${url}/api/health`);
-    if (!response.ok) return undefined;
-    const body: { runtime: { workspaceRoot: string } } = await response.json();
-    return body.runtime.workspaceRoot;
+    if (!response.ok) return [];
+    const body: { runtime: { workspaces: string[] } } = await response.json();
+    return body.runtime.workspaces;
   } catch {
-    return undefined;
+    return [];
   }
 }
 
