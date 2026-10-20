@@ -4,6 +4,26 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-10-20
+
+### Added
+
+- Click a Mermaid diagram in an issue description, a comment, or the Markdown editor preview, or press Enter or Space on it, to enlarge it in a dialog that nearly fills the screen.
+- The browser tab title of a workspace screen is `<workspace name> · beads-desk`, so you can tell tabs of different workspaces apart.
+
+### Changed
+
+- Every screen URL starts with `/w/<workspace name>`, and each tab shows the workspace in its own URL, so you can keep several workspaces open side by side in separate tabs. The workspace selector moves only the current tab to another workspace. A URL without a workspace name opens the same screen in the only added workspace, or asks you to choose one when several are added.
+- `bd-desk start` prints the URL of the current directory's workspace, such as `http://127.0.0.1:3000/w/my-project`, whether it starts the server or adds the workspace to a running one. `bd-desk restart` keeps the added workspaces and their URLs, and prints the current directory's workspace URL if that workspace was added.
+- **Blocks graph** opened from an issue detail opens on top of the detail. Closing the graph returns to the detail and side panel you were reading without loading or opening them again.
+- Escape closes one step at a time: when a side panel is open in an issue detail, Escape closes only the side panel, and in a graph it closes the side panel, then the detail, then the graph. This also works when you press Escape repeatedly without clicking the page.
+- **Epics** screen: epics whose parent is an epic are no longer listed as their own cards. In an expanded epic's child list, a child epic row shows a progress bar with closed/total · % of its direct child issues instead of its child count next to the title, and a **View order** link instead of the dependency counts.
+
+### Fixed
+
+- `webm` and `mp4` files opened from local file links play in the browser, and you can seek with the playback bar.
+- The favicon is easier to see on light browser tabs: the beads are larger and have a darker outline.
+
 ## [0.3.1] - 2026-10-20
 
 ### Fixed
