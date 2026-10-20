@@ -39,7 +39,8 @@ test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열려 그 �
   await expect(page).toHaveURL(detailUrl(main, null));
 });
 
-test("옆 패널이 열린 상세에서 Escape를 누르면 옆 패널만 닫혀 이전 이슈 버튼과 함께 주 상세가 남고, 한 번 더 누르면 상세가 닫힌다", async ({
+// 페이지를 누르지 않고 연달아 누른 Escape는 사용자 활성화가 없어 브라우저가 dialog의 cancel을 취소할 수 없게 보내므로, 상세를 누른 뒤 누른 Escape와 따로 확인합니다.
+test("옆 패널이 열린 상세에서 Escape를 누르면 옆 패널만 닫혀 이전 이슈 버튼과 함께 주 상세가 남고, 한 번 더 누르면 상세가 닫히며, 옆 패널이 열린 상세 주소로 들어와 페이지를 누르지 않고 Escape를 눌러도 옆 패널, 상세 순으로 하나씩 닫힌다", async ({
   page,
   workspace,
 }) => {
@@ -66,26 +67,19 @@ test("옆 패널이 열린 상세에서 Escape를 누르면 옆 패널만 닫혀
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(page).toHaveURL(/\/issues$/);
-});
-
-test("옆 패널이 열린 상세 주소로 들어와 페이지를 누르지 않고 Escape를 누르면 옆 패널, 상세 순으로 하나씩 닫힌다", async ({
-  page,
-  workspace,
-}) => {
-  const { main, dependency } = await seedDependency(workspace);
-  const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
-  const side = sidePanel(page, dependency);
 
   await page.goto(`issues?issue=${main}&side=${dependency}`);
-  await expect(side.getByText("선행 이슈 설명")).toBeVisible();
+  const mainDialog = page.getByRole("dialog", { name: `${main} 이슈` });
+  const dependencySide = sidePanel(page, dependency);
+  await expect(dependencySide.getByText("선행 이슈 설명")).toBeVisible();
 
   await page.keyboard.press("Escape");
-  await expect(side).toBeHidden();
-  await expect(dialog).toBeVisible();
+  await expect(dependencySide).toBeHidden();
+  await expect(mainDialog).toBeVisible();
   await expect(page).toHaveURL(detailUrl(main, null));
 
   await page.keyboard.press("Escape");
-  await expect(dialog).toBeHidden();
+  await expect(mainDialog).toBeHidden();
   await expect(page).toHaveURL(/\/issues$/);
 });
 
