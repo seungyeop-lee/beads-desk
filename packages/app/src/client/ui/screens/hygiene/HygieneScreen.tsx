@@ -64,86 +64,109 @@ export function HygieneScreen() {
       )}
       <WriteErrorAlert writes={writes} />
 
+      {/* 넓은 창에서는 열마다 카드를 따로 쌓습니다. 카드를 grid 행에 나란히 두면 목록이 긴 카드가 행 높이를 정해서,
+          옆 열의 다음 카드가 그 목록이 끝나는 아래까지 밀려납니다.
+          한 열에서는 열 요소를 contents로 풀어 카드를 바깥 grid에 바로 놓고, 카드의 order로 순서를 정합니다. */}
       <div className="grid grid-cols-1 items-start gap-x-6 gap-y-8 lg:grid-cols-2">
-        <HygieneCard
-          title={text.stale.title}
-          hint={text.stale.hint(staleDays)}
-          empty={text.stale.empty(staleDays)}
-          action={
-            <select
-              className="select select-sm w-24"
-              aria-label={text.stale.days}
-              value={staleDays}
-              onChange={(event) => setStaleDays(Number(event.target.value) as StaleDays)}
-            >
-              {STALE_DAYS.map((days) => (
-                <option key={days} value={days}>
-                  {text.stale.dayOption(days)}
-                </option>
-              ))}
-            </select>
-          }
-        >
-          {stale.data?.map((issue) => issueRow(issue))}
-        </HygieneCard>
-
-        <HygieneCard
-          title={text.duplicates.title}
-          hint={text.duplicates.hint}
-          empty={text.duplicates.empty}
-        >
-          {data?.duplicates.map((pair) => (
-            <li key={pair.map((issue) => issue.id).join(" ")} className="flex flex-col gap-1 py-2">
-              {pair.map((issue) => (
-                <IssueRow key={issue.id} issue={issue} href={issueHref(issue.id)} />
-              ))}
-              <span className="flex flex-wrap gap-2 px-4 py-1">
-                {[pair, pair.toReversed()].map(([duplicate, canonical]) => (
-                  <button
-                    key={duplicate.id}
-                    type="button"
-                    className="btn btn-xs h-auto min-h-6 py-1 text-left whitespace-normal"
-                    disabled={writes.pending}
-                    onClick={() => void closeAsDuplicate(duplicate, canonical)}
-                  >
-                    {text.duplicates.closeAs(duplicate.id, canonical.id)}
-                  </button>
+        <div className={HYGIENE_COLUMN}>
+          <HygieneCard
+            className="order-1"
+            title={text.stale.title}
+            hint={text.stale.hint(staleDays)}
+            empty={text.stale.empty(staleDays)}
+            action={
+              <select
+                className="select select-sm w-24"
+                aria-label={text.stale.days}
+                value={staleDays}
+                onChange={(event) => setStaleDays(Number(event.target.value) as StaleDays)}
+              >
+                {STALE_DAYS.map((days) => (
+                  <option key={days} value={days}>
+                    {text.stale.dayOption(days)}
+                  </option>
                 ))}
-              </span>
-            </li>
-          ))}
-        </HygieneCard>
+              </select>
+            }
+          >
+            {stale.data?.map((issue) => issueRow(issue))}
+          </HygieneCard>
 
-        <HygieneCard title={text.lint.title} hint={text.lint.hint} empty={text.lint.empty}>
-          {data?.lint.map((finding) =>
-            issueRow(
-              finding,
-              text.lint.missing(
-                finding.missing.map((section) => section.replace(/^#+\s*/, "")).join(", "),
+          <HygieneCard
+            className="order-3"
+            title={text.lint.title}
+            hint={text.lint.hint}
+            empty={text.lint.empty}
+          >
+            {data?.lint.map((finding) =>
+              issueRow(
+                finding,
+                text.lint.missing(
+                  finding.missing.map((section) => section.replace(/^#+\s*/, "")).join(", "),
+                ),
               ),
-            ),
-          )}
-        </HygieneCard>
+            )}
+          </HygieneCard>
+        </div>
 
-        <HygieneCard
-          title={text.closableEpics.title}
-          hint={text.closableEpics.hint}
-          empty={text.closableEpics.empty}
-        >
-          {data?.closableEpics.map((epic) => issueRow(epic))}
-        </HygieneCard>
+        <div className={HYGIENE_COLUMN}>
+          <HygieneCard
+            className="order-2"
+            title={text.duplicates.title}
+            hint={text.duplicates.hint}
+            empty={text.duplicates.empty}
+          >
+            {data?.duplicates.map((pair) => (
+              <li
+                key={pair.map((issue) => issue.id).join(" ")}
+                className="flex flex-col gap-1 py-2"
+              >
+                {pair.map((issue) => (
+                  <IssueRow key={issue.id} issue={issue} href={issueHref(issue.id)} />
+                ))}
+                <span className="flex flex-wrap gap-2 px-4 py-1">
+                  {[pair, pair.toReversed()].map(([duplicate, canonical]) => (
+                    <button
+                      key={duplicate.id}
+                      type="button"
+                      className="btn btn-xs h-auto min-h-6 py-1 text-left whitespace-normal"
+                      disabled={writes.pending}
+                      onClick={() => void closeAsDuplicate(duplicate, canonical)}
+                    >
+                      {text.duplicates.closeAs(duplicate.id, canonical.id)}
+                    </button>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </HygieneCard>
 
-        <HygieneCard title={text.orphans.title} hint={text.orphans.hint} empty={text.orphans.empty}>
-          {data?.orphans.map((orphan) =>
-            issueRow(
-              orphan,
-              <>
-                <span className="font-mono">{orphan.latestCommit}</span>{" "}
-                {orphan.latestCommitMessage}
-              </>,
-            ),
-          )}
-        </HygieneCard>
+          <HygieneCard
+            className="order-4"
+            title={text.closableEpics.title}
+            hint={text.closableEpics.hint}
+            empty={text.closableEpics.empty}
+          >
+            {data?.closableEpics.map((epic) => issueRow(epic))}
+          </HygieneCard>
+
+          <HygieneCard
+            className="order-5"
+            title={text.orphans.title}
+            hint={text.orphans.hint}
+            empty={text.orphans.empty}
+          >
+            {data?.orphans.map((orphan) =>
+              issueRow(
+                orphan,
+                <>
+                  <span className="font-mono">{orphan.latestCommit}</span>{" "}
+                  {orphan.latestCommitMessage}
+                </>,
+              ),
+            )}
+          </HygieneCard>
+        </div>
       </div>
 
       <IssueDetailRoute />
@@ -151,7 +174,11 @@ export function HygieneScreen() {
   );
 }
 
+const HYGIENE_COLUMN = "contents lg:flex lg:flex-col lg:gap-y-8";
+
 type CardProps = {
+  /** 한 열 배치에서 카드가 놓일 순서(order-*)입니다. */
+  className: string;
   title: string;
   /** 무엇을 모은 카드인지 알리는 설명입니다. */
   hint: string;
@@ -162,10 +189,10 @@ type CardProps = {
   children: ReactNode[] | undefined;
 };
 
-function HygieneCard({ title, hint, empty, action, children }: CardProps) {
+function HygieneCard({ className, title, hint, empty, action, children }: CardProps) {
   const titleId = useId();
   return (
-    <section aria-labelledby={titleId} className="flex min-w-0 flex-col gap-2">
+    <section aria-labelledby={titleId} className={`flex min-w-0 flex-col gap-2 ${className}`}>
       <div className="flex items-end gap-3 px-1">
         <div className="flex min-w-0 grow flex-col gap-0.5">
           <h2 className="flex items-baseline gap-2 text-[15px] font-bold">
