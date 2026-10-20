@@ -3,6 +3,7 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
+import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture";
 import type { ActivityEntry } from "@/shared/contract/activityFeed";
 import { ActivityFeedScreen } from "./ActivityFeedScreen";
 
@@ -155,4 +156,21 @@ test("좁은 창에서도 목록과 날짜 입력칸이 가로로 넘치지 않�
 
   await expect.element(screen.getByText("t-new 제목")).toBeVisible();
   expect(document.documentElement.scrollWidth).toBe(document.documentElement.clientWidth);
+});
+
+test("페이지 끝까지 스크롤해도 상단 머리글이 화면 위에 붙어 있다", async () => {
+  await page.viewport(800, 600);
+  tab.entries = Array.from({ length: 40 }, (_, index) => entry(`t-${index}`, now - index * HOUR));
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <AppLayoutFixture>
+        <ActivityFeedScreen />
+      </AppLayoutFixture>
+    </LocaleProvider>,
+  );
+  await expect.element(screen.getByText("t-39 제목")).toBeInTheDocument();
+
+  window.scrollTo({ top: document.documentElement.scrollHeight });
+  expect(window.scrollY, "한 화면 높이보다 많이 스크롤함").toBeGreaterThan(600);
+  expect(screen.getByTestId("app-header").element().getBoundingClientRect().top).toBe(0);
 });

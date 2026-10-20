@@ -6,6 +6,7 @@ import type { IssueWrites } from "@/client/modules/issues/application/useIssueWr
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { ToastRegion } from "@/client/ui/designSystem/Toast";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
+import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { issue, issueDetail } from "@/shared/domain/issues/issueFixture";
 import { HumanDecisionsScreen } from "./HumanDecisionsScreen";
@@ -241,12 +242,21 @@ test("좁은 창에서 보던 질문이 닫혀 다음 질문으로 넘어가면 
   await screen.rerender(<ScreenInAppLayout />);
   const panel = screen.getByRole("region", { name: "2번째 질문" });
   await expect.element(panel.getByText("30번째 문단입니다.")).toBeInTheDocument();
-  // body 높이가 화면 높이라 한 화면 넘게 스크롤하면 sticky 머리글도 함께 올라가므로, 머리글 위치가 아니라 높이와 비교합니다.
   const headerHeight = screen.getByTestId("app-header").element().getBoundingClientRect().height;
   await expect
     .poll(() => panel.element().getBoundingClientRect().top)
     .toBeGreaterThanOrEqual(headerHeight);
   expect(panel.element().getBoundingClientRect().top).toBeLessThan(headerHeight + 48);
+});
+
+test("페이지 끝까지 스크롤해도 상단 머리글이 화면 위에 붙어 있다", async () => {
+  await page.viewport(800, 600);
+  seedLongList(GATE_ID);
+  const screen = await render(<ScreenInAppLayout />);
+
+  window.scrollTo({ top: document.documentElement.scrollHeight });
+  expect(window.scrollY, "한 화면 높이보다 많이 스크롤함").toBeGreaterThan(600);
+  expect(screen.getByTestId("app-header").element().getBoundingClientRect().top).toBe(0);
 });
 
 test("목록에서 다른 항목을 눌러 고르면 스크롤이 움직이지 않는다", async () => {
@@ -264,16 +274,11 @@ test("목록에서 다른 항목을 눌러 고르면 스크롤이 움직이지 �
   expect(window.scrollY).toBe(scrollY);
 });
 
-/** app의 body(`flex h-dvh flex-col`)와 sticky AppHeader(h-14)를 흉내 낸 배치입니다. 좁은 창에서 패널이 머리글에 가리지 않는지 검사합니다. */
 function ScreenInAppLayout() {
   return (
-    <div className="flex h-dvh min-h-screen flex-col [&>main]:w-full">
-      <div
-        data-testid="app-header"
-        className="sticky top-0 z-20 h-14 shrink-0 border-b border-base-300 bg-base-100"
-      />
+    <AppLayoutFixture>
       <Screen />
-    </div>
+    </AppLayoutFixture>
   );
 }
 

@@ -83,8 +83,7 @@
 }
 
 /*
- * 페이지 바탕색(base-200)은 body가 아니라 html에 칠합니다. body는 창 높이(h-dvh)로 고정돼 있어서,
- * 본문이 창보다 길면 body 아래로 html 바탕이 드러납니다.
+ * 페이지 바탕색(base-200)은 body가 아니라 html에 칠합니다.
  * daisyUI는 html을 --root-bg(기본값 base-100)로 칠하고, modal이 페이지 스크롤을 잠근 동안에도 이 값으로 바탕을 칠합니다.
  */
 :root {

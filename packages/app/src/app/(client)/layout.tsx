@@ -8,6 +8,7 @@ import { DeferDialogHost } from "@/client/ui/issues/fields/DeferDialog";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { themeAttribute } from "@/client/ui/theme/themeAttribute";
 import { ThemeProvider } from "@/client/ui/theme/ThemeProvider";
+import { APP_BODY_LAYOUT } from "@/client/ui/shell/appBodyLayout";
 import { requestLocale } from "@/server/web/locale/requestLocale";
 import { requestTheme } from "@/server/web/theme/requestTheme";
 
@@ -25,7 +26,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const [locale, theme] = await Promise.all([requestLocale(), requestTheme()]);
   return (
     <html lang={locale} data-theme={themeAttribute(theme)}>
-      <body className="flex h-dvh min-h-screen flex-col [&>main]:w-full font-sans text-base-content antialiased">
+      <body className={`${APP_BODY_LAYOUT} font-sans text-base-content antialiased`}>
         <LocaleProvider locale={locale}>
           <ThemeProvider theme={theme}>
             <KeyboardFocusMode />

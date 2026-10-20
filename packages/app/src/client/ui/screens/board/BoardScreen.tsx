@@ -76,9 +76,10 @@ export function BoardScreen() {
     }
   };
 
-  // 열이 나란히 놓이는 너비(md 이상)에서는 main이 body(flex h-dvh)의 남은 높이를 채우고, 카드가 넘치면 카드 목록만 열 안에서 스크롤됩니다. 좁은 너비에서는 각 열이 카드 내용만큼 늘어나 페이지를 스크롤해 봅니다.
+  // 열이 나란히 놓이는 너비(md 이상)에서는 main이 body의 남은 창 높이를 채우고, 카드가 넘치면 카드 목록만 열 안에서 스크롤됩니다. 좁은 너비에서는 각 열이 카드 내용만큼 늘어나 페이지를 스크롤해 봅니다.
+  // body는 창 높이를 최소 높이로만 가지므로 main의 flex-basis를 0px로 둡니다. flex-1의 0%는 높이가 정해지지 않은 body 안에서 내용 높이로 계산되어, body가 카드 높이만큼 길어집니다.
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16 md:min-h-0 md:flex-1 md:pb-6">
+    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16 md:min-h-0 md:grow md:basis-0 md:pb-6">
       <ScreenHeader
         title={messages.board.title}
         tone={screenTone("/board")}

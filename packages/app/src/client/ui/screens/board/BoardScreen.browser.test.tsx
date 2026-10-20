@@ -4,6 +4,7 @@ import { render } from "vitest-browser-react";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
+import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture";
 import type { BoardItem } from "@/shared/contract/board";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { BoardScreen } from "./BoardScreen";
@@ -47,7 +48,9 @@ test("넓은 창에서 열이 화면 높이를 채우고 카드 목록만 열 �
   await page.viewport(1280, 720);
   const screen = await render(
     <LocaleProvider locale="ko">
-      <BoardInAppLayout />
+      <AppLayoutFixture>
+        <BoardScreen />
+      </AppLayoutFixture>
     </LocaleProvider>,
   );
 
@@ -117,16 +120,3 @@ test("카드는 짧은 ID를 복사 단추로 보이고, 카드를 덮는 링크
     .element(screen.getByRole("region", { name: "막힘", exact: true }))
     .toMatchTextContent(messages.blocking.waitingOn("desk-first"));
 });
-
-/**
- * app의 body(`flex h-dvh flex-col`)와 AppHeader(h-14, 아래 border 1px)를 흉내 낸 배치입니다.
- * 보드 화면의 main이 남은 높이를 채우는 배치는 이 구조에 의존하므로 함께 검사합니다.
- */
-function BoardInAppLayout() {
-  return (
-    <div className="flex h-dvh min-h-screen flex-col [&>main]:w-full">
-      <div className="h-14 shrink-0 border-b border-base-300" />
-      <BoardScreen />
-    </div>
-  );
-}
