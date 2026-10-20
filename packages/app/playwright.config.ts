@@ -42,6 +42,9 @@ export default defineConfig({
     locale: "ko-KR",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    // Playwright의 기본 headless 실행은 스크롤바를 숨겨, dialog가 열린 동안에만 daisyUI의 scrollbar-gutter 때문에 페이지 폭이 15px 줄어듭니다.
+    // 스크롤바를 보이게 띄워 스크롤바가 자리를 차지하는 브라우저와 같은 배치로 실행합니다.
+    launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

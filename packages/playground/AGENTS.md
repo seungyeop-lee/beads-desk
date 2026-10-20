@@ -25,6 +25,15 @@ seed는 acme 데이터의 첨부 파일을 Playwright의 chromium으로 만듭�
 
 서버와 seed가 실행하는 bd는 실행한 사람의 bd 설정을 읽지 않습니다. HOME을 `<상위 디렉터리>/.home`으로 바꾸고 `BD_*`, `BEADS_*` 환경 변수를 뺍니다(`packages/promo/src/seed/isolatedBdEnv.ts`). 그래서 셸에 export한 `BD_BIN`과 `BEADS_DESK_LOCAL_FILE_ROOTS`도 적용되지 않습니다.
 
+## Playwright 스크립트로 화면을 잴 때
+
+chromium은 `chromium.launch({ ignoreDefaultArgs: ["--hide-scrollbars"] })`로 스크롤바를 보이게 띄웁니다. 컴포넌트 테스트와 e2e도 같은 옵션으로 띄웁니다. Playwright의 기본 headless 실행은 `--hide-scrollbars`로 스크롤바 폭을 0으로 만들어, 스크롤바가 자리를 차지하는 브라우저와 배치가 달라지므로 그 실행에서 잰 값으로는 결함을 판단하지 않습니다.
+
+기본 실행과의 차이는 dialog를 열 때 크게 드러납니다. daisyUI는 dialog를 열면서 `html`에 `overflow: hidden`과 `scrollbar-gutter: stable`을 걸어 스크롤바 자리(15px)를 남깁니다.
+
+- 스크롤바를 숨긴 실행: dialog가 열린 동안에만 페이지 폭이 줄어(1280px 창에서 1265px) 뒤 화면의 줄바꿈이 바뀌고, scroll anchoring이 `scrollY`를 옮기기도 합니다.
+- 스크롤바를 보이게 띄운 실행: 세로로 넘치는 페이지는 열기 전부터 1265px이라 폭이 바뀌지 않습니다. 넘치지 않는 페이지는 dialog를 열 때 1280px에서 1265px로 줄어드는데, 스크롤바가 자리를 차지하는 브라우저에서도 똑같이 줄어드는 실제 배치입니다.
+
 ## 테스트 데이터
 
 데이터는 promo의 acme 데모 데이터(`packages/promo/src/seed/acmeProject.ts`)에 `src/edgeCases.ts`의 경계 사례를 더한 것입니다. acme 데이터를 바꾸면 이 환경의 데이터도 함께 바뀝니다. 시각은 실행한 시각 기준의 상대값이라, 언제 실행해도 Now의 최근 7일 통계와 보드의 오늘 닫힌 이슈가 비지 않습니다.

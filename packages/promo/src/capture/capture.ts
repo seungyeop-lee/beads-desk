@@ -88,6 +88,16 @@ async function captureAll(baseURL: string): Promise<void> {
       locale: "en-US",
       colorScheme: "light",
     });
+    // 스크린샷과 녹화에 스크롤바가 찍히지 않게 CSS로 숨깁니다. Playwright의 기본 headless 실행도 스크롤바를 숨기지만,
+    // dialog를 열 때 daisyUI가 거는 scrollbar-gutter 자리는 남겨 dialog를 연 장면에서만 뒤 화면 폭이 15px 줄어듭니다.
+    // scrollbar-width: none은 그 자리도 남기지 않아 모든 장면이 같은 폭으로 찍힙니다.
+    await context.addInitScript(() => {
+      document.addEventListener("DOMContentLoaded", () => {
+        const style = document.createElement("style");
+        style.textContent = "* { scrollbar-width: none; }";
+        document.head.append(style);
+      });
+    });
     await context.addCookies([
       { name: "beads-desk-locale", value: "en", url: baseURL },
       { name: "beads-desk-theme", value: "light", url: baseURL },

@@ -41,7 +41,9 @@ export default defineConfig({
     browser: {
       enabled: true,
       headless: true,
-      provider: playwright(),
+      // Playwright의 기본 headless 실행은 스크롤바를 숨겨 스크롤되는 요소의 안쪽 폭과 높이가 스크롤바만큼 넓어집니다.
+      // 스크롤바를 보이게 띄워, 스크롤바가 자리를 차지하는 브라우저에서만 생기는 넘침과 어긋남도 검사에 드러나게 합니다.
+      provider: playwright({ launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] } }),
       instances: [{ browser: "chromium", viewport: { width: 1440, height: 900 } }],
     },
   },
