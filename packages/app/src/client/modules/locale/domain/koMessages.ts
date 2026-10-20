@@ -1,4 +1,5 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
+import type { EpicGroupKind } from "@/client/modules/epics/domain/epicGroups";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { RelationKind } from "@/client/modules/issues/domain/issueRelations";
 import type { ActivityKind } from "@/shared/contract/activityFeed";
@@ -412,6 +413,10 @@ export const koMessages = {
     addExistingChildPlaceholder: "하위로 넣을 기존 이슈 검색",
     addChildConfirm: "하위로 넣기",
     childAdded: (id: string, epicId: string) => `${id}을(를) ${epicId}의 하위 이슈로 넣었습니다.`,
+    groups: { open: "열린 에픽", closed: "닫힌 에픽" } satisfies Record<EpicGroupKind, string>,
+    toggleGroup: (label: string, expanded: boolean) =>
+      `${label} 묶음 ${expanded ? "접기" : "펼치기"}`,
+    closedOn: (date: string) => `닫은 날 ${date}`,
   },
   graph: {
     scopes: { epic: "순서", center: "선행·후속" },

@@ -3,8 +3,9 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
+import { groupEpics, type EpicGroupKind } from "@/client/modules/epics/domain/epicGroups";
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
 import {
@@ -35,11 +36,12 @@ import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { showToast } from "@/client/ui/designSystem/Toast";
 import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
 import { screenTone } from "@/client/ui/shell/screenTabs";
-import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
 /**
  * epic마다 하위 이슈 진행률을 보여 주고, 펼친 epic은 하위 이슈를 목록처럼 바로 고칠 수 있게 보여 줍니다.
+ * 열린 에픽과 닫힌 에픽을 묶음으로 나누고, 처음에는 닫힌 묶음만 접어 둡니다.
  * 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function EpicsScreen() {
@@ -48,6 +50,9 @@ export function EpicsScreen() {
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
   const [expanded, setExpanded] = useState<ReadonlySet<string> | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<EpicGroupKind>>(
+    new Set(["closed"]),
+  );
   const epics = data ? sortEpics(topLevelEpics(data)) : null;
   const settled = epics ? settleExpandedEpics(epics, expanded) : expanded;
   if (settled !== expanded) setExpanded(settled);
@@ -58,6 +63,11 @@ export function EpicsScreen() {
     const next = new Set(open);
     if (!next.delete(epicId)) next.add(epicId);
     setExpanded(next);
+  };
+  const toggleGroup = (kind: EpicGroupKind) => {
+    const next = new Set(collapsedGroups);
+    if (!next.delete(kind)) next.add(kind);
+    setCollapsedGroups(next);
   };
 
   return (
@@ -73,20 +83,72 @@ export function EpicsScreen() {
       <WriteErrorAlert writes={writes} />
       {epics?.length === 0 && <EmptyState message={messages.epics.empty} />}
 
-      {epics?.map((summary) => (
-        <EpicSection
-          key={summary.epic.id}
-          summary={summary}
-          expanded={open.has(summary.epic.id)}
-          onToggle={() => toggle(summary.epic.id)}
-          gateTitles={gateTitles}
-          issueHref={issueHref}
-          writes={writes}
-        />
-      ))}
+      {epics &&
+        groupEpics(epics).map((group) => (
+          <EpicGroupSection
+            key={group.kind}
+            kind={group.kind}
+            count={group.epics.length}
+            expanded={!collapsedGroups.has(group.kind)}
+            onToggle={() => toggleGroup(group.kind)}
+          >
+            {group.epics.map((summary) => (
+              <EpicSection
+                key={summary.epic.id}
+                summary={summary}
+                expanded={open.has(summary.epic.id)}
+                onToggle={() => toggle(summary.epic.id)}
+                gateTitles={gateTitles}
+                issueHref={issueHref}
+                writes={writes}
+              />
+            ))}
+          </EpicGroupSection>
+        ))}
 
       <IssueDetailRoute />
     </main>
+  );
+}
+
+/** 이슈 화면의 상태 묶음과 같은 모양으로 묶음 머리를 보이고, 펼쳤을 때만 에픽 카드를 보입니다. */
+function EpicGroupSection({
+  kind,
+  count,
+  expanded,
+  onToggle,
+  children,
+}: {
+  kind: EpicGroupKind;
+  count: number;
+  expanded: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const messages = useMessages();
+  const label = messages.epics.groups[kind];
+  return (
+    <section aria-label={label} className="flex flex-col gap-3">
+      <h2 className="px-1">
+        <button
+          type="button"
+          className="flex items-baseline gap-2 text-[15px] font-bold"
+          aria-expanded={expanded}
+          aria-label={messages.epics.toggleGroup(label, expanded)}
+          onClick={onToggle}
+        >
+          <ChevronRightIcon
+            width={14}
+            height={14}
+            className={`self-center text-base-content/50 transition-transform ${expanded ? "rotate-90" : ""}`}
+          />
+          <span className={`tone-dot ${statusTone(kind)} self-center`} />
+          {label}
+          <span className="font-mono text-xs font-normal text-base-content/50">{count}</span>
+        </button>
+      </h2>
+      {expanded && children}
+    </section>
   );
 }
 
@@ -131,13 +193,21 @@ function EpicSection({ summary, expanded, onToggle, gateTitles, issueHref, write
           <span className={`chip ${statusTone(epic.status)}`}>
             {statusLabel(messages, epic.status)}
           </span>
-          <EpicProgress
-            epicId={epic.id}
-            closed={closedChildren}
-            total={totalChildren}
-            barClassName="w-40 min-w-24 shrink"
-            countClassName="min-w-20 shrink-0 text-right"
-          />
+          {epic.status === "closed" ? (
+            <ClosedEpicProgress
+              closedAt={epic.closedAt}
+              closed={closedChildren}
+              total={totalChildren}
+            />
+          ) : (
+            <EpicProgress
+              epicId={epic.id}
+              closed={closedChildren}
+              total={totalChildren}
+              barClassName="w-40 min-w-24 shrink"
+              countClassName="min-w-20 shrink-0 text-right"
+            />
+          )}
           <Link
             className="btn btn-ghost btn-xs shrink-0 rounded-full"
             href={graphHref({ kind: "epic", id: epic.id })}
@@ -155,6 +225,37 @@ function EpicSection({ summary, expanded, onToggle, gateTitles, issueHref, write
         />
       )}
     </section>
+  );
+}
+
+/** 닫힌 에픽은 진행률이 거의 항상 100%라, 막대 대신 닫은 날짜와 닫힌 하위 이슈 수를 보입니다. */
+function ClosedEpicProgress({
+  closedAt,
+  closed,
+  total,
+}: {
+  closedAt: number | null;
+  closed: number;
+  total: number;
+}) {
+  const messages = useMessages();
+  const locale = useLocale();
+  return (
+    <>
+      {closedAt !== null && (
+        <time
+          className="whitespace-nowrap text-xs text-base-content/55"
+          dateTime={new Date(closedAt).toISOString()}
+        >
+          {messages.epics.closedOn(
+            new Date(closedAt).toLocaleDateString(locale, { dateStyle: "medium" }),
+          )}
+        </time>
+      )}
+      <span className="min-w-20 shrink-0 whitespace-nowrap text-right font-mono text-xs text-base-content/55 tabular-nums">
+        {closed}/{total}
+      </span>
+    </>
   );
 }
 

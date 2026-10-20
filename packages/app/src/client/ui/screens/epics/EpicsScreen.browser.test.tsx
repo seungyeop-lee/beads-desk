@@ -70,13 +70,10 @@ for (const width of [455, 500, 1440]) {
   });
 }
 
-test("닫힌 에픽만 있으면 처음 열 때 하위 이슈 목록이 접혀 있고, 펼치기 단추로 펼칠 수 있다", async () => {
+test("닫힌 에픽 묶음은 처음에 접혀 있고, 묶음을 펼치면 닫힌 에픽 카드가 하위 이슈 목록을 접은 채로 보이며 펼치기 단추로 펼칠 수 있다", async () => {
   reads.epics = [
-    {
-      epic: issue("desk-done", { title: "끝난 에픽", issueType: "epic", status: "closed" }),
-      totalChildren: 1,
-      closedChildren: 1,
-    },
+    { epic: epic("desk-open", "열린 에픽"), totalChildren: 0, closedChildren: 0 },
+    CLOSED_EPIC,
   ];
   reads.descendants = {
     "desk-done": {
@@ -87,6 +84,23 @@ test("닫힌 에픽만 있으면 처음 열 때 하위 이슈 목록이 접혀 �
     },
   };
   const screen = await renderScreen();
+
+  await expect.element(screen.getByRole("link", { name: "열린 에픽" })).toBeVisible();
+  const closedGroup = screen.getByRole("button", {
+    name: messages.epics.toggleGroup(messages.epics.groups.closed, false),
+  });
+  await expect.element(closedGroup).toHaveAttribute("aria-expanded", "false");
+  await expect.element(closedGroup).toHaveTextContent(`${messages.epics.groups.closed}1`);
+  await expect.element(screen.getByRole("link", { name: "끝난 에픽" })).not.toBeInTheDocument();
+
+  await closedGroup.click();
+  // 닫힌 카드는 진행률 막대 대신 닫은 날짜와 닫힌 하위 이슈 수를 보입니다.
+  const card = page.elementLocator(
+    screen.getByRole("link", { name: "끝난 에픽" }).element().closest("section")!,
+  );
+  await expect.element(card.getByText("닫은 날 2026. 10. 20.", { exact: true })).toBeVisible();
+  await expect.element(card.getByText("1/1", { exact: true })).toBeVisible();
+  await expect.element(card.getByRole("progressbar")).not.toBeInTheDocument();
 
   const toggle = screen.getByRole("button", { name: "desk-done 하위 이슈 펼치기" });
   await expect.element(toggle).toHaveAttribute("aria-expanded", "false");
@@ -274,6 +288,35 @@ test("펼친 하위 목록의 에픽 행은 하위 수 대신 그 에픽의 직�
 });
 
 // 455px는 Chrome 110%에서 가장 좁힌 창입니다.
+for (const [locale, closedOn] of [
+  ["ko", "닫은 날 2026. 10. 20."],
+  ["en", "Closed Oct 20, 2026"],
+] as const) {
+  test(`창 폭 455px에서 닫힌 에픽 카드의 닫은 날짜와 하위 이슈 수가 한 줄로 카드 안에 보인다(${locale})`, async () => {
+    reads.epics = [CLOSED_EPIC];
+    await page.viewport(455, 900);
+    const screen = await render(
+      <LocaleProvider locale={locale}>
+        <EpicsScreen />
+      </LocaleProvider>,
+    );
+    await screen.getByRole("button", { expanded: false, name: /Closed epics|닫힌 에픽/ }).click();
+
+    for (const text of [closedOn, "1/1"]) {
+      const element = screen.getByText(text, { exact: true }).element();
+      const card = element.closest("section")!.getBoundingClientRect();
+      const box = element.getBoundingClientRect();
+      expect(lineCount(element), `${locale} ${text} 줄 수`).toBe(1);
+      expect(box.left, `${locale} ${text} 왼쪽 끝`).toBeGreaterThanOrEqual(card.left);
+      expect(box.right, `${locale} ${text} 오른쪽 끝`).toBeLessThanOrEqual(card.right);
+    }
+    expect(document.documentElement.scrollWidth, `${locale} 페이지 가로 넘침`).toBe(
+      document.documentElement.clientWidth,
+    );
+  });
+}
+
+// 455px는 Chrome 110%에서 가장 좁힌 창입니다.
 for (const locale of ["ko", "en"] as const) {
   test(`창 폭 455px에서 하위 에픽 행의 진행률은 제목 칸 밖으로 넘치지 않는다(${locale})`, async () => {
     reads.epics = [{ epic: epic("desk-a", "상위 에픽"), totalChildren: 2, closedChildren: 0 }];
@@ -317,6 +360,21 @@ function lineCount(element: Element) {
   range.selectNodeContents(element);
   return new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
 }
+
+/**
+ * 하위 이슈 1개를 모두 닫은 뒤 UTC 정오에 닫은 에픽입니다.
+ * UTC-11부터 UTC+11 사이의 시간대에서는 닫은 날이 2026년 10월 20일로 보입니다.
+ */
+const CLOSED_EPIC: EpicSummary = {
+  epic: issue("desk-done", {
+    title: "끝난 에픽",
+    issueType: "epic",
+    status: "closed",
+    closedAt: Date.UTC(2026, 9, 20, 12),
+  }),
+  totalChildren: 1,
+  closedChildren: 1,
+};
 
 /** 에픽 A 아래에 하위 이슈 3개 중 1개가 닫힌 에픽 B와, 하위 이슈가 1개인 작업 C가 있습니다. */
 const NESTED_EPIC_DESCENDANTS: Issue[] = [

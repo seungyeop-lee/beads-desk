@@ -398,6 +398,9 @@ export const enMessages: Messages = {
     addExistingChildPlaceholder: "Search an existing issue to add as a child",
     addChildConfirm: "Add as child",
     childAdded: (id, epicId) => `Added ${id} as a child of ${epicId}`,
+    groups: { open: "Open epics", closed: "Closed epics" },
+    toggleGroup: (label, expanded) => `${expanded ? "Collapse" : "Expand"} ${label}`,
+    closedOn: (date) => `Closed ${date}`,
   },
   graph: {
     scopes: { epic: "Order", center: "Blocks chain" },
