@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { appendFile, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createDaemon } from "./daemon.js";
 
@@ -13,9 +13,10 @@ import { createDaemon } from "./daemon.js";
 const FAKE_SERVER = `
 import { createServer } from "node:http";
 import { appendFileSync } from "node:fs";
+import { basename } from "node:path";
 appendFileSync(process.env.PID_LOG, process.pid + "\\n");
-const workspaces = [process.env.BEADS_DESK_WORKSPACE];
-let current = workspaces[0];
+const roots = [process.env.BEADS_DESK_WORKSPACE];
+const entry = (root) => ({ root, slug: basename(root) });
 const server = createServer(async (request, response) => {
   const send = (status, body) => {
     response.writeHead(status, { "Content-Type": "application/json" });
@@ -24,13 +25,12 @@ const server = createServer(async (request, response) => {
   if (request.url === "/api/health") {
     return send(200, { runtime: { bdVersion: process.env.BD_MISSING ? null : "bd version 1.3.1" } });
   }
-  if (request.method === "GET") return send(200, { ok: true, data: { current, workspaces } });
+  if (request.method === "GET") return send(200, { ok: true, data: { workspaces: roots.map(entry) } });
   let raw = "";
   for await (const chunk of request) raw += chunk;
-  const { path, select } = JSON.parse(raw);
-  if (!workspaces.includes(path)) workspaces.push(path);
-  if (select) current = path;
-  send(200, { ok: true, data: { current, workspaces } });
+  const { path } = JSON.parse(raw);
+  if (!roots.includes(path)) roots.push(path);
+  send(200, { ok: true, data: { registered: entry(path), workspaces: roots.map(entry) } });
 });
 setTimeout(() => server.listen(Number(process.env.PORT), "127.0.0.1"), 500);
 `;
@@ -162,12 +162,25 @@ async function serverState(): Promise<{ url: string; port: number }> {
   return JSON.parse(await readFile(join(root, "runtime", "server.json"), "utf8"));
 }
 
-async function workspaces(): Promise<{ current: string; workspaces: string[] }> {
+/** 서버에 등록한 workspace 디렉터리를 등록한 순서대로 돌려줍니다. */
+async function workspaces(): Promise<string[]> {
   const { url } = await serverState();
-  return (await (await fetch(`${url}/api/workspaces`)).json()).data;
+  const body = await (await fetch(`${url}/api/workspaces`)).json();
+  return body.data.workspaces.map(({ root }: { root: string }) => root);
 }
 
-test("실행 중이면 새로 띄우지 않고 지금 디렉터리를 현재 workspace로 바꾼다", async () => {
+test("시작하면 그 workspace의 화면 주소를 출력한다", async () => {
+  const commands = daemon();
+  const first = await workspace("first");
+
+  expect(await commands.start({ cwd: first, open: false })).toBe(0);
+
+  const { url } = await serverState();
+  expect(printed).toContain(`URL: ${url}/w/${basename(first)}`);
+  await commands.stop();
+});
+
+test("실행 중이면 새로 띄우지 않고 지금 디렉터리를 등록해 그 workspace의 화면 주소를 출력한다", async () => {
   const commands = daemon();
   const first = await workspace("first");
   const second = await workspace("second");
@@ -175,8 +188,10 @@ test("실행 중이면 새로 띄우지 않고 지금 디렉터리를 현재 wor
   expect(await commands.start({ cwd: first, open: false })).toBe(0);
   expect(await commands.start({ cwd: second, open: false })).toBe(0);
 
+  const { url } = await serverState();
   expect(await startedPids()).toHaveLength(1);
-  expect(await workspaces()).toEqual({ current: second, workspaces: [first, second] });
+  expect(await workspaces()).toEqual([first, second]);
+  expect(printed).toContain(`URL: ${url}/w/${basename(second)}`);
   expect(await commands.stop()).toBe(0);
 });
 
@@ -188,7 +203,9 @@ test("브라우저는 open을 줄 때만 연다", async () => {
   await commands.start({ cwd: first, open: true });
   await commands.stop();
 
-  expect(openBrowser.mock.calls).toEqual([[expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/)]]);
+  expect(openBrowser.mock.calls).toEqual([
+    [expect.stringMatching(new RegExp(`^http://127\\.0\\.0\\.1:\\d+/w/${basename(first)}$`))],
+  ]);
 });
 
 test("start를 동시에 실행해도 서버는 하나만 뜨고, stop으로 모두 끈다", async () => {
@@ -223,11 +240,12 @@ test("restart는 지워진 workspace를 건너뛰고, 나머지를 같은 순서
   const { port } = await serverState();
   await rm(third, { recursive: true });
 
-  const code = await commands.restart({ open: false });
+  const code = await commands.restart({ cwd: second, open: false });
 
   expect(code).toBe(0);
   expect((await serverState()).port).toBe(port);
-  expect(await workspaces()).toEqual({ current: second, workspaces: [first, second] });
+  expect(await workspaces()).toEqual([first, second]);
+  expect(printed.at(-1)).toBe(`URL: http://127.0.0.1:${port}/w/${basename(second)}`);
   await commands.stop();
 });
 
@@ -298,9 +316,9 @@ test("git worktree에서 시작하면 worktree 최상위 디렉터리로 띄우�
 
   expect(await commands.start({ cwd: nested, open: false })).toBe(0);
   expect(printed).toContain(`workspace: ${worktree}`);
-  expect(await commands.restart({ open: false })).toBe(0);
+  expect(await commands.restart({ cwd: nested, open: false })).toBe(0);
 
-  expect(await workspaces()).toEqual({ current: worktree, workspaces: [worktree] });
+  expect(await workspaces()).toEqual([worktree]);
   await commands.stop();
 });
 
@@ -319,7 +337,7 @@ test.each([
     expect(await commands.start({ cwd: linked, open: false })).toBe(0);
 
     expect(printed).toContain(`workspace: ${linked}`);
-    expect(await workspaces()).toEqual({ current: linked, workspaces: [linked] });
+    expect(await workspaces()).toEqual([linked]);
     await commands.stop();
   },
 );
@@ -334,7 +352,7 @@ test("redirect만 있는 git 저장소의 worktree에서 시작하면 worktree �
 
   expect(await commands.start({ cwd: worktree, open: false })).toBe(0);
 
-  expect(await workspaces()).toEqual({ current: worktree, workspaces: [worktree] });
+  expect(await workspaces()).toEqual([worktree]);
   await commands.stop();
 });
 
@@ -378,7 +396,7 @@ test("하위 디렉터리에서 시작하면 상위의 beads workspace로 띄운
 
   expect(await startedPids()).toHaveLength(1);
   expect(printed).toContain(`workspace: ${first}`);
-  expect(await workspaces()).toEqual({ current: first, workspaces: [first] });
+  expect(await workspaces()).toEqual([first]);
   await commands.stop();
 });
 

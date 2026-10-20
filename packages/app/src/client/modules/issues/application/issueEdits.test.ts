@@ -20,7 +20,7 @@ const writes: IssueWrites = {
   pending: false,
   error: null,
   dismissError: vi.fn<() => void>(),
-  run: (write) => write(),
+  run: (write) => write("demo"),
 };
 const blocked: CloseIssueResult = { ok: false, closeBlocked: true, error: "cannot close\nmore" };
 let prompts: StatusPrompts;
@@ -43,7 +43,7 @@ test("필드를 고치고 성공 여부를 돌려준다", async () => {
 
   const saved = await issueEdits(writes, "demo-1").update({ assignee: "alice" });
 
-  expect(updateIssueAction).toHaveBeenCalledWith("demo-1", { assignee: "alice" });
+  expect(updateIssueAction).toHaveBeenCalledWith("demo", "demo-1", { assignee: "alice" });
   expect(saved).toBe(true);
 });
 
@@ -52,7 +52,7 @@ test("닫힘과 보류가 아닌 상태는 묻지 않고 바꾼다", async () =>
 
   const changed = await issueEdits(writes, "demo-1").changeStatus("in_progress", prompts);
 
-  expect(setIssueStatusAction).toHaveBeenCalledWith("demo-1", "in_progress");
+  expect(setIssueStatusAction).toHaveBeenCalledWith("demo", "demo-1", "in_progress");
   expect(prompts.askReason).not.toHaveBeenCalled();
   expect(prompts.askDeferral).not.toHaveBeenCalled();
   expect(changed).toBe(true);
@@ -65,7 +65,7 @@ test("닫힘이면 사유를 물어 그 사유로 닫고, 막힘이 풀린 이�
   const changed = await issueEdits(writes, "demo-1").changeStatus("closed", prompts);
 
   expect(prompts.askReason).toHaveBeenCalledWith("demo-1");
-  expect(closeIssueAction).toHaveBeenCalledWith("demo-1", "끝냄", false);
+  expect(closeIssueAction).toHaveBeenCalledWith("demo", "demo-1", "끝냄", false);
   expect(prompts.announceUnblocked).toHaveBeenCalledWith(unblocked);
   expect(changed).toBe(true);
 });
@@ -97,8 +97,8 @@ test("닫기가 거부되면 첫 줄 사유로 확인을 받고, 확인하면 �
   expect(prompts.confirmForce).toHaveBeenCalledWith("cannot close");
   expect(writes.dismissError).toHaveBeenCalledOnce();
   expect(vi.mocked(closeIssueAction).mock.calls).toEqual([
-    ["demo-1", "끝냄", false],
-    ["demo-1", "끝냄", true],
+    ["demo", "demo-1", "끝냄", false],
+    ["demo", "demo-1", "끝냄", true],
   ]);
   expect(changed).toBe(true);
 });
@@ -119,7 +119,7 @@ test("보류면 기한과 사유를 물어 그대로 보류한다", async () => 
   const changed = await issueEdits(writes, "demo-1").changeStatus("deferred", prompts);
 
   expect(prompts.askDeferral).toHaveBeenCalledWith("demo-1");
-  expect(deferIssueAction).toHaveBeenCalledWith("demo-1", "tomorrow", "대기");
+  expect(deferIssueAction).toHaveBeenCalledWith("demo", "demo-1", "tomorrow", "대기");
   expect(setIssueStatusAction).not.toHaveBeenCalled();
   expect(changed).toBe(true);
 });

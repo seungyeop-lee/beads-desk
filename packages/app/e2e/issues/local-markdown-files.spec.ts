@@ -43,7 +43,7 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일 링크
       markdown,
     );
     await workspace.bd("comments", "add", id, markdown);
-    await page.goto(`/issues?issue=${id}`);
+    await page.goto(`issues?issue=${id}`);
     const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
     const fields = [
       dialog.getByRole("region", { name: "설명", exact: true }),
@@ -56,15 +56,15 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일 링크
         const image = field.getByRole("img", { name: `${name} PNG` });
         await expect(image).toBeVisible();
         await expect(image).toHaveJSProperty("naturalWidth", 80);
-        await expect(image).toHaveAttribute("src", localFileUrl(path.png));
+        await expect(image).toHaveAttribute("src", localFileUrl(path.png, workspace.slug));
         await expect(field.getByRole("link", { name: `${name} 문서` })).toHaveAttribute(
           "href",
-          localFileUrl(path.md),
+          localFileUrl(path.md, workspace.slug),
         );
       }
       await expect(field.getByRole("link", { name: "에픽 화면" })).toHaveAttribute(
         "href",
-        "/epics",
+        `/w/${workspace.slug}/epics`,
       );
       await expect(field.getByRole("link", { name: "외부 문서" })).toHaveAttribute(
         "href",
@@ -87,7 +87,7 @@ test("설명·댓글·메모에서 workspace와 외부 worktree의 파일 링크
       await expect(dialog).toBeVisible();
     }
     await description.getByRole("link", { name: "에픽 화면" }).click();
-    await expect(page).toHaveURL(/\/epics$/);
+    await expect(page).toHaveURL(new RegExp(`/w/${workspace.slug}/epics$`));
     await page.goBack();
     await expect(dialog).toBeVisible();
 
@@ -123,7 +123,7 @@ test("로컬 HTML과 SVG를 열어도 스크립트가 실행되지 않고 원문
   for (const extension of ["html", "svg"]) {
     const path = join(workspace.path, `실행 검증.${extension}`);
     await writeFile(path, source);
-    await page.goto(localFileUrl(path));
+    await page.goto(localFileUrl(path, workspace.slug));
     await expect(page.getByText(source, { exact: true })).toBeVisible();
     await expect(page).not.toHaveTitle("실행됨");
     await expect(page.getByRole("heading")).toHaveCount(0);
@@ -146,7 +146,7 @@ test("본문의 로컬 webm 링크를 열면 영상이 재생되고 재생 위�
   await recording.video()!.saveAs(path);
   const id = await workspace.createIssue("영상 링크", "--description", `[화면 녹화](<${path}>)`);
 
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   await page
     .getByRole("dialog", { name: `${id} 이슈` })
     .getByRole("link", { name: "화면 녹화" })

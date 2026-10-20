@@ -1,7 +1,7 @@
 import { openGates } from "@beads-desk/bd";
-import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
+import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
 import { respondBdOutcome } from "@/server/web/http/routeResponse";
 
-export async function handleOpenGatesRequest(): Promise<Response> {
-  return respondBdOutcome(await openGates(currentWorkspaceRoot()));
+export function handleOpenGatesRequest(request: Request): Promise<Response> {
+  return withRequestWorkspace(request, async (cwd) => respondBdOutcome(await openGates(cwd)));
 }

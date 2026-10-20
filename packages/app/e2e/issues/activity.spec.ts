@@ -13,7 +13,7 @@ test("CLI로 상태를 바꾸고 관계를 더한 이슈의 활동 탭에 두 �
   await new Promise((resolve) => setTimeout(resolve, 1_100));
   await workspace.bd("dep", "add", target, blocker);
 
-  await page.goto(`/issues?issue=${target}`);
+  await page.goto(`issues?issue=${target}`);
   const dialog = page.getByRole("dialog", { name: `${target} 이슈` });
   await dialog.getByRole("tab", { name: "활동" }).click();
 

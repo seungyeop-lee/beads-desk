@@ -18,6 +18,7 @@ import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { UserIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
+import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -38,6 +39,7 @@ export function FocusScreen() {
   const { error, loading } = issueList;
   const issueHref = useIssueHref();
   const messages = useMessages();
+  const workspaceHref = useWorkspaceHref();
   const countOf = { in_progress: view?.inProgress, ready: view?.ready, blocked: view?.blocked };
 
   return (
@@ -92,7 +94,7 @@ export function FocusScreen() {
                 action={
                   view.ready.length > NEXT_UP_LIMIT && (
                     <Link
-                      href={issueViewHref("ready")}
+                      href={workspaceHref(issueViewHref("ready"))}
                       className="text-xs font-medium hover:underline"
                     >
                       {messages.focus.seeAllReady(view.ready.length)} →
@@ -169,6 +171,7 @@ export function FocusScreen() {
 }
 
 type CountCardProps = {
+  /** workspace 안의 화면 경로입니다. */
   href: string;
   tone: string;
   label: string;
@@ -177,9 +180,10 @@ type CountCardProps = {
 
 /** 누르면 개수에 해당하는 이슈를 모아 보는 화면으로 이동합니다. */
 function CountCard({ href, tone, label, count }: CountCardProps) {
+  const workspaceHref = useWorkspaceHref();
   return (
     <Link
-      href={href}
+      href={workspaceHref(href)}
       className={`tone-wash ${tone} flex flex-col gap-1 rounded-box px-5 py-4 transition hover:shadow-sm`}
     >
       <span className="flex items-center gap-2 text-sm font-semibold">

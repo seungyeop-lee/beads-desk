@@ -16,7 +16,7 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
     plain: { title: "평범한 작업", type: "task" },
   });
 
-  await page.goto("/focus");
+  await page.goto("focus");
   await page.getByRole("link", { name: "판단 기다림 1", exact: true }).click();
   await expect(page).toHaveURL(/\/human/);
   await expect(screenTab(page, "판단 기다림 1개")).toBeVisible();
@@ -51,7 +51,7 @@ test("응답 없이 닫는 동안에는 응답 편집기가 감춰지고 취소�
     other: { title: "남은 질문", type: "task", priority: 2, labels: ["human"] },
   });
 
-  await page.goto("/human");
+  await page.goto("human");
   await page.getByRole("button", { name: /더는 필요 없는 질문/ }).click();
   const decision = page.getByRole("region", { name: "더는 필요 없는 질문" });
   const response = decision.getByRole("textbox", { name: "응답", exact: true });
@@ -92,7 +92,7 @@ test("human gate는 human 라벨이 붙어도 확인 요청 묶음에만 보이�
   });
 
   // human 라벨이 붙은 gate는 질문 묶음과 탭의 개수에 한 번 더 들어가지 않는다.
-  await page.goto("/human");
+  await page.goto("human");
   const gates = page.getByRole("region", { name: "확인 요청", exact: true });
   const questions = page.getByRole("region", { name: "질문", exact: true });
   await expect(gates.getByRole("heading")).toHaveText("확인 요청1");

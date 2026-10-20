@@ -16,8 +16,8 @@ const START_TIMEOUT = 60_000;
 type AppServer = { url: string; stop(): Promise<void> };
 
 /**
- * 서버의 현재 workspace는 서버 전체에서 하나라서, worker마다 마지막 build로 `next start`를 따로 띄웁니다.
- * 한 worker의 시나리오는 차례로 실행되므로 서버 하나를 시나리오 하나만 씁니다.
+ * worker마다 마지막 build로 `next start`를 따로 띄웁니다. 한 worker의 시나리오는 차례로 실행되므로 서버 하나를 시나리오 하나만 씁니다.
+ * 시나리오마다 등록하는 workspace는 서버에 계속 쌓이므로, 시나리오는 자기 workspace의 화면 주소로만 접근합니다(`bdWorkspace.ts`).
  */
 export const test = base.extend<object, { appServerUrl: string }>({
   appServerUrl: [

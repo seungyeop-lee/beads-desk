@@ -11,7 +11,7 @@ const WRITES: IssueWrites = {
   pending: false,
   error: null,
   dismissError: () => {},
-  run: (write) => write(),
+  run: (write) => write("demo"),
 };
 
 test("판단을 기다리는 이슈의 상세에만 응답 영역이 있다", async () => {

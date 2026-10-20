@@ -6,7 +6,7 @@ test("상세에서 가져가면 담당자가 정해지고 진행 중으로 바�
 }) => {
   const id = await workspace.createIssue("e2e 가져갈 작업", "--type", "task");
 
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const detail = page.getByRole("dialog", { name: `${id} 이슈` });
   await detail.getByRole("button", { name: "가져가기" }).click();
 
@@ -30,7 +30,7 @@ test("다른 담당자에게 지정된 이슈를 상세에서 가져가면 bd의
     "someone-else",
   );
 
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const detail = page.getByRole("dialog", { name: `${id} 이슈` });
   await detail.getByRole("button", { name: "가져가기" }).click();
 

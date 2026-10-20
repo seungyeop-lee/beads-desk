@@ -39,7 +39,8 @@ vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
   useIssueHref: () => (id: string) => `/epics?issue=${id}`,
 }));
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/epics",
+  useParams: () => ({ workspace: "demo" }),
+  usePathname: () => "/w/demo/epics",
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
@@ -232,7 +233,10 @@ test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 �
   const childEpicRow = screen.getByRole("row", { name: /하위 에픽/ });
   await expect
     .element(childEpicRow.getByRole("link", { name: messages.graph.epicOrder }))
-    .toHaveAttribute("href", graphHref({ kind: "epic", id: "desk-parent.1" }, "/epics?"));
+    .toHaveAttribute(
+      "href",
+      `/w/demo${graphHref({ kind: "epic", id: "desk-parent.1" }, "/epics?")}`,
+    );
   await expect
     .element(childEpicRow.getByTitle(messages.issueTable.dependencyCounts(0, 0), { exact: true }))
     .not.toBeInTheDocument();

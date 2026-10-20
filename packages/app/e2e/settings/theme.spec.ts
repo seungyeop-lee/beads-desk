@@ -8,7 +8,7 @@ function appliedScheme(page: Page) {
 
 test("테마를 고르지 않으면 운영체제 설정을 따른다", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
-  await page.goto("/issues");
+  await page.goto("issues");
   await expect.poll(() => appliedScheme(page)).toBe("dark");
 
   await page.emulateMedia({ colorScheme: "light" });
@@ -19,7 +19,7 @@ test("설정에서 고른 테마는 운영체제 설정과 관계없이 적용�
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
-  await page.goto("/issues");
+  await page.goto("issues");
 
   await page.getByRole("button", { name: "설정" }).click();
   const settings = page.getByRole("dialog", { name: "설정" });
@@ -29,7 +29,7 @@ test("설정에서 고른 테마는 운영체제 설정과 관계없이 적용�
   await page.reload();
   await expect.poll(() => appliedScheme(page)).toBe("dark");
   // 서버가 처음 보내는 HTML에 이미 테마가 들어 있어야, 다른 테마가 잠깐 보였다가 바뀌지 않습니다.
-  const html = await (await page.request.get("/issues")).text();
+  const html = await (await page.request.get("issues")).text();
   expect(html).toContain('data-theme="desk-dark"');
 
   await page.emulateMedia({ colorScheme: "dark" });

@@ -14,7 +14,7 @@ test("발견 관계는 상세와 옆 패널에서 현재 이슈를 기준으로 
     [["discovered", "work", "discovered-from"]],
   );
 
-  await page.goto(`/issues?issue=${work}`);
+  await page.goto(`issues?issue=${work}`);
   const workLinks = page
     .getByRole("dialog", { name: `${work} 이슈` })
     .getByRole("region", { name: "연결된 이슈" });
@@ -41,7 +41,7 @@ test("연결된 이슈 항목의 지우기 단추는 항목 링크 대신 눌려
     [["main", "blocker"]],
   );
 
-  await page.goto(`/issues?issue=${main}`);
+  await page.goto(`issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   page.once("dialog", (confirm) => void confirm.accept());
   await dialog.getByRole("button", { name: `${blocker} 의존 관계 지우기` }).click();

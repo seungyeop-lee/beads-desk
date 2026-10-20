@@ -11,7 +11,7 @@ test("이슈 표는 처음에 결정을 빼고 보이고, 유형 메뉴에서 �
   });
   const tabs = page.getByRole("navigation", { name: "보기" });
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await expect(page.getByRole("link", { name: "e2e 작업" })).toBeVisible();
   await expect(page.getByRole("link", { name: "e2e 결정" })).toHaveCount(0);
 

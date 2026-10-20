@@ -1,6 +1,10 @@
 import { openGates } from "@beads-desk/bd";
 import { expect, test, vi } from "vitest";
-import { expectRouteBdError, expectRouteData } from "@/server/web/http/routeApiTest";
+import {
+  expectRouteBdError,
+  expectRouteData,
+  routeApiRequest,
+} from "@/server/web/http/routeApiTest";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { handleOpenGatesRequest } from "./gatesRouteApi";
 
@@ -10,7 +14,7 @@ test("workspace의 닫히지 않은 gate를 돌려준다", async () => {
   const gates = [issue("g-1", { issueType: "gate", awaitType: "timer" })];
   vi.mocked(openGates).mockResolvedValue({ ok: true, value: gates });
 
-  const response = await handleOpenGatesRequest();
+  const response = await handleOpenGatesRequest(routeApiRequest());
 
   expect(openGates).toHaveBeenCalledWith("/workspace");
   await expectRouteData(response, gates);
@@ -19,5 +23,5 @@ test("workspace의 닫히지 않은 gate를 돌려준다", async () => {
 test("gate 조회가 실패하면 bd의 메시지를 오류로 돌려준다", async () => {
   vi.mocked(openGates).mockResolvedValue({ ok: false, error: { message: "boom\n", exitCode: 1 } });
 
-  await expectRouteBdError(await handleOpenGatesRequest(), "boom");
+  await expectRouteBdError(await handleOpenGatesRequest(routeApiRequest()), "boom");
 });

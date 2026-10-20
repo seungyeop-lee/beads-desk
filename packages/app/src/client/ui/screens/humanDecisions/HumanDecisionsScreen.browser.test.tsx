@@ -64,7 +64,8 @@ vi.mock("@/client/modules/workspace/application/useWorkspaces", () => ({
   useWorkspaces: () => ({ data: null, error: null, loading: false }),
 }));
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/human",
+  useParams: () => ({ workspace: "demo" }),
+  usePathname: () => "/w/demo/human",
   useSearchParams: () => reads.search,
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));

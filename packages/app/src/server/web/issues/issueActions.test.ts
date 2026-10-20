@@ -49,6 +49,8 @@ vi.mock("@/server/web/locale/requestLocale", () => ({
 }));
 
 const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
+/** `/workspace` 디렉터리를 화면 주소에서 가리키는 이름입니다. */
+const routeApiWorkspaceSlug = "workspace";
 const written = { ok: true, value: null } as const;
 
 beforeEach(() => {
@@ -64,7 +66,10 @@ describe("updateIssueAction", () => {
   test("workspace에서 필드를 바꾸고, 바로 변경을 확인해 다른 화면에 알린다", async () => {
     vi.mocked(bd.updateIssueFields).mockResolvedValue(written);
 
-    const result = await updateIssueAction("demo-1", { title: "새 제목", priority: 0 });
+    const result = await updateIssueAction(routeApiWorkspaceSlug, "demo-1", {
+      title: "새 제목",
+      priority: 0,
+    });
 
     expect(bd.updateIssueFields).toHaveBeenCalledWith("/workspace", "demo-1", {
       title: "새 제목",
@@ -81,7 +86,11 @@ describe("updateIssueAction", () => {
     ["정수가 아닌 우선순위", { priority: 1.5 }],
     ["객체가 아닌 값", "title"],
   ])("%s는 bd를 실행하지 않고 거부한다", async (_case, changes) => {
-    const result = await updateIssueAction("demo-1", changes as IssueChanges);
+    const result = await updateIssueAction(
+      routeApiWorkspaceSlug,
+      "demo-1",
+      changes as IssueChanges,
+    );
 
     expect(bd.updateIssueFields).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
@@ -93,7 +102,7 @@ describe("updateIssueAction", () => {
       error: { message: "no issue found\n", exitCode: 1 },
     });
 
-    const result = await updateIssueAction("demo-1", { title: "x" });
+    const result = await updateIssueAction(routeApiWorkspaceSlug, "demo-1", { title: "x" });
 
     expect(checkWorkspaceChangesNow).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "no issue found" });
@@ -105,7 +114,7 @@ describe("updateIssueAction", () => {
       error: { kind: "noChanges", exitCode: null },
     });
 
-    const result = await updateIssueAction("demo-1", {});
+    const result = await updateIssueAction(routeApiWorkspaceSlug, "demo-1", {});
 
     expect(checkWorkspaceChangesNow).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "바꿀 내용이 없습니다." });
@@ -114,7 +123,11 @@ describe("updateIssueAction", () => {
 
 describe("setIssueStatusAction", () => {
   test("저장 상태가 아닌 값은 거부한다", async () => {
-    const result = await setIssueStatusAction("demo-1", "ready" as IssueStatus);
+    const result = await setIssueStatusAction(
+      routeApiWorkspaceSlug,
+      "demo-1",
+      "ready" as IssueStatus,
+    );
 
     expect(bd.setIssueStatus).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
@@ -123,7 +136,7 @@ describe("setIssueStatusAction", () => {
   test.each<IssueStatus>(["closed", "deferred"])(
     "%s는 사유를 받는 전용 action으로만 바꾼다",
     async (status) => {
-      const result = await setIssueStatusAction("demo-1", status);
+      const result = await setIssueStatusAction(routeApiWorkspaceSlug, "demo-1", status);
 
       expect(bd.setIssueStatus).not.toHaveBeenCalled();
       expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
@@ -137,7 +150,7 @@ describe("deferIssueAction", () => {
     async (until) => {
       vi.mocked(bd.deferIssue).mockResolvedValue(written);
 
-      const result = await deferIssueAction("demo-1", until, "API 대기");
+      const result = await deferIssueAction(routeApiWorkspaceSlug, "demo-1", until, "API 대기");
 
       expect(bd.deferIssue).toHaveBeenCalledWith("/workspace", "demo-1", {
         until,
@@ -154,7 +167,7 @@ describe("deferIssueAction", () => {
     ["날짜 말고 다른 필드가 있는 값", { date: "2026-12-01", time: "09:00" }],
     ["null", null],
   ])("%s는 거부한다", async (_case, until) => {
-    const result = await deferIssueAction("demo-1", until as DeferUntil, "");
+    const result = await deferIssueAction(routeApiWorkspaceSlug, "demo-1", until as DeferUntil, "");
 
     expect(bd.deferIssue).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
@@ -165,7 +178,7 @@ describe("claimIssueAction", () => {
   test("이슈를 가져가고 다른 화면에 알린다", async () => {
     vi.mocked(bd.claimIssue).mockResolvedValue(written);
 
-    const result = await claimIssueAction("demo-1");
+    const result = await claimIssueAction(routeApiWorkspaceSlug, "demo-1");
 
     expect(bd.claimIssue).toHaveBeenCalledWith("/workspace", "demo-1");
     expect(result).toEqual({ ok: true, data: null });
@@ -173,7 +186,7 @@ describe("claimIssueAction", () => {
   });
 
   test("문자열이 아닌 id는 거부한다", async () => {
-    const result = await claimIssueAction(1 as unknown as string);
+    const result = await claimIssueAction(routeApiWorkspaceSlug, 1 as unknown as string);
 
     expect(bd.claimIssue).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
@@ -187,7 +200,7 @@ describe("closeIssueAction", () => {
       value: [issue("demo-2", { title: "후행" })],
     });
 
-    const result = await closeIssueAction("demo-1", "끝냄", false);
+    const result = await closeIssueAction(routeApiWorkspaceSlug, "demo-1", "끝냄", false);
 
     expect(bd.closeIssue).toHaveBeenCalledWith("/workspace", "demo-1", {
       reason: "끝냄",
@@ -204,7 +217,7 @@ describe("closeIssueAction", () => {
       error: { message: "cannot close demo-1\n", exitCode: 1 },
     });
 
-    const result = await closeIssueAction("demo-1", "", false);
+    const result = await closeIssueAction(routeApiWorkspaceSlug, "demo-1", "", false);
 
     expect(result).toEqual({ ok: false, closeBlocked: true, error: "cannot close demo-1" });
     expect(checkWorkspaceChangesNow).not.toHaveBeenCalled();
@@ -215,7 +228,12 @@ describe("closeAsReplacedAction", () => {
   test("대체나 중복으로 닫고 다른 화면에 알린다", async () => {
     vi.mocked(bd.closeAsReplaced).mockResolvedValue(written);
 
-    const result = await closeAsReplacedAction("demo-1", "duplicate", "demo-2");
+    const result = await closeAsReplacedAction(
+      routeApiWorkspaceSlug,
+      "demo-1",
+      "duplicate",
+      "demo-2",
+    );
 
     expect(bd.closeAsReplaced).toHaveBeenCalledWith("/workspace", "demo-1", "duplicate", "demo-2");
     expect(result).toEqual({ ok: true, data: null });
@@ -223,7 +241,12 @@ describe("closeAsReplacedAction", () => {
   });
 
   test("대체와 중복이 아닌 방법은 거부한다", async () => {
-    const result = await closeAsReplacedAction("demo-1", "close" as Replacement, "demo-2");
+    const result = await closeAsReplacedAction(
+      routeApiWorkspaceSlug,
+      "demo-1",
+      "close" as Replacement,
+      "demo-2",
+    );
 
     expect(bd.closeAsReplaced).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
@@ -234,7 +257,7 @@ describe("createIssueAction", () => {
   test("고르지 않은 유형과 우선순위는 bd 기본값을 쓰고, 새 id를 돌려준다", async () => {
     vi.mocked(bd.createIssue).mockResolvedValue({ ok: true, value: "demo-9" });
 
-    const result = await createIssueAction({
+    const result = await createIssueAction(routeApiWorkspaceSlug, {
       title: "새 이슈",
       issueType: null,
       priority: null,
@@ -253,7 +276,7 @@ describe("createIssueAction", () => {
   });
 
   test("라벨이 문자열 목록이 아니면 거부한다", async () => {
-    const result = await createIssueAction({
+    const result = await createIssueAction(routeApiWorkspaceSlug, {
       title: "새 이슈",
       issueType: null,
       priority: null,
@@ -269,7 +292,7 @@ describe("createIssueAction", () => {
   test("고른 상위 이슈를 bd에 넘긴다", async () => {
     vi.mocked(bd.createIssue).mockResolvedValue({ ok: true, value: "demo-9" });
 
-    await createIssueAction({
+    await createIssueAction(routeApiWorkspaceSlug, {
       title: "하위 이슈",
       issueType: null,
       priority: null,
@@ -287,7 +310,7 @@ describe("createIssueAction", () => {
   });
 
   test("상위 이슈가 문자열이나 null이 아니면 거부한다", async () => {
-    const result = await createIssueAction({
+    const result = await createIssueAction(routeApiWorkspaceSlug, {
       title: "하위 이슈",
       issueType: null,
       priority: null,
@@ -314,12 +337,12 @@ test("댓글, 라벨, 의존 관계, 삭제를 workspace에서 실행한다", as
   }
 
   const results = [
-    await addCommentAction("demo-1", "댓글"),
-    await addLabelAction("demo-1", "ui"),
-    await removeLabelAction("demo-1", "ui"),
-    await addDependencyAction("demo-1", "demo-2", "related"),
-    await removeDependencyAction("demo-1", "demo-2"),
-    await deleteIssueAction("demo-1"),
+    await addCommentAction(routeApiWorkspaceSlug, "demo-1", "댓글"),
+    await addLabelAction(routeApiWorkspaceSlug, "demo-1", "ui"),
+    await removeLabelAction(routeApiWorkspaceSlug, "demo-1", "ui"),
+    await addDependencyAction(routeApiWorkspaceSlug, "demo-1", "demo-2", "related"),
+    await removeDependencyAction(routeApiWorkspaceSlug, "demo-1", "demo-2"),
+    await deleteIssueAction(routeApiWorkspaceSlug, "demo-1"),
   ];
 
   expect(results.every((result) => result.ok)).toBe(true);
@@ -333,7 +356,7 @@ test("댓글, 라벨, 의존 관계, 삭제를 workspace에서 실행한다", as
 });
 
 test("문자열이 아닌 id는 거부한다", async () => {
-  const result = await deleteIssueAction(1 as unknown as string);
+  const result = await deleteIssueAction(routeApiWorkspaceSlug, 1 as unknown as string);
 
   expect(bd.deleteIssue).not.toHaveBeenCalled();
   expect(result).toEqual({ ok: false, error: "요청 형식이 올바르지 않습니다." });
@@ -341,6 +364,7 @@ test("문자열이 아닌 id는 거부한다", async () => {
 
 test("화면에서 맺을 수 없는 의존 유형은 거부한다", async () => {
   const result = await addDependencyAction(
+    routeApiWorkspaceSlug,
     "demo-1",
     "demo-2",
     "discovered-from" as unknown as LinkableDependencyType,

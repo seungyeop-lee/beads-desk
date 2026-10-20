@@ -14,7 +14,7 @@ test("판단 기다림 화면에서 Blocks 행과 왼쪽 카드의 ID를 누르�
   });
   const gate = await createHumanGate(workspace, work, "결과 확인");
 
-  await page.goto("/human");
+  await page.goto("human");
   const decision = page.getByRole("region", { name: `Review: ${work}` });
   await expectCopies(
     page,
@@ -58,7 +58,7 @@ test("지금 화면 행, 보드 카드, 상세 머리글의 ID를 누르면 전�
   // 행과 카드의 링크는 ID 밖 전체를 덮습니다.
   const row = page.getByRole("link", { name: `${work} e2e 복사할 작업` });
 
-  await page.goto("/focus");
+  await page.goto("focus");
   // 시나리오 workspace의 prefix는 `e2e`이므로 행에는 `e2e-` 뒤만 보입니다.
   await expect(copyButton).toHaveText(work.replace(/^e2e-/, ""));
   await expectCopies(page, copyButton, work);
@@ -69,7 +69,7 @@ test("지금 화면 행, 보드 카드, 상세 머리글의 ID를 누르면 전�
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 
-  await page.goto("/board");
+  await page.goto("board");
   await expectCopies(page, copyButton, work);
   await expect(page).not.toHaveURL(/issue=/);
 
@@ -97,7 +97,7 @@ test("상세 dialog를 열면 머리글의 ID 복사 단추가 아니라 닫기 
   const work = await workspace.createIssue("e2e 상세를 열 작업");
   const dialog = page.getByRole("dialog", { name: `${work} 이슈` });
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("link", { name: "e2e 상세를 열 작업", exact: true }).click();
   await expect(dialog).toBeVisible();
   // dialog 밖을 눌러 닫는 영역도 이름이 "닫기"인 단추라, 머리글의 닫기 단추는 앞의 것입니다.

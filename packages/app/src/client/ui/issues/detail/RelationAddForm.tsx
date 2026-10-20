@@ -52,7 +52,9 @@ export function RelationAddForm({ issue, writes }: { issue: IssueDetail; writes:
         rank={kind === "parent" ? epicsFirst : undefined}
         onConfirm={async (other) => {
           const { issueId, dependsOnId, type } = dependencyToAdd(kind, issue.id, other.id);
-          const result = await writes.run(() => addDependencyAction(issueId, dependsOnId, type));
+          const result = await writes.run((workspace) =>
+            addDependencyAction(workspace, issueId, dependsOnId, type),
+          );
           if (result.ok)
             showToast(messages.relations.linked(other.id, messages.relations.kinds[kind]));
           return result.ok;

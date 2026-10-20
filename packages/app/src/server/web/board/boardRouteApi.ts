@@ -1,7 +1,7 @@
 import { boardIssues } from "@beads-desk/bd";
-import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
+import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
 import { respondBdOutcome } from "@/server/web/http/routeResponse";
 
-export async function handleBoardRequest(): Promise<Response> {
-  return respondBdOutcome(await boardIssues(currentWorkspaceRoot()));
+export function handleBoardRequest(request: Request): Promise<Response> {
+  return withRequestWorkspace(request, async (cwd) => respondBdOutcome(await boardIssues(cwd)));
 }

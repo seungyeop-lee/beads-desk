@@ -1,12 +1,17 @@
 import { humanGates, previousGateRounds } from "@beads-desk/bd";
-import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
+import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
 import { respondBdOutcome } from "@/server/web/http/routeResponse";
 
-export async function handleHumanGatesRequest(): Promise<Response> {
-  return respondBdOutcome(await humanGates(currentWorkspaceRoot()));
+export function handleHumanGatesRequest(request: Request): Promise<Response> {
+  return withRequestWorkspace(request, async (cwd) => respondBdOutcome(await humanGates(cwd)));
 }
 
 /** 고른 gate와 같은 작업을 막았던 닫힌 gate(이전 라운드)의 기록을 읽습니다. */
-export async function handlePreviousGateRoundsRequest(gateId: string): Promise<Response> {
-  return respondBdOutcome(await previousGateRounds(currentWorkspaceRoot(), gateId));
+export function handlePreviousGateRoundsRequest(
+  request: Request,
+  gateId: string,
+): Promise<Response> {
+  return withRequestWorkspace(request, async (cwd) =>
+    respondBdOutcome(await previousGateRounds(cwd, gateId)),
+  );
 }

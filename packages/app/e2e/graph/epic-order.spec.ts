@@ -19,7 +19,7 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
     ],
   );
 
-  await page.goto("/epics");
+  await page.goto("epics");
   await expect(
     page.getByRole("navigation", { name: "화면" }).getByRole("link", { name: "에픽" }),
   ).toBeVisible();
@@ -50,7 +50,7 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   await expect(page).toHaveURL(new RegExp(`/epics\\?epic=${epic}(?:&returnTo=[^&]+)?$`));
   await expect(node("순서 셋째")).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page).toHaveURL("/epics");
+  await expect(page).toHaveURL("epics");
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
@@ -64,7 +64,7 @@ test("상위 에픽을 펼친 하위 목록에서 하위 에픽 행의 순서 �
     task: { title: "안쪽 작업", parent: "child" },
   });
 
-  await page.goto("/epics");
+  await page.goto("epics");
   const childRow = page.getByRole("row", { name: /안쪽 에픽/ });
   await childRow.getByRole("link", { name: "순서 보기" }).click();
   await expect(page).toHaveURL(new RegExp(`/epics\\?epic=${child}(?:&returnTo=[^&]+)?$`));

@@ -8,9 +8,9 @@
 
 `bd-desk`는 beads workspace 디렉터리나 그 하위 디렉터리에서 실행합니다.
 
-- `bd-desk start`: 서버를 background에서 시작하고 URL(기본값 `http://127.0.0.1:3000`)을 출력합니다. 터미널을 닫아도 서버는 계속 실행됩니다. 명령 없이 `bd-desk`만 실행해도 `start`로 동작합니다. 서버가 이미 실행 중이면 새로 띄우지 않고, 지금 디렉터리의 workspace를 추가한 뒤 그 workspace로 바꿉니다.
+- `bd-desk start`: 서버를 background에서 시작하고, 지금 디렉터리의 workspace를 여는 URL(예: `http://127.0.0.1:3000/w/my-project`)을 출력합니다. 터미널을 닫아도 서버는 계속 실행됩니다. 명령 없이 `bd-desk`만 실행해도 `start`로 동작합니다. 서버가 이미 실행 중이면 새로 띄우지 않고, 지금 디렉터리의 workspace를 추가한 뒤 그 workspace의 URL을 출력합니다.
 - `bd-desk stop`: 서버를 종료합니다. 실행 중인 서버가 없으면 종료 코드 2로 끝납니다.
-- `bd-desk restart`: 추가한 workspace와 현재 workspace를 유지한 채 같은 포트로 서버를 다시 시작합니다. 실행 중인 서버가 없으면 지금 디렉터리의 workspace로 서버를 시작합니다.
+- `bd-desk restart`: 추가한 workspace와 그 URL을 유지한 채 같은 포트로 서버를 다시 시작합니다. 지금 디렉터리의 workspace가 추가돼 있으면 그 workspace의 URL을, 아니면 서버 URL을 출력합니다. 실행 중인 서버가 없으면 지금 디렉터리의 workspace로 서버를 시작합니다.
 - `bd-desk --help`(또는 `-h`): 사용법을 출력합니다.
 
 main checkout에 `.beads`가 있는 git 저장소라면, 그 저장소의 worktree에서 실행해도 됩니다. bd와 마찬가지로 worktree를 workspace로 쓰고, main 저장소의 이슈를 보여 줍니다.
@@ -23,13 +23,17 @@ main checkout에 `.beads`가 있는 git 저장소라면, 그 저장소의 worktr
 
 ## 여러 workspace 함께 쓰기
 
-서버가 실행 중일 때 다른 beads workspace에서 `bd-desk start`를 실행하면, 그 workspace가 서버에 추가됩니다. workspace가 둘 이상이면 화면 오른쪽 위의 선택 상자에서 바꿀 수 있습니다. 한 탭에서 바꾸면 열려 있는 다른 탭도 함께 바뀝니다.
+모든 화면 URL은 `/w/<workspace 이름>`으로 시작하므로, 주소창에서 지금 보는 workspace를 알 수 있습니다. workspace 이름은 디렉터리 이름이고, 공백과 URL에 그대로 쓸 수 없는 문자는 `_`로 바뀝니다. 추가한 workspace끼리 디렉터리 이름이 같으면 나중에 추가한 쪽에 `-2`, `-3`처럼 번호가 붙습니다.
+
+서버가 실행 중일 때 다른 beads workspace에서 `bd-desk start`를 실행하면, 그 workspace가 서버에 추가되고 URL이 출력됩니다. 탭마다 자기 URL의 workspace를 보여 주므로, 여러 workspace를 서로 다른 탭이나 창에 띄워 두고 함께 볼 수 있습니다. 화면 오른쪽 위의 선택 상자는 지금 탭만 다른 workspace로 옮깁니다.
+
+`http://127.0.0.1:3000/issues`처럼 workspace 이름이 없는 URL은, 추가한 workspace가 하나면 그 workspace의 같은 화면을 엽니다. workspace가 여럿이면 어느 workspace로 열지 고르는 화면이 나옵니다.
 
 ## 이슈 본문의 로컬 파일 링크
 
 이슈 본문에 절대 경로로 적은 파일 링크와 이미지는, 파일이 다음 디렉터리 안에 있을 때만 열립니다.
 
-- 현재 workspace 디렉터리
+- 탭의 URL에 있는 workspace의 디렉터리
 - 그 git 저장소의 worktree(`git worktree list`에 나오는 디렉터리)
 - `/tmp`, `/var/tmp`, OS 임시 디렉터리(macOS의 `$TMPDIR`)
 
@@ -46,7 +50,7 @@ BEADS_DESK_LOCAL_FILE_ROOTS="<디렉터리>:<다른 디렉터리>" bd-desk start
 - 디렉터리가 여러 개면 `PATH`처럼 `:`로 구분합니다.
 - 절대 경로나 `~`로 시작하는 경로를 씁니다. 맨 앞의 `~`는 따옴표 안에 있어도 홈 디렉터리로 바뀌고, 상대 경로는 무시됩니다.
 - 지정한 디렉터리 안의 파일만 열립니다. symlink는 가리키는 실제 경로로 판단하므로, 지정한 디렉터리 안에 있는 symlink라도 바깥 파일을 가리키면 열리지 않습니다. 존재하지 않는 디렉터리는 건너뜁니다.
-- 이 값은 서버가 시작될 때만 읽습니다. 서버가 이미 실행 중이면 `bd-desk start`는 workspace만 바꾸고 새 값은 무시하므로, 값을 바꾸려면 환경 변수를 지정한 채 `bd-desk restart`를 실행합니다. `restart`할 때 환경 변수를 빠뜨리면 추가한 디렉터리 없이 다시 시작되므로, 셸 설정 파일에서 `export`해 두는 편이 좋습니다.
+- 이 값은 서버가 시작될 때만 읽습니다. 서버가 이미 실행 중이면 `bd-desk start`는 workspace만 추가하고 새 값은 무시하므로, 값을 바꾸려면 환경 변수를 지정한 채 `bd-desk restart`를 실행합니다. `restart`할 때 환경 변수를 빠뜨리면 추가한 디렉터리 없이 다시 시작되므로, 셸 설정 파일에서 `export`해 두는 편이 좋습니다.
 
 열린 파일은 확장자에 따라 다음과 같이 보입니다.
 

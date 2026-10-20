@@ -20,7 +20,7 @@ test("상세의 선행·후속 그래프를 누르면 그 이슈의 사슬을 �
     ],
   );
 
-  await page.goto(`/issues?issue=${center}`);
+  await page.goto(`issues?issue=${center}`);
   await page
     .getByRole("dialog", { name: `${center} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
@@ -43,7 +43,7 @@ test("상세의 선행·후속 그래프를 누르면 그 이슈의 사슬을 �
   await expect(page).toHaveURL(new RegExp(`/issues\\?center=${center}(?:&returnTo=[^&]+)?$`));
   await expect(node("사슬 뒤")).toBeVisible();
 
-  await page.goto(`/issues?issue=${note}`);
+  await page.goto(`issues?issue=${note}`);
   await page
     .getByRole("dialog", { name: `${note} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
@@ -88,7 +88,7 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
   const closedGate = await createGate("gh:pr", "닫힌 gh:pr 선행 gate");
   await workspace.bd("gate", "resolve", closedGate, "--reason", "확인 완료");
 
-  await page.goto(`/issues?issue=${work}`);
+  await page.goto(`issues?issue=${work}`);
   await page
     .getByRole("dialog", { name: `${work} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
@@ -114,9 +114,9 @@ test("열린 human gate와 닫힌 gh:pr gate도 작업과 gate 어느 쪽에서 
   await page.keyboard.press("Escape");
   await expect(closedGateNode).toBeVisible();
   await page.getByRole("dialog").getByRole("link", { name: "닫기", exact: true }).click();
-  await expect(page).toHaveURL(`/issues?issue=${work}`);
+  await expect(page).toHaveURL(`issues?issue=${work}`);
 
-  await page.goto(`/issues?center=${closedGate}`);
+  await page.goto(`issues?center=${closedGate}`);
   await expect(closedGateNode).toBeVisible();
   await expect(afterNode).toBeVisible();
   await expect(closedGateNode).toHaveAttribute("aria-current", "true");

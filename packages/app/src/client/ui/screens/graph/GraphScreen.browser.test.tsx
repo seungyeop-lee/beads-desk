@@ -24,7 +24,8 @@ vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
   useScreenDetailReady: () => true,
 }));
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/graph",
+  useParams: () => ({ workspace: "demo" }),
+  usePathname: () => "/w/demo/graph",
   useSearchParams: () => address,
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));

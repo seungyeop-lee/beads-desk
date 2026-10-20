@@ -3,7 +3,7 @@ import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorks
 test("화면에서 남긴 댓글은 bd에 저장되고 markdown으로 보인다", async ({ page, workspace }) => {
   const id = await workspace.createIssue("새 댓글 이슈");
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("link", { name: "새 댓글 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("textbox", { name: "새 댓글" }).click();

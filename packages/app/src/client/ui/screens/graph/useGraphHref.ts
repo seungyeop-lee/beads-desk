@@ -1,9 +1,11 @@
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
+import { useScreenPathname, useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { graphHref } from "./graphAddress";
 
 export function useGraphHref(): (scope: GraphScope) => string {
-  const pathname = usePathname();
+  const screenPathname = useScreenPathname();
   const params = useSearchParams();
-  return (scope) => graphHref(scope, `${pathname}?${params}`);
+  const workspaceHref = useWorkspaceHref();
+  return (scope) => workspaceHref(graphHref(scope, `${screenPathname}?${params}`));
 }

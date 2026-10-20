@@ -17,7 +17,7 @@ test.describe("확대율 110%, 폭 500px 창", () => {
     workspace,
   }) => {
     const ids = await seedIssues(workspace);
-    await page.goto("/issues");
+    await page.goto("issues");
     await expect(
       titleRow(page, TITLES.ko).getByRole("cell", { name: "backend +1", exact: true }),
     ).toBeVisible();

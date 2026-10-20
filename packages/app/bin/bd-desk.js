@@ -14,11 +14,11 @@ const DEFAULT_PORT = 3000;
 const USAGE = `Usage: bd-desk [start|stop|restart] [--port <number>] [--open]
 
   start    Start the server in the background. This is the default command.
-           If the server is already running, register the current directory
-           as a workspace and switch to it.
+           If the server is already running, add the current directory
+           as a workspace. Either way, print the URL of this workspace.
   stop     Stop the running server.
-  restart  Restart on the same port, keeping the registered workspaces
-           and the current workspace.
+  restart  Restart on the same port, keeping the added workspaces
+           and their URLs.
 
   --port <number>  Server port. Defaults to the first free port from ${DEFAULT_PORT}.
   --open           Open the browser when the server is ready.
@@ -80,7 +80,7 @@ try {
       ? await daemon.start({ cwd: process.cwd(), port: options.port, open: options.open })
       : options.command === "stop"
         ? await daemon.stop()
-        : await daemon.restart({ port: options.port, open: options.open });
+        : await daemon.restart({ cwd: process.cwd(), port: options.port, open: options.open });
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

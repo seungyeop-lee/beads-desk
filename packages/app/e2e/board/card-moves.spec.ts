@@ -44,7 +44,7 @@ test("보드는 막힘, 바로 작업 가능, 진행 중, 닫힘 열만 보이�
   // 방금 닫은 이슈가 이틀 전에 닫은 것으로 보이도록 브라우저 시각을 이틀 뒤로 둡니다.
   await page.clock.setFixedTime(Date.now() + 2 * DAY_MS);
 
-  await page.goto("/board");
+  await page.goto("board");
   await expect(page.getByRole("region")).toHaveText([
     /^막힘/,
     /^바로 작업 가능/,
@@ -85,7 +85,7 @@ test.describe("열이 세로로 쌓이는 좁은 창", () => {
   }) => {
     const ids = await seedBoard(workspace);
 
-    await page.goto("/board");
+    await page.goto("board");
     const ready = column(page, "바로 작업 가능");
     const blocked = column(page, "막힘");
     const inProgress = column(page, "진행 중");

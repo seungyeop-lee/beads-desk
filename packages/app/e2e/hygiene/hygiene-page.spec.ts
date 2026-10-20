@@ -14,7 +14,7 @@ test("권장 섹션이 빠진 bug와 거의 같은 이슈 두 개는 각각 권�
     second: { title: "e2e 재설정 링크 오류", type: "task", description: DUPLICATE_DESCRIPTION },
   });
 
-  await page.goto("/hygiene");
+  await page.goto("hygiene");
   const lint = card(page, "권장 섹션이 빠진 이슈");
   await expect(issueRow(lint, bug)).toContainText(
     "빠진 섹션: Steps to Reproduce, Acceptance Criteria",
@@ -37,7 +37,7 @@ test("중복 후보 쌍에서 한쪽을 다른 쪽의 중복으로 닫으면 그
     canonical: { title: "e2e 중복 링크 오류", type: "task", description: DUPLICATE_DESCRIPTION },
   });
 
-  await page.goto("/hygiene");
+  await page.goto("hygiene");
   const duplicates = card(page, "중복 후보");
   const confirm = answerNextConfirm(page, true);
   await duplicates
@@ -58,7 +58,7 @@ test("열린 이슈의 id를 메시지에 넣어 커밋하면 커밋에 언급�
   const orphan = await workspace.createIssue("e2e 커밋만 하고 닫지 않은 작업");
   await workspace.commit(`fix: 재설정 링크 고침 (${orphan})`);
 
-  await page.goto("/hygiene");
+  await page.goto("hygiene");
   const orphans = card(page, "커밋에 언급됐지만 열린 이슈");
   await expect(issueRow(orphans, orphan)).toContainText(`fix: 재설정 링크 고침 (${orphan})`);
 });
@@ -69,11 +69,11 @@ test("오래 방치된 이슈의 기준 일수를 바꾸면 그 카드만 새 �
 }) => {
   const bug = await workspace.createIssue("e2e 재현 절차 없는 버그", "--type", "bug");
 
-  await page.goto("/hygiene");
+  await page.goto("hygiene");
   const stale = card(page, "오래 방치된 이슈");
   await expect(stale.getByText("30일 넘게 바뀌지 않은 이슈가 없습니다.")).toBeVisible();
   const staleRead = page.waitForRequest((request) =>
-    request.url().endsWith("/api/hygiene/stale?staleDays=7"),
+    request.url().includes("/api/hygiene/stale?staleDays=7&"),
   );
   await stale.getByRole("combobox", { name: "기준 일수" }).selectOption({ label: "7일" });
 

@@ -19,7 +19,7 @@ test("필터 줄에서 날짜 기준과 기간을 바꾸면 목록과 탭 개수
   const today = localDay();
   const tabs = page.getByRole("navigation", { name: "보기" });
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await expect(tabs.getByRole("link", { name: "전체 2" })).toBeVisible();
 
   await page.getByRole("combobox", { name: "날짜 기준" }).selectOption({ label: "닫은 날" });

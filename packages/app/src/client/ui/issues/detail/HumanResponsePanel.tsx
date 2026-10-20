@@ -30,13 +30,13 @@ export function HumanResponsePanel({ issueId, writes, title, body, placeholder }
   // Ctrl/Cmd+Enter는 비활성화된 버튼을 거치지 않으므로 여기서도 버튼이 막혀 있는지 확인합니다.
   const respond = async () => {
     if (locked || !response.trim()) return;
-    if ((await writes.run(() => respondToHumanAction(issueId, response))).ok) {
+    if ((await writes.run((workspace) => respondToHumanAction(workspace, issueId, response))).ok) {
       toastWhenRemoved(messages.humanDecision.responded(issueId));
     }
   };
 
   const dismiss = async (reason: string) => {
-    if ((await writes.run(() => dismissHumanAction(issueId, reason))).ok) {
+    if ((await writes.run((workspace) => dismissHumanAction(workspace, issueId, reason))).ok) {
       toastWhenRemoved(messages.humanDecision.dismissed(issueId));
     }
   };

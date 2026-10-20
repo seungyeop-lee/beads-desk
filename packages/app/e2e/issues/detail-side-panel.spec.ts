@@ -7,7 +7,7 @@ test("의존 이슈를 누르면 옆 패널에 읽기 전용으로 열려 그 �
 }) => {
   const { main, dependency } = await seedDependency(workspace);
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("link", { name: "주 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   await expect(dialog).toBeVisible();
@@ -47,7 +47,7 @@ test("옆 패널이 열린 상세에서 Escape를 누르면 옆 패널만 닫혀
   const dialog = page.getByRole("dialog", { name: `${dependency} 이슈` });
   const back = dialog.getByRole("link", { name: `이전 이슈 ${main}로 돌아가기` });
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("link", { name: "주 이슈" }).click();
   await dependencyLink(page.getByRole("dialog"), dependency).click();
   await sidePanel(page, dependency).getByRole("link", { name: "이 이슈로 이동" }).click();
@@ -76,7 +76,7 @@ test("옆 패널이 열린 상세 주소로 들어와 페이지를 누르지 않
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   const side = sidePanel(page, dependency);
 
-  await page.goto(`/issues?issue=${main}&side=${dependency}`);
+  await page.goto(`issues?issue=${main}&side=${dependency}`);
   await expect(side.getByText("선행 이슈 설명")).toBeVisible();
 
   await page.keyboard.press("Escape");
@@ -95,7 +95,7 @@ test("옆 패널이 열린 상세에서 본문을 편집하는 중에 Escape를 
 }) => {
   const { main, dependency } = await seedDependency(workspace);
 
-  await page.goto(`/issues?issue=${main}&side=${dependency}`);
+  await page.goto(`issues?issue=${main}&side=${dependency}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   const side = sidePanel(page, dependency);
   await expect(side).toBeVisible();
@@ -116,7 +116,7 @@ test("옆 패널은 그 이슈의 댓글을 작성자, markdown 본문과 함께
   const { main, dependency } = await seedDependency(workspace);
   await workspace.bd("comments", "add", dependency, "**먼저 남긴 댓글**", "--author", "리뷰어");
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("link", { name: "주 이슈" }).click();
   await dependencyLink(page.getByRole("dialog", { name: `${main} 이슈` }), dependency).click();
   const side = sidePanel(page, dependency);
@@ -139,7 +139,7 @@ test("옆 패널의 이슈로 이동한 뒤 이전 이슈 버튼을 누르면 �
   const dependencyDescription = dialog.getByText("선행 이슈 설명");
   const back = page.getByRole("link", { name: `이전 이슈 ${main}로 돌아가기` });
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("link", { name: "주 이슈" }).click();
   await dependencyLink(dialog, dependency).click();
 

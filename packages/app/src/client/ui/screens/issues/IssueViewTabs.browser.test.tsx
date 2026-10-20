@@ -1,9 +1,11 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { WorkStateGroup } from "@/client/modules/issues/domain/workState";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { IssueViewTabs } from "./IssueViewTabs";
+
+vi.mock("next/navigation", () => ({ useParams: () => ({ workspace: "demo" }) }));
 
 const GROUPS: WorkStateGroup[] = [
   { state: "in_progress", issues: [issue("doing")] },

@@ -1,11 +1,11 @@
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import {
   nextIssueDetailTrail,
   type IssueDetailLocation,
 } from "@/client/modules/issues/domain/issueDetailTrail";
-import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspaces";
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
+import { useScreenPathname } from "@/client/ui/address/workspaceAddress";
 import { graphOriginParams, readGraphScope } from "@/client/ui/screens/graph/graphAddress";
 import { IssueDetailDialog } from "./detail/IssueDetailDialog";
 import type { ListedIssues } from "./detail/listedIssues";
@@ -51,8 +51,6 @@ export function IssueDetailRoute({
   const replaceQuery = useQueryReplace();
   const detailHref = useIssueDetailHref();
   const location = useIssueDetailLocation(embedded);
-  const issueId = location?.issue ?? null;
-  const currentWorkspace = useWorkspaces().data?.current ?? null;
   const searchParams = useSearchParams();
   const covered = !embedded && readGraphScope(new URLSearchParams(searchParams)) !== null;
   const close = useCallback(() => {
@@ -67,15 +65,6 @@ export function IssueDetailRoute({
   if (shown?.issue !== location?.issue || shown?.side !== location?.side) {
     setTrail(nextIssueDetailTrail(trail, location));
   }
-
-  // 열려 있던 상세는 이전 workspace의 이슈입니다. 이 탭이 아니라 다른 탭이나 CLI에서 바꿔도 닫습니다.
-  const seenWorkspace = useRef<string | null>(null);
-  useEffect(() => {
-    if (currentWorkspace === null) return;
-    const switched = seenWorkspace.current !== null && seenWorkspace.current !== currentWorkspace;
-    seenWorkspace.current = currentWorkspace;
-    if (switched && issueId) close();
-  }, [currentWorkspace, issueId, close]);
 
   if (!location) return null;
   return (
@@ -95,10 +84,10 @@ export function IssueDetailRoute({
 /** 그래프 안에 붙여 보는 상세도 issue·side를 쓰므로, 그래프 아래에 깔린 화면의 상세는 그래프를 처음 연 화면 주소에서 위치를 읽습니다. */
 function useIssueDetailLocation(embedded: boolean): IssueDetailLocation | null {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
+  const screenPathname = useScreenPathname();
   const params = new URLSearchParams(searchParams);
   if (embedded || !readGraphScope(params)) return readIssueDetailLocation(params);
-  const origin = graphOriginParams(params, pathname);
+  const origin = graphOriginParams(params, screenPathname);
   return origin && readIssueDetailLocation(origin);
 }
 

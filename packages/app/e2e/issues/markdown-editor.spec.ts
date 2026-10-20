@@ -38,7 +38,7 @@ test("상세 본문은 편집하는 동안에도 서식대로 보이고, 저장 
 }) => {
   const id = await workspace.createIssue("본문 편집 이슈", "--description", ORIGINAL);
 
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await expect(dialog.getByRole("heading", { name: "배경" })).toBeVisible();
   await expect(dialog.locator(".preview svg")).toBeVisible();
@@ -59,7 +59,7 @@ test("편집 도구 줄에서 문단 형식을 제목 2로 바꾸고 표 넣기 
   page,
   workspace,
 }) => {
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("button", { name: "새 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: "새 이슈" });
   await dialog.getByRole("textbox", { name: "제목" }).fill("서식 있는 새 이슈");
@@ -81,7 +81,7 @@ test("편집 도구 줄에서 문단 형식을 제목 2로 바꾸고 표 넣기 
 });
 
 test("새 이슈 창의 설명 편집기에서 Escape를 눌러도 창이 닫히지 않는다", async ({ page }) => {
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("button", { name: "새 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: "새 이슈" });
   const editor = dialog.getByRole("textbox", { name: "설명" });
@@ -98,7 +98,7 @@ test("상세 본문을 편집하는 중에 Escape를 눌러도 편집이 이어�
 }) => {
   const id = await workspace.createIssue("취소 단추 이슈", "--description", "그대로 둘 문단");
 
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
   const editor = dialog.getByRole("textbox", { name: "설명" });
@@ -121,7 +121,7 @@ test("상세 본문의 코드 블록 안에서도 Ctrl/Cmd+Enter로 저장한다
     "```ts\nconst a = 1;\n```",
   );
 
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
   await placeCaretAfter(dialog.getByRole("textbox", { name: "설명" }), "const a = 1;");
@@ -139,7 +139,7 @@ test("상세 본문에 붙여 넣은 이미지 파일은 본문에 들어가지 
 }) => {
   const id = await workspace.createIssue("저장 중 잠금 이슈", "--description", "저장할 문단");
 
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
   const editor = dialog.getByRole("textbox", { name: "설명" });

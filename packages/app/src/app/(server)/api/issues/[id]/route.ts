@@ -2,7 +2,7 @@ import { handleIssueDetailRequest } from "@/server/web/issues/issueDetailRouteAp
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, context: RouteContext<"/api/issues/[id]">) {
+export async function GET(request: Request, context: RouteContext<"/api/issues/[id]">) {
   const { id } = await context.params;
-  return handleIssueDetailRequest(id);
+  return handleIssueDetailRequest(request, id);
 }

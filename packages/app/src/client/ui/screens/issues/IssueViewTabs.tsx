@@ -4,6 +4,7 @@ import {
   type WorkState,
   type WorkStateGroup,
 } from "@/client/modules/issues/domain/workState";
+import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { issueListHref, type IssueListAddress } from "./issueListAddress";
@@ -20,6 +21,7 @@ type Props = {
 /** 작업 상태 하나를 골라 보는 탭입니다. 고른 탭은 주소에 남아 뒤로 가기와 새로고침에도 유지됩니다. */
 export function IssueViewTabs({ view, filters, groups }: Props) {
   const messages = useMessages();
+  const workspaceHref = useWorkspaceHref();
   const countOf = (state: WorkState) =>
     groups.find((group) => group.state === state)?.issues.length ?? 0;
   const tabs = [
@@ -27,13 +29,13 @@ export function IssueViewTabs({ view, filters, groups }: Props) {
       state: null,
       label: messages.issues.allStatuses,
       count: groups.reduce((sum, group) => sum + group.issues.length, 0),
-      href: issueListHref(filters),
+      href: workspaceHref(issueListHref(filters)),
     },
     ...VIEW_STATES.map((state) => ({
       state,
       label: messages.workStates.labels[state],
       count: countOf(state),
-      href: issueListHref({ ...filters, view: state }),
+      href: workspaceHref(issueListHref({ ...filters, view: state })),
     })),
   ];
 

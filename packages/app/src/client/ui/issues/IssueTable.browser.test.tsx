@@ -36,7 +36,7 @@ const WRITES: IssueWrites = {
   pending: false,
   error: null,
   dismissError: () => {},
-  run: (write) => write(),
+  run: (write) => write("demo"),
 };
 
 for (const width of AREA_WIDTHS) {

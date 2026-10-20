@@ -1,14 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, realpath, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
-  currentWorkspaceRoot,
+  findWorkspace,
   listWorkspaces,
   onWorkspacesChanged,
   registerWorkspace,
-  selectWorkspace,
 } from "./serverRuntime";
 
 let launchRoot: string;
@@ -74,28 +73,47 @@ afterEach(() => {
   process.env.BEADS_DESK_WORKSPACE = originalWorkspace;
 });
 
-test("처음에는 실행한 디렉터리만 등록하고 현재 workspace로 둔다", () => {
-  expect(currentWorkspaceRoot()).toBe(launchRoot);
-  expect(listWorkspaces()).toEqual([launchRoot]);
+function roots(): string[] {
+  return listWorkspaces().map((workspace) => workspace.root);
+}
+
+test("처음에는 실행한 디렉터리만 등록한다", () => {
+  expect(roots()).toEqual([launchRoot]);
+});
+
+test("등록한 workspace마다 화면 주소에 쓰는 이름을 정하고, 그 이름으로 찾는다", async () => {
+  const sameName = join(await tempDir("beads-desk-runtime-"), basename(launchRoot));
+  await initBeads(sameName);
+  registerWorkspace(sameName);
+
+  expect(listWorkspaces()).toEqual([
+    { root: launchRoot, slug: basename(launchRoot) },
+    { root: sameName, slug: `${basename(launchRoot)}-2` },
+  ]);
+  expect(registerWorkspace(sameName)).toEqual({
+    root: sameName,
+    slug: `${basename(launchRoot)}-2`,
+  });
+  expect(findWorkspace(`${basename(launchRoot)}-2`)?.root).toBe(sameName);
+  expect(findWorkspace("missing")).toBeNull();
 });
 
 test("하위 디렉터리를 등록하면 .beads가 있는 상위 디렉터리를 등록한다", async () => {
   const nested = join(otherRoot, "src", "app");
   await mkdir(nested, { recursive: true });
 
-  expect(registerWorkspace(nested)).toBe(otherRoot);
-  expect(registerWorkspace(otherRoot)).toBe(otherRoot);
-  expect(listWorkspaces()).toEqual([launchRoot, otherRoot]);
-  expect(currentWorkspaceRoot()).toBe(launchRoot);
+  expect(registerWorkspace(nested)?.root).toBe(otherRoot);
+  expect(registerWorkspace(otherRoot)?.root).toBe(otherRoot);
+  expect(roots()).toEqual([launchRoot, otherRoot]);
 });
 
 test("symlink를 거친 경로도 실제 경로로 한 번만 등록한다", async () => {
   const link = join(await realpath(await mkdtemp(join(tmpdir(), "beads-desk-link-"))), "ws");
   await symlink(otherRoot, link);
 
-  expect(registerWorkspace(link)).toBe(otherRoot);
-  expect(registerWorkspace(otherRoot)).toBe(otherRoot);
-  expect(listWorkspaces()).toEqual([launchRoot, otherRoot]);
+  expect(registerWorkspace(link)?.root).toBe(otherRoot);
+  expect(registerWorkspace(otherRoot)?.root).toBe(otherRoot);
+  expect(roots()).toEqual([launchRoot, otherRoot]);
 });
 
 test("git worktree에서는 main 저장소의 .beads를 쓰는 worktree 최상위 디렉터리를 등록한다", async () => {
@@ -103,20 +121,19 @@ test("git worktree에서는 main 저장소의 .beads를 쓰는 worktree 최상�
   const nested = join(worktree, "packages", "app");
   await mkdir(nested, { recursive: true });
 
-  expect(registerWorkspace(nested)).toBe(worktree);
-  expect(registerWorkspace(main)).toBe(main);
-  expect(listWorkspaces()).toEqual([launchRoot, worktree, main]);
+  expect(registerWorkspace(nested)?.root).toBe(worktree);
+  expect(registerWorkspace(main)?.root).toBe(main);
+  expect(roots()).toEqual([launchRoot, worktree, main]);
 });
 
-test("worktree에서 띄우면 worktree 최상위 디렉터리를 현재 workspace로 둔다", async () => {
+test("worktree에서 띄우면 worktree 최상위 디렉터리를 등록한다", async () => {
   const { worktree } = await gitWorktree();
   const nested = join(worktree, "packages", "app");
   await mkdir(nested, { recursive: true });
   delete (globalThis as Record<symbol, unknown>)[Symbol.for("beads-desk.serverRuntime")];
   process.env.BEADS_DESK_WORKSPACE = nested;
 
-  expect(currentWorkspaceRoot()).toBe(worktree);
-  expect(listWorkspaces()).toEqual([worktree]);
+  expect(roots()).toEqual([worktree]);
 });
 
 test("설정이나 DB 파일이 없는 .beads는 workspace로 보지 않는다", async () => {
@@ -144,25 +161,17 @@ test("beads workspace가 아니거나 없는 디렉터리는 등록하지 않는
   expect(registerWorkspace(plain)).toBeNull();
   expect(registerWorkspace(join(plain, "missing"))).toBeNull();
   expect(registerWorkspace("relative/path")).toBeNull();
-  expect(listWorkspaces()).toEqual([launchRoot]);
+  expect(roots()).toEqual([launchRoot]);
 });
 
-test("새 workspace를 등록하거나 현재 workspace를 바꾸면 구독자에게 알린다", () => {
+test("새 workspace를 등록하면 구독자에게 알린다", async () => {
   const listener = vi.fn<() => void>();
   const stop = onWorkspacesChanged(listener);
 
   registerWorkspace(otherRoot);
   registerWorkspace(otherRoot);
-  expect(selectWorkspace(otherRoot)).toBe(true);
-  expect(selectWorkspace(otherRoot)).toBe(true);
   stop();
-  selectWorkspace(launchRoot);
+  registerWorkspace(await beadsWorkspace());
 
-  expect(currentWorkspaceRoot()).toBe(launchRoot);
-  expect(listener).toHaveBeenCalledTimes(2);
-});
-
-test("등록하지 않은 경로는 고르지 않는다", () => {
-  expect(selectWorkspace(otherRoot)).toBe(false);
-  expect(currentWorkspaceRoot()).toBe(launchRoot);
+  expect(listener).toHaveBeenCalledOnce();
 });

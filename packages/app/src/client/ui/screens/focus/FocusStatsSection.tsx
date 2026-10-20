@@ -28,7 +28,9 @@ import {
   workStateTone,
 } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
+
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { FLOW_SERIES, flowBarHref, type FlowSeries } from "./flowBarAddress";
 
@@ -78,13 +80,15 @@ function SignalLink({
   label,
   count,
 }: {
+  /** workspace 안의 화면 경로입니다. */
   href: string;
   tone: string;
   label: string;
   count: number;
 }) {
+  const workspaceHref = useWorkspaceHref();
   return (
-    <Link href={href} className="chip bg-transparent font-medium hover:bg-base-200">
+    <Link href={workspaceHref(href)} className="chip bg-transparent font-medium hover:bg-base-200">
       <span className={`tone-dot ${tone}`} />
       {label}
       <span className="font-mono tabular-nums">{count}</span>
@@ -95,6 +99,7 @@ function SignalLink({
 /** 막대를 누르면 그날 만들거나 닫은 이슈를 이슈 목록에서 엽니다. 하루의 경계는 이슈 목록 날짜 필터와 같습니다. */
 function ThroughputChart({ daily }: { daily: DailyFlow[] }) {
   const router = useRouter();
+  const workspaceHref = useWorkspaceHref();
   const messages = useMessages();
   const text = messages.focus.stats;
   const today = daily.at(-1)?.day;
@@ -109,7 +114,7 @@ function ThroughputChart({ daily }: { daily: DailyFlow[] }) {
       const flow = props.payload as DailyFlow;
       const count = flow[series];
       if (count === 0) return <g />;
-      const href = flowBarHref(series, flow.day);
+      const href = workspaceHref(flowBarHref(series, flow.day));
       const area = props.background ?? props;
       return (
         <a

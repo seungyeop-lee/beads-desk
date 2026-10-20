@@ -8,9 +8,9 @@ This guide assumes you have installed beads-desk as described in the [README](ht
 
 Run `bd-desk` in a beads workspace directory or any of its subdirectories.
 
-- `bd-desk start`: Starts the server in the background and prints its URL (`http://127.0.0.1:3000` by default). You can close the terminal; the server keeps running. Running `bd-desk` without a command also runs `start`. If a server is already running, it does not start another one; instead, it adds the workspace of the current directory and switches to it.
+- `bd-desk start`: Starts the server in the background and prints the URL of the current directory's workspace, such as `http://127.0.0.1:3000/w/my-project`. You can close the terminal; the server keeps running. Running `bd-desk` without a command also runs `start`. If a server is already running, it does not start another one; instead, it adds the workspace of the current directory and prints its URL.
 - `bd-desk stop`: Stops the server. Exits with code 2 if no server is running.
-- `bd-desk restart`: Restarts the server on the same port, keeping the added workspaces and the current workspace. If no server is running, it starts one for the current directory.
+- `bd-desk restart`: Restarts the server on the same port, keeping the added workspaces and their URLs. It prints the URL of the current directory's workspace if that workspace was added, and the server URL otherwise. If no server is running, it starts one for the current directory.
 - `bd-desk --help` (or `-h`): Prints the usage.
 
 In a git worktree of a repository whose main checkout has `.beads`, the worktree becomes the workspace and shows the main repository's issues, as `bd` does.
@@ -23,13 +23,17 @@ In a git worktree of a repository whose main checkout has `.beads`, the worktree
 
 ## Working with several workspaces
 
-Run `bd-desk start` in another beads workspace to add it to the running server. Once two or more workspaces are added, switch between them with the selector at the top right of the screen. Switching in one tab also switches every other open tab.
+Every screen URL starts with `/w/<workspace name>`, so the address bar shows which workspace you are looking at. The workspace name is the directory name, with spaces and characters that cannot appear in a URL replaced by `_`. If two added workspaces have the same directory name, the one added later gets `-2`, `-3`, and so on.
+
+Run `bd-desk start` in another beads workspace to add it to the running server and print its URL. Each tab shows the workspace in its own URL, so you can keep several workspaces open side by side in separate tabs or windows. The selector at the top right of the screen moves only the current tab to another workspace.
+
+A URL without a workspace name, such as `http://127.0.0.1:3000/issues`, opens the same screen in the only added workspace. If several workspaces are added, it asks you to choose one.
 
 ## Local file links in issues
 
 Absolute-path file links and images in an issue body open when the file is in one of these directories:
 
-- The current workspace directory
+- The directory of the workspace in the tab's URL
 - A worktree of its git repository (a directory listed by `git worktree list`)
 - `/tmp`, `/var/tmp`, or the OS temporary directory (`$TMPDIR` on macOS)
 
@@ -46,7 +50,7 @@ BEADS_DESK_LOCAL_FILE_ROOTS="<directory>:<another directory>" bd-desk start
 - Separate directories with `:`, as in `PATH`.
 - Use absolute paths or paths starting with `~`. A leading `~` is expanded to your home directory even inside quotes. Relative paths are ignored.
 - Only files inside the listed directories open. Symlinks are judged by the real path they point to, so a symlink inside a listed directory does not open a file outside it. Directories that do not exist are skipped.
-- The value is read when the server starts. If a server is already running, `bd-desk start` only switches the workspace and ignores the new value. To change it, run `bd-desk restart` with the variable set. If you omit the variable on `restart`, the server restarts without the extra directories, so consider exporting it from your shell profile.
+- The value is read when the server starts. If a server is already running, `bd-desk start` only adds the workspace and ignores the new value. To change it, run `bd-desk restart` with the variable set. If you omit the variable on `restart`, the server restarts without the extra directories, so consider exporting it from your shell profile.
 
 An opened file is shown according to its extension:
 

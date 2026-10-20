@@ -6,7 +6,7 @@ test("에픽의 새 하위 이슈는 상위 에픽을 바꿀 수 없고, 만든 
 }) => {
   const epic = await workspace.createIssue("하위를 만들 에픽", "--type", "epic");
 
-  await page.goto("/epics");
+  await page.goto("epics");
   await page.getByRole("button", { name: "새 하위 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: "새 이슈" });
   await expect(dialog.getByText("하위를 만들 에픽")).toBeVisible();
@@ -37,7 +37,7 @@ test("에픽에서 기존 이슈를 골라 확인하면 하위 목록에 들어�
     task: { title: "넣을 후보 작업", type: "task" },
   });
 
-  await page.goto("/epics");
+  await page.goto("epics");
   const search = page.getByRole("combobox", { name: "기존 이슈를 하위로 넣기" });
   await search.fill("넣을 후보");
   await page

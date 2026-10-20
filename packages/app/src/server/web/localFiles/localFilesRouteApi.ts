@@ -4,9 +4,10 @@ import {
   readLocalFile,
   readLocalFileRange,
 } from "@/server/infra/localFiles/readLocalFile";
-import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
+import { findWorkspace } from "@/server/infra/runtime/serverRuntime";
 import { isCrossSiteRequest } from "@/server/web/http/crossSiteRequest";
 import { serverMessages } from "@/server/web/locale/serverMessages";
+import { WORKSPACE_QUERY } from "@/shared/contract/workspaces";
 
 const IMAGE_TYPES: Record<string, string> = {
   ".png": "image/png",
@@ -44,12 +45,15 @@ export async function handleLocalFileRequest(request: Request): Promise<Response
 
   const path = requestedPath(request);
   if (path === null) return localFileResponse(messages.invalidRequest, 400);
+  const slug = new URL(request.url).searchParams.get(WORKSPACE_QUERY) ?? "";
+  const workspace = findWorkspace(slug);
+  if (!workspace) return localFileResponse(messages.unknownWorkspace(slug), 404);
 
   const extension = extname(path).toLowerCase();
   const videoType = VIDEO_TYPES[extension];
-  if (videoType) return videoResponse(request, path, videoType, messages);
+  if (videoType) return videoResponse(request, workspace.root, path, videoType, messages);
 
-  const file = await readLocalFile(currentWorkspaceRoot(), path);
+  const file = await readLocalFile(workspace.root, path);
   if (file.status !== 200) return deniedResponse(file.status, messages);
   // HTML·SVG·스크립트도 텍스트로 응답해 앱과 같은 origin에서 실행되지 않게 합니다.
   return localFileResponse(file.contents, 200, {
@@ -60,6 +64,7 @@ export async function handleLocalFileRequest(request: Request): Promise<Response
 /** 브라우저가 재생 위치를 옮길 때 보내는 Range 요청에는 그 구간만 보냅니다. */
 async function videoResponse(
   request: Request,
+  workspaceRoot: string,
   path: string,
   contentType: string,
   messages: ServerMessages,
@@ -71,11 +76,11 @@ async function videoResponse(
   };
   const rangeOf = requestedRange(request.headers.get("Range"));
   if (!rangeOf) {
-    const file = await readLocalFile(currentWorkspaceRoot(), path);
+    const file = await readLocalFile(workspaceRoot, path);
     if (file.status !== 200) return deniedResponse(file.status, messages);
     return localFileResponse(file.contents, 200, headers);
   }
-  const part = await readLocalFileRange(currentWorkspaceRoot(), path, rangeOf);
+  const part = await readLocalFileRange(workspaceRoot, path, rangeOf);
   if (part.status === 206) {
     const { start, end } = part.range;
     return localFileResponse(part.contents, 206, {

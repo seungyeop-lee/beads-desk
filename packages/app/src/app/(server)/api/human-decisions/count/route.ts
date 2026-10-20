@@ -2,6 +2,6 @@ import { handleHumanDecisionCountRequest } from "@/server/web/humanDecisions/hum
 
 export const dynamic = "force-dynamic";
 
-export function GET(): Promise<Response> {
-  return handleHumanDecisionCountRequest();
+export function GET(request: Request): Promise<Response> {
+  return handleHumanDecisionCountRequest(request);
 }

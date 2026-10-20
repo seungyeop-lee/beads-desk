@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useRef } from "react";
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
+import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { useGraph } from "@/client/modules/graph/application/useGraph";
 import { centerGraph } from "@/client/modules/graph/domain/centerGraph";
 import { type GraphScope } from "@/client/modules/graph/domain/graphScope";
@@ -38,7 +39,8 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
   const router = useRouter();
   const replaceQueryOnly = useQueryReplace({ queryOnly: true });
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const backHref = graphBackHref(scope, new URLSearchParams(params));
+  const workspaceHref = useWorkspaceHref();
+  const backHref = workspaceHref(graphBackHref(scope, new URLSearchParams(params)));
   const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
   const title = `${scopeTitle} · ${messages.graph.scopes[scope.kind]}`;
 

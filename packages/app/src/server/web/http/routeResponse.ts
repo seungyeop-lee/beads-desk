@@ -3,7 +3,7 @@ import { bdErrorMessage } from "@/server/web/locale/serverMessages";
 
 /**
  * Route API의 JSON 응답을 조립합니다. 상태 코드를 생략하면 200입니다.
- * 응답 내용이 현재 workspace 상태를 따르므로, 브라우저와 중간 proxy가 저장하지 않도록 no-store를 붙입니다.
+ * 응답 내용이 workspace 상태를 따르므로, 브라우저와 중간 proxy가 저장하지 않도록 no-store를 붙입니다.
  */
 export function respondJson(body: unknown, status = 200): Response {
   return Response.json(body, { status, headers: { "Cache-Control": "no-store" } });

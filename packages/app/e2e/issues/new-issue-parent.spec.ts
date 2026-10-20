@@ -7,7 +7,7 @@ test("새 이슈 대화상자에서 상위 이슈를 찾아 고르고 지운 뒤
 }) => {
   const epic = await workspace.createIssue("상위로 고를 에픽", "--type", "epic");
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("button", { name: "새 이슈" }).click();
   const dialog = page.getByRole("dialog", { name: "새 이슈" });
   await expect(dialog.getByRole("textbox", { name: "제목" })).toBeFocused();

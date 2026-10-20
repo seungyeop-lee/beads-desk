@@ -11,7 +11,8 @@ import { IssueDetailView } from "./IssueDetailView";
 const DETAIL_ADDRESS = "/issues?issue=desk-1";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/issues",
+  useParams: () => ({ workspace: "demo" }),
+  usePathname: () => "/w/demo/issues",
   useSearchParams: () => new URLSearchParams({ issue: "desk-1" }),
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
@@ -25,7 +26,7 @@ const WRITES: IssueWrites = {
   pending: false,
   error: null,
   dismissError: () => {},
-  run: (write) => write(),
+  run: (write) => write("demo"),
 };
 
 test("일반 이슈 상세의 선행·후속 그래프 링크가 연결된 이슈 영역의 제목보다 크고 진한 글자로 보인다", async () => {
@@ -35,7 +36,7 @@ test("일반 이슈 상세의 선행·후속 그래프 링크가 연결된 이�
   const link = screen.getByRole("link", { name: messages.graph.blockingChain, exact: true });
   expectMoreVisibleThanCaption(link.element(), caption.element());
   expect(link.element().getAttribute("href")).toBe(
-    graphHref({ kind: "center", id: "desk-1" }, DETAIL_ADDRESS),
+    `/w/demo${graphHref({ kind: "center", id: "desk-1" }, DETAIL_ADDRESS)}`,
   );
   expect(screen.getByRole("link", { name: messages.graph.epicOrder }).query()).toBeNull();
 });
@@ -56,10 +57,10 @@ test("에픽 상세에서 순서 보기와 선행·후속 그래프 링크가 �
   expect(orderBox.right).toBeLessThanOrEqual(chainBox.left);
 
   expect(order.element().getAttribute("href")).toBe(
-    graphHref({ kind: "epic", id: "desk-1" }, DETAIL_ADDRESS),
+    `/w/demo${graphHref({ kind: "epic", id: "desk-1" }, DETAIL_ADDRESS)}`,
   );
   expect(chain.element().getAttribute("href")).toBe(
-    graphHref({ kind: "center", id: "desk-1" }, DETAIL_ADDRESS),
+    `/w/demo${graphHref({ kind: "center", id: "desk-1" }, DETAIL_ADDRESS)}`,
   );
 });
 

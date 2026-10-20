@@ -17,7 +17,7 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
   const heldEpics = new Promise<void>((resolve) => {
     releaseEpics = resolve;
   });
-  await page.route("**/api/epics", async (route) => {
+  await page.route("**/api/epics?*", async (route) => {
     await heldEpics;
     await route.continue();
   });
@@ -30,7 +30,7 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
   });
   await page.setViewportSize({ width: 480, height: 1000 });
   try {
-    await page.goto("/");
+    await page.goto(".");
     await expect(page).toHaveURL(/\/focus$/);
     await expect(next.getByRole("listitem")).toHaveCount(1);
     await expect(screens.getByRole("link", { name: "판단 기다림 1개", exact: true })).toBeVisible();
@@ -40,7 +40,7 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
     releaseEpics();
   }
   await expect(epicProgress).toBeVisible();
-  await page.unroute("**/api/epics");
+  await page.unroute("**/api/epics?*");
 
   for (const href of [
     "/human",
@@ -51,22 +51,23 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
     "/decisions",
     "/focus",
   ]) {
-    await screens.locator(`a[href="${href}"]`).click();
+    await screens.locator(`a[href="/w/${workspace.slug}${href}"]`).click();
     await expect(page).toHaveURL(new RegExp(`${href}$`));
   }
   await page.getByRole("button", { name: "설정", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "설정" })).toBeVisible();
   await page.keyboard.press("Escape");
 
-  const roots = await picker
+  // workspace를 고르면 이 탭만 그 workspace의 같은 화면으로 옮겨 갑니다.
+  const slugs = await picker
     .locator("option")
     .evaluateAll((options) => options.map((option) => option.getAttribute("value")!));
-  const other = roots.find((root) => root !== workspace.path)!;
+  const other = slugs.find((slug) => slug !== workspace.slug)!;
   await picker.selectOption(other);
-  await expect
-    .poll(async () => (await (await page.request.get("/api/workspaces")).json()).data.current)
-    .toBe(other);
-  await picker.selectOption(workspace.path);
+  await expect(page).toHaveURL(new RegExp(`/w/${other}/focus$`));
+  await expect(picker).toHaveValue(other);
+  await picker.selectOption(workspace.slug);
+  await expect(page).toHaveURL(new RegExp(`/w/${workspace.slug}/focus$`));
   await expect(next.getByRole("listitem")).toHaveCount(1);
 
   await page.getByRole("button", { name: "새 이슈", exact: true }).click();
@@ -87,14 +88,16 @@ test("등록한 workspace가 하나뿐이면 헤더에 workspace 선택을 보�
   page,
   workspace,
 }) => {
-  await page.route("**/api/workspaces", async (route) => {
+  await page.route("**/api/workspaces?*", async (route) => {
     const response = await route.fetch();
     const body = await response.json();
-    body.data.workspaces = [body.data.current];
+    body.data.workspaces = body.data.workspaces.filter(
+      ({ slug }: { slug: string }) => slug === workspace.slug,
+    );
     await route.fulfill({ response, json: body });
   });
-  await page.goto("/focus");
-  // 선택 대신 현재 workspace 이름만 보이면 목록을 받은 뒤입니다.
+  await page.goto("focus");
+  // 선택 대신 이 탭의 workspace 이름만 보이면 목록을 받은 뒤입니다.
   await expect(page.getByTitle(workspace.path, { exact: true })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "workspace", exact: true })).toHaveCount(0);
 });

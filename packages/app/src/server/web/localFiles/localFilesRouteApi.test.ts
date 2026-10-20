@@ -10,11 +10,13 @@ let root: string;
 let parent: string;
 let worktree: string;
 let worktreeParent: string;
-vi.mock("@/server/infra/runtime/serverRuntime", () => ({ currentWorkspaceRoot: () => root }));
+vi.mock("@/server/infra/runtime/serverRuntime", () => ({
+  findWorkspace: (slug: string) => (slug === "repo" ? { root, slug } : null),
+}));
 vi.mock("@/server/web/locale/requestLocale", () => ({ requestLocale: async () => "ko" }));
 
 const get = (path: string, headers?: Record<string, string>) =>
-  handleLocalFileRequest(new Request(`http://localhost${localFileUrl(path)}`, { headers }));
+  handleLocalFileRequest(new Request(`http://localhost${localFileUrl(path, "repo")}`, { headers }));
 
 beforeAll(async () => {
   // fixture는 기본 허용 루트(/tmp, /var/tmp, os.tmpdir()) 밖이어야 허용 밖 접근의 403 검사가 성립하므로,
@@ -95,10 +97,19 @@ test.each(["/etc/hosts", "prefix", "traversal", "file-symlink", "directory-symli
   },
 );
 
+test("등록하지 않은 workspace 이름이면 파일을 읽지 않고 404로 답한다", async () => {
+  const response = await handleLocalFileRequest(
+    new Request(`http://localhost${localFileUrl(join(root, "README.md"), "other")}`),
+  );
+
+  expect(response.status).toBe(404);
+  expect(await response.text()).toContain("등록되지 않은 workspace입니다: other.");
+});
+
 test("인코딩을 겹친 경로로 허용 범위를 벗어날 수 없다", async () => {
   const response = await handleLocalFileRequest(
     new Request(
-      `http://localhost/api/local-files?path=${encodeURIComponent(`${root}/../repo-other/secret.md`)}`,
+      `http://localhost/api/local-files?workspace=repo&path=${encodeURIComponent(`${root}/../repo-other/secret.md`)}`,
     ),
   );
   expect(response.status).toBe(403);

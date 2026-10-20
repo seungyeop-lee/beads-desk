@@ -5,7 +5,11 @@ import {
   type PreviousGateRound,
 } from "@beads-desk/bd";
 import { expect, test, vi } from "vitest";
-import { expectRouteBdError, expectRouteData } from "@/server/web/http/routeApiTest";
+import {
+  expectRouteBdError,
+  expectRouteData,
+  routeApiRequest,
+} from "@/server/web/http/routeApiTest";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { handleHumanGatesRequest, handlePreviousGateRoundsRequest } from "./humanGatesRouteApi";
 
@@ -25,7 +29,7 @@ test("workspace의 열린 human gate와 막고 있는 이슈를 돌려준다", a
   ] satisfies HumanGate[];
   vi.mocked(humanGates).mockResolvedValue({ ok: true, value: gates });
 
-  const response = await handleHumanGatesRequest();
+  const response = await handleHumanGatesRequest(routeApiRequest());
 
   expect(humanGates).toHaveBeenCalledWith("/workspace");
   await expectRouteData(response, gates);
@@ -41,7 +45,7 @@ test("고른 gate의 이전 라운드 기록을 돌려준다", async () => {
   ] satisfies PreviousGateRound[];
   vi.mocked(previousGateRounds).mockResolvedValue({ ok: true, value: rounds });
 
-  const response = await handlePreviousGateRoundsRequest("g-1");
+  const response = await handlePreviousGateRoundsRequest(routeApiRequest(), "g-1");
 
   expect(previousGateRounds).toHaveBeenCalledWith("/workspace", "g-1");
   await expectRouteData(response, rounds);
@@ -53,7 +57,7 @@ test("이전 라운드 조회가 실패하면 bd의 메시지를 오류로 돌�
     error: { message: "boom\n", exitCode: 1 },
   });
 
-  await expectRouteBdError(await handlePreviousGateRoundsRequest("g-1"), "boom");
+  await expectRouteBdError(await handlePreviousGateRoundsRequest(routeApiRequest(), "g-1"), "boom");
 });
 
 test("bd가 실패하면 bd의 메시지를 오류로 돌려준다", async () => {
@@ -62,5 +66,5 @@ test("bd가 실패하면 bd의 메시지를 오류로 돌려준다", async () =>
     error: { message: "boom\n", exitCode: 1 },
   });
 
-  await expectRouteBdError(await handleHumanGatesRequest(), "boom");
+  await expectRouteBdError(await handleHumanGatesRequest(routeApiRequest()), "boom");
 });

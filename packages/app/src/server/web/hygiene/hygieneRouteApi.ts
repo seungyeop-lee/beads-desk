@@ -1,12 +1,14 @@
 import { staleIssues } from "@beads-desk/bd";
-import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
+import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
 import { readHygieneReport } from "@/server/modules/hygiene/application/hygieneReport";
 import { respondBdOutcome, respondJson } from "@/server/web/http/routeResponse";
 import { serverMessages } from "@/server/web/locale/serverMessages";
 import { parseStaleDays } from "@/shared/contract/hygiene";
 
-export async function handleHygieneRequest(): Promise<Response> {
-  return respondBdOutcome(await readHygieneReport(currentWorkspaceRoot()));
+export function handleHygieneRequest(request: Request): Promise<Response> {
+  return withRequestWorkspace(request, async (cwd) =>
+    respondBdOutcome(await readHygieneReport(cwd)),
+  );
 }
 
 export async function handleStaleIssuesRequest(request: Request): Promise<Response> {
@@ -14,5 +16,7 @@ export async function handleStaleIssuesRequest(request: Request): Promise<Respon
   if (staleDays === null) {
     return respondJson({ ok: false, error: (await serverMessages()).invalidStaleDays }, 400);
   }
-  return respondBdOutcome(await staleIssues(currentWorkspaceRoot(), staleDays));
+  return withRequestWorkspace(request, async (cwd) =>
+    respondBdOutcome(await staleIssues(cwd, staleDays)),
+  );
 }

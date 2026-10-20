@@ -31,7 +31,7 @@ test("본문·댓글·활동의 그림에 한글 노드와 간선 글자가 보�
     `${titled(DIAGRAM)}\n\n${titled('flowchart LR\n A["시작<br/>준비"] -->|처리| B[완료]')}`,
   );
   await workspace.bd("comments", "add", id, titled(DIAGRAM));
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   const blocks = dialog.locator(".milkdown-code-block");
   await expect(blocks.locator(".preview svg")).toHaveCount(3);
@@ -58,7 +58,7 @@ test("편집 미리보기는 마지막 입력만 남기고 문법 오류·언어
   workspace,
 }, info) => {
   const id = await workspace.createIssue("Mermaid 편집", "--description", markdown());
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await expect(dialog.locator(".preview svg")).toBeVisible();
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
@@ -108,7 +108,7 @@ test("일반 코드에서는 pele 모듈을 받지 않고 pele 모듈 로드 실
   page.on("request", (request) => {
     if (request.resourceType() === "script") scripts.add(request.url());
   });
-  await page.goto(`/issues?issue=${plain}`);
+  await page.goto(`issues?issue=${plain}`);
   const plainDialog = page.getByRole("dialog", { name: `${plain} 이슈` });
   await expect(plainDialog.getByText("const value = 1;", { exact: true })).toBeVisible();
   await expect(plainDialog.locator(".preview-panel")).toHaveCount(0);
@@ -136,7 +136,7 @@ test("Human gate는 같은 그림을 보여 주고 설정이나 시스템에서 
   await page.emulateMedia({ colorScheme: "light" });
   const work = await workspace.createIssue("Mermaid 검토 대상");
   await createHumanGate(workspace, work, markdown());
-  await page.goto("/human");
+  await page.goto("human");
   const report = page.getByRole("region", { name: `Review: ${work}`, exact: true });
   await expect(report.locator(".preview svg")).toContainText("시작");
   await expect(report.locator(".cm-content")).toBeHidden();
@@ -178,7 +178,7 @@ test("새 이슈 작성에서도 Mermaid 미리보기를 보여 주고 Ctrl/Cmd+
   page,
   workspace,
 }) => {
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("button", { name: "새 이슈", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "새 이슈", exact: true });
   await dialog.getByRole("textbox", { name: "제목", exact: true }).fill("새 Mermaid");
@@ -219,7 +219,7 @@ test("본문·댓글·옆 패널의 그림을 누르거나 키보드로 크게 �
   );
   await workspace.bd("comments", "add", main, markdown("flowchart LR\n  E[댓글 그림] --> F[답]"));
   await page.emulateMedia({ colorScheme: "light" });
-  await page.goto(`/issues?issue=${main}`);
+  await page.goto(`issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   const enlarged = page.getByRole("dialog", { name: "크게 본 그림", exact: true });
   const diagrams = dialog.getByRole("button", { name: "그림 크게 보기", exact: true });
@@ -259,7 +259,7 @@ test("본문·댓글·옆 패널의 그림을 누르거나 키보드로 크게 �
   await expect(dialog).toBeVisible();
 
   await page.emulateMedia({ colorScheme: "dark" });
-  await page.goto(`/issues?issue=${main}&side=${dependency}`);
+  await page.goto(`issues?issue=${main}&side=${dependency}`);
   const side = page.getByRole("region", { name: `${dependency} 이슈 옆 패널` });
   await side.getByRole("button", { name: "그림 크게 보기", exact: true }).click();
   await expect(enlarged.locator("svg.pele")).toContainText("선행 그림");
@@ -277,7 +277,7 @@ test("설명을 편집하는 중에도 미리보기 그림을 크게 보고, 닫
   workspace,
 }) => {
   const id = await workspace.createIssue("Mermaid 편집 확대", "--description", markdown());
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
   const editor = dialog.getByRole("textbox", { name: "설명", exact: true });

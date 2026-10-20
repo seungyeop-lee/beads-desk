@@ -11,7 +11,7 @@ test("결정 A를 상세에서 결정 B로 대체하면 A가 닫히고, 결정 �
     next: { title: "e2e 새 결정", type: "decision" },
   });
 
-  await page.goto(`/issues?issue=${previous}`);
+  await page.goto(`issues?issue=${previous}`);
   const confirm = answerNextConfirm(page, true);
   await pickTarget(page, previous, "다른 이슈로 대체", "e2e 새", next);
   expect(await confirm).toBe(`${previous}을(를) ${next}(으)로 대체하고 닫을까요?`);
@@ -21,7 +21,7 @@ test("결정 A를 상세에서 결정 B로 대체하면 A가 닫히고, 결정 �
   ).toBeVisible();
   await expectStatus(workspace, previous, "closed");
 
-  await page.goto("/decisions");
+  await page.goto("decisions");
   const nextRow = page.getByRole("row").filter({ hasText: "e2e 새 결정" });
   await expect(nextRow).toContainText("이전 결정");
   await expect(nextRow.getByRole("link", { name: previous, exact: true })).toBeVisible();
@@ -36,7 +36,7 @@ test("이슈 C를 D의 중복으로 표시하면 확인 창에서 거절할 때�
     canonical: { title: "e2e 원본 작업", type: "task" },
   });
 
-  await page.goto(`/issues?issue=${duplicate}`);
+  await page.goto(`issues?issue=${duplicate}`);
   const rejected = answerNextConfirm(page, false);
   await pickTarget(page, duplicate, "중복으로 닫기", "e2e 원본", canonical);
   expect(await rejected).toBe(`${duplicate}을(를) ${canonical}의 중복으로 표시하고 닫을까요?`);

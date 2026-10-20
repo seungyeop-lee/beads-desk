@@ -32,11 +32,13 @@ export function issueEdits(writes: IssueWrites, issueId: string) {
   const close = async (prompts: StatusPrompts) => {
     const reason = await prompts.askReason(issueId);
     if (reason === null) return false;
-    let result = await writes.run(() => closeIssueAction(issueId, reason, false));
+    let result = await writes.run((workspace) =>
+      closeIssueAction(workspace, issueId, reason, false),
+    );
     if (!result.ok && "closeBlocked" in result) {
       writes.dismissError();
       if (!prompts.confirmForce(result.error.split("\n")[0])) return false;
-      result = await writes.run(() => closeIssueAction(issueId, reason, true));
+      result = await writes.run((workspace) => closeIssueAction(workspace, issueId, reason, true));
     }
     if (result.ok && result.data.length > 0) prompts.announceUnblocked(result.data);
     return result.ok;
@@ -46,17 +48,18 @@ export function issueEdits(writes: IssueWrites, issueId: string) {
     const deferral = await prompts.askDeferral(issueId);
     if (deferral === null) return false;
     const { until, reason } = deferral;
-    return (await writes.run(() => deferIssueAction(issueId, until, reason))).ok;
+    return (await writes.run((workspace) => deferIssueAction(workspace, issueId, until, reason)))
+      .ok;
   };
 
   return {
     update: async (changes: IssueChanges) =>
-      (await writes.run(() => updateIssueAction(issueId, changes))).ok,
+      (await writes.run((workspace) => updateIssueAction(workspace, issueId, changes))).ok,
 
     changeStatus: async (status: IssueStatus, prompts: StatusPrompts) => {
       if (status === "closed") return close(prompts);
       if (status === "deferred") return defer(prompts);
-      return (await writes.run(() => setIssueStatusAction(issueId, status))).ok;
+      return (await writes.run((workspace) => setIssueStatusAction(workspace, issueId, status))).ok;
     },
   };
 }

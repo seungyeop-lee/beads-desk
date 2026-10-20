@@ -4,13 +4,15 @@
 
 ## 데이터 준비
 
-- 시나리오는 `test`와 `expect`를 `@playwright/test`가 아니라 `support/bdWorkspace.ts`에서 import합니다. 이 `test`는 시나리오마다 빈 bd workspace를 임시 디렉터리에 만들고 서버의 현재 workspace로 바꾼 뒤, 시나리오가 끝나면 지웁니다. `bd init`은 한 번에 수 초씩 걸리므로 worker마다 한 번만 초기화한 원본(`workspaceTemplate`)을 복사해 만듭니다. 시나리오에서 `bd init`을 다시 실행하지 않습니다.
+- 시나리오는 `test`와 `expect`를 `@playwright/test`가 아니라 `support/bdWorkspace.ts`에서 import합니다. 이 `test`는 시나리오마다 빈 bd workspace를 임시 디렉터리에 만들어 서버에 등록하고, 시나리오가 끝나면 지웁니다. 두 번째 workspace가 필요한 시나리오는 `otherWorkspace` fixture를 씁니다. `bd init`은 한 번에 수 초씩 걸리므로 worker마다 한 번만 초기화한 원본(`workspaceTemplate`)을 복사해 만듭니다. 시나리오에서 `bd init`을 다시 실행하지 않습니다.
 - 필요한 이슈와 의존 관계는 `workspace` fixture로 심습니다. bd 한 번이 수 초씩 걸릴 때가 있어, 시나리오를 시작할 때 심는 데이터는 bd 실행 횟수를 줄여 만듭니다.
   - 이슈를 둘 이상 심거나 상태·상위 이슈·의존 관계까지 정해 심을 때는 `workspace.createIssues({ key: { title, type, ... } }, [[기다리는 key, 먼저 끝나야 하는 key]])`를 씁니다. `bd create --graph` 한 번으로 만들고 key마다 id를 돌려줍니다. related나 discovered-from 관계는 쌍의 세 번째 값으로 관계를 적어(`[발견한 이슈 key, 발견한 작업 key, "discovered-from"]`) 같은 호출에서 심고, `bd dep add`를 따로 실행하지 않습니다.
   - 이슈 하나만 필요하면 `workspace.createIssue(제목, ...bd create 인자)`를 씁니다.
   - 댓글처럼 `createIssues`로 표현할 수 없는 준비와, 서버 알림을 확인하려고 시나리오 도중에 CLI로 바꾸는 동작은 `workspace.bd(...인자)`로 실행합니다.
-- 이 저장소나 다른 실제 workspace의 `.beads`를 쓰지 않습니다. 시나리오에서 `POST /api/workspaces`로 workspace를 직접 바꾸지 않습니다.
-- 서버의 현재 workspace는 서버 전체에서 하나라서, worker마다 서버를 따로 띄우고(`support/appServer.ts`) 한 worker 안의 시나리오는 순서대로 실행합니다. 시나리오에서 `page.goto`와 `request`는 상대 경로로 써서 자기 worker의 서버로 보냅니다.
+- 이 저장소나 다른 실제 workspace의 `.beads`를 쓰지 않습니다. 시나리오에서 `POST /api/workspaces`로 workspace를 직접 등록하지 않습니다.
+- worker마다 서버를 따로 띄우고(`support/appServer.ts`) 한 worker 안의 시나리오는 순서대로 실행합니다. 서버에는 시나리오마다 등록한 workspace가 쌓이므로, workspace 이름이 없는 예전 주소(`/issues`)는 workspace를 고르는 화면으로 갑니다.
+- baseURL은 시나리오 workspace의 화면 주소(`/w/<workspace 이름>/`)입니다. `page.goto`, `toHaveURL`, `page.request`에는 `issues?view=ready`처럼 `/` 없이 쓴 상대 경로를 넘겨 그 workspace의 화면으로 보냅니다. `/`로 시작하면 서버 루트 기준이 되어 workspace 이름이 빠집니다. 그래프 복귀 주소처럼 `/`로 시작하는 화면 경로를 그대로 열 때는 `` `.${경로}` ``로 넘깁니다.
+- 화면이 보내는 API 요청에는 `workspace` query가 붙습니다. `page.route`로 가로챌 때는 `**/api/epics?*`처럼 query까지 맞는 pattern을 씁니다.
 - worker들이 bd를 동시에 실행하면 디스크 I/O를 함께 쓰느라 시나리오가 혼자 돌 때보다 느려집니다. 그래서 macOS에서는 시나리오 workspace를 RAM disk에 만들고(`support/ramDisk.ts`), `playwright.config.ts`의 test timeout은 60초, expect timeout은 10초로 둡니다. 시나리오와 지원 코드에서 임시 디렉터리는 `os.tmpdir()`로 얻습니다. `/tmp` 같은 경로를 직접 쓰면 RAM disk 밖에 만들어집니다.
 
 ## 시나리오 범위

@@ -14,7 +14,7 @@ test("human gate는 막고 있는 작업과 함께 판단 기다림 화면에 �
   );
   const gate = await createHumanGate(workspace, work, "로그인 화면 수정 결과");
 
-  await page.goto("/human");
+  await page.goto("human");
   const decision = page.getByRole("region", { name: `Review: ${work}` });
   await expect(decision.getByRole("region", { name: "사유" })).toContainText(
     "로그인 화면 수정 결과",
@@ -52,7 +52,7 @@ test("재판단을 기다리는 gate는 목록 행에 이전 라운드 수가 �
   await workspace.bd("human", "respond", second, "간격 조정 요청");
   await createHumanGate(workspace, work, "3차 결과 확인");
 
-  await page.goto("/human");
+  await page.goto("human");
   const row = page.getByRole("button", { name: new RegExp(`Review: ${work}\\b`) });
   // 선택 단추는 카드 위에 겹친 빈 요소라, 카드에 달린 표시는 단추를 품은 목록 항목에서 확인합니다.
   const card = (button: Locator) => page.getByRole("listitem").filter({ has: button });

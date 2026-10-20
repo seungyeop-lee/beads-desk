@@ -1,22 +1,29 @@
-import { selectWorkspace } from "@/client/modules/workspace/application/selectWorkspace";
+import { useRouter } from "next/navigation";
 import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspaces";
+import { useScreenPathname, useWorkspaceSlug } from "@/client/ui/address/workspaceAddress";
 import { FolderIcon } from "@/client/ui/designSystem/icons";
-import { useSavedValue } from "@/client/ui/issues/fields/useSavedValue";
+import { workspaceHref } from "@/shared/contract/workspaces";
 
-/** workspace가 하나면 이름만, 여럿이면 고를 수 있게 보여 줍니다. 이름은 디렉터리 이름이고 전체 경로는 title로 보입니다. */
+/**
+ * 이 탭이 보는 workspace의 이름을 보여 주고, 여럿이면 고를 수 있게 합니다. 이름은 화면 주소에 쓰는 이름이고 전체 경로는 title로 보입니다.
+ * 고르면 이 탭만 다른 workspace의 같은 화면으로 이동합니다. 다른 탭은 보던 workspace를 그대로 봅니다.
+ */
 export function WorkspacePicker() {
   const { data } = useWorkspaces();
-  const [current, show, reset] = useSavedValue(data?.current ?? "");
+  const current = useWorkspaceSlug();
+  const screenPathname = useScreenPathname();
+  const router = useRouter();
 
+  const currentRoot = data?.workspaces.find((workspace) => workspace.slug === current)?.root;
   if (!data) return null;
   if (data.workspaces.length <= 1) {
     return (
       <span
         className="flex min-w-0 max-w-48 items-center gap-1.5 text-sm text-base-content/60"
-        title={data.current}
+        title={currentRoot}
       >
         <FolderIcon width={15} height={15} className="shrink-0" />
-        <span className="truncate">{directoryName(data.current)}</span>
+        <span className="truncate">{current}</span>
       </span>
     );
   }
@@ -26,21 +33,13 @@ export function WorkspacePicker() {
       <select
         className="ghost-select min-w-0 max-w-full pl-8"
         aria-label="workspace"
-        title={current}
+        title={currentRoot}
         value={current}
-        onChange={async (event) => {
-          const root = event.target.value;
-          show(root);
-          const result = await selectWorkspace(root);
-          if (!result.ok) {
-            reset();
-            window.alert(result.error);
-          }
-        }}
+        onChange={(event) => router.push(switchedHref(event.target.value, screenPathname))}
       >
-        {data.workspaces.map((root) => (
-          <option key={root} value={root} title={root}>
-            {directoryName(root)}
+        {data.workspaces.map(({ root, slug }) => (
+          <option key={slug} value={slug} title={root}>
+            {slug}
           </option>
         ))}
       </select>
@@ -48,6 +47,8 @@ export function WorkspacePicker() {
   );
 }
 
-function directoryName(path: string): string {
-  return path.split(/[\\/]/).filter(Boolean).at(-1) ?? path;
+// query의 이슈 id와 그래프 범위는 보던 workspace의 이슈를 가리키므로 넘기지 않습니다.
+// 그래프 화면은 범위 없이 열 수 없어 workspace의 첫 화면으로 갑니다.
+function switchedHref(slug: string, screenPathname: string): string {
+  return workspaceHref(slug, screenPathname === "/graph" ? "/" : screenPathname);
 }

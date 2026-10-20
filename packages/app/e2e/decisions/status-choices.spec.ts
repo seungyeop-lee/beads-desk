@@ -8,7 +8,7 @@ test("CLI로 보류한 결정은 보류로 보이고, 화면에서 열림으로 
   const decision = await workspace.createIssue("e2e 결정", "--type", "decision");
   await workspace.bd("update", decision, "--status", "deferred");
 
-  await page.goto("/decisions");
+  await page.goto("decisions");
   const select = rowStatus(page, decision);
   await expect(select).toHaveValue("deferred");
 
@@ -28,7 +28,7 @@ test("닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대�
     [["decision", "blocker"]],
   );
 
-  await page.goto("/decisions");
+  await page.goto("decisions");
   const select = rowStatus(page, decision);
 
   const rejected = page.waitForEvent("dialog");

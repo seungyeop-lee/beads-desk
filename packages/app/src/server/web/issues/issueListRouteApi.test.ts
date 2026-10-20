@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { fakeBdWorkspace } from "@/server/infra/fakeBd";
 import { handleDescriptionSearchRequest, handleIssueListRequest } from "./issueListRouteApi";
@@ -10,7 +11,9 @@ vi.mock("@/server/web/locale/requestLocale", () => ({
 const fakeBd = fakeBdWorkspace("beads-desk-issues-");
 const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 
+// workspace 디렉터리가 테스트마다 바뀌므로, 서버 전역의 등록 목록도 새 디렉터리로 다시 만들게 지웁니다.
 beforeEach(() => {
+  delete (globalThis as Record<symbol, unknown>)[Symbol.for("beads-desk.serverRuntime")];
   process.env.BEADS_DESK_WORKSPACE = fakeBd.workDir;
 });
 
@@ -33,8 +36,10 @@ async function useFakeBd(
   });
 }
 
-function request(query: string): Request {
-  return new Request(`http://localhost/api/issues${query}`);
+function request(path: string): Request {
+  const url = new URL(path.startsWith("/") ? path : `/api/issues${path}`, "http://localhost");
+  url.searchParams.set("workspace", basename(fakeBd.workDir));
+  return new Request(url);
 }
 
 const issues = JSON.stringify([
@@ -120,7 +125,7 @@ test("설명 검색은 설명에 검색어가 든 이슈의 id만 돌려준다",
   });
 
   const response = await handleDescriptionSearchRequest(
-    new Request("http://localhost/api/issue-search?description=token"),
+    request("/api/issue-search?description=token"),
   );
 
   expect(response.status).toBe(200);
@@ -131,7 +136,7 @@ test("설명 검색어가 비어 있으면 bd를 실행하지 않고 400을 돌�
   await useFakeBd("unused", {});
 
   const response = await handleDescriptionSearchRequest(
-    new Request("http://localhost/api/issue-search?description=%20"),
+    request("/api/issue-search?description=%20"),
   );
 
   expect(response.status).toBe(400);

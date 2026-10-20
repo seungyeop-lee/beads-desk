@@ -43,7 +43,8 @@ export function createDaemon({
 
   return {
     /**
-     * 이미 실행 중이면 새로 띄우지 않고 cwd를 workspace로 등록해 현재 workspace로 바꿉니다.
+     * 이미 실행 중이면 새로 띄우지 않고 cwd를 workspace로 등록합니다. 출력하고 여는 URL은 그 workspace의 화면 주소입니다.
+     * 이미 열린 탭은 보던 workspace를 그대로 봅니다.
      *
      * @param {{ cwd: string; port?: number; open: boolean }} options
      */
@@ -52,22 +53,26 @@ export function createDaemon({
         const root = workspaceRootOf(cwd);
         const running = await runningServer();
         if (running) {
-          const list = await registerWorkspace(running.url, root, true);
-          print(`Switched the running server to workspace: ${list.current}`);
-          print(`URL: ${running.url}`);
+          const { registered } = await registerWorkspace(running.url, root);
+          const url = workspaceUrl(running.url, registered.slug);
+          print(`Added workspace to the running server: ${registered.root}`);
+          print(`URL: ${url}`);
           if (port && port !== running.port) {
             print(
               `The server is already running on port ${running.port}, so port ${port} was not applied. To change the port, run: bd-desk restart --port ${port}`,
             );
           }
-          if (open) openBrowser(running.url);
+          if (open) openBrowser(url);
           return 0;
         }
         const server = await launch(root, port);
+        // 서버가 시작할 때 등록한 workspace를 다시 등록해 화면 주소에 쓰는 이름을 받습니다.
+        const { registered } = await registerWorkspace(server.url, root);
+        const url = workspaceUrl(server.url, registered.slug);
         print(`workspace: ${root}`);
-        print(`URL: ${server.url}`);
+        print(`URL: ${url}`);
         print("To stop the server, run: bd-desk stop");
-        if (open) openBrowser(server.url);
+        if (open) openBrowser(url);
         return 0;
       }),
 
@@ -86,44 +91,46 @@ export function createDaemon({
       }),
 
     /**
-     * 같은 포트로 다시 시작하고, 등록한 workspace를 같은 순서로 등록한 뒤 현재 workspace를 고릅니다.
+     * 같은 포트로 다시 시작하고, 등록한 workspace를 같은 순서로 등록합니다. 등록 순서가 같으면 화면 주소도 그대로입니다.
+     * cwd가 등록한 workspace면 그 workspace의 화면 주소를, 아니면 workspace를 고르는 서버 주소를 출력합니다.
      *
-     * @param {{ port?: number; open: boolean }} options
+     * @param {{ cwd: string; port?: number; open: boolean }} options
      */
-    restart: ({ port, open }) =>
+    restart: ({ cwd, port, open }) =>
       withLock(async () => {
         const running = await runningServer();
         if (!running) {
-          const root = workspaceRootOf(process.cwd());
+          const root = workspaceRootOf(cwd);
           print("No server is running. Starting a new one.");
           const server = await launch(root, port);
-          print(`URL: ${server.url}`);
-          if (open) openBrowser(server.url);
+          const { registered } = await registerWorkspace(server.url, root);
+          const url = workspaceUrl(server.url, registered.slug);
+          print(`URL: ${url}`);
+          if (open) openBrowser(url);
           return 0;
         }
         const list = await readWorkspaces(running.url);
         await terminate(running.pid);
 
-        // 그사이 지워진 workspace는 건너뜁니다. 남은 것이 없으면 이전 현재 workspace로 띄웁니다.
+        // 그사이 지워진 workspace는 건너뜁니다. 남은 것이 없으면 처음 등록한 workspace로 띄웁니다.
         const existing = [];
         const missing = [];
-        for (const workspace of list.workspaces) {
-          (isWorkspaceRoot(workspace) ? existing : missing).push(workspace);
+        for (const { root } of list.workspaces) {
+          (isWorkspaceRoot(root) ? existing : missing).push(root);
         }
-        const [first = list.current, ...rest] = existing;
+        const [first = list.workspaces[0].root, ...rest] = existing;
         const server = await launch(first, port ?? running.port);
-        for (const workspace of rest) {
-          await registerWorkspace(server.url, workspace, false);
+        for (const root of rest) {
+          await registerWorkspace(server.url, root);
         }
-        for (const workspace of missing) {
-          print(`Workspace not found, so it was not registered again: ${workspace}`);
+        for (const root of missing) {
+          print(`Workspace not found, so it was not registered again: ${root}`);
         }
-        const current = isWorkspaceRoot(list.current)
-          ? (await registerWorkspace(server.url, list.current, true)).current
-          : first;
-        print(`workspace: ${current}`);
-        print(`URL: ${server.url}`);
-        if (open) openBrowser(server.url);
+        const { workspaces } = await readWorkspaces(server.url);
+        const here = workspaces.find(({ root }) => root === findWorkspaceRoot(cwd));
+        const url = here ? workspaceUrl(server.url, here.slug) : server.url;
+        print(`URL: ${url}`);
+        if (open) openBrowser(url);
         return 0;
       }),
   };
@@ -313,11 +320,16 @@ async function waitForServer(url, pid) {
   throw new Error("Timed out waiting for the server to be ready.");
 }
 
-async function registerWorkspace(url, path, select) {
+/** 서버의 workspace 화면 주소입니다. 서버의 `workspaceHref`(`src/shared/contract/workspaces.ts`)와 같은 형식입니다. */
+function workspaceUrl(url, slug) {
+  return `${url}/w/${encodeURIComponent(slug)}`;
+}
+
+async function registerWorkspace(url, path) {
   const response = await fetch(`${url}/api/workspaces`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, select }),
+    body: JSON.stringify({ path }),
   });
   const body = await response.json();
   if (!body.ok) throw new Error(body.error);

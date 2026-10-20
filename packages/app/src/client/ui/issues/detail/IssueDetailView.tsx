@@ -53,16 +53,16 @@ export function IssueDetailView({ issue, writes, listedIssues, issueHref, onDele
 
   const removeDependency = ({ side, link }: LinkedIssue) => {
     if (!window.confirm(messages.issueDetail.confirmRemoveDependency(link.id))) return;
-    void run(() =>
+    void run((workspace) =>
       side === "dependencies"
-        ? removeDependencyAction(id, link.id)
-        : removeDependencyAction(link.id, id),
+        ? removeDependencyAction(workspace, id, link.id)
+        : removeDependencyAction(workspace, link.id, id),
     );
   };
 
   const remove = async () => {
     if (!window.confirm(messages.issueDetail.confirmDelete(id))) return;
-    if ((await run(() => deleteIssueAction(id))).ok) onDeleted();
+    if ((await run((workspace) => deleteIssueAction(workspace, id))).ok) onDeleted();
   };
 
   /*
@@ -100,7 +100,9 @@ export function IssueDetailView({ issue, writes, listedIssues, issueHref, onDele
             <DiscussionTabs
               issue={issue}
               disabled={pending}
-              onAddComment={async (text) => (await run(() => addCommentAction(id, text))).ok}
+              onAddComment={async (text) =>
+                (await run((workspace) => addCommentAction(workspace, id, text))).ok
+              }
             />
           </div>
         </div>
@@ -181,8 +183,12 @@ export function IssueDetailView({ issue, writes, listedIssues, issueHref, onDele
               <LabelEditor
                 labels={issue.labels}
                 disabled={pending}
-                onAdd={async (label) => (await run(() => addLabelAction(id, label))).ok}
-                onRemove={(label) => void run(() => removeLabelAction(id, label))}
+                onAdd={async (label) =>
+                  (await run((workspace) => addLabelAction(workspace, id, label))).ok
+                }
+                onRemove={(label) =>
+                  void run((workspace) => removeLabelAction(workspace, id, label))
+                }
               />
             </section>
 

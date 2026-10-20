@@ -40,8 +40,8 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
   const submit = async (event?: FormEvent | KeyboardEvent) => {
     event?.preventDefault();
     if (pending || title.trim().length === 0) return;
-    const result = await run(() =>
-      createIssueAction({
+    const result = await run((workspace) =>
+      createIssueAction(workspace, {
         title,
         issueType: issueType || null,
         priority,

@@ -37,8 +37,8 @@ export function HygieneScreen() {
     if (!window.confirm(messages.closeAsReplaced.confirm.duplicate(duplicate.id, canonical.id))) {
       return;
     }
-    const result = await writes.run(() =>
-      closeAsReplacedAction(duplicate.id, "duplicate", canonical.id),
+    const result = await writes.run((workspace) =>
+      closeAsReplacedAction(workspace, duplicate.id, "duplicate", canonical.id),
     );
     if (result.ok) showToast(messages.closeAsReplaced.closed.duplicate(duplicate.id, canonical.id));
   };

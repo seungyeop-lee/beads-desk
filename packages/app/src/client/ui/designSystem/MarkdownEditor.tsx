@@ -12,6 +12,7 @@ import "@milkdown/crepe/theme/common/table.css";
 import type { CrepeBuilder } from "@milkdown/crepe/builder";
 import type { CmdKey } from "@milkdown/kit/core";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { documentWorkspace } from "@/client/infra/workspaces/documentWorkspace";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
 import { localMarkdownUrl } from "./localMarkdownUrl";
@@ -137,7 +138,8 @@ export function MarkdownEditor({
             ...schema,
             toDOM: (mark) => {
               const dom = schema.toDOM!(mark, false) as [string, Record<string, unknown>];
-              return [dom[0], { ...dom[1], href: localMarkdownUrl(String(dom[1].href)) }];
+              const href = localMarkdownUrl(String(dom[1].href), documentWorkspace() ?? "");
+              return [dom[0], { ...dom[1], href }];
             },
           };
         });
@@ -145,7 +147,10 @@ export function MarkdownEditor({
           const schema = previous(schemaCtx);
           return {
             ...schema,
-            toDOM: (node) => ["img", { ...node.attrs, src: localMarkdownUrl(node.attrs.src) }],
+            toDOM: (node) => [
+              "img",
+              { ...node.attrs, src: localMarkdownUrl(node.attrs.src, documentWorkspace() ?? "") },
+            ],
           };
         });
         ctx.update(editorViewOptionsCtx, (options) => ({

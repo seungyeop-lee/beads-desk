@@ -496,6 +496,15 @@ export const koMessages = {
     openDetail: "상세 열기",
     noDescription: "설명이 없습니다.",
   },
+  workspaces: {
+    selectTitle: "workspace 고르기",
+    selectDescription:
+      "주소에 workspace 이름이 없습니다. 등록한 workspace가 여럿이라, 이 주소로 열 workspace를 골라 주세요.",
+    notFoundTitle: "workspace를 찾지 못했습니다",
+    notFound: (name: string) =>
+      `'${name}' 이름으로 등록한 workspace가 없습니다. 그 디렉터리에서 bd-desk start를 실행하면 등록되고 주소가 출력됩니다.`,
+    showAll: "등록한 workspace 보기",
+  },
   decisions: {
     title: "결정",
     loadFailed: (error: string) => `결정을 불러오지 못했습니다: ${error}`,

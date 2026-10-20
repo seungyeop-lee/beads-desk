@@ -6,7 +6,7 @@ test("상세에서 보류를 고르면 기한과 사유를 묻고, 내일까지 
 }) => {
   const id = await workspace.createIssue("e2e 미룰 작업", "--type", "task");
 
-  await page.goto(`/issues?issue=${id}`);
+  await page.goto(`issues?issue=${id}`);
   const detail = page.getByRole("dialog", { name: `${id} 이슈`, exact: true });
   await detail.getByLabel("상태", { exact: true }).selectOption("deferred");
   const deferring = page.getByRole("dialog", { name: "이슈 보류" });
@@ -40,7 +40,7 @@ test("날짜 지정으로 고른 날짜까지 보류하면 bd에 그날 0시가 
 }) => {
   const id = await workspace.createIssue("e2e 날짜로 미룰 작업", "--type", "task");
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await page.getByRole("combobox", { name: `${id} 상태`, exact: true }).selectOption("deferred");
   const deferring = page.getByRole("dialog", { name: "이슈 보류" });
   await deferring.getByRole("combobox", { name: "보류 기한" }).selectOption("date");
@@ -63,7 +63,7 @@ test("보류 이슈를 다시 열면 기한이 지워지고 열림이 되어 보
   const id = await workspace.createIssue("e2e 보류한 작업", "--type", "task");
   await workspace.bd("defer", id, "--until=+7d");
 
-  await page.goto(`/issues?view=deferred&issue=${id}`);
+  await page.goto(`issues?view=deferred&issue=${id}`);
   const detail = page.getByRole("dialog", { name: `${id} 이슈`, exact: true });
   await detail.getByRole("button", { name: "다시 열기" }).click();
 
@@ -82,7 +82,7 @@ test("기한이 지난 보류 이슈는 목록을 읽을 때 bd가 다시 열고
   const id = await workspace.createIssue("e2e 기한 지난 작업", "--type", "task");
   await workspace.bd("defer", id, "--until=2020-01-01");
 
-  await page.goto("/issues?view=ready");
+  await page.goto("issues?view=ready");
 
   await expect(page.getByRole("link", { name: "e2e 기한 지난 작업" })).toBeVisible();
   expect((await workspace.showIssue(id)).status).toBe("open");

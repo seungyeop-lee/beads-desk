@@ -45,8 +45,8 @@ export function CloseAsReplacedForm({
           if (!window.confirm(messages.closeAsReplaced.confirm[replacement](issue.id, target.id))) {
             return false;
           }
-          const result = await writes.run(() =>
-            closeAsReplacedAction(issue.id, replacement, target.id),
+          const result = await writes.run((workspace) =>
+            closeAsReplacedAction(workspace, issue.id, replacement, target.id),
           );
           if (result.ok)
             showToast(messages.closeAsReplaced.closed[replacement](issue.id, target.id));

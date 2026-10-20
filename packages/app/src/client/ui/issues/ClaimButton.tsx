@@ -20,7 +20,7 @@ export function ClaimButton({
       className="btn btn-xs shrink-0"
       title={messages.claim.hint}
       disabled={writes.pending}
-      onClick={() => void writes.run(() => claimIssueAction(issue.id))}
+      onClick={() => void writes.run((workspace) => claimIssueAction(workspace, issue.id))}
     >
       {messages.claim.label}
     </button>

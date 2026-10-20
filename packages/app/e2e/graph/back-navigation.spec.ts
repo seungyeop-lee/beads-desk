@@ -16,7 +16,7 @@ test("그래프를 연달아 방문한 뒤 닫기로 한 그래프씩 거슬러 
     ],
   );
   const origin = `/focus?issue=${second}`;
-  await page.goto(origin);
+  await page.goto(`.${origin}`);
   await page
     .getByRole("dialog", { name: `${second} 이슈` })
     .getByRole("link", { name: "선행·후속 그래프" })
@@ -56,7 +56,7 @@ test("그래프를 연달아 방문한 뒤 닫기로 한 그래프씩 거슬러 
   await close.focus();
   await expect(close).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(origin);
+  await expect(page).toHaveURL(`.${origin}`);
 });
 
 test("복귀 정보 없이 그래프 주소로 바로 들어오면 닫기는 그래프별 대체 화면으로 돌아간다", async ({
@@ -75,10 +75,10 @@ test("복귀 정보 없이 그래프 주소로 바로 들어오면 닫기는 그
     ["epic", epic, "/epics"],
     ["center", second, `/issues?issue=${second}`],
   ]) {
-    await page.goto(`/graph?${new URLSearchParams({ [scope!]: id! })}`);
+    await page.goto(`graph?${new URLSearchParams({ [scope!]: id! })}`);
     const close = page.getByRole("link", { name: "닫기", exact: true });
-    await expect(close).toHaveAttribute("href", fallback!);
+    await expect(close).toHaveAttribute("href", `/w/${workspace.slug}${fallback!}`);
     await close.click();
-    await expect(page).toHaveURL(fallback!);
+    await expect(page).toHaveURL(`.${fallback!}`);
   }
 });

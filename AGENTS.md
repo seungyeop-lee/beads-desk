@@ -32,12 +32,14 @@
 
 ## 실행 구조
 
-`bd-desk start`는 패키지에 포함된 `.next` 빌드로 `next start`를 background에서 실행하고, 명령을 실행한 디렉터리에서 찾은 bd workspace를 서버에 전달합니다. 서버가 이미 실행 중이면 새로 띄우지 않고 그 workspace를 현재 workspace로 바꿉니다.
+`bd-desk start`는 패키지에 포함된 `.next` 빌드로 `next start`를 background에서 실행하고, 명령을 실행한 디렉터리에서 찾은 bd workspace를 서버에 전달합니다. 서버가 이미 실행 중이면 새로 띄우지 않고 그 workspace를 등록합니다. 어느 경우든 그 workspace의 화면 주소(`/w/<workspace 이름>`)를 출력합니다.
 
 서버 전체에서 하나만 있어야 하는 상태는 `globalThis`에 둡니다. instrumentation과 route handler는 같은 module을 서로 다른 사본으로 불러오기 때문에 module 변수로는 상태를 공유할 수 없습니다.
 
 - app의 전역 상태는 `packages/app/src/server/infra/` 아래에 구현합니다. 서버가 시작될 때 준비해야 하는 상태(bd 버전)는 `src/instrumentation.ts`에서 시작하고, DB 변경 감시는 첫 SSE 구독이 들어올 때 시작합니다.
-- 등록한 workspace 목록과 현재 workspace는 서버 전체에서 하나입니다. 한 탭에서 바꾸면 다른 탭과 창도 함께 바뀌고, bd 실행과 DB 변경 감시는 모두 현재 workspace를 대상으로 합니다.
+- 등록한 workspace 목록은 서버 전체에서 하나입니다. 서버에는 "현재 workspace"가 없고, 탭이 보는 workspace는 그 탭의 화면 주소 `/w/<workspace 이름>`이 정합니다. 그래서 탭마다 다른 workspace를 동시에 볼 수 있습니다.
+  - workspace 이름은 등록한 디렉터리 이름으로 server가 정합니다(`server/modules/workspaces/domain/workspaceSlugs.ts`). 먼저 등록한 workspace가 이름을 그대로 가지므로, 등록 순서를 지키면 이름이 바뀌지 않습니다.
+  - client는 읽기 요청의 `workspace` query, Server Action의 첫 인자, SSE 주소의 `workspace` query로 이 이름을 보냅니다. server는 등록한 이름만 디렉터리로 풀어 bd를 실행하고, 디렉터리 경로는 받지 않습니다.
 - bd 실행 큐는 `@beads-desk/bd`가 첫 호출 때 직접 만듭니다. app에서 bd 실행을 따로 직렬화하지 않습니다.
 
 ## 소스 구조
@@ -61,8 +63,9 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 - 읽기는 client infra → `/api/...` Route Handler → `server/web/*RouteApi.ts` → `@beads-desk/bd` 순서로 연결합니다. bd 호출을 넘어서는 조립이 필요한 읽기는 그 사이에서 `server/modules/<기능>/application`이 조립합니다.
 - 쓰기는 `server/web`의 Server Action(`*Action.ts`, `*Actions.ts`)으로 처리합니다. client는 server에서 이 파일만 import합니다. Server Action은 쓰기가 성공하면 `checkWorkspaceChangesNow`를 호출해, 다음 polling 주기를 기다리지 않고 변경을 알립니다. client는 쓰기 결과로 화면 데이터를 직접 고치지 않고 이 알림으로 다시 조회합니다.
 - `src/proxy.ts`가 모든 요청에서 Host를 검사해, `localhost`·`127.0.0.1`·`[::1]`이 아니면 403으로 거부합니다. DNS rebinding으로 다른 사이트가 API와 Server Action을 호출하지 못하게 막는 검사이므로, Route API와 Server Action에서 Host를 다시 검사하지 않습니다. Server Action은 화면 경로로 POST되므로 proxy에 matcher를 두어 경로를 좁히지 않습니다.
-- 변경 알림은 `/api/events` SSE 하나로 보냅니다. workspace DB가 바뀌면 데이터 없이 `invalidate` 이벤트만 보내고, client는 보고 있는 데이터를 다시 조회합니다. 서버는 SSE 연결이 있는 동안에만 DB 상태를 주기적으로 확인하므로, bd CLI로 바꾼 내용도 알림이 갑니다. 새로 구독하는 연결마다 기준값 알림을 한 번 보내고, 연결을 처음 여는 탭은 그 알림을 받은 뒤 첫 조회를 시작합니다.
-- 브라우저에서는 탭 하나만 SSE를 열고 다른 탭에 알림을 전달합니다. 탭마다 연결을 열면 브라우저의 host별 연결 한도를 넘어 조회가 멈추므로, 서버 이벤트는 `client/infra/workspaceEvents`로만 구독하고 `EventSource`를 따로 열지 않습니다.
+- 변경 알림은 `/api/events` SSE 하나로 보냅니다. workspace DB가 바뀌면 다시 읽을 데이터 없이 바뀐 workspace의 이름만 담아 `invalidate` 이벤트를 보내고, 그 workspace를 보는 탭이 보고 있는 데이터를 다시 조회합니다. 등록한 workspace 목록이 바뀌면 이름 없이 보내 모든 탭이 다시 조회합니다. 서버는 SSE 연결이 있는 동안에만 DB 상태를 주기적으로 확인하므로, bd CLI로 바꾼 내용도 알림이 갑니다. 새로 구독하는 연결마다 기준값 알림을 한 번 보내고, 연결을 처음 여는 탭은 그 알림을 받은 뒤 첫 조회를 시작합니다.
+- 브라우저에서는 탭 하나만 SSE를 열고 다른 탭에 알림을 전달합니다. 탭마다 연결을 열면 브라우저의 host별 연결 한도를 넘어 조회가 멈추므로, 서버 이벤트는 `client/infra/workspaceEvents`로만 구독하고 `EventSource`를 따로 열지 않습니다. 그 연결 하나가 탭들이 보는 workspace를 모두 감시하고, 어느 탭이 새 workspace를 열면 그 workspace까지 감시하도록 다시 연결합니다.
+- 화면 사이를 오가는 주소(`/issues?view=ready`, 그래프의 복귀 주소)는 workspace 없는 화면 경로로 만들고, 링크와 router에 넘길 때 `client/ui/address/workspaceAddress.ts`의 `useWorkspaceHref`로 workspace 주소로 바꿉니다. 지금 주소의 화면 경로는 `useScreenPathname`으로 읽습니다. browser에서만 실행되는 코드는 `documentWorkspace()`로 탭의 workspace 이름을 읽습니다.
 - `@beads-desk/bd`는 server에서만 import합니다. client와 shared는 bd를 실행하지 않는 이슈 model(`@beads-desk/bd/issue`)만 import합니다.
 - 화면 문구는 `client/modules/locale/domain`의 `koMessages.ts`와 `enMessages.ts`에 모두 넣습니다. 두 사전은 같은 type이라 한쪽에만 넣으면 typecheck가 실패합니다. 영어 문구는 bd CLI 출력의 용어(`DEPENDS ON`, `BLOCKS`, `ready` 등)를 따릅니다.
   - 화면을 그리는 코드는 `useMessages()`로, 이벤트 처리처럼 browser에서만 실행되는 코드는 `documentMessages()`로 사전을 읽습니다.

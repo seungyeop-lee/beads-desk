@@ -9,7 +9,7 @@ test("설명에만 있는 낱말로 검색해도 그 이슈가 목록에 보이�
     other: { title: "e2e 화면 정리", description: "버튼 간격을 맞춘다" },
   });
 
-  await page.goto("/issues?view=ready");
+  await page.goto("issues?view=ready");
   const tabs = page.getByRole("navigation", { name: "보기" });
   await expect(tabs.getByRole("link", { name: "바로 작업 가능 2" })).toBeVisible();
   await expect(page.getByRole("link", { name: "e2e 화면 정리" })).toBeVisible();

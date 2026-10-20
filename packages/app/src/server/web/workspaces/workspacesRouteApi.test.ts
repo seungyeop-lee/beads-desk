@@ -1,8 +1,7 @@
 import { mkdir, mkdtemp, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { selectWorkspaceAction } from "./workspaceActions";
 import { handleRegisterWorkspaceRequest, handleWorkspacesRequest } from "./workspacesRouteApi";
 
 // Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.
@@ -42,22 +41,22 @@ afterEach(() => {
   process.env.BEADS_DESK_WORKSPACE = originalWorkspace;
 });
 
-test("현재 workspace와 고를 수 있는 workspace를 돌려준다", async () => {
+const entry = (root: string) => ({ root, slug: basename(root) });
+
+test("등록한 workspace를 화면 주소에 쓰는 이름과 함께 돌려준다", async () => {
   const response = handleWorkspacesRequest();
 
   expect(response.headers.get("Cache-Control")).toBe("no-store");
-  expect(await response.json()).toEqual({
-    ok: true,
-    data: { current: launchRoot, workspaces: [launchRoot] },
-  });
+  expect(await response.json()).toEqual({ ok: true, data: { workspaces: [entry(launchRoot)] } });
 });
 
-test("workspace를 등록하고, select를 주면 현재 workspace로 바꾼다", async () => {
-  const registered = await (await register({ path: join(otherRoot) })).json();
-  const selected = await (await register({ path: otherRoot, select: true })).json();
+test("workspace를 등록하고 등록한 workspace를 돌려준다. 이미 등록했으면 그대로 돌려준다", async () => {
+  const registered = await (await register({ path: join(otherRoot, ".") })).json();
+  const again = await (await register({ path: otherRoot })).json();
 
-  expect(registered.data).toEqual({ current: launchRoot, workspaces: [launchRoot, otherRoot] });
-  expect(selected.data).toEqual({ current: otherRoot, workspaces: [launchRoot, otherRoot] });
+  const workspaces = [entry(launchRoot), entry(otherRoot)];
+  expect(registered.data).toEqual({ registered: entry(otherRoot), workspaces });
+  expect(again.data).toEqual({ registered: entry(otherRoot), workspaces });
 });
 
 test("beads workspace가 아니거나 본문이 잘못되면 400으로 거부한다", async () => {
@@ -80,20 +79,5 @@ test("JSON이 아닌 본문이나 다른 사이트에서 보낸 요청은 등록
   expect(plainText.status).toBe(415);
   expect(crossSite.status).toBe(403);
   expect(fromCli.status).toBe(200);
-  expect((await fromCli.json()).data.workspaces).toEqual([launchRoot, otherRoot]);
-});
-
-test("화면에서는 등록한 workspace로만 바꿀 수 있다", async () => {
-  await register({ path: otherRoot });
-
-  expect(await selectWorkspaceAction(otherRoot)).toEqual({ ok: true, data: null });
-  expect(await selectWorkspaceAction("/elsewhere")).toEqual({
-    ok: false,
-    error:
-      "등록되지 않은 workspace입니다: /elsewhere. 그 디렉터리에서 bd-desk start를 실행해 등록해 주세요.",
-  });
-  expect(await selectWorkspaceAction(1 as unknown as string)).toEqual({
-    ok: false,
-    error: "요청 형식이 올바르지 않습니다.",
-  });
+  expect((await fromCli.json()).data.registered).toEqual(entry(otherRoot));
 });

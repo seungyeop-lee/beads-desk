@@ -1,15 +1,15 @@
-import {
-  currentWorkspaceRoot,
-  listWorkspaces,
-  registerWorkspace,
-  selectWorkspace,
-} from "@/server/infra/runtime/serverRuntime";
+import { listWorkspaces, registerWorkspace } from "@/server/infra/runtime/serverRuntime";
 import { isCrossSiteRequest } from "@/server/web/http/crossSiteRequest";
 import { respondJson } from "@/server/web/http/routeResponse";
-import type { RegisterWorkspaceRequest, WorkspaceList } from "@/shared/contract/workspaces";
+import type {
+  RegisteredWorkspace,
+  RegisterWorkspaceRequest,
+  WorkspaceList,
+} from "@/shared/contract/workspaces";
 
 export function handleWorkspacesRequest(): Response {
-  return respondJson({ ok: true, data: workspaceList() });
+  const list: WorkspaceList = { workspaces: listWorkspaces() };
+  return respondJson({ ok: true, data: list });
 }
 
 /**
@@ -29,20 +29,15 @@ export async function handleRegisterWorkspaceRequest(request: Request): Promise<
   if (!isRegisterRequest(body)) {
     return respondJson({ ok: false, error: "The request is malformed." }, 400);
   }
-  const root = registerWorkspace(body.path);
-  if (!root) {
+  const registered = registerWorkspace(body.path);
+  if (!registered) {
     return respondJson({ ok: false, error: `No beads workspace found: ${body.path}` }, 400);
   }
-  if (body.select) selectWorkspace(root);
-  return respondJson({ ok: true, data: workspaceList() });
-}
-
-function workspaceList(): WorkspaceList {
-  return { current: currentWorkspaceRoot(), workspaces: listWorkspaces() };
+  const result: RegisteredWorkspace = { registered, workspaces: listWorkspaces() };
+  return respondJson({ ok: true, data: result });
 }
 
 function isRegisterRequest(value: unknown): value is RegisterWorkspaceRequest {
   if (typeof value !== "object" || value === null) return false;
-  const { path, select } = value as Record<string, unknown>;
-  return typeof path === "string" && (select === undefined || typeof select === "boolean");
+  return typeof (value as Record<string, unknown>).path === "string";
 }

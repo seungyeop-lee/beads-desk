@@ -1,6 +1,6 @@
 import { epicStatuses, type EpicStatus } from "@beads-desk/bd";
 import { expect, test, vi } from "vitest";
-import { expectRouteData } from "@/server/web/http/routeApiTest";
+import { expectRouteData, routeApiRequest } from "@/server/web/http/routeApiTest";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { handleEpicsRequest } from "./epicsRouteApi";
 
@@ -15,7 +15,7 @@ test("workspace의 epic 진행 현황을 돌려준다", async () => {
   ] satisfies EpicStatus[];
   vi.mocked(epicStatuses).mockResolvedValue({ ok: true, value: epics });
 
-  const response = await handleEpicsRequest();
+  const response = await handleEpicsRequest(routeApiRequest());
 
   expect(epicStatuses).toHaveBeenCalledWith("/workspace");
   await expectRouteData(response, epics);

@@ -14,7 +14,7 @@ test("고른 관계로 키보드만으로 후보를 골라 연결하고, 자기 
     [["main", "first"]],
   );
 
-  await page.goto(`/issues?issue=${main}`);
+  await page.goto(`issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   const search = dialog.getByRole("combobox", { name: "연결할 이슈 찾기" });
   const candidates = dialog.getByRole("listbox", { name: "연결할 이슈 찾기" });
@@ -55,7 +55,7 @@ test("bd가 관계 맺기를 거부하면 상세에 오류가 보인다", async 
     ],
   );
 
-  await page.goto(`/issues?issue=${main}`);
+  await page.goto(`issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   await dialog.getByLabel("맺을 관계").selectOption({ label: "후속 이슈 (이 이슈가 끝나야 시작)" });
   await dialog.getByRole("combobox", { name: "연결할 이슈 찾기" }).fill("순환 끝");

@@ -5,13 +5,13 @@ test("상세를 불러오는 동안 링크와 단추 위에서도 progress 커�
   workspace,
 }) => {
   const ready = await workspace.createIssue("시작할 작업");
-  await page.goto("/issues");
+  await page.goto("issues");
 
   let release: () => void = () => {};
   const held = new Promise<void>((resolve) => {
     release = resolve;
   });
-  await page.route(`**/api/issues/${ready}`, async (route) => {
+  await page.route(`**/api/issues/${ready}?*`, async (route) => {
     await held;
     await route.continue();
   });

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
+import { useScreenPathname, useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { PlusIcon, SettingsIcon } from "@/client/ui/designSystem/icons";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
@@ -15,7 +16,8 @@ import { WorkspacePicker } from "./WorkspacePicker";
 
 /** 화면 이동 탭과, 어느 화면에서나 설정을 열거나 새 이슈를 만들고 그 화면 위에 상세를 여는 버튼입니다. */
 export function AppHeader() {
-  const pathname = usePathname();
+  const screenPathname = useScreenPathname();
+  const workspaceHref = useWorkspaceHref();
   const router = useRouter();
   const issueHref = useIssueHref();
   const messages = useMessages();
@@ -28,7 +30,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-20 shrink-0 border-b border-base-300 bg-base-100/85 backdrop-blur">
       <div className="mx-auto flex max-w-[96rem] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-8 xl:h-14 xl:flex-nowrap xl:gap-6 xl:py-0">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+        <Link href={workspaceHref()} className="flex shrink-0 items-center gap-2.5">
           <BeadsMark />
           <span className="text-[15px] font-bold tracking-tight">beads-desk</span>
         </Link>
@@ -39,8 +41,8 @@ export function AppHeader() {
           {SCREEN_TABS.map((tab) => (
             <Link
               key={tab.href}
-              href={tab.href}
-              aria-current={pathname === tab.href ? "page" : undefined}
+              href={workspaceHref(tab.href)}
+              aria-current={screenPathname === tab.href ? "page" : undefined}
               className={`nav-tab ${tab.tone}`}
             >
               {messages[tab.screen].title}

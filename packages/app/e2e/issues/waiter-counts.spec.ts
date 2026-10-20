@@ -25,7 +25,7 @@ test("지금 화면과 이슈 목록의 행에 대기 수를 보이고, 같은 �
     ],
   );
 
-  await page.goto("/focus");
+  await page.goto("focus");
   const nextUp = page.getByRole("region", { name: "다음에 할 일" }).getByRole("listitem");
   await expect(nextUp).toHaveCount(4);
   await expect(nextUp.first()).toContainText("병목 작업");
@@ -44,7 +44,7 @@ test("지금 화면과 이슈 목록의 행에 대기 수를 보이고, 같은 �
   await expect(blockedRow("중간 작업")).toContainText("1개 대기");
   await expect(blockedRow("마지막 작업")).not.toContainText(WAITERS);
 
-  await page.goto("/issues");
+  await page.goto("issues");
   const readyRows = page
     .getByRole("region", { name: "바로 작업 가능" })
     .getByRole("row")

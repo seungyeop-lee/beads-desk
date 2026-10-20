@@ -2,6 +2,6 @@ import { handleHumanGatesRequest } from "@/server/web/humanGates/humanGatesRoute
 
 export const dynamic = "force-dynamic";
 
-export function GET(): Promise<Response> {
-  return handleHumanGatesRequest();
+export function GET(request: Request): Promise<Response> {
+  return handleHumanGatesRequest(request);
 }

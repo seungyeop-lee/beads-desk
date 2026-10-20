@@ -8,6 +8,7 @@ import {
 
 beforeEach(() => {
   vi.stubGlobal("document", { documentElement: { lang: "ko" } });
+  vi.stubGlobal("location", { pathname: "/w/demo/issues" });
 });
 
 afterEach(() => {
@@ -21,7 +22,17 @@ test("조회 조건을 query로 붙여 요청하고 응답을 그대로 돌려�
   const result = await readIssueList({ kind: "status", statuses: ["open", "closed"] });
 
   expect(result).toEqual({ ok: true, data: [] });
-  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues?status=open%2Cclosed");
+  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues?status=open%2Cclosed&workspace=demo");
+});
+
+test("workspace 화면이 아니면 workspace를 붙이지 않는다", async () => {
+  vi.stubGlobal("location", { pathname: "/" });
+  const fetchMock = vi.fn<typeof fetch>(async () => Response.json({ ok: true, data: [] }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  await readIssueList({ kind: "ready" });
+
+  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues?status=ready");
 });
 
 test("서버의 실패 응답은 오류 문구를 그대로 돌려준다", async () => {
@@ -66,7 +77,7 @@ test("이슈 상세는 id를 경로에 넣어 요청한다", async () => {
 
   await readIssueDetail("demo-1/x");
 
-  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues/demo-1%2Fx");
+  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues/demo-1%2Fx?workspace=demo");
 });
 
 test("설명 검색은 검색어를 query로 붙여 요청한다", async () => {
@@ -76,7 +87,7 @@ test("설명 검색은 검색어를 query로 붙여 요청한다", async () => {
   const result = await readDescriptionMatches("token");
 
   expect(result).toEqual({ ok: true, data: ["demo-1"] });
-  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issue-search?description=token");
+  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issue-search?description=token&workspace=demo");
 });
 
 test("이슈 활동은 상세 경로 아래 history로 요청한다", async () => {
@@ -85,5 +96,5 @@ test("이슈 활동은 상세 경로 아래 history로 요청한다", async () =
 
   await readIssueHistory("demo-1/x");
 
-  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues/demo-1%2Fx/history");
+  expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/issues/demo-1%2Fx/history?workspace=demo");
 });

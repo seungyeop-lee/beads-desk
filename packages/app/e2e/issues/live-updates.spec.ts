@@ -13,7 +13,7 @@ test("상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸면 새로
     [["main", "dependency"]],
   );
 
-  await page.goto(`/issues?issue=${main}&side=${dependency}`);
+  await page.goto(`issues?issue=${main}&side=${dependency}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   const side = page.getByRole("region", { name: `${dependency} 이슈 옆 패널` });
   await expect(dialog.getByLabel("상태", { exact: true })).toHaveValue("open");
@@ -32,7 +32,7 @@ test("상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸면 새로
 test("페이지를 연 직후 CLI로 만든 이슈를 놓치지 않는다", async ({ page, workspace }) => {
   await workspace.createIssue("주 이슈");
 
-  await page.goto("/issues");
+  await page.goto("issues");
   // 첫 조회가 기준값 알림을 기다리는 사이라도, 쓰기가 그 앞이나 뒤에 끼어들어도 화면에 반영되어야 합니다.
   await workspace.bd("create", "나중에 만든 이슈");
 

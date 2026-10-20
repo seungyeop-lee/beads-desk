@@ -15,8 +15,10 @@ class FakeEventSource extends EventTarget {
     this.closed = true;
   }
 
-  emit(type: string) {
-    this.dispatchEvent(new Event(type));
+  emit(type: string, data?: unknown) {
+    this.dispatchEvent(
+      data === undefined ? new Event(type) : new MessageEvent(type, { data: JSON.stringify(data) }),
+    );
   }
 }
 
@@ -42,33 +44,45 @@ class FakeBroadcastChannel extends EventTarget {
   }
 }
 
-/** 이름 하나만 다루는 Web Locks API입니다. */
+/** 탭들이 함께 쓰는 Web Locks API입니다. shared lock은 서로 막지 않고, exclusive lock은 이름마다 하나씩 쥡니다. */
 class FakeLocks {
-  private held = false;
-  private waiting: (() => void)[] = [];
+  private held: { name: string; mode: LockMode }[] = [];
+  private waiting = new Map<string, (() => void)[]>();
 
   async request(
-    _name: string,
-    options: { ifAvailable?: boolean; signal?: AbortSignal },
+    name: string,
+    options: { ifAvailable?: boolean; signal?: AbortSignal; mode?: LockMode },
     callback: (lock: object | null) => unknown,
   ) {
-    if (options.ifAvailable && this.held) return callback(null);
-    if (this.held) {
+    const mode = options.mode ?? "exclusive";
+    const busy = () => mode === "exclusive" && this.held.some((lock) => lock.name === name);
+    if (options.ifAvailable && busy()) return callback(null);
+    while (busy()) {
       await new Promise<void>((resolve, reject) => {
-        this.waiting.push(resolve);
+        const queue = this.waiting.get(name) ?? [];
+        this.waiting.set(name, [...queue, resolve]);
         options.signal?.addEventListener("abort", () => {
-          this.waiting = this.waiting.filter((waiter) => waiter !== resolve);
+          this.waiting.set(
+            name,
+            (this.waiting.get(name) ?? []).filter((w) => w !== resolve),
+          );
           reject(new DOMException("aborted", "AbortError"));
         });
       });
     }
-    this.held = true;
+    const lock = { name, mode };
+    this.held.push(lock);
     try {
       return await callback({});
     } finally {
-      this.held = false;
-      this.waiting.shift()?.();
+      this.held = this.held.filter((other) => other !== lock);
+      const queue = this.waiting.get(name) ?? [];
+      queue.shift()?.();
     }
+  }
+
+  async query() {
+    return { held: this.held.map(({ name, mode }) => ({ name, mode })) };
   }
 }
 
@@ -85,10 +99,20 @@ let fakeDocument: FakeDocument;
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const latestSource = () => FakeEventSource.instances.at(-1)!;
 
-/** 탭 하나의 module 상태를 따로 갖도록 매번 새로 불러옵니다. */
-async function openTab(): Promise<WorkspaceEvents> {
+/**
+ * 탭 하나의 module 상태를 따로 갖도록 매번 새로 불러옵니다. 탭이 보는 workspace는 구독할 때 주소에서 읽으므로,
+ * 돌려준 탭의 subscribe는 그 탭의 주소로 바꾼 뒤 구독합니다.
+ */
+async function openTab(workspace = "a"): Promise<WorkspaceEvents> {
   vi.resetModules();
-  return import("./workspaceEventSource");
+  const events = await import("./workspaceEventSource");
+  return {
+    ...events,
+    subscribeWorkspaceInvalidation: (listener) => {
+      vi.stubGlobal("location", { pathname: `/w/${workspace}/issues` });
+      return events.subscribeWorkspaceInvalidation(listener);
+    },
+  };
 }
 
 beforeEach(() => {
@@ -119,9 +143,60 @@ test("invalidate 이벤트를 받으면 구독자에게 알린다", async () => 
   unsubscribe();
   await flush();
 
-  expect(latestSource().url).toBe("/api/events");
+  expect(latestSource().url).toBe("/api/events?workspace=a");
   expect(listener).toHaveBeenCalledOnce();
   expect(latestSource().closed).toBe(true);
+});
+
+test("다른 workspace의 변경은 알리지 않고, 이 탭의 workspace 변경과 목록 변경만 알린다", async () => {
+  const listener = vi.fn<() => void>();
+  const unsubscribe = (await openTab("a")).subscribeWorkspaceInvalidation(listener);
+  await flush();
+
+  latestSource().emit("open");
+  latestSource().emit("invalidate", { workspace: "b" });
+  expect(listener).not.toHaveBeenCalled();
+  latestSource().emit("invalidate", { workspace: "a" });
+  latestSource().emit("invalidate", {});
+  unsubscribe();
+
+  expect(listener).toHaveBeenCalledTimes(2);
+});
+
+test("서로 다른 workspace를 보는 탭들이 연결 하나로 모든 workspace를 감시한다", async () => {
+  const first = vi.fn<() => void>();
+  const second = vi.fn<() => void>();
+  const stopFirst = (await openTab("a")).subscribeWorkspaceInvalidation(first);
+  await flush();
+  const firstSource = latestSource();
+  const stopSecond = (await openTab("b")).subscribeWorkspaceInvalidation(second);
+  await flush();
+  await flush();
+
+  latestSource().emit("open");
+  latestSource().emit("invalidate", { workspace: "b" });
+  const open = FakeEventSource.instances.filter((source) => !source.closed);
+  stopFirst();
+  stopSecond();
+
+  expect(firstSource.url).toBe("/api/events?workspace=a");
+  expect(firstSource.closed).toBe(true);
+  expect(open.map((source) => source.url)).toEqual(["/api/events?workspace=a&workspace=b"]);
+  expect([first.mock.calls.length, second.mock.calls.length]).toEqual([0, 1]);
+});
+
+test("같은 workspace를 보는 탭이 늘어도 다시 연결하지 않는다", async () => {
+  const stopFirst = (await openTab("a")).subscribeWorkspaceInvalidation(() => {});
+  await flush();
+  const stopSecond = (await openTab("a")).subscribeWorkspaceInvalidation(() => {});
+  await flush();
+  await flush();
+
+  const sources = FakeEventSource.instances.length;
+  stopFirst();
+  stopSecond();
+
+  expect(sources).toBe(1);
 });
 
 test("여러 탭이 SSE 연결 하나를 함께 쓴다", async () => {
@@ -227,6 +302,23 @@ test("연결을 주도하는 탭은 awaitFirstInvalidation을 첫 알림이 올 
   await flush();
 
   expect(settled).toBe(true);
+});
+
+test("awaitFirstInvalidation은 다른 workspace의 알림으로 끝나지 않는다", async () => {
+  const events = await openTab("a");
+  events.subscribeWorkspaceInvalidation(() => {});
+  await flush();
+  latestSource().emit("open");
+
+  const settled = vi.fn<() => void>();
+  void events.awaitFirstInvalidation().then(settled);
+  latestSource().emit("invalidate", { workspace: "b" });
+  await flush();
+  expect(settled).not.toHaveBeenCalled();
+
+  latestSource().emit("invalidate", { workspace: "a" });
+  await flush();
+  expect(settled).toHaveBeenCalledOnce();
 });
 
 test("다른 탭이 이미 연결 중이면 awaitFirstInvalidation은 기다리지 않는다", async () => {

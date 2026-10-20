@@ -12,7 +12,7 @@ test("표에서 상태를 바꾸면 바로 저장하고, 닫힘은 사유를 물
     [["waiting", "blocker"]],
   );
 
-  await page.goto("/issues");
+  await page.goto("issues");
   const status = page.getByRole("combobox", { name: `${blocker} 상태`, exact: true });
   await status.selectOption("in_progress");
   await expect

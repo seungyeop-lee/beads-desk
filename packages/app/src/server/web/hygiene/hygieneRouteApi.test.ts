@@ -1,6 +1,10 @@
 import { staleIssues } from "@beads-desk/bd";
 import { beforeEach, expect, test, vi } from "vitest";
-import { expectRouteBdError, expectRouteData } from "@/server/web/http/routeApiTest";
+import {
+  expectRouteBdError,
+  expectRouteData,
+  routeApiRequest,
+} from "@/server/web/http/routeApiTest";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { handleStaleIssuesRequest } from "./hygieneRouteApi";
 
@@ -19,7 +23,7 @@ beforeEach(() => {
 });
 
 function staleRequest(query = ""): Request {
-  return new Request(`http://localhost/api/hygiene/stale${query}`);
+  return routeApiRequest(`/api/hygiene/stale${query}`);
 }
 
 test("오래 방치된 이슈는 고른 기준 일수로 따로 읽는다", async () => {

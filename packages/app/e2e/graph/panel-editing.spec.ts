@@ -24,7 +24,7 @@ test.describe("폭 768px 창", () => {
       "--author",
       "검토자",
     );
-    await page.goto(`/issues?issue=${ids.second}`);
+    await page.goto(`issues?issue=${ids.second}`);
     await page
       .getByRole("dialog")
       .getByRole("link", { name: messages.graph.blockingChain, exact: true })

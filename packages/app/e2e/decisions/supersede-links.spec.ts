@@ -12,7 +12,7 @@ test("결정 탭에서 제목으로 상세를 열고, 이전·새 결정 링크�
   workspace,
 }) => {
   const ids = await seedDecisions(workspace);
-  await page.goto("/decisions");
+  await page.goto("decisions");
 
   await titleRow(page, TITLES.new).getByRole("link", { name: TITLES.new, exact: true }).click();
   await closeDetail(page, ids.new);

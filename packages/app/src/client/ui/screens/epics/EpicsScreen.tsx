@@ -196,8 +196,8 @@ function EpicDescendants({
             disabled={writes.pending || !descendants}
             exclude={notChildCandidate(epic.id, descendants ?? [])}
             onConfirm={async (issue) => {
-              const result = await writes.run(() =>
-                addDependencyAction(issue.id, epic.id, "parent-child"),
+              const result = await writes.run((workspace) =>
+                addDependencyAction(workspace, issue.id, epic.id, "parent-child"),
               );
               if (result.ok) showToast(messages.epics.childAdded(issue.id, epic.id));
               return result.ok;

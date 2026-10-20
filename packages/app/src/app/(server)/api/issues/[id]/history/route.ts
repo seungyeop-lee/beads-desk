@@ -2,7 +2,7 @@ import { handleIssueHistoryRequest } from "@/server/web/issues/issueDetailRouteA
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, context: RouteContext<"/api/issues/[id]/history">) {
+export async function GET(request: Request, context: RouteContext<"/api/issues/[id]/history">) {
   const { id } = await context.params;
-  return handleIssueHistoryRequest(id);
+  return handleIssueHistoryRequest(request, id);
 }

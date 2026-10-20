@@ -18,7 +18,7 @@ const WRITES: IssueWrites = {
   pending: false,
   error: null,
   dismissError: () => {},
-  run: (write) => write(),
+  run: (write) => write("demo"),
 };
 
 test("작업 상태 묶음은 접기 단추와 그 안의 글자·아이콘에만 pointer를 보이고, 묶음 설명에는 보이지 않는다", async () => {

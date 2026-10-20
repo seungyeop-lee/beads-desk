@@ -21,7 +21,7 @@ test("선후 관계 없음 목록에서 사용자가 펼친 상태는 bd로 이�
       ["fourth", "third"],
     ],
   );
-  await page.goto(`/graph?epic=${epic}`);
+  await page.goto(`graph?epic=${epic}`);
   const panel = page.getByRole("region", { name: "선후 관계 없음" });
   const expand = panel.getByRole("button", { name: "선후 관계 없는 이슈 목록 펼치기" });
   await expect(expand).toHaveAttribute("aria-expanded", "false");

@@ -17,7 +17,7 @@ test("라벨 메뉴는 이슈들의 라벨과 라벨 없음을 보이고, 고른
   });
   const tabs = page.getByRole("navigation", { name: "보기" });
 
-  await page.goto("/issues");
+  await page.goto("issues");
   await expect(page.getByRole("link", { name: "e2e API 작업" })).toBeVisible();
 
   const labelMenu = page.locator("summary", { hasText: "라벨" });

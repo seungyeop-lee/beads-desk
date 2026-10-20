@@ -7,7 +7,7 @@ const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate
 const todayName = `${now.getMonth() + 1}월 ${now.getDate()}일`;
 
 test("이슈를 만들고 닫으면 흐름 통계의 오늘 막대가 바뀐다", async ({ page, workspace }) => {
-  await page.goto("/focus");
+  await page.goto("focus");
   const stats = page.getByRole("region", { name: "흐름" });
   await expect(stats.getByText("최근 7일 동안 닫은 이슈가 없습니다")).toHaveCount(2);
 
@@ -35,7 +35,7 @@ test("오늘 막대, 보류 수, 닫을 수 있는 에픽 수를 누르면 오�
     empty: { title: "하위 없는 에픽", type: "epic" },
   });
 
-  await page.goto("/focus");
+  await page.goto("focus");
   const stats = page.getByRole("region", { name: "흐름" });
   await stats.getByRole("link", { name: `${todayName}에 닫은 이슈 1개 보기` }).click();
   await expect(page).toHaveURL(

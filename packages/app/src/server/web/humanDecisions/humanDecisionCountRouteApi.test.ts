@@ -1,6 +1,10 @@
 import { humanDecisionIssues } from "@beads-desk/bd";
 import { expect, test, vi } from "vitest";
-import { expectRouteBdError, expectRouteData } from "@/server/web/http/routeApiTest";
+import {
+  expectRouteBdError,
+  expectRouteData,
+  routeApiRequest,
+} from "@/server/web/http/routeApiTest";
 import { issue } from "@/shared/domain/issues/issueFixture";
 import { handleHumanDecisionCountRequest } from "./humanDecisionCountRouteApi";
 
@@ -20,7 +24,7 @@ test("workspace의 열린 human gate와 판단을 기다리는 이슈를 더한 
     },
   });
 
-  const response = await handleHumanDecisionCountRequest();
+  const response = await handleHumanDecisionCountRequest(routeApiRequest());
 
   expect(humanDecisionIssues).toHaveBeenCalledWith("/workspace");
   await expectRouteData(response, 2);
@@ -32,5 +36,5 @@ test("bd가 실패하면 bd의 메시지를 오류로 돌려준다", async () =>
     error: { message: "boom\n", exitCode: 1 },
   });
 
-  await expectRouteBdError(await handleHumanDecisionCountRequest(), "boom");
+  await expectRouteBdError(await handleHumanDecisionCountRequest(routeApiRequest()), "boom");
 });

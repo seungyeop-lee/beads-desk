@@ -3,6 +3,16 @@ import { afterEach, beforeEach, expect, vi } from "vitest";
 /** 라우트 API 테스트가 공통으로 쓰는 workspace 경로입니다. */
 const routeApiWorkspace = "/workspace";
 
+/** 라우트 API 테스트의 workspace를 화면 주소에서 가리키는 이름입니다. 디렉터리 이름과 같습니다. */
+export const routeApiWorkspaceSlug = "workspace";
+
+/** 라우트 API 테스트의 workspace를 가리키는 요청을 만듭니다. path에 query가 있으면 그 뒤에 붙입니다. */
+export function routeApiRequest(path = "/api", init?: RequestInit): Request {
+  const url = new URL(path, "http://localhost");
+  url.searchParams.set("workspace", routeApiWorkspaceSlug);
+  return new Request(url, init);
+}
+
 const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 
 // 이 module을 import한 테스트 파일은 workspace를 고정해 두고, 테스트가 끝나면 원래 값과 mock을 되돌립니다.

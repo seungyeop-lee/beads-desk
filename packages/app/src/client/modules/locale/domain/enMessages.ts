@@ -484,6 +484,15 @@ export const enMessages: Messages = {
     openDetail: "Open details",
     noDescription: "No description.",
   },
+  workspaces: {
+    selectTitle: "Choose a workspace",
+    selectDescription:
+      "This address has no workspace name. Several workspaces are added, so choose the one to open it in.",
+    notFoundTitle: "Workspace not found",
+    notFound: (name) =>
+      `No added workspace is named '${name}'. Run bd-desk start in its directory to add it and print its URL.`,
+    showAll: "Show added workspaces",
+  },
   decisions: {
     title: "Decisions",
     loadFailed: (error) => `Could not load decisions: ${error}`,

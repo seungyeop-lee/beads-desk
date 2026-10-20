@@ -1,7 +1,7 @@
 import { decisionRecords } from "@beads-desk/bd";
-import { currentWorkspaceRoot } from "@/server/infra/runtime/serverRuntime";
+import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
 import { respondBdOutcome } from "@/server/web/http/routeResponse";
 
-export async function handleDecisionsRequest(): Promise<Response> {
-  return respondBdOutcome(await decisionRecords(currentWorkspaceRoot()));
+export function handleDecisionsRequest(request: Request): Promise<Response> {
+  return withRequestWorkspace(request, async (cwd) => respondBdOutcome(await decisionRecords(cwd)));
 }

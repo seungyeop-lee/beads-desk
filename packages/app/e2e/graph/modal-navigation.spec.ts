@@ -26,17 +26,18 @@ test("상세에서 연 그래프를 상세 위에 겹쳐 열고, 닫기·바깥 
     await expect(screenDetail).toBeVisible();
   };
   const expectOriginKept = async () => {
-    await expect(page).toHaveURL(origin);
+    await expect(page).toHaveURL(`.${origin}`);
     await expect(graph).toHaveCount(0);
     await expect(side).toBeVisible();
     await expectDetailKept(screenDetail);
   };
 
-  await page.goto(origin);
+  await page.goto(`.${origin}`);
   await watchDetail(screenDetail);
   await openGraph();
   await expect(page).toHaveURL(
-    (url) => url.pathname === "/issues" && url.searchParams.get("view") === "blocked",
+    (url) =>
+      url.pathname === `/w/${workspace.slug}/issues` && url.searchParams.get("view") === "blocked",
   );
   await graph.getByRole("link", { name: "닫기", exact: true }).click();
   await expectOriginKept();
@@ -77,7 +78,7 @@ test("그래프 안 상세에 옆 패널을 연 뒤 Escape를 누를 때마다 �
     { first: { title: "단계 닫기 선행" }, second: { title: "단계 닫기 기준" } },
     [["second", "first"]],
   );
-  await page.goto(`/issues?center=${second}`);
+  await page.goto(`issues?center=${second}`);
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   await canvas.getByRole("link", { name: /단계 닫기 기준/ }).click();
   const detail = page.getByRole("region", { name: `${second} 이슈`, exact: true });
@@ -91,16 +92,16 @@ test("그래프 안 상세에 옆 패널을 연 뒤 Escape를 누를 때마다 �
   await page.keyboard.press("Escape");
   await expect(side).toHaveCount(0);
   await expect(detail).toBeVisible();
-  await expect(page).toHaveURL(`/issues?center=${second}&issue=${second}`);
+  await expect(page).toHaveURL(`issues?center=${second}&issue=${second}`);
 
   await page.keyboard.press("Escape");
   await expect(detail).toHaveCount(0);
   await expect(canvas).toBeVisible();
-  await expect(page).toHaveURL(`/issues?center=${second}`);
+  await expect(page).toHaveURL(`issues?center=${second}`);
 
   await page.keyboard.press("Escape");
   await expect(canvas).toHaveCount(0);
-  await expect(page).toHaveURL(`/issues?issue=${second}`);
+  await expect(page).toHaveURL(`issues?issue=${second}`);
 });
 
 test("상세 위에 겹쳐 연 그래프 안에 상세와 옆 패널이 열린 주소로 들어와 페이지를 누르지 않고 Escape를 누를 때마다 옆 패널, 상세, 그래프 순으로 하나씩 닫힌다", async ({
@@ -113,7 +114,7 @@ test("상세 위에 겹쳐 연 그래프 안에 상세와 옆 패널이 열린 �
   );
   const origin = `/issues?issue=${second}`;
   const returnTo = `returnTo=${encodeURIComponent(origin)}`;
-  await page.goto(`/issues?center=${second}&issue=${second}&side=${first}&${returnTo}`);
+  await page.goto(`issues?center=${second}&issue=${second}&side=${first}&${returnTo}`);
   const screenDetail = page.getByRole("dialog", { name: `${second} 이슈` });
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   const detail = page.getByRole("region", { name: `${second} 이슈`, exact: true });
@@ -124,16 +125,16 @@ test("상세 위에 겹쳐 연 그래프 안에 상세와 옆 패널이 열린 �
   await page.keyboard.press("Escape");
   await expect(side).toHaveCount(0);
   await expect(detail).toBeVisible();
-  await expect(page).toHaveURL(`/issues?center=${second}&issue=${second}&${returnTo}`);
+  await expect(page).toHaveURL(`issues?center=${second}&issue=${second}&${returnTo}`);
 
   await page.keyboard.press("Escape");
   await expect(detail).toHaveCount(0);
   await expect(canvas).toBeVisible();
-  await expect(page).toHaveURL(`/issues?center=${second}&${returnTo}`);
+  await expect(page).toHaveURL(`issues?center=${second}&${returnTo}`);
 
   await page.keyboard.press("Escape");
   await expect(canvas).toHaveCount(0);
-  await expect(page).toHaveURL(origin);
+  await expect(page).toHaveURL(`.${origin}`);
   await expect(screenDetail).toBeVisible();
 });
 
@@ -150,7 +151,7 @@ test("에픽 상세에서 연 그래프의 머리글 제목은 에픽 상세를 
     [["second", "first"]],
   );
   const origin = `/epics?issue=${epic}`;
-  await page.goto(origin);
+  await page.goto(`.${origin}`);
   const openGraph = () =>
     page
       .getByRole("dialog", { name: `${epic} 이슈` })
@@ -175,14 +176,14 @@ test("에픽 상세에서 연 그래프의 머리글 제목은 에픽 상세를 
   await expect(page).toHaveURL(new RegExp(`/epics\\?epic=${epic}(?:&returnTo=[^&]+)?$`));
   await expect(detail).toHaveCount(0);
   await expect(secondNode).toBeVisible();
-  await expect(close).toHaveAttribute("href", origin);
+  await expect(close).toHaveAttribute("href", `/w/${workspace.slug}${origin}`);
   await close.click();
-  await expect(page).toHaveURL(origin);
+  await expect(page).toHaveURL(`.${origin}`);
 
   await openGraph();
   await expect(secondNode).toBeVisible();
   await close.click();
-  await expect(page).toHaveURL(origin);
+  await expect(page).toHaveURL(`.${origin}`);
 });
 
 test("이슈 갱신으로 선후 관계 없음 패널이 나타나도 사용자가 고른 pan·zoom을 유지한다", async ({
@@ -197,7 +198,7 @@ test("이슈 갱신으로 선후 관계 없음 패널이 나타나도 사용자�
     },
     [["second", "first"]],
   );
-  await page.goto(`/graph?epic=${epic}`);
+  await page.goto(`graph?epic=${epic}`);
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   await expect(canvas.getByRole("link", { name: /위치 유지 다음/ })).toBeVisible();
   const viewport = canvas.locator(".react-flow__viewport");
