@@ -94,23 +94,24 @@ export function EpicsScreen() {
   };
 
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-3 px-8 pb-16">
+    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
       <ScreenHeader
         title={messages.epics.title}
         tone={screenTone("/epics")}
         count={shown?.length}
         loading={loading || writes.pending}
-      />
+      >
+        <SearchField
+          label={messages.epics.search}
+          placeholder={messages.epics.searchPlaceholder}
+          value={search}
+          onChange={setSearch}
+          className="w-64 max-w-full"
+        />
+      </ScreenHeader>
 
       {error && <ErrorAlert>{messages.epics.loadFailed(error)}</ErrorAlert>}
       <WriteErrorAlert writes={writes} />
-      <SearchField
-        label={messages.epics.search}
-        placeholder={messages.epics.searchPlaceholder}
-        value={search}
-        onChange={setSearch}
-        className="w-64 max-w-full"
-      />
 
       {epics?.length === 0 ? (
         <EmptyState message={messages.epics.empty} />

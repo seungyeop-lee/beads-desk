@@ -18,7 +18,7 @@ type Props = {
 export function ScreenHeader({ title, tone, count, loading, help, children }: Props) {
   const messages = useMessages();
   return (
-    <header className="@container flex flex-wrap items-end gap-x-6 gap-y-3 pt-4 pb-4">
+    <header className="@container flex flex-wrap items-end gap-x-6 gap-y-3 pt-4">
       <div className="relative flex min-w-0 items-center gap-3">
         {tone && <span className={`tone-dot ${tone} size-3`} />}
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
