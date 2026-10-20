@@ -4,6 +4,20 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-10-21
+
+### Changed
+
+- The top tabs are grouped in the order **Now**, **Needs human**, **Activity** | **Issues**, **Epics**, **Board** | **Decisions**, **Hygiene**, with a divider between groups.
+- **Epics** screen: the **Search ID or title** field moves to the right end of the screen title row, and the space below the title row is the same as on the other list screens.
+
+### Fixed
+
+- The top header stays at the top of the window even when you scroll to the end of a long screen.
+- **Needs human** screen: when the request you were viewing is closed and the next request is shown, the page scrolls to the top in a wide window, or to the top of the new request's panel in a narrow window, so you can tell that the request changed.
+- **Epics** screen: the status chip, the progress bar or closed date, and the progress count of each card have fixed widths, and the count is split into a closed/total column and a percent column, so the columns line up across open and closed epics and across counts with different numbers of digits, also at medium widths where the actions wrap to a second line. Cards are shorter and closer together.
+- **Epics** screen: in an expanded epic's child list, the **View order** link of a child epic row no longer touches the right border of the table.
+
 ## [0.6.0] - 2026-10-20
 
 ### Added
