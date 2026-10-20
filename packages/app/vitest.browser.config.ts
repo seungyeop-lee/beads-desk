@@ -10,6 +10,11 @@ export default defineConfig({
   root: import.meta.dirname,
   // next/link가 process.env를 읽으므로, Next.js가 빌드 때 채우는 것처럼 빈 값을 넣어 둡니다.
   define: { "process.env": JSON.stringify({ NODE_ENV: "test" }) },
+  // Vite는 lockfile과 설정이 그대로면 test 파일을 다시 훑지 않고 이전 실행에서 만든 의존성 cache를 씁니다.
+  // 그 cache에 없는 package를 실행 중에 만나면 test를 다시 로드하고, 다시 로드된 test는 Invalid hook call로 실패합니다.
+  // 컴포넌트 테스트가 거치는 코드에서 이미 설치된 package를 새로 import하면 그 package를 이 목록에 더합니다.
+  // package를 새로 설치한 경우에는 lockfile이 바뀌어 Vite가 cache를 다시 만들므로 더하지 않아도 됩니다.
+  optimizeDeps: { include: ["recharts"] },
   plugins: [
     {
       // Next.js는 client가 import한 Server Action 파일을 서버 호출 참조로 바꿉니다. 테스트에서는 그 자리에 호출되면 실패하는 함수를 두어,
