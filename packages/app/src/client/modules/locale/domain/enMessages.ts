@@ -28,6 +28,13 @@ export const enMessages: Messages = {
       dark: "Dark",
     },
     language: "Language",
+    notifications: "Browser notifications",
+    humanDecisionNotices: "Notify me about new Needs human items",
+    humanDecisionNoticesHint:
+      "Shows a system notification when a workspace open in a beads-desk tab gets a new Needs human item, even while you work in another window.",
+    notificationsDenied:
+      "The browser blocks notifications for this site. Allow them in the site settings next to the address bar to turn this on.",
+    notificationsUnsupported: "This browser does not support notifications.",
   },
   issue: {
     statuses: {
@@ -484,6 +491,8 @@ export const enMessages: Messages = {
     questions: "Questions",
     openDetail: "Open details",
     noDescription: "No description.",
+    noticeTitle: (workspace) => `${workspace}: Needs human`,
+    noticeBody: (title, moreCount) => (moreCount > 0 ? `${title} and ${moreCount} more` : title),
   },
   workspaces: {
     selectTitle: "Choose a workspace",

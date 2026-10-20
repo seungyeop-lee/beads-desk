@@ -40,6 +40,13 @@ export const koMessages = {
       dark: "어둡게",
     } satisfies Record<ThemeChoice, string>,
     language: "언어",
+    notifications: "브라우저 알림",
+    humanDecisionNotices: "판단 기다림이 생기면 알리기",
+    humanDecisionNoticesHint:
+      "beads-desk 탭에서 보고 있는 workspace에 판단 기다림이 새로 생기면, 다른 창에서 일하는 중에도 운영체제 알림으로 알립니다.",
+    notificationsDenied:
+      "브라우저가 이 사이트의 알림을 차단했습니다. 주소창 옆의 사이트 설정에서 알림을 허용하면 켤 수 있습니다.",
+    notificationsUnsupported: "이 브라우저는 알림을 지원하지 않습니다.",
   },
   issue: {
     statuses: {
@@ -497,6 +504,10 @@ export const koMessages = {
     questions: "질문",
     openDetail: "상세 열기",
     noDescription: "설명이 없습니다.",
+    /** 운영체제 알림의 제목입니다. 어느 workspace의 알림인지 먼저 보이게 합니다. */
+    noticeTitle: (workspace: string) => `${workspace}: 판단 기다림`,
+    noticeBody: (title: string, moreCount: number) =>
+      moreCount > 0 ? `${title} 외 ${moreCount}건` : title,
   },
   workspaces: {
     selectTitle: "workspace 고르기",

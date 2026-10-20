@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useHumanDecisionNotices } from "@/client/modules/humanDecisions/application/humanDecisionNotices";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
 import { useScreenPathname, useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { PlusIcon, SettingsIcon } from "@/client/ui/designSystem/icons";
@@ -22,6 +23,7 @@ export function AppHeader() {
   const issueHref = useIssueHref();
   const messages = useMessages();
   const humanDecisions = useHumanDecisionCount();
+  useHumanDecisionNotices();
   // 탭의 숫자는 판단할 일이 있다는 신호이므로, 0이거나 아직 읽지 못했거나 다시 읽다 실패하면 보이지 않습니다.
   const humanDecisionCount = humanDecisions.error ? 0 : (humanDecisions.data ?? 0);
   const [creating, setCreating] = useState(false);

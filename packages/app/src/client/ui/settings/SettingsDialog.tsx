@@ -3,8 +3,9 @@ import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { LocalePicker } from "@/client/ui/locale/LocalePicker";
 import { ThemePicker } from "@/client/ui/theme/ThemePicker";
+import { HumanDecisionNoticeToggle } from "./HumanDecisionNoticeToggle";
 
-/** 화면 테마와 언어를 고르는 대화상자입니다. 고르는 즉시 적용되므로 저장 단추가 없습니다. */
+/** 화면 테마와 언어, 브라우저 알림을 고르는 대화상자입니다. 고르는 즉시 적용되므로 저장 단추가 없습니다. */
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const messages = useMessages();
@@ -29,6 +30,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             <span className="caption">{messages.settings.language}</span>
             <LocalePicker />
           </label>
+          <HumanDecisionNoticeToggle />
         </div>
         <div className="flex items-center border-t border-base-300 bg-base-200/50 px-7 py-4">
           <button

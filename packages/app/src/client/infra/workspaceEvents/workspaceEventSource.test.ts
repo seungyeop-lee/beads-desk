@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import type { WatchedWorkspaceChange } from "./workspaceEventSource";
 
 type WorkspaceEvents = typeof import("./workspaceEventSource");
 
@@ -368,4 +369,52 @@ test("다른 탭의 연결을 이어받으면 이어받은 연결의 첫 알림�
   latestSource().emit("open");
   await flush();
   expect(settled).toHaveBeenCalledOnce();
+});
+
+test("연결을 연 탭은 가려져 있어도 감시하는 모든 workspace의 변경을 바로 받고, 다른 탭은 받지 않는다", async () => {
+  const leader = await openTab("a");
+  const stopLeader = leader.subscribeWorkspaceInvalidation(() => {});
+  const leaderChanges = vi.fn<(change: WatchedWorkspaceChange) => void>();
+  const stopLeaderChanges = leader.subscribeWatchedWorkspaceChanges(leaderChanges);
+  await flush();
+  const follower = await openTab("b");
+  const stopFollower = follower.subscribeWorkspaceInvalidation(() => {});
+  const followerChanges = vi.fn<(change: WatchedWorkspaceChange) => void>();
+  const stopFollowerChanges = follower.subscribeWatchedWorkspaceChanges(followerChanges);
+  await flush();
+  await flush();
+
+  fakeDocument.setVisibility("hidden");
+  latestSource().emit("open");
+  leaderChanges.mockClear();
+  latestSource().emit("invalidate", { workspace: "b" });
+  latestSource().emit("invalidate", {});
+  latestSource().emit("invalidate", { workspace: "c" });
+  stopLeaderChanges();
+  stopFollowerChanges();
+  stopLeader();
+  stopFollower();
+
+  expect(leaderChanges.mock.calls).toEqual([
+    [{ watched: ["a", "b"], changed: ["b"] }],
+    [{ watched: ["a", "b"], changed: ["a", "b"] }],
+  ]);
+  expect(followerChanges.mock.calls).toEqual([[{ watched: [], changed: [] }]]);
+});
+
+test("구독하면 지금 감시하는 workspace를 알리고, 연결을 놓으면 감시하는 workspace가 없다고 알린다", async () => {
+  const events = await openTab("a");
+  const stop = events.subscribeWorkspaceInvalidation(() => {});
+  const changes = vi.fn<(change: WatchedWorkspaceChange) => void>();
+  events.subscribeWatchedWorkspaceChanges(changes);
+  await flush();
+
+  stop();
+  await flush();
+
+  expect(changes.mock.calls).toEqual([
+    [{ watched: [], changed: [] }],
+    [{ watched: ["a"], changed: [] }],
+    [{ watched: [], changed: [] }],
+  ]);
 });

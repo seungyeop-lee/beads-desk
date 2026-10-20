@@ -7,6 +7,10 @@ import {
 
 type Listener = () => void;
 
+/** 연결 탭이 감시하는 workspace와, 그중 이번 알림으로 바뀌었을 수 있는 workspace입니다. */
+export type WatchedWorkspaceChange = { watched: readonly string[]; changed: readonly string[] };
+type WatchListener = (change: WatchedWorkspaceChange) => void;
+
 /** 탭 사이에 주고받는 메시지입니다. views-changed는 어느 탭이 새 workspace를 보기 시작했다는 뜻입니다. */
 type ChannelMessage = { type: "invalidate"; notice: InvalidateNotice } | { type: "views-changed" };
 
@@ -19,6 +23,9 @@ const CHANNEL_NAME = "beads-desk.workspace-events";
 const VIEW_LOCK_PREFIX = "beads-desk.workspace-view:";
 
 const listeners = new Set<Listener>();
+const watchListeners = new Set<WatchListener>();
+/** 이 탭이 연결을 주도하는 동안 그 연결이 감시하는 workspace입니다. 주도하지 않으면 비어 있습니다. */
+let watchedNow: readonly string[] = [];
 let channel: BroadcastChannel | null = null;
 let stopLeading: AbortController | null = null;
 /** 이 탭이 보는 workspace의 이름입니다. 구독자가 없으면 null입니다. */
@@ -65,6 +72,20 @@ export async function awaitFirstInvalidation(): Promise<void> {
   await leadingDecided.promise;
   if (leading !== true) return;
   await initialNotice.promise;
+}
+
+/**
+ * 이 탭이 SSE 연결을 연 동안, 연결이 감시하는 모든 workspace의 변경을 listener에 알립니다. 연결 탭은 하나뿐이어서
+ * 탭이 여러 개여도 변경 하나가 한 번만 전달됩니다. 다른 탭에서는 listener가 호출되지 않습니다.
+ * `subscribeWorkspaceInvalidation`과 달리 탭이 가려졌는지 따지지 않고 바로 알립니다. 이 함수는 연결을 열지 않으므로
+ * 그 함수의 구독자가 있는 동안만 알림이 옵니다.
+ * 구독할 때와 감시 대상이 바뀔 때, 이 탭이 연결을 놓을 때는 changed를 비워 지금 감시하는 workspace를 알리므로,
+ * listener는 watched 밖의 상태를 버릴 수 있습니다.
+ */
+export function subscribeWatchedWorkspaceChanges(listener: WatchListener): () => void {
+  watchListeners.add(listener);
+  listener({ watched: watchedNow, changed: [] });
+  return () => watchListeners.delete(listener);
 }
 
 function start() {
@@ -154,6 +175,7 @@ function holdConnection(signal: AbortSignal, tookOver: boolean): Promise<true> {
       if (initialNotice !== notice) initialNotice.resolve();
       initialNotice = notice;
       watched = workspaces;
+      announceWatched(workspaces, []);
       const opened = new EventSource(workspaceEventsUrl(workspaces));
       source = opened;
       opened.addEventListener("error", () => {
@@ -180,6 +202,7 @@ function holdConnection(signal: AbortSignal, tookOver: boolean): Promise<true> {
       () => {
         refreshConnection = null;
         source?.close();
+        announceWatched([], []);
         initialNotice.resolve();
         release(true);
       },
@@ -220,6 +243,14 @@ function broadcast(notice: InvalidateNotice) {
   if (concernsThisTab(notice)) initialNotice.resolve();
   channel?.postMessage({ type: "invalidate", notice } satisfies ChannelMessage);
   receive(notice);
+  const { workspace } = notice;
+  if (workspace === undefined) announceWatched(watchedNow, watchedNow);
+  else if (watchedNow.includes(workspace)) announceWatched(watchedNow, [workspace]);
+}
+
+function announceWatched(watched: readonly string[], changed: readonly string[]) {
+  watchedNow = watched;
+  for (const listener of watchListeners) listener({ watched, changed });
 }
 
 function concernsThisTab(notice: InvalidateNotice): boolean {
