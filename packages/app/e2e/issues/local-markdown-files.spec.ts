@@ -129,3 +129,25 @@ test("로컬 HTML과 SVG를 열어도 스크립트가 실행되지 않고 원문
     await expect(page.getByRole("heading")).toHaveCount(0);
   }
 });
+
+test("본문의 로컬 webm 링크를 열면 영상이 재생된다", async ({ browser, page, workspace }) => {
+  // 리뷰 보고서가 거는 영상과 같은 Playwright 녹화 파일을 시나리오 안에서 만듭니다.
+  const path = join(workspace.path, "화면 녹화.webm");
+  const recorder = await browser.newContext({ recordVideo: { dir: workspace.path } });
+  const recording = await recorder.newPage();
+  await recording.setContent("<h1>녹화할 화면</h1>");
+  await recorder.close();
+  await recording.video()!.saveAs(path);
+  const id = await workspace.createIssue("영상 링크", "--description", `[화면 녹화](<${path}>)`);
+
+  await page.goto(`/issues?issue=${id}`);
+  await page
+    .getByRole("dialog", { name: `${id} 이슈` })
+    .getByRole("link", { name: "화면 녹화" })
+    .click();
+  // readyState 4는 HAVE_ENOUGH_DATA로, 끝까지 재생할 수 있을 만큼 영상을 불러온 상태입니다.
+  await expect
+    .poll(() => page.locator("video").evaluate((video: HTMLVideoElement) => video.readyState))
+    .toBe(4);
+  expect(new URL(page.url()).searchParams.get("path")).toBe(path);
+});

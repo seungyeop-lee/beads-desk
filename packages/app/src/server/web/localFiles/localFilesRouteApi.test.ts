@@ -128,6 +128,28 @@ test("PNG를 이미지로 제공하고 HTML·SVG는 실행하지 않는 텍스�
   }
 });
 
+test.each([
+  ["webm", "video/webm"],
+  ["mp4", "video/mp4"],
+  ["WEBM", "video/webm"],
+])(
+  "%s 영상은 재생되도록 sandbox 없이 media만 허용하는 CSP로 제공한다",
+  async (extension, contentType) => {
+    const file = join(root, `녹화.${extension}`);
+    await writeFile(file, "video");
+    const response = await get(file);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("video");
+    expect(response.headers.get("Content-Type")).toBe(contentType);
+    expect(response.headers.get("Content-Security-Policy")).toBe(
+      "default-src 'none'; media-src 'self'",
+    );
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(response.headers.get("Cross-Origin-Resource-Policy")).toBe("same-origin");
+  },
+);
+
 test("다른 사이트의 파일 요청을 거부한다", async () => {
   for (const site of ["same-site", "cross-site"])
     expect((await get(join(root, "조사 결과.md"), { "Sec-Fetch-Site": site })).status).toBe(403);
