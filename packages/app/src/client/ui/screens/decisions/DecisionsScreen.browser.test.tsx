@@ -59,6 +59,38 @@ for (const width of WIDTHS) {
   });
 }
 
+/** 열 이름 순서(ID, 제목, 상태, 대체 관계, 날짜)대로 머리 칸의 폭(px)입니다. 제목 열은 남는 폭을 차지하므로 null입니다. */
+const COLUMN_WIDTHS = [96, null, 128, 288, 144];
+
+// 창 폭 441px, 768px, 1440px의 표 영역 폭은 377px, 704px, 1376px입니다.
+// 표 영역은 좌우 테두리가 1px씩이라, 표가 차지할 수 있는 폭은 영역 폭보다 2px 좁습니다.
+for (const [width, tableWidth] of [
+  [441, 935],
+  [768, 1024],
+  [1440, 1374],
+] as const) {
+  test(`창 폭 ${width}px에서 결정 표의 열 폭과 표 폭은 ${tableWidth}px로 정해진다`, async () => {
+    await page.viewport(width, 900);
+    const screen = await render(
+      <LocaleProvider locale="ko">
+        <DecisionsScreen />
+      </LocaleProvider>,
+    );
+
+    // 유효한 결정 표와 대체된 결정 표를 모두 잽니다.
+    const tables = screen.container.querySelectorAll("table");
+    expect(tables, "결정 표 수").toHaveLength(2);
+    for (const table of tables) {
+      expect(table.getBoundingClientRect().width, "표 폭").toBe(tableWidth);
+      Array.from(table.tHead!.rows[0]!.cells).forEach((cell, index) => {
+        const columnWidth = COLUMN_WIDTHS[index];
+        if (columnWidth == null) return;
+        expect(cell.getBoundingClientRect().width, `${cell.textContent} 열 폭`).toBe(columnWidth);
+      });
+    }
+  });
+}
+
 test("결정 행은 짧은 ID를 복사 단추로 보이고, 대체된 결정의 행은 새 결정 표시와 함께 대체한 결정으로 가는 링크를 보인다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
