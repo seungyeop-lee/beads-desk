@@ -2,47 +2,49 @@
 
 English | [한국어](https://github.com/seungyeop-lee/beads-desk/blob/main/README.ko.md)
 
-A local web UI for the [Beads](https://github.com/gastownhall/beads) (`bd`) issue tracker. Read and edit your issues in the browser while you and your agents keep using `bd` in the terminal.
+A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for reviewing what your agents leave in the tracker: the plans they lay out, the decisions they record, the diagrams and screenshots they attach, and the questions they leave for you. Read and edit your issues in the browser while you and your agents keep using `bd` in the terminal.
 
-[![beads-desk demo: answering a human gate in Needs human unblocks the work it held back, followed by the Now, Graph, Decisions, and Board screens](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/6dd972f29742ee8ea5d0d91ceb0245062718e0ab/docs/beads-desk-intro.gif)](https://github.com/seungyeop-lee/beads-desk/releases/download/v0.1.0/beads-desk-intro.mp4)
+[![beads-desk demo: an epic's stages, an issue with a sequence diagram, a screenshot, and a screen recording attached, a decision and the one it replaced, and a human gate answered so the work it held moves to Ready](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/b654b5299ec134cfb05a9137f272378f8fcdbdb2/docs/beads-desk-intro.gif)](https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4)
 
 ## Features
 
-### See what to do now
+### Review the plan stage by stage
 
-- **Now**: The start page shows what is in progress, up next, and blocked, along with each open epic's progress and the issues created and closed over the last 7 days.
+On an epic, View order arranges its issues into stages by their `blocks` dependencies and shows which stage is in progress. Human gates and blockers outside the epic appear in the same graph, and issues in the same stage can proceed in parallel. Click an issue to read it beside the graph.
 
-  ![Now screen showing counts of in-progress, ready, blocked, and needs-human issues, a 7-day created and closed chart, and the in-progress and blocked lists](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/f01c0ef35da18cff8eab618a3bc0999d5e40f643/docs/screenshots/now.png)
+From any issue, Blocks graph lays out the chain of work before and after it, and every issue shows how many others are waiting on it.
 
-- **Needs human**: Collects the questions (issues labeled `human`) and human gates your agents leave for a person. Respond or dismiss them here; a response is saved as a comment, and closing a gate unblocks the issues waiting on it.
+![View order for an epic arranging its issues into five stages, with a human gate holding the last stage](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/b654b5299ec134cfb05a9137f272378f8fcdbdb2/docs/screenshots/graph.png)
 
-  ![Needs human screen listing two human gates and one question, with a response form for the selected gate](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/3fd01240cdbd8061fa15122d40a9f0c65bd833bd/docs/screenshots/needs-human.png)
+### Read what agents attach
 
-- **Decisions**: Lists `decision` issues on their own screen, split into active and closed, with the decisions each one supersedes or is superseded by.
+Issue descriptions and comments render Markdown, including Mermaid diagrams; click a diagram to see it full size. Links to local files with absolute paths open in the app: images are shown in the issue, and `.webm` and `.mp4` recordings play. See [Local file links in issues](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#local-file-links-in-issues) for which directories can be opened.
 
-  ![Decisions screen splitting active and closed decisions, with supersedes and superseded-by links](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/f01c0ef35da18cff8eab618a3bc0999d5e40f643/docs/screenshots/decisions.png)
+![Issue detail showing a Mermaid sequence diagram and, below it, a screenshot of a checkout page from a local file](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/b654b5299ec134cfb05a9137f272378f8fcdbdb2/docs/screenshots/attachments.png)
 
-### See how work connects
+### Keep decisions on record
 
-- **Linked issues**: An issue's detail lists its Blocked by, Blocks, Parent, Child, and Related issues. Click one to read it in a side panel.
+`decision` issues get their own screen, split into active and closed decisions. Each decision links to the decisions it supersedes and the one that superseded it, so you can follow why an earlier choice was replaced.
 
-  ![Issue detail with a linked issue open in a side panel that lists its parent, blocked-by, and blocks issues](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/3fd01240cdbd8061fa15122d40a9f0c65bd833bd/docs/screenshots/linked-issues.png)
+![Decisions screen splitting active and closed decisions, with supersedes and superseded-by links](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/b654b5299ec134cfb05a9137f272378f8fcdbdb2/docs/screenshots/decisions.png)
 
-- **Graph**: From an issue, Blocks graph lays out the blocks chain around it, with prerequisites on the left and dependent work on the right. On an epic, View order arranges its issues into stages by their blocks dependencies; issues in the same stage can proceed in parallel.
+### Answer what your agents ask
 
-  ![View order for an epic arranging its issues into five stages by their blocks dependencies](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/3fd01240cdbd8061fa15122d40a9f0c65bd833bd/docs/screenshots/graph.png)
+Needs human collects the questions (issues labeled `human`) and human gates your agents leave for a person, with the work each gate holds. Respond or dismiss them here; a response is saved as a comment, and closing a gate unblocks the issues waiting on it.
 
-### Manage the flow
+![Needs human screen with a response typed for the selected gate and the task that gate blocks](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/b654b5299ec134cfb05a9137f272378f8fcdbdb2/docs/screenshots/needs-human.png)
 
-- **Board**: A kanban board with Blocked, Ready, In progress, and Closed columns. Drag a card to Ready, In progress, or Closed to change its status.
+### Keep the tracker tidy
 
-  ![Board with Blocked, Ready, In progress, and Closed columns of issue cards](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/3fd01240cdbd8061fa15122d40a9f0c65bd833bd/docs/screenshots/board.png)
+Hygiene lists stale issues, open issues whose ID appears in a commit message, issues missing the sections `bd` recommends for their type, possible duplicates, and epics whose children are all closed. Close one issue of a duplicate pair as a duplicate of the other from the same screen.
 
-### Work alongside the CLI
+![Hygiene screen with stale issues, possible duplicates, missing sections, epics ready to close, and orphaned issues](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/b654b5299ec134cfb05a9137f272378f8fcdbdb2/docs/screenshots/hygiene.png)
 
-- **Live updates**: Changes made with `bd` in the terminal, by you or an agent, appear in every open tab within a few seconds, without reloading. Issues are read and changed only through the `bd` CLI. While a tab is open, the server checks for changes by comparing the Dolt database's `.dolt/noms/manifest` file in embedded mode, and the database hash from `bd sql` (`DOLT_HASHOF_DB()`) in server mode.
+### Also in beads-desk
 
-There are also Issues, Epics, and Hygiene screens. The UI is in English and Korean and follows your browser's language. To change the language or theme, open Settings with the button to the left of New issue at the top right.
+Now, the start page, shows what is in progress, up next, and blocked, with each open epic's progress and the issues created and closed over the last 7 days. There are also a Board where you drag cards to change their status, Issues and Epics screens, and a side panel for reading a linked issue without leaving the one you are on. Changes made with `bd` appear in every open tab within a few seconds, and issues are read and changed only through the `bd` CLI. Each tab can show a different workspace. The UI is in English and Korean and follows your browser's language; to change the language or theme, open Settings with the button to the left of New issue at the top right.
+
+![Now screen showing counts of in-progress, ready, blocked, and needs-human issues, a 7-day created and closed chart, and the in-progress and blocked lists](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/b654b5299ec134cfb05a9137f272378f8fcdbdb2/docs/screenshots/now.png)
 
 ## Requirements
 

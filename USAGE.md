@@ -29,6 +29,10 @@ Run `bd-desk start` in another beads workspace to add it to the running server a
 
 A URL without a workspace name, such as `http://127.0.0.1:3000/issues`, opens the same screen in the only added workspace. If several workspaces are added, it asks you to choose one.
 
+## How changes made with `bd` appear
+
+While a tab is open, the server checks whether the workspace's database has changed and, when it has, tells the open tabs to read their data again. Changes made with `bd` in the terminal, by you or an agent, therefore appear within a few seconds without reloading. In embedded mode the server compares the Dolt database's `.dolt/noms/manifest` file, and in server mode it compares the database hash from `bd sql` (`DOLT_HASHOF_DB()`).
+
 ## Local file links in issues
 
 Absolute-path file links and images in an issue body open when the file is in one of these directories:

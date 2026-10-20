@@ -29,6 +29,10 @@ main checkout에 `.beads`가 있는 git 저장소라면, 그 저장소의 worktr
 
 `http://127.0.0.1:3000/issues`처럼 workspace 이름이 없는 URL은, 추가한 workspace가 하나면 그 workspace의 같은 화면을 엽니다. workspace가 여럿이면 어느 workspace로 열지 고르는 화면이 나옵니다.
 
+## `bd`로 바꾼 내용이 화면에 나타나는 방식
+
+탭이 열려 있는 동안 서버는 workspace의 데이터베이스가 바뀌었는지 확인하고, 바뀌었으면 열려 있는 탭에 데이터를 다시 읽게 합니다. 그래서 사용자나 에이전트가 터미널에서 `bd`로 바꾼 내용이 새로 고치지 않아도 몇 초 안에 나타납니다. embedded mode에서는 Dolt 데이터베이스의 `.dolt/noms/manifest` 파일을, server mode에서는 `bd sql`로 조회한 데이터베이스 hash(`DOLT_HASHOF_DB()`)를 비교합니다.
+
 ## 이슈 본문의 로컬 파일 링크
 
 이슈 본문에 절대 경로로 적은 파일 링크와 이미지는, 파일이 다음 디렉터리 안에 있을 때만 열립니다.
