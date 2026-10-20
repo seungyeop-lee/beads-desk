@@ -80,7 +80,8 @@ for (const width of [455, 500, 1440]) {
 }
 
 // 1280px은 에픽 헤더가 한 줄에 놓이기 시작하는 xl 경계입니다.
-for (const width of [2000, 1280]) {
+// 1100px과 768px은 오른쪽 조작이 둘째 줄로 내려가는 폭이고, 768px은 열 폭을 고정하기 시작하는 md 경계입니다.
+for (const width of [2000, 1280, 1100, 768]) {
   for (const locale of ["ko", "en"] as const) {
     test(`창 폭 ${width}px에서 진행 개수의 자릿수와 닫힘 여부가 달라도 에픽 카드의 상태 칩, 막대나 닫은 날짜, 진행 개수, 순서 보기 링크의 열 위치가 같다(${locale})`, async () => {
       reads.epics = [

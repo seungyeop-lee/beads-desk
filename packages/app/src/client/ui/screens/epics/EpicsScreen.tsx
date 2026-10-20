@@ -248,9 +248,10 @@ function EpicSection({
         >
           {epic.title || messages.common.untitled}
         </Link>
-        {/* 한 줄 배치에서는 오른쪽 조작마다 폭을 고정해, 상태나 개수의 글자 폭이 달라도 카드끼리 열 위치가 같게 합니다. */}
+        {/* md 이상에서는 오른쪽 조작마다 폭을 고정해, 상태나 개수의 글자 폭이 달라도 카드끼리 열 위치가 같게 합니다.
+            md보다 좁은 창에서는 고정한 폭이 둘째 줄에 다 들어가지 않아 조작이 줄바꿈되므로 고정하지 않습니다. */}
         <div className="col-span-full flex flex-wrap items-center justify-end gap-3 xl:contents">
-          <span className="flex shrink-0 xl:min-w-24">
+          <span className="flex shrink-0 md:min-w-24">
             <span className={`chip ${statusTone(epic.status)}`}>
               {statusLabel(messages, epic.status)}
             </span>
@@ -267,7 +268,7 @@ function EpicSection({
                 epicId={epic.id}
                 closed={closedChildren}
                 total={totalChildren}
-                className="w-40 min-w-24 shrink xl:shrink-0"
+                className="w-40 min-w-24 shrink md:shrink-0"
               />
               <EpicCount
                 closed={closedChildren}
@@ -299,7 +300,7 @@ function EpicSection({
 
 /**
  * 닫힌 에픽은 진행률이 거의 항상 100%라, 막대 대신 닫은 날짜와 닫힌 하위 이슈 수를 보입니다.
- * 한 줄 배치에서는 닫은 날짜가 없어도 막대 열의 자리를 비워 두어, 하위 이슈 수가 열린 에픽의 분수 열에 놓이게 합니다.
+ * md 이상에서는 닫은 날짜가 없어도 막대 열의 자리를 비워 두어, 하위 이슈 수가 열린 에픽의 분수 열에 놓이게 합니다.
  */
 function ClosedEpicProgress({
   closedAt,
@@ -315,10 +316,10 @@ function ClosedEpicProgress({
   return (
     <>
       {closedAt === null ? (
-        <span className="hidden w-40 shrink-0 xl:block" />
+        <span className="hidden w-40 shrink-0 md:block" />
       ) : (
         <time
-          className="shrink-0 whitespace-nowrap text-xs text-base-content/55 xl:w-40"
+          className="shrink-0 whitespace-nowrap text-xs text-base-content/55 md:w-40"
           dateTime={new Date(closedAt).toISOString()}
         >
           {messages.epics.closedOn(
