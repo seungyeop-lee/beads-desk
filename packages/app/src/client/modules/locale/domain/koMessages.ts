@@ -402,6 +402,9 @@ export const koMessages = {
     title: "에픽",
     loadFailed: (error: string) => `에픽을 불러오지 못했습니다: ${error}`,
     empty: "에픽이 없습니다.",
+    search: "에픽 검색",
+    searchPlaceholder: "ID, 제목 검색",
+    noMatches: "검색어에 맞는 에픽이 없습니다.",
     toggleChildren: (id: string, expanded: boolean) =>
       `${id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`,
     progress: (id: string) => `${id} 진행률`,

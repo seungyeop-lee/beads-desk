@@ -29,11 +29,13 @@ import { IssueTypeTag } from "./IssueTypeTag";
 import { WaiterCount } from "./WaiterCount";
 
 type Props = (
-  | { issues: Issue[]; tree?: never }
+  | { issues: Issue[]; tree?: never; initiallyExpanded?: never }
   | {
       issues?: never;
-      /** 주면 하위 행을 상위 행 아래에 들여 쓰고, 하위가 있는 행마다 접고 펼 수 있게 합니다. 처음에는 모두 접혀 있습니다. */
+      /** 주면 하위 행을 상위 행 아래에 들여 쓰고, 하위가 있는 행마다 접고 펼 수 있게 합니다. initiallyExpanded가 없으면 처음에는 모두 접혀 있습니다. */
       tree: readonly IssueTreeRow[];
+      /** 처음 그릴 때 펼쳐 둘 행의 이슈 id입니다. 표를 그린 뒤에 바꾼 값은 반영되지 않으므로, 다시 반영하려면 key를 바꿔 표를 새로 그립니다. */
+      initiallyExpanded?: ReadonlySet<string>;
     }
 ) & {
   issueHref: IssueHref;
@@ -62,6 +64,7 @@ type Props = (
 export const IssueTable = memo(function IssueTable({
   issues,
   tree,
+  initiallyExpanded,
   issueHref,
   writes,
   emptyMessage,
@@ -75,7 +78,7 @@ export const IssueTable = memo(function IssueTable({
   searchTerm,
 }: Props) {
   const messages = useMessages();
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(initiallyExpanded ?? new Set());
   const rows = useMemo(
     () => tree ?? issues.map((issue) => ({ issue, depth: 0, childCount: 0 })),
     [tree, issues],

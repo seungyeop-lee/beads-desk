@@ -6,6 +6,7 @@ import {
   issueTree,
   type IssueTreeRow,
 } from "@/client/modules/issues/domain/issueListView";
+import { matchesQuery } from "@/client/modules/issues/domain/issueSearch";
 import type { EpicSummary } from "@/shared/contract/epics";
 
 /** 지금 진행 중인 epic을 먼저 보입니다. */
@@ -20,6 +21,47 @@ const STATUS_ORDER = ["in_progress", "open", "blocked", "deferred", "closed"];
 export function topLevelEpics(epics: EpicSummary[]): EpicSummary[] {
   const epicIds = new Set(epics.map(({ epic }) => epic.id));
   return epics.filter(({ epic }) => epic.parent === null || !epicIds.has(epic.parent));
+}
+
+/** 에픽 화면에서 검색어로 찾은 결과입니다. */
+export type EpicSearch = {
+  /** 검색어에 맞은 카드 에픽과, 검색어에 맞은 하위 에픽이 속한 카드 에픽의 id입니다. */
+  cards: ReadonlySet<string>;
+  /** 검색어에 맞은 하위 에픽이 보이도록 펼칠 에픽의 id입니다. 카드 에픽과, 하위 목록에서 그 하위 에픽을 품은 에픽이 들어갑니다. */
+  expand: ReadonlySet<string>;
+};
+
+/**
+ * 이슈 화면의 검색처럼 에픽의 id와 제목에서 대소문자를 가리지 않고 검색어를 찾습니다. 검색어가 비었으면 null을 돌려줍니다.
+ * 하위 에픽이 맞으면 상위 에픽을 따라 올라가 그 하위 에픽이 속한 카드 에픽을 고르고, 지나온 상위 에픽을 모두 펼칠 대상으로 둡니다.
+ *
+ * @param epics 워크스페이스의 모든 에픽입니다. topLevelEpics에 넘기는 목록과 같아야 카드 에픽이 같게 정해집니다.
+ */
+export function searchEpics(epics: EpicSummary[], query: string): EpicSearch | null {
+  const search = query.trim().toLowerCase();
+  if (search === "") return null;
+  const epicsById = new Map(epics.map(({ epic }) => [epic.id, epic]));
+  const parentEpic = (epic: Issue) =>
+    epic.parent === null ? undefined : epicsById.get(epic.parent);
+  const cards = new Set<string>();
+  const expand = new Set<string>();
+  for (const { epic } of epics) {
+    if (!matchesQuery(epic, search)) continue;
+    let card = epic;
+    // 상위 관계가 순환하는 데이터를 받아도 멈추도록, 이미 지나온 에픽에 다시 닿으면 올라가지 않습니다.
+    const visited = new Set([epic.id]);
+    for (
+      let parent = parentEpic(epic);
+      parent && !visited.has(parent.id);
+      parent = parentEpic(parent)
+    ) {
+      visited.add(parent.id);
+      expand.add(parent.id);
+      card = parent;
+    }
+    cards.add(card.id);
+  }
+  return { cards, expand };
 }
 
 /**

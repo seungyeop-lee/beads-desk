@@ -115,6 +115,86 @@ test("닫힌 에픽 묶음은 처음에 접혀 있고, 묶음을 펼치면 닫�
   await expect.element(screen.getByRole("link", { name: "끝난 에픽의 작업" })).toBeVisible();
 });
 
+test("접힌 닫힌 묶음의 에픽도 검색하면 보이고, 검색하는 동안 접은 묶음은 검색어를 지우면 검색 전처럼 닫힌 묶음만 접힌 상태로 돌아간다", async () => {
+  reads.epics = [
+    { epic: epic("desk-open", "열린 에픽"), totalChildren: 0, closedChildren: 0 },
+    CLOSED_EPIC,
+  ];
+  const screen = await renderScreen();
+  const search = screen.getByRole("searchbox", { name: messages.epics.search });
+  const closedGroup = screen.getByRole("button", {
+    name: new RegExp(messages.epics.groups.closed),
+  });
+  const openGroup = screen.getByRole("button", { name: new RegExp(messages.epics.groups.open) });
+  await expect.element(closedGroup).toHaveAttribute("aria-expanded", "false");
+
+  await search.fill("끝난");
+  await expect.element(screen.getByRole("link", { name: "끝난 에픽" })).toBeVisible();
+  await expect.element(closedGroup).toHaveAttribute("aria-expanded", "true");
+  await expect.element(screen.getByRole("link", { name: "열린 에픽" })).not.toBeInTheDocument();
+  await expect.element(openGroup).not.toBeInTheDocument();
+  const count = screen.getByRole("heading", { level: 1 }).element().nextElementSibling;
+  expect(count?.textContent).toBe("1");
+
+  await search.fill("DESK-");
+  await closedGroup.click();
+  await expect.element(closedGroup).toHaveAttribute("aria-expanded", "false");
+  await openGroup.click();
+  await expect.element(openGroup).toHaveAttribute("aria-expanded", "false");
+
+  await search.clear();
+  await expect.element(openGroup).toHaveAttribute("aria-expanded", "true");
+  await expect.element(closedGroup).toHaveAttribute("aria-expanded", "false");
+  await expect.element(screen.getByRole("link", { name: "열린 에픽" })).toBeVisible();
+  await expect.element(screen.getByRole("link", { name: "끝난 에픽" })).not.toBeInTheDocument();
+});
+
+test("하위 에픽 제목으로 검색하면 그 하위 에픽이 속한 카드와 그 사이의 하위 에픽 행을 펼쳐 맞은 행을 보이고, 검색어를 지우면 카드가 다시 접힌다", async () => {
+  const middle = issue("desk-a.1", { title: "중간 에픽", issueType: "epic", parent: "desk-a" });
+  const deep = issue("desk-a.1.1", { title: "깊은 에픽", issueType: "epic", parent: "desk-a.1" });
+  reads.epics = [
+    // 우선순위가 가장 높아 처음에 펼쳐지는 에픽입니다.
+    {
+      epic: issue("desk-first", { title: "먼저 펼친 에픽", issueType: "epic", priority: 1 }),
+      totalChildren: 0,
+      closedChildren: 0,
+    },
+    { epic: epic("desk-a", "상위 에픽"), totalChildren: 1, closedChildren: 0 },
+    { epic: middle, totalChildren: 1, closedChildren: 0 },
+    { epic: deep, totalChildren: 0, closedChildren: 0 },
+  ];
+  reads.descendants = { "desk-a": { issues: [middle, deep], waiters: {} } };
+  const screen = await renderScreen();
+  const search = screen.getByRole("searchbox", { name: messages.epics.search });
+  const card = screen.getByRole("button", { name: /desk-a 하위 이슈/ });
+  await expect.element(card).toHaveAttribute("aria-expanded", "false");
+
+  await search.fill("중간 에픽");
+  await expect.element(card).toHaveAttribute("aria-expanded", "true");
+  await expect.element(screen.getByRole("row", { name: /중간 에픽/ })).toBeVisible();
+  await expect.element(screen.getByRole("row", { name: /깊은 에픽/ })).not.toBeInTheDocument();
+  await expect
+    .element(screen.getByRole("link", { name: "먼저 펼친 에픽" }))
+    .not.toBeInTheDocument();
+
+  // 하위 에픽 아래의 하위 에픽이 맞으면, 하위 목록에서 그 위의 하위 에픽 행도 펼칩니다.
+  await search.fill("깊은 에픽");
+  await expect.element(screen.getByRole("row", { name: /깊은 에픽/ })).toBeVisible();
+
+  await search.clear();
+  await expect.element(card).toHaveAttribute("aria-expanded", "false");
+  await expect.element(screen.getByRole("link", { name: "먼저 펼친 에픽" })).toBeVisible();
+});
+
+test("검색어에 맞는 에픽이 없으면 빈 상태 문구를 보인다", async () => {
+  reads.epics = [{ epic: epic("desk-open", "열린 에픽"), totalChildren: 0, closedChildren: 0 }];
+  const screen = await renderScreen();
+
+  await screen.getByRole("searchbox", { name: messages.epics.search }).fill("없는 에픽");
+  await expect.element(screen.getByText(messages.epics.noMatches)).toBeVisible();
+  await expect.element(screen.getByRole("link", { name: "열린 에픽" })).not.toBeInTheDocument();
+});
+
 test("펼친 에픽의 기능은 처음에 접혀 있고, 펼치면 기능 아래 작업이 보이고 접으면 다시 숨는다", async () => {
   reads.epics = [
     {

@@ -6,6 +6,7 @@ import {
   childProgress,
   epicDescendantRows,
   notChildCandidate,
+  searchEpics,
   settleExpandedEpics,
   sortEpics,
   topLevelEpics,
@@ -151,4 +152,51 @@ test("후손 이슈마다 직접 하위 이슈만 세어 닫힌 수와 전체 �
   expect(progress.get("a.1")).toEqual({ closed: 1, total: 3 });
   expect(progress.get("a.1.1")).toEqual({ closed: 1, total: 1 });
   expect(progress.has("a.1.2")).toBe(false);
+});
+
+describe("searchEpics", () => {
+  const epic = (id: string, title: string, parent: string | null = null): EpicSummary => ({
+    epic: issue(id, { title, issueType: "epic", parent }),
+    totalChildren: 0,
+    closedChildren: 0,
+  });
+  const EPICS = [
+    epic("desk-a", "결제 개편"),
+    epic("desk-a.1", "환불 화면", "desk-a"),
+    epic("desk-a.1.1", "부분 환불", "desk-a.1"),
+    epic("desk-b", "로그인 정리"),
+    epic("desk-t.1", "작업 아래 에픽", "desk-t"),
+  ];
+  const found = (query: string) => {
+    const result = searchEpics(EPICS, query);
+    return result && { cards: [...result.cards], expand: [...result.expand] };
+  };
+
+  test("검색어가 비었거나 공백뿐이면 검색하지 않는다", () => {
+    expect(searchEpics(EPICS, "")).toBeNull();
+    expect(searchEpics(EPICS, "  ")).toBeNull();
+  });
+
+  test("id나 제목에 검색어가 든 카드 에픽을 대소문자와 앞뒤 공백을 가리지 않고 고른다", () => {
+    expect(found("DESK-B")).toEqual({ cards: ["desk-b"], expand: [] });
+    expect(found(" 로그인 ")).toEqual({ cards: ["desk-b"], expand: [] });
+  });
+
+  test("하위 에픽이 맞으면 상위 에픽을 따라 올라가 카드 에픽을 고르고, 지나온 상위 에픽을 펼칠 대상으로 둔다", () => {
+    expect(found("환불 화면")).toEqual({ cards: ["desk-a"], expand: ["desk-a"] });
+    expect(found("부분 환불")).toEqual({ cards: ["desk-a"], expand: ["desk-a.1", "desk-a"] });
+  });
+
+  test("상위 이슈가 에픽이 아닌 에픽은 그 자신이 카드 에픽이다", () => {
+    expect(found("작업 아래")).toEqual({ cards: ["desk-t.1"], expand: [] });
+  });
+
+  test("맞는 에픽이 없으면 고른 카드도 펼칠 에픽도 없다", () => {
+    expect(found("없는 검색어")).toEqual({ cards: [], expand: [] });
+  });
+
+  test("상위 관계가 순환해도 멈춘다", () => {
+    const cycle = [epic("desk-x", "순환 X", "desk-y"), epic("desk-y", "순환 Y", "desk-x")];
+    expect(searchEpics(cycle, "순환 X")?.expand).toEqual(new Set(["desk-y"]));
+  });
 });

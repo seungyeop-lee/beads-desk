@@ -4,7 +4,7 @@ import type {
 } from "@/client/modules/issues/domain/issueDateFilter";
 import { NO_LABEL } from "@/client/modules/issues/domain/issueLabelFilter";
 import { CheckboxMenu } from "@/client/ui/designSystem/CheckboxMenu";
-import { SearchIcon } from "@/client/ui/designSystem/icons";
+import { SearchField } from "@/client/ui/designSystem/SearchField";
 import { ISSUE_TYPES, nameTone, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -115,17 +115,13 @@ export function IssueFilterBar({
         )}
       </fieldset>
 
-      <label className="input input-sm ml-auto w-64 max-w-full rounded-full">
-        <SearchIcon width={15} height={15} className="text-base-content/40" />
-        <input
-          type="search"
-          className="grow"
-          placeholder={messages.issues.searchPlaceholder}
-          aria-label={messages.issues.search}
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-        />
-      </label>
+      <SearchField
+        label={messages.issues.search}
+        placeholder={messages.issues.searchPlaceholder}
+        value={search}
+        onChange={onSearchChange}
+        className="ml-auto w-64 max-w-full"
+      />
     </div>
   );
 }

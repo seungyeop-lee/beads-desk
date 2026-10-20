@@ -3,7 +3,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
 import { groupEpics, type EpicGroupKind } from "@/client/modules/epics/domain/epicGroups";
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
@@ -12,6 +12,7 @@ import {
   childProgress,
   epicDescendantRows,
   notChildCandidate,
+  searchEpics,
   settleExpandedEpics,
   sortEpics,
   topLevelEpics,
@@ -33,15 +34,25 @@ import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ChevronRightIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
+import { SearchField } from "@/client/ui/designSystem/SearchField";
 import { showToast } from "@/client/ui/designSystem/Toast";
 import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
+/** 검색하는 동안 사용자가 접거나 편 에픽 카드와 묶음입니다. query가 지금 검색어와 다르면 무시합니다. */
+type SearchToggles = {
+  query: string;
+  epics: ReadonlySet<string>;
+  groups: ReadonlySet<EpicGroupKind>;
+};
+
 /**
  * epic마다 하위 이슈 진행률을 보여 주고, 펼친 epic은 하위 이슈를 목록처럼 바로 고칠 수 있게 보여 줍니다.
  * 열린 에픽과 닫힌 에픽을 묶음으로 나누고, 처음에는 닫힌 묶음만 접어 둡니다.
+ * 검색하는 동안에는 맞은 에픽만 보이고, 묶음과 맞은 하위 에픽이 속한 카드를 펼칩니다. 이때 접고 편 것은 그 검색어에서만 유지하므로,
+ * 검색어를 지우면 사용자가 검색 전에 정해 둔 펼침 상태로 돌아갑니다.
  * 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function EpicsScreen() {
@@ -53,21 +64,33 @@ export function EpicsScreen() {
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<EpicGroupKind>>(
     new Set(["closed"]),
   );
+  const [search, setSearch] = useState("");
+  // 에픽이 많으면 카드를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 목록은 늦춰 갱신합니다.
+  const deferredSearch = useDeferredValue(search);
+  const [searchToggles, setSearchToggles] = useState<SearchToggles>(noSearchToggles(""));
   const epics = data ? sortEpics(topLevelEpics(data)) : null;
   const settled = epics ? settleExpandedEpics(epics, expanded) : expanded;
   if (settled !== expanded) setExpanded(settled);
   const open = settled ?? new Set<string>();
+  const found = data ? searchEpics(data, deferredSearch) : null;
+  const shown = found ? epics?.filter(({ epic }) => found.cards.has(epic.id)) : epics;
+  const toggles =
+    searchToggles.query === deferredSearch ? searchToggles : noSearchToggles(deferredSearch);
   const messages = useMessages();
 
+  const epicExpanded = (epicId: string) =>
+    found
+      ? (open.has(epicId) || found.expand.has(epicId)) !== toggles.epics.has(epicId)
+      : open.has(epicId);
+  const groupExpanded = (kind: EpicGroupKind) =>
+    found ? !toggles.groups.has(kind) : !collapsedGroups.has(kind);
   const toggle = (epicId: string) => {
-    const next = new Set(open);
-    if (!next.delete(epicId)) next.add(epicId);
-    setExpanded(next);
+    if (found) setSearchToggles({ ...toggles, epics: toggled(toggles.epics, epicId) });
+    else setExpanded(toggled(open, epicId));
   };
   const toggleGroup = (kind: EpicGroupKind) => {
-    const next = new Set(collapsedGroups);
-    if (!next.delete(kind)) next.add(kind);
-    setCollapsedGroups(next);
+    if (found) setSearchToggles({ ...toggles, groups: toggled(toggles.groups, kind) });
+    else setCollapsedGroups(toggled(collapsedGroups, kind));
   };
 
   return (
@@ -75,29 +98,42 @@ export function EpicsScreen() {
       <ScreenHeader
         title={messages.epics.title}
         tone={screenTone("/epics")}
-        count={epics?.length}
+        count={shown?.length}
         loading={loading || writes.pending}
       />
 
       {error && <ErrorAlert>{messages.epics.loadFailed(error)}</ErrorAlert>}
       <WriteErrorAlert writes={writes} />
-      {epics?.length === 0 && <EmptyState message={messages.epics.empty} />}
+      <SearchField
+        label={messages.epics.search}
+        placeholder={messages.epics.searchPlaceholder}
+        value={search}
+        onChange={setSearch}
+        className="w-64 max-w-full"
+      />
 
-      {epics &&
-        groupEpics(epics).map((group) => (
+      {epics?.length === 0 ? (
+        <EmptyState message={messages.epics.empty} />
+      ) : (
+        shown?.length === 0 && <EmptyState message={messages.epics.noMatches} />
+      )}
+
+      {shown &&
+        groupEpics(shown).map((group) => (
           <EpicGroupSection
             key={group.kind}
             kind={group.kind}
             count={group.epics.length}
-            expanded={!collapsedGroups.has(group.kind)}
+            expanded={groupExpanded(group.kind)}
             onToggle={() => toggleGroup(group.kind)}
           >
             {group.epics.map((summary) => (
               <EpicSection
                 key={summary.epic.id}
                 summary={summary}
-                expanded={open.has(summary.epic.id)}
+                expanded={epicExpanded(summary.epic.id)}
                 onToggle={() => toggle(summary.epic.id)}
+                revealed={found?.expand ?? NOTHING_REVEALED}
                 gateTitles={gateTitles}
                 issueHref={issueHref}
                 writes={writes}
@@ -109,6 +145,18 @@ export function EpicsScreen() {
       <IssueDetailRoute />
     </main>
   );
+}
+
+const NOTHING_REVEALED: ReadonlySet<string> = new Set();
+
+function noSearchToggles(query: string): SearchToggles {
+  return { query, epics: new Set(), groups: new Set() };
+}
+
+function toggled<T>(values: ReadonlySet<T>, value: T): ReadonlySet<T> {
+  const next = new Set(values);
+  if (!next.delete(value)) next.add(value);
+  return next;
 }
 
 /** 이슈 화면의 상태 묶음과 같은 모양으로 묶음 머리를 보이고, 펼쳤을 때만 에픽 카드를 보입니다. */
@@ -156,12 +204,22 @@ type SectionProps = {
   summary: EpicSummary;
   expanded: boolean;
   onToggle: () => void;
+  /** 검색어에 맞은 하위 에픽이 보이도록 펼칠 에픽의 id입니다. 하위 목록에서 이 id의 행을 펼칩니다. */
+  revealed: ReadonlySet<string>;
   gateTitles: GateTitles;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
 };
 
-function EpicSection({ summary, expanded, onToggle, gateTitles, issueHref, writes }: SectionProps) {
+function EpicSection({
+  summary,
+  expanded,
+  onToggle,
+  revealed,
+  gateTitles,
+  issueHref,
+  writes,
+}: SectionProps) {
   const { epic, totalChildren, closedChildren } = summary;
   const graphHref = useGraphHref();
   const messages = useMessages();
@@ -219,6 +277,7 @@ function EpicSection({ summary, expanded, onToggle, gateTitles, issueHref, write
       {expanded && (
         <EpicDescendants
           epic={epic}
+          revealed={revealed}
           gateTitles={gateTitles}
           issueHref={issueHref}
           writes={writes}
@@ -261,11 +320,13 @@ function ClosedEpicProgress({
 
 function EpicDescendants({
   epic,
+  revealed,
   gateTitles,
   issueHref,
   writes,
 }: {
   epic: Issue;
+  revealed: ReadonlySet<string>;
   gateTitles: GateTitles;
   issueHref: (issueId: string) => string;
   writes: IssueWrites;
@@ -274,6 +335,9 @@ function EpicDescendants({
   const descendants = data?.issues;
   const waiters = useMemo(() => new Map(Object.entries(data?.waiters ?? {})), [data]);
   const progress = useMemo(() => childProgress(data?.issues ?? []), [data]);
+  const revealedRows = new Set(
+    descendants?.filter(({ id }) => revealed.has(id)).map(({ id }) => id),
+  );
   const [creating, setCreating] = useState(false);
   const router = useRouter();
   const graphHref = useGraphHref();
@@ -325,7 +389,10 @@ function EpicDescendants({
       )}
       {descendants && (
         <IssueTable
+          // 검색어에 맞은 하위 에픽이 접힌 행 아래에 있으면, 그 행을 펼친 표를 새로 그려 하위 에픽이 보이게 합니다.
+          key={[...revealedRows].join(" ")}
           tree={epicDescendantRows(descendants)}
+          initiallyExpanded={revealedRows}
           gateTitles={gateTitles}
           waiters={waiters}
           issueHref={issueHref}
