@@ -54,6 +54,8 @@ type Props = (
   epicProgress?: ReadonlyMap<string, ChildProgress>;
   /** 주면 본문 필드나 댓글에서 검색어가 맞은 행의 제목 아래에 맞은 곳과 발췌를 보입니다. */
   searchHits?: IssueTextHits;
+  /** searchHits를 찾은 검색어입니다. 발췌 안에서 이 검색어와 맞는 부분을 강조합니다. */
+  searchTerm?: string | undefined;
 };
 
 /** ID를 누르면 전체 ID를 복사하고, 제목을 누르면 상세를 엽니다. 상태와 우선순위는 표에서 바로 고치고, 라벨과 담당자는 상세에서만 고칩니다. */
@@ -70,6 +72,7 @@ export const IssueTable = memo(function IssueTable({
   epicOrderHref,
   epicProgress,
   searchHits,
+  searchTerm,
 }: Props) {
   const messages = useMessages();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -129,6 +132,7 @@ export const IssueTable = memo(function IssueTable({
               epicOrderHref={epicOrderHref}
               epicProgress={epicProgress}
               searchHits={searchHits?.get(row.issue.id)}
+              searchTerm={searchTerm}
             />
           ))}
         </tbody>
@@ -159,6 +163,7 @@ type RowProps = {
   epicOrderHref: ((epicId: string) => string) | undefined;
   epicProgress: ReadonlyMap<string, ChildProgress> | undefined;
   searchHits: readonly IssueTextHit[] | undefined;
+  searchTerm: string | undefined;
 };
 
 function IssueRow({
@@ -172,6 +177,7 @@ function IssueRow({
   epicOrderHref,
   epicProgress,
   searchHits,
+  searchTerm,
 }: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
@@ -228,7 +234,7 @@ function IssueRow({
             />
           )}
           <DeferralLine issue={issue} />
-          <SearchHitLines hits={searchHits} />
+          <SearchHitLines hits={searchHits} term={searchTerm ?? ""} />
         </TitleOutline>
       </td>
       <td>

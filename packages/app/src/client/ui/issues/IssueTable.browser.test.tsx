@@ -106,7 +106,7 @@ const COMMENT_EXCERPT =
 const SEARCH_TERM = "픽셀";
 
 for (const width of [AREA_WIDTHS[0]!, AREA_WIDTHS.at(-1)!]) {
-  test(`표 영역 폭 ${width}px에서 본문·댓글 검색으로 맞은 행에만 제목 아래에 맞은 필드와 발췌가 보이고, 발췌의 검색어는 제목 칸 안에서 잘리지 않는다`, async () => {
+  test(`표 영역 폭 ${width}px에서 본문·댓글 검색으로 맞은 행에만 제목 아래에 맞은 필드와 발췌가 보이고, 발췌의 검색어는 굵고 진한 글자로 제목 칸 안에서 잘리지 않으며, 발췌는 한 줄을 넘지 않는다`, async () => {
     const screen = await render(
       <LocaleProvider locale="ko">
         <div style={{ width }}>
@@ -129,6 +129,7 @@ for (const width of [AREA_WIDTHS[0]!, AREA_WIDTHS.at(-1)!]) {
                 ],
               ])
             }
+            searchTerm={SEARCH_TERM}
           />
         </div>
       </LocaleProvider>,
@@ -146,17 +147,27 @@ for (const width of [AREA_WIDTHS[0]!, AREA_WIDTHS.at(-1)!]) {
     expect(titleRow.element().textContent).not.toContain(SEARCH_TERM);
 
     const excerpt = hitRow.getByText(COMMENT_EXCERPT, { exact: true }).element();
-    const titleCell = excerpt.closest("td")!.getBoundingClientRect();
+    const titleCell = excerpt.closest("td")!;
     const excerptBox = excerpt.getBoundingClientRect();
-    expect(excerptBox.right, "발췌 오른쪽 끝").toBeLessThanOrEqual(titleCell.right);
+    expect(excerptBox.right, "발췌 오른쪽 끝").toBeLessThanOrEqual(
+      titleCell.getBoundingClientRect().right,
+    );
+    expect(excerptBox.height, "발췌 높이").toBeLessThanOrEqual(
+      parseFloat(getComputedStyle(excerpt).lineHeight),
+    );
+
     // 발췌는 한 줄로 보이고 넘치는 끝은 말줄임으로 잘리므로, 검색어 글자가 보이는 발췌 영역 안에 있는지 잽니다.
-    const term = document.createRange();
-    const start = COMMENT_EXCERPT.indexOf(SEARCH_TERM);
-    term.setStart(excerpt.firstChild!, start);
-    term.setEnd(excerpt.firstChild!, start + SEARCH_TERM.length);
-    expect(term.getBoundingClientRect().right, "검색어 오른쪽 끝").toBeLessThanOrEqual(
+    const marks = Array.from(excerpt.querySelectorAll("mark"));
+    expect(marks.map((mark) => mark.textContent)).toEqual([SEARCH_TERM, SEARCH_TERM]);
+    expect(marks[0]!.getBoundingClientRect().right, "검색어 오른쪽 끝").toBeLessThanOrEqual(
       excerptBox.right,
     );
+    // 발췌 줄은 흐린 글자라, 검색어는 굵기와 함께 제목 칸의 흐리지 않은 글자색으로 구분됩니다.
+    const markStyle = getComputedStyle(marks[0]!);
+    expect(markStyle.fontWeight).toBe("600");
+    expect(markStyle.color).toBe(getComputedStyle(titleCell).color);
+    expect(markStyle.color).not.toBe(getComputedStyle(excerpt).color);
+    expect(markStyle.backgroundColor).toBe("rgba(0, 0, 0, 0)");
   });
 }
 

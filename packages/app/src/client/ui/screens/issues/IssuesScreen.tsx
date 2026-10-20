@@ -102,6 +102,7 @@ export function IssuesScreen() {
             gateTitles={gateTitles}
             waiters={waiters}
             searchHits={textMatches}
+            searchTerm={textSearch.term}
           />
         ) : (
           <IssueGroups
@@ -112,6 +113,7 @@ export function IssuesScreen() {
             issueHref={issueHref}
             writes={writes}
             searchHits={textMatches}
+            searchTerm={textSearch.term}
           />
         ))}
 

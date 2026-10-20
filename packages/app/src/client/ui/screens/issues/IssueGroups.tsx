@@ -20,6 +20,8 @@ type Props = {
   writes: IssueWrites;
   /** 본문 필드나 댓글에서 검색어가 맞은 곳입니다. 맞은 행 아래에 보입니다. */
   searchHits?: IssueTextHits | undefined;
+  /** searchHits를 찾은 검색어입니다. 발췌 안에서 이 검색어와 맞는 부분을 강조합니다. */
+  searchTerm?: string | undefined;
 };
 
 /** 전체 보기에서 작업 상태 묶음마다 표를 나눠 보입니다. 처음에는 닫힘 묶음만 접어 둡니다. */
@@ -31,6 +33,7 @@ export function IssueGroups({
   issueHref,
   writes,
   searchHits,
+  searchTerm,
 }: Props) {
   const messages = useMessages();
   const [collapsed, setCollapsed] = useState<ReadonlySet<WorkState>>(new Set(["closed"]));
@@ -84,6 +87,7 @@ export function IssueGroups({
                 waiters={waiters}
                 hideHeader={group.state !== headerGroup}
                 searchHits={searchHits}
+                searchTerm={searchTerm}
               />
             )}
           </section>

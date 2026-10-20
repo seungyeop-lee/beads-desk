@@ -10,6 +10,8 @@ const SETTLE_MS = 300;
 export type IssueTextMatches = {
   /** 지금 검색어로 찾은 결과가 아직 없으면 undefined입니다. 앞 검색어로 찾은 이슈가 섞이지 않게 합니다. */
   matches: IssueTextHits | undefined;
+  /** matches를 찾은 검색어입니다. 앞뒤 공백을 뺀 값이라, 화면이 발췌 안에서 서버와 같은 검색어로 맞은 곳을 찾습니다. */
+  term: string;
   error: string | null;
 };
 
@@ -24,7 +26,11 @@ export function useIssueTextMatches(search: string): IssueTextMatches {
 
   const { data, error } = useWorkspaceRead(settled, readMatches);
   const current = settled === text;
-  return { matches: current ? (data ?? undefined) : undefined, error: current ? error : null };
+  return {
+    matches: current ? (data ?? undefined) : undefined,
+    term: text,
+    error: current ? error : null,
+  };
 }
 
 async function readMatches(text: string): Promise<ApiResponse<IssueTextHits | null>> {

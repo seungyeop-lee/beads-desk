@@ -1,5 +1,6 @@
 import type { IssueTextHit, IssueTextMatch } from "@/shared/contract/issueList";
 import { BODY_FIELDS, type BodyField } from "@/shared/domain/issues/bodyFields";
+import { searchTermPattern } from "@/shared/domain/issues/searchTerm";
 
 /** 검색에 쓰는 이슈 내용입니다. `bd export` 레코드(ExportedIssue)가 이 모양을 채웁니다. */
 export type SearchableIssue = Readonly<Record<BodyField, string>> & {
@@ -26,7 +27,7 @@ export function searchIssueText(
   issues: readonly SearchableIssue[],
   text: string,
 ): IssueTextMatch[] {
-  const pattern = new RegExp(escapeRegExp(text), "iu");
+  const pattern = searchTermPattern(text);
   return issues.flatMap((issue) => {
     if (issue.issueType === "gate") return [];
     const hits = hitsOf(issue, pattern);
@@ -59,9 +60,4 @@ function excerptAround(text: string, pattern: RegExp): string | null {
   const tail = after.slice(0, EXCERPT_LENGTH - head.length);
   const excerpt = [...head, ...tail].join("").replace(/\s+/g, " ").trim();
   return `${head.length < before.length ? "…" : ""}${excerpt}${tail.length < after.length ? "…" : ""}`;
-}
-
-// Node 22에는 RegExp.escape가 없습니다.
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
