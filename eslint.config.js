@@ -25,12 +25,13 @@ const boundaries = {
   bdServerPackage: {
     regex: "^@beads-desk/bd(?:$|/(?!issue$))",
     message:
-      "Client와 shared는 bd 실행 구현 대신 client-safe model(`@beads-desk/bd/issue`)만 사용합니다.",
+      "Client, shared, 화면 route(`app/(client)`)는 bd 실행 구현 대신 client-safe model(`@beads-desk/bd/issue`)만 사용합니다.",
   },
   serverRouteSurface: {
     regex:
-      "^@/server/(?!web/[^/]+/[^/]*RouteApi$)|^(?:\\.\\./)+server/(?!web/[^/]+/[^/]*RouteApi$)",
-    message: "Route handler는 `server/web`의 `*RouteApi.ts`만 import합니다.",
+      "^@/server/(?!web/[^/]+/[^/]*RouteApi$)|^(?:\\.\\./)+server/(?!web/[^/]+/[^/]*RouteApi$)|^@beads-desk/bd(?:/|$)",
+    message:
+      "Route handler는 `server/web`의 `*RouteApi.ts`만 import하고, bd 실행과 이슈 model은 RouteApi에서 다룹니다.",
   },
   parentFileImport: {
     regex: "^(?:\\.\\./)+[^/]*$",
@@ -210,8 +211,12 @@ export default defineConfig([
     ),
   },
   {
-    files: ["packages/app/src/app/(server)/**/route.ts"],
+    files: ["packages/app/src/app/(server)/**/*.{ts,tsx}"],
     rules: restrict(boundaries.serverRouteSurface),
+  },
+  {
+    files: ["packages/app/src/app/(client)/**/*.{ts,tsx}"],
+    rules: restrict(boundaries.bdServerPackage),
   },
   {
     files: ["packages/app/src/shared/**/*.{ts,tsx}"],

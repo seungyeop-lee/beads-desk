@@ -50,7 +50,7 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 
 `packages/app/src`는 실행 위치에 따라 `app`, `client`, `server`, `shared`로 나누고, 각각을 다시 layer로 나눕니다. 경로마다 두는 것은 아래와 같습니다.
 
-- `app/(client)`: 화면 route의 `page.tsx`와 `layout.tsx`. 화면 자체는 `client/ui/screens`에 두고 조립만 합니다
+- `app/(client)`: 화면 route의 `page.tsx`와 `layout.tsx`. 화면 자체는 `client/ui/screens`에 두고 조립만 합니다. Server Component인 page와 layout은 `server/web`에서 요청의 언어를 읽는 `locale/requestLocale`, 테마를 읽는 `theme/requestTheme`, 등록한 workspace를 찾는 `workspaces/registeredWorkspaces`만 import합니다
 - `app/(server)`: Route Handler. `server/web`의 `*RouteApi.ts`만 호출합니다
 - `client/ui`: 화면, component, 스타일
 - `client/modules/<기능>/application`: 기능 상태와 조회·갱신 순서. React hook을 포함합니다
@@ -68,7 +68,7 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 - 변경 알림은 `/api/events` SSE 하나로 보냅니다. workspace DB가 바뀌면 바뀐 workspace의 이름만 담아 `invalidate` 이벤트를 보내고, 등록한 workspace 목록이 바뀌면 이름 없이 보냅니다. 알림을 받은 탭은 보고 있는 데이터를 다시 조회합니다. 서버는 SSE 연결이 있는 동안 DB 상태를 주기적으로 확인하므로 bd CLI로 바꾼 내용도 알림이 갑니다.
 - 서버 이벤트는 `client/infra/workspaceEvents`로만 구독합니다. 이 module이 탭 하나만 SSE를 열고 다른 탭에 알림을 전달합니다.
 - 화면 사이를 오가는 주소(`/issues?view=ready`, 그래프의 복귀 주소)는 workspace 없는 화면 경로로 만들고, 링크와 router에 넘길 때 `client/ui/address/workspaceAddress.ts`의 `useWorkspaceHref`로 workspace 주소로 바꿉니다. 지금 주소의 화면 경로는 `useScreenPathname`으로 읽습니다. browser에서만 실행되는 코드는 `documentWorkspace()`로 탭의 workspace 이름을 읽습니다.
-- `@beads-desk/bd`는 server에서만 import합니다. client와 shared는 bd를 실행하지 않는 이슈 model(`@beads-desk/bd/issue`)만 import합니다.
+- `@beads-desk/bd`는 server에서만 import합니다. client, shared, `app/(client)`는 bd를 실행하지 않는 이슈 model(`@beads-desk/bd/issue`)만 import합니다.
 - 화면 문구는 `client/modules/locale/domain`의 `koMessages.ts`와 `enMessages.ts`에 모두 넣습니다. 두 사전은 같은 type이라 한쪽에만 넣으면 typecheck가 실패합니다. 영어 문구는 bd CLI 출력의 용어(`DEPENDS ON`, `BLOCKS`, `ready` 등)를 따릅니다.
   - 화면을 그리는 코드는 `useMessages()`로, 이벤트 처리처럼 browser에서만 실행되는 코드는 `documentMessages()`로 사전을 읽습니다.
   - Server Action과 Route API가 화면에 보내는 오류 문구는 `server/web/locale/serverMessages.ts`에 두 언어로 넣습니다.

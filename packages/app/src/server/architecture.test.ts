@@ -5,6 +5,7 @@ import { expect, test } from "vitest";
 
 const SRC_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const APP_DIR = resolve(SRC_DIR, "..");
+const PACKAGES_DIR = resolve(APP_DIR, "..");
 
 type Layer =
   | "app"
@@ -125,6 +126,10 @@ test("adapter layer 아래에 다른 layer 이름을 다시 두지 않는다", (
   expect(nestedAdapterLayerEntries()).toEqual([]);
 });
 
+test("app과 bd package의 src에는 역할 이름으로 묶은 디렉터리를 두지 않는다", () => {
+  expect([SRC_DIR, join(PACKAGES_DIR, "bd/src")].flatMap(roleNamedDirectoriesIn)).toEqual([]);
+});
+
 function describeBoundaryViolation(): string | null {
   for (const file of sourceFilesIn(SRC_DIR)) {
     const fromPath = sourcePath(file);
@@ -192,6 +197,16 @@ function nestedAdapterLayerEntries(): string[] {
   return ["client/ui", "client/infra", "server/web", "server/infra"]
     .flatMap(entryPathsIn)
     .filter((path) => nestedLayer.test(path));
+}
+
+const ROLE_DIRECTORY_NAMES = new Set(["utils", "util", "helpers", "helper", "common", "misc"]);
+
+function roleNamedDirectoriesIn(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true, recursive: true })
+    .filter((entry) => entry.isDirectory() && ROLE_DIRECTORY_NAMES.has(entry.name))
+    .map((entry) =>
+      relative(PACKAGES_DIR, join(entry.parentPath, entry.name)).split(sep).join("/"),
+    );
 }
 
 function entryPathsIn(root: string): string[] {
