@@ -146,10 +146,12 @@ export function MarkdownEditor({
           ),
         );
       }
-      // link와 image의 sourceUrl은 remarkWindowsPathSource가 남긴 원문 주소로, 경로를 되살리고 저장할 markdown에 원문
-      // 주소를 쓸 때만 쓰고 HTML 속성으로는 내보내지 않습니다(null인 속성은 DOM에 붙지 않습니다).
-      // 아래 parseMarkdown과 toMarkdown runner는 Milkdown 기본 runner에 sourceUrl만 더한 것이므로, Milkdown을 올리면
-      // 기본 runner와 비교합니다.
+      // link의 href와 image의 src에는 원문에서 되살린 경로를 둡니다. Milkdown 링크 도구는 href만 읽어 미리 보여 주고
+      // 복사하고 수정 칸에 채우므로, 파싱한 주소를 두면 `C:\work\.beads`가 `C:\work.beads`로 보입니다.
+      // sourceUrl은 remarkWindowsPathSource가 남긴 원문 주소로, 저장할 markdown에 원문 주소를 쓸 때만 쓰고 HTML 속성으로는
+      // 내보내지 않습니다(null인 속성은 DOM에 붙지 않습니다).
+      // 아래 parseMarkdown과 toMarkdown runner는 Milkdown 기본 runner에서 주소를 되살린 경로로 바꾸고 sourceUrl을 더한
+      // 것이므로, Milkdown을 올리면 기본 runner와 비교합니다.
       const sourceUrl = { default: null, validate: "string|null" };
       crepe.editor.config((ctx) => {
         ctx.update(commonmark.linkSchema.key, (previous) => (schemaCtx) => {
@@ -160,10 +162,11 @@ export function MarkdownEditor({
             parseMarkdown: {
               ...schema.parseMarkdown,
               runner: (state, node, markType) => {
+                const source = sourceUrlOf(node);
                 state.openMark(markType, {
-                  href: node.url,
+                  href: windowsPath(node.url as string, source),
                   title: node.title,
-                  sourceUrl: sourceUrlOf(node),
+                  sourceUrl: source,
                 });
                 state.next(node.children);
                 state.closeMark(markType);
@@ -174,7 +177,7 @@ export function MarkdownEditor({
               // Milkdown은 http, https, mailto 같은 허용 scheme 밖의 href를 비웁니다. `C:/a.md`처럼 드라이브 문자가
               // scheme으로 읽히는 Windows 경로도 비워지므로, 앱 안 주소로 바뀌는 href는 원래 값에서 바꾸고
               // 바뀌지 않는 href만 Milkdown이 거른 값을 씁니다.
-              const original = windowsPath(String(mark.attrs.href), mark.attrs.sourceUrl);
+              const original = String(mark.attrs.href);
               const opened = localMarkdownUrl(original, documentWorkspace() ?? "");
               const href = opened === original ? dom[1].href : opened;
               return [dom[0], { ...dom[1], href, sourceUrl: null }];
@@ -199,25 +202,23 @@ export function MarkdownEditor({
             parseMarkdown: {
               ...schema.parseMarkdown,
               runner: (state, node, type) => {
+                const source = sourceUrlOf(node);
                 state.addNode(type, {
-                  src: node.url,
+                  src: windowsPath(node.url as string, source),
                   alt: node.alt ?? "",
                   title: node.title ?? "",
-                  sourceUrl: sourceUrlOf(node),
+                  sourceUrl: source,
                 });
               },
             },
-            toDOM: (node) => {
-              const src = windowsPath(node.attrs.src, node.attrs.sourceUrl);
-              return [
-                "img",
-                {
-                  ...node.attrs,
-                  src: localMarkdownUrl(src, documentWorkspace() ?? ""),
-                  sourceUrl: null,
-                },
-              ];
-            },
+            toDOM: (node) => [
+              "img",
+              {
+                ...node.attrs,
+                src: localMarkdownUrl(node.attrs.src, documentWorkspace() ?? ""),
+                sourceUrl: null,
+              },
+            ],
             toMarkdown: {
               ...schema.toMarkdown,
               runner: (state, node) => {

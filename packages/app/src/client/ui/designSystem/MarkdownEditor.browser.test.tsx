@@ -214,6 +214,49 @@ test("링크 도구에서 Windows 경로 링크의 주소를 고치지 않고 �
   await expect.poll(() => changed.mock.lastCall?.[0]).toBe("[a](C:\\work\\.beads\\a.md) 끝고침");
 });
 
+test("링크 도구는 Windows 경로 링크의 주소를 문장부호 앞 역슬래시를 살린 원문 경로로 보여 주고, 복사하고, 수정 칸에 채운다", async () => {
+  const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value={"[a](C:\\work\\.beads\\a.md) 끝"} label="설명" />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText(/끝$/).click();
+  await editor.getByRole("link", { name: "a" }).hover();
+  await expect.poll(() => visible(".link-preview .link-display")).toBeTruthy();
+
+  expect(visible(".link-preview .link-display")!.textContent).toBe("C:\\work\\.beads\\a.md");
+  await userEvent.click(visible(".link-preview .link-icon")!);
+  await expect.poll(() => writeText.mock.lastCall?.[0]).toBe("C:\\work\\.beads\\a.md");
+  await userEvent.click(visible(".link-edit-button")!);
+  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
+  expect((visible(".link-edit input") as HTMLInputElement).value).toBe("C:\\work\\.beads\\a.md");
+  writeText.mockRestore();
+});
+
+test("링크 도구의 수정 칸에서 Windows 경로 링크의 주소를 일부만 고쳐 확인하면 고친 경로를 역슬래시가 빠지지 않게 저장한다", async () => {
+  const changed = vi.fn<(markdown: string) => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value={"[a](C:\\work\\.beads\\a.md) 끝"} label="설명" onChange={changed} />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText(/끝$/).click();
+  await editor.getByRole("link", { name: "a" }).hover();
+  await expect.poll(() => visible(".link-edit-button")).toBeTruthy();
+  await userEvent.click(visible(".link-edit-button")!);
+  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
+  await userEvent.click(visible(".link-edit input")!);
+  await userEvent.keyboard("{End}{Backspace}{Backspace}{Backspace}{Backspace}b.md{Enter}");
+
+  // 기본 직렬화가 문장부호 앞 `\`를 `\\`로 escape하므로, 이 주소는 CommonMark로 파싱해도 고친 경로가 됩니다.
+  await expect.poll(() => changed.mock.lastCall?.[0]).toBe("[a](C:\\work\\\\.beads\\b.md) 끝");
+  const href = editor.getByRole("link", { name: "a" }).element().getAttribute("href");
+  expect(localPath(href)).toBe("C:\\work\\.beads\\b.md");
+});
+
 /** 열려 있는 링크 도구의 주소 칸에 `address`를 넣고 Enter로 확인합니다. */
 async function confirmLinkAddress(address: string) {
   await expect.poll(() => visible(".link-edit input")).toBeTruthy();

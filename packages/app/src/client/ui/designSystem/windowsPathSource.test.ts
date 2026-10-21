@@ -70,25 +70,26 @@ function linkMarkdown(url: string, sourceUrl?: string) {
 }
 
 test.each([
-  ["C:\\work.beads\\a.md", "C:\\work\\.beads\\a.md", "[a](C:\\work\\.beads\\a.md)"],
-  ["d:\\work.x\\조사 결과.md", "d:\\work\\.x\\조사 결과.md", "[a](<d:\\work\\.x\\조사 결과.md>)"],
-])("원문 주소가 지금 주소로 파싱되면 원문 주소를 쓴다: %s", (url, sourceUrl, markdown) => {
+  ["C:\\work\\.beads\\a.md", "C:\\work\\.beads\\a.md", "[a](C:\\work\\.beads\\a.md)"],
+  ["d:\\work\\.x\\조사 결과.md", "d:\\work\\.x\\조사 결과.md", "[a](<d:\\work\\.x\\조사 결과.md>)"],
+  ["C:\\work\\.beads\\a.md", "C:\\work\\\\.beads\\a.md", "[a](C:\\work\\\\.beads\\a.md)"],
+])("원문 주소가 가리키는 경로가 지금 주소이면 원문 주소를 쓴다: %s", (url, sourceUrl, markdown) => {
   expect(linkMarkdown(url, sourceUrl)).toBe(markdown);
 });
 
 test.each([
   ["원문 주소가 없으면", "C:/x/y.md", undefined, "[a](C:/x/y.md)"],
   [
-    "편집기에서 주소를 고쳐 원문 주소가 지금 주소로 파싱되지 않으면",
+    "편집기에서 주소를 고쳐 원문 주소가 가리키는 경로가 지금 주소와 다르면",
     "docs/b.md",
     "C:\\work\\.beads\\a.md",
     "[a](docs/b.md)",
   ],
   [
     "원문 주소를 괄호 없는 주소로 쓸 수 없으면",
-    "C:\\x.y(b.md",
     "C:\\x\\.y(b.md",
-    "[a](C:\\x.y\\(b.md)",
+    "C:\\x\\.y(b.md",
+    "[a](C:\\x\\\\.y\\(b.md)",
   ],
 ])("%s 지금 주소를 escape해서 쓴다", (_, url, sourceUrl, markdown) => {
   expect(linkMarkdown(url, sourceUrl)).toBe(markdown);
