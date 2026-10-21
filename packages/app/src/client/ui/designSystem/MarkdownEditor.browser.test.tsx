@@ -6,6 +6,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { cdp, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
+import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
 import { MarkdownEditor } from "./MarkdownEditor";
 
@@ -45,6 +46,36 @@ test("읽기 전용 편집기는 markdown을 서식대로 그리고, 원문 HTML
   expect(screen.container.textContent).not.toContain("##");
   expect(screen.container.textContent).toContain("<b>원문 HTML</b>");
   expect(screen.container.querySelector("b")).toBeNull();
+});
+
+test("드라이브 문자로 시작하는 Windows 절대경로의 링크와 이미지는 로컬 파일 API 주소로 그리고, 허용하지 않는 scheme의 링크 주소는 비운다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        readOnly
+        value={
+          "[슬래시 문서](C:/x/y.md) ![역슬래시 그림](C:\\x\\y.png) [공백 문서](<d:\\work\\조사 결과.md>) [스크립트](javascript:alert(1))"
+        }
+      />
+    </LocaleProvider>,
+  );
+
+  const localPath = (url: string | null) => {
+    const parsed = new URL(url ?? "", location.href);
+    return parsed.pathname === LOCAL_FILES_PATH ? parsed.searchParams.get("path") : null;
+  };
+  const image = screen.getByRole("img", { name: "역슬래시 그림" });
+  await expect.element(image).toBeInTheDocument();
+  expect(localPath(image.element().getAttribute("src"))).toBe("C:\\x\\y.png");
+  const links = [
+    ["슬래시 문서", "C:/x/y.md"],
+    ["공백 문서", "d:\\work\\조사 결과.md"],
+  ];
+  for (const [name, path] of links) {
+    const href = screen.getByRole("link", { name }).element().getAttribute("href");
+    expect(localPath(href)).toBe(path);
+  }
+  expect(screen.getByText("스크립트").element().closest("a")?.getAttribute("href")).toBe("");
 });
 
 test("제목으로 시작하는 본문은 읽을 때도 편집할 때도 글자를 고르는 동안 움직이지 않는다", async () => {

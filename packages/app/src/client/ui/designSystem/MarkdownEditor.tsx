@@ -138,7 +138,12 @@ export function MarkdownEditor({
             ...schema,
             toDOM: (mark) => {
               const dom = schema.toDOM!(mark, false) as [string, Record<string, unknown>];
-              const href = localMarkdownUrl(String(dom[1].href), documentWorkspace() ?? "");
+              // Milkdown은 http, https, mailto 같은 허용 scheme 밖의 href를 비웁니다. `C:/a.md`처럼 드라이브 문자가
+              // scheme으로 읽히는 Windows 경로도 비워지므로, 앱 안 주소로 바뀌는 href는 원래 값에서 바꾸고
+              // 바뀌지 않는 href만 Milkdown이 거른 값을 씁니다.
+              const original = String(mark.attrs.href);
+              const opened = localMarkdownUrl(original, documentWorkspace() ?? "");
+              const href = opened === original ? dom[1].href : opened;
               return [dom[0], { ...dom[1], href }];
             },
           };

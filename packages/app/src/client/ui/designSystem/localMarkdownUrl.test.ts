@@ -19,12 +19,22 @@ test.each([
   "//example.com/a",
   "#heading",
   "relative.md",
+  "x:y",
+  "c:relative.md",
 ])("기존 URL을 유지한다: %s", (url) => {
   expect(localMarkdownUrl(url, "demo")).toBe(url);
 });
 
 test.each(["/Users/me/조사 결과.md", "/tmp/a.png", "/etc/hosts", "/Volumes/작업 트리/result.md"])(
   "절대경로를 파일 API로 연결한다: %s",
+  (path) => {
+    expect(localMarkdownUrl(path, "demo")).toBe(localFileUrl(path, "demo"));
+    expect(localMarkdownUrl(encodeURI(path), "demo")).toBe(localFileUrl(path, "demo"));
+  },
+);
+
+test.each(["C:\\Users\\me\\조사 결과.md", "C:/tmp/a.png", "d:\\work\\result.md"])(
+  "드라이브 문자로 시작하는 Windows 절대경로를 파일 API로 연결한다: %s",
   (path) => {
     expect(localMarkdownUrl(path, "demo")).toBe(localFileUrl(path, "demo"));
     expect(localMarkdownUrl(encodeURI(path), "demo")).toBe(localFileUrl(path, "demo"));
