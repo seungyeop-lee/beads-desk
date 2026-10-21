@@ -1,3 +1,5 @@
+import { readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { placeCaretAfter } from "../support/editorCaret";
 
@@ -76,3 +78,57 @@ test("새 이슈 창의 설명에 붙여 넣은 mermaid 블록은 Ctrl/Cmd+Enter
     .poll(async () => (await workspace.showIssue(created)).description, { timeout: SAVE_TIMEOUT })
     .toBe(mermaid);
 });
+
+test("일반 코드만 있는 상세는 pele chunk를 받지 않고, pele chunk를 받지 못하면 mermaid 블록에 그림 대신 코드가 보인다", async ({
+  page,
+  workspace,
+}) => {
+  const { plain, mermaid } = await workspace.createIssues({
+    plain: { title: "일반 코드", description: "```ts\nconst value = 1;\n```" },
+    mermaid: {
+      title: "pele 로드 실패",
+      description: "```mermaid\nflowchart LR\n  A[시작] --> B[완료]\n```",
+    },
+  });
+  const chunks = await peleChunks();
+  const scripts = new Set<string>();
+  page.on("request", (request) => {
+    if (request.resourceType() === "script") scripts.add(new URL(request.url()).pathname);
+  });
+
+  await page.goto(`issues?issue=${plain}`);
+  const plainDialog = page.getByRole("dialog", { name: `${plain} 이슈` });
+  await expect(plainDialog.getByText("const value = 1;", { exact: true })).toBeVisible();
+  expect([...scripts].filter((script) => chunks.has(script))).toEqual([]);
+
+  let blocked = 0;
+  await page.route("**/_next/static/chunks/*.js", async (route) => {
+    if (chunks.has(new URL(route.request().url()).pathname)) {
+      blocked++;
+      await route.abort();
+    } else await route.continue();
+  });
+  await page.goto(`issues?issue=${mermaid}`);
+  const dialog = page.getByRole("dialog", { name: `${mermaid} 이슈` });
+  await expect.poll(() => blocked).toBeGreaterThan(0);
+  await expect(dialog.locator(".preview-panel")).toHaveCount(0);
+  const code = dialog.locator(".cm-content");
+  await expect(code).toBeVisible();
+  await expect(code).toContainText("flowchart LR");
+});
+
+/**
+ * production build에서 pele module이 들어간 chunk의 주소를 모읍니다. chunk 파일 이름은 build마다 바뀌므로,
+ * pele가 그림 종류를 알아내지 못할 때 던지는 오류 문구가 든 파일을 찾습니다.
+ */
+async function peleChunks(): Promise<Set<string>> {
+  const directory = join(process.cwd(), ".next/static/chunks");
+  const files = (await readdir(directory)).filter((file) => file.endsWith(".js"));
+  const peleFiles: string[] = [];
+  for (const file of files) {
+    if ((await readFile(join(directory, file), "utf8")).includes("No diagram type detected"))
+      peleFiles.push(`/_next/static/chunks/${file}`);
+  }
+  expect(peleFiles.length).toBeGreaterThan(0);
+  return new Set(peleFiles);
+}
