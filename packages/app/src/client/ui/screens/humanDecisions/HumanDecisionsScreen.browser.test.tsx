@@ -61,18 +61,18 @@ vi.mock("@/client/modules/humanDecisions/application/useHumanDecisionCount", () 
 vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({
   useIssueWrites: () => SUCCEEDING_WRITES,
 }));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/human",
-  useSearchParams: () => reads.search,
-  // 화면이 바꾼 주소를 다음 렌더링에서 읽도록 query만 옮겨 둡니다.
-  useRouter: () => ({
-    push: () => {},
-    replace: (href: string) => {
-      reads.search = new URLSearchParams(href.split("?")[1] ?? "");
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/human",
+    search: () => reads.search,
+    // 화면이 바꾼 주소를 다음 렌더링에서 읽도록 query만 옮겨 둡니다.
+    router: {
+      replace: (href) => {
+        reads.search = new URLSearchParams(href.split("?")[1] ?? "");
+      },
     },
   }),
-}));
+);
 
 test("응답한 질문의 상세가 목록보다 먼저 닫힌 상태로 조회돼도 알리지 않고, 목록에서 행이 빠질 때 알린다", async () => {
   const fields = { title: QUESTION_TITLE, labels: ["human"] };

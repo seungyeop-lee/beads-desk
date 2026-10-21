@@ -5,14 +5,14 @@ import { koMessages as messages } from "@/client/modules/locale/domain/koMessage
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { AppHeader } from "./AppHeader";
 
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/focus",
-  useRouter: () => ({ push: () => {}, replace: () => {}, refresh: () => {} }),
-}));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  useIssueHref: () => (id: string) => `/focus?issue=${id}`,
-}));
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/focus",
+  }),
+);
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/focus"),
+);
 
 function renderHeader() {
   return render(

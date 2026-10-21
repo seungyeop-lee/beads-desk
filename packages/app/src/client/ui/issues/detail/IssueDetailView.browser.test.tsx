@@ -10,12 +10,12 @@ import { IssueDetailView } from "./IssueDetailView";
 
 const DETAIL_ADDRESS = "/issues?issue=desk-1";
 
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/issues",
-  useSearchParams: () => new URLSearchParams({ issue: "desk-1" }),
-  useRouter: () => ({ push: () => {}, replace: () => {} }),
-}));
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/issues",
+    search: () => new URLSearchParams({ issue: "desk-1" }),
+  }),
+);
 
 // 사람 확인 영역이 gate마다 읽는 gate 상세는 고정 값으로 바꿉니다.
 vi.mock("@/client/modules/issues/application/useIssueDetail", () => ({

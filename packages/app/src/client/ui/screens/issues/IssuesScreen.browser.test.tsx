@@ -43,16 +43,15 @@ vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({
     run: async (write: () => unknown) => write(),
   }),
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  IssueDetailRoute: () => null,
-  useIssueHref: () => (id: string) => `/issues?issue=${id}`,
-}));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/issues",
-  useSearchParams: () => new URLSearchParams(reads.query),
-  useRouter: () => ({ push: () => {}, replace: () => {} }),
-}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/issues"),
+);
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/issues",
+    search: () => new URLSearchParams(reads.query),
+  }),
+);
 
 test("페이지 끝까지 스크롤해도 상단 머리글이 화면 위에 붙어 있다", async () => {
   reads.issues = ISSUES;

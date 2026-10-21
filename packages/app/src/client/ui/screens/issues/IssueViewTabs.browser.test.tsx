@@ -5,7 +5,9 @@ import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { IssueViewTabs } from "./IssueViewTabs";
 
-vi.mock("next/navigation", () => ({ useParams: () => ({ workspace: "demo" }) }));
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock(),
+);
 
 const GROUPS: WorkStateGroup[] = [
   { state: "in_progress", issues: [issue("doing")] },

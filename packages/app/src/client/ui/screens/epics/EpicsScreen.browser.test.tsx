@@ -36,16 +36,14 @@ vi.mock("@/client/modules/epics/application/useEpics", () => ({
 vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
   useGateTitles: () => new Map(),
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  IssueDetailRoute: () => null,
-  useIssueHref: () => (id: string) => `/epics?issue=${id}`,
-}));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/epics",
-  useSearchParams: () => new URLSearchParams(),
-  useRouter: () => ({ push: () => {}, replace: () => {} }),
-}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/epics"),
+);
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/epics",
+  }),
+);
 
 // 좁은 두 창은 Chrome 110%·100%에서 가장 좁힌 창입니다. 넓은 창에서는 에픽 헤더가 xl 배치로 한 줄에 놓입니다.
 for (const width of [455, 500, 1440]) {
@@ -58,20 +56,24 @@ for (const width of [455, 500, 1440]) {
       </LocaleProvider>,
     );
 
-    for (const fraction of ["10/10", "100/100"]) {
+    for (const { epic, closedChildren, totalChildren } of EPICS) {
+      const fraction = `${closedChildren}/${totalChildren}`;
+      const card = screen.getByRole("article", { name: epic.title, exact: true });
       // 진행 개수는 분수 열과 퍼센트 열을 감싼 요소입니다.
-      const count = screen.getByText(fraction, { exact: true }).element().parentElement!;
-      const card = count.closest("section")!.getBoundingClientRect();
+      const count = card.getByText(`${fraction}·100%`, { exact: true }).element();
+      const columns = [fraction, "·100%"].map((text) =>
+        card.getByText(text, { exact: true }).element(),
+      );
+      const cardBox = card.element().getBoundingClientRect();
       const box = count.getBoundingClientRect();
-      expect(count.textContent).toBe(`${fraction}·100%`);
-      expect(lineCount(count.firstElementChild!), `${width}px ${fraction} 줄 수`).toBe(1);
-      for (const column of count.children) {
+      expect(lineCount(columns[0]!), `${width}px ${fraction} 줄 수`).toBe(1);
+      for (const column of columns) {
         expect(column.scrollWidth, `${width}px ${fraction} 열 넘침`).toBeLessThanOrEqual(
           column.clientWidth,
         );
       }
-      expect(box.left).toBeGreaterThanOrEqual(card.left);
-      expect(box.right).toBeLessThanOrEqual(card.right);
+      expect(box.left).toBeGreaterThanOrEqual(cardBox.left);
+      expect(box.right).toBeLessThanOrEqual(cardBox.right);
     }
     expect(document.documentElement.scrollWidth, `${width}px 페이지 가로 넘침`).toBe(
       document.documentElement.clientWidth,
@@ -123,22 +125,19 @@ for (const width of [2000, 1280, 1100, 768]) {
       );
       await screen.getByRole("button", { expanded: false, name: /Closed epics|닫힌 에픽/ }).click();
 
-      const headers = screen.container.querySelectorAll("section.surface > header");
-      expect(headers).toHaveLength(reads.epics.length);
       const edges = new Map<string, Set<number>>();
       const record = (column: string, value: number) =>
         edges.set(column, (edges.get(column) ?? new Set()).add(Math.round(value)));
-      for (const header of headers) {
-        const card = page.elementLocator(header);
-        const { epic, closedChildren, totalChildren } = reads.epics.find(({ epic }) =>
-          header.textContent!.includes(epic.title),
-        )!;
+      for (const { epic, closedChildren, totalChildren } of reads.epics) {
+        const card = screen.getByRole("article", { name: epic.title, exact: true });
         const chip = card.getByText(statusLabel(MESSAGES[locale], epic.status), { exact: true });
         record("상태 칩 왼쪽", box(chip).left);
         const middle =
           epic.status === "closed"
-            ? header.querySelector("time")
-            : header.querySelector("progress");
+            ? card.element().querySelector("time")
+            : card
+                .getByRole("progressbar", { name: MESSAGES[locale].epics.progress(epic.id) })
+                .element();
         if (middle) {
           record("막대·닫은 날짜 왼쪽", middle.getBoundingClientRect().left);
           record("막대·닫은 날짜 오른쪽", middle.getBoundingClientRect().right);
@@ -187,9 +186,7 @@ test("닫힌 에픽 묶음은 처음에 접혀 있고, 묶음을 펼치면 닫�
 
   await closedGroup.click();
   // 닫힌 카드는 진행률 막대 대신 닫은 날짜와 닫힌 하위 이슈 수를 보입니다.
-  const card = page.elementLocator(
-    screen.getByRole("link", { name: "끝난 에픽" }).element().closest("section")!,
-  );
+  const card = screen.getByRole("article", { name: "끝난 에픽", exact: true });
   await expect.element(card.getByText("닫은 날 2026. 10. 20.", { exact: true })).toBeVisible();
   await expect.element(card.getByText("1/1", { exact: true })).toBeVisible();
   await expect.element(card.getByRole("progressbar")).not.toBeInTheDocument();
@@ -343,8 +340,7 @@ test("에픽과 하위 이슈의 ID는 짧은 ID 복사 단추이고, 하위 이
     },
   };
   const screen = await renderScreen();
-  const card = (title: string) =>
-    page.elementLocator(screen.getByRole("link", { name: title }).element().closest("section")!);
+  const card = (title: string) => screen.getByRole("article", { name: title, exact: true });
 
   for (const id of ["desk-epic", "desk-epic.1", "desk-epic.2"]) {
     const copyButton = screen.getByRole("button", { name: messages.copyId.labelOf(id) });
@@ -476,7 +472,10 @@ for (const [locale, closedOn] of [
 
     for (const text of [closedOn, "1/1"]) {
       const element = screen.getByText(text, { exact: true }).element();
-      const card = element.closest("section")!.getBoundingClientRect();
+      const card = screen
+        .getByRole("article", { name: CLOSED_EPIC.epic.title, exact: true })
+        .element()
+        .getBoundingClientRect();
       const box = element.getBoundingClientRect();
       expect(lineCount(element), `${locale} ${text} 줄 수`).toBe(1);
       expect(box.left, `${locale} ${text} 왼쪽 끝`).toBeGreaterThanOrEqual(card.left);

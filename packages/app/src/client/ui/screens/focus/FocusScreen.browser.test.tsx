@@ -40,16 +40,14 @@ vi.mock("@/client/modules/humanDecisions/application/useHumanDecisionCount", () 
 vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
   useGateTitles: () => reads.gateTitles,
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  IssueDetailRoute: () => null,
-  useIssueHref: () => (id: string) => `/focus?issue=${id}`,
-}));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/focus",
-  useSearchParams: () => new URLSearchParams(),
-  useRouter: () => ({ push: () => {}, replace: () => {} }),
-}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/focus"),
+);
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/focus",
+  }),
+);
 
 // 열린 gate를 정하지 않은 테스트는 gate 없이 그립니다.
 beforeEach(() => {

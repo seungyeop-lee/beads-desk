@@ -8,8 +8,10 @@ import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
+import { codeMirrorDom } from "./codeMirrorDom.testkit";
 import { contrast } from "./colorContrast.testkit";
 import { MarkdownEditor } from "./MarkdownEditor";
+import { milkdownDom } from "./milkdownDom.testkit";
 
 const DIAGRAM = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";
 const TYPESCRIPT = [
@@ -183,10 +185,10 @@ test("편집기에서 Windows 경로 링크의 주소를 고치면 고친 주소
   const editor = screen.getByRole("textbox", { name: "설명" });
   await editor.getByText(/끝$/).click();
   await editor.getByRole("link", { name: "a" }).hover();
-  await expect.poll(() => visible(".link-edit-button")).toBeTruthy();
-  await userEvent.click(visible(".link-edit-button")!);
-  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
-  await userEvent.fill(visible(".link-edit input")!, "docs/b.md");
+  await expect.poll(() => visible(milkdownDom.linkEditButton)).toBeTruthy();
+  await userEvent.click(visible(milkdownDom.linkEditButton)!);
+  await expect.poll(() => visible(milkdownDom.linkInput)).toBeTruthy();
+  await userEvent.fill(visible(milkdownDom.linkInput)!, "docs/b.md");
   await userEvent.keyboard("{Enter}");
 
   await expect.poll(() => changed.mock.lastCall?.[0]).toBe("[a](docs/b.md) 끝");
@@ -206,8 +208,8 @@ test("링크 도구로 고른 글자에 Windows 드라이브 경로를 넣으면
     );
     await screen.getByRole("textbox", { name: "설명" }).getByText("문서 끝").click();
     await userEvent.keyboard("{Home}{Shift>}{ArrowRight}{ArrowRight}{/Shift}");
-    await expect.poll(() => visible('[data-toolbar-item="link"]')).toBeTruthy();
-    await userEvent.click(visible('[data-toolbar-item="link"]')!);
+    await expect.poll(() => visible(milkdownDom.toolbarLinkButton)).toBeTruthy();
+    await userEvent.click(visible(milkdownDom.toolbarLinkButton)!);
     await confirmLinkAddress(address);
 
     await expect.poll(() => changed.mock.lastCall?.[0]).toBe(saved);
@@ -225,16 +227,16 @@ test("링크 도구로 기존 링크의 주소를 Windows 드라이브 경로로
   const editor = screen.getByRole("textbox", { name: "설명" });
   await editor.getByText(/끝$/).click();
   await editor.getByRole("link", { name: "a" }).hover();
-  await expect.poll(() => visible(".link-edit-button")).toBeTruthy();
-  await userEvent.click(visible(".link-edit-button")!);
-  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
-  await userEvent.fill(visible(".link-edit input")!, "C:/work/b.md");
-  await userEvent.click(visible(".link-edit .confirm")!);
+  await expect.poll(() => visible(milkdownDom.linkEditButton)).toBeTruthy();
+  await userEvent.click(visible(milkdownDom.linkEditButton)!);
+  await expect.poll(() => visible(milkdownDom.linkInput)).toBeTruthy();
+  await userEvent.fill(visible(milkdownDom.linkInput)!, "C:/work/b.md");
+  await userEvent.click(visible(milkdownDom.linkConfirmButton)!);
 
   await expect.poll(() => changed.mock.lastCall?.[0]).toBe("[a](C:/work/b.md) 끝");
   const href = editor.getByRole("link", { name: "a" }).element().getAttribute("href");
   expect(localPath(href)).toBe("C:/work/b.md");
-  expect(visible(".link-edit input")).toBeUndefined();
+  expect(visible(milkdownDom.linkInput)).toBeUndefined();
 });
 
 test("링크 도구에서 Windows 경로 링크의 주소를 고치지 않고 확인하면 원문 주소를 그대로 저장한다", async () => {
@@ -247,9 +249,9 @@ test("링크 도구에서 Windows 경로 링크의 주소를 고치지 않고 �
   const editor = screen.getByRole("textbox", { name: "설명" });
   await editor.getByText(/끝$/).click();
   await editor.getByRole("link", { name: "a" }).hover();
-  await expect.poll(() => visible(".link-edit-button")).toBeTruthy();
-  await userEvent.click(visible(".link-edit-button")!);
-  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
+  await expect.poll(() => visible(milkdownDom.linkEditButton)).toBeTruthy();
+  await userEvent.click(visible(milkdownDom.linkEditButton)!);
+  await expect.poll(() => visible(milkdownDom.linkInput)).toBeTruthy();
   await userEvent.keyboard("{Enter}");
   await editor.getByText(/끝$/).click();
   await userEvent.keyboard("{End}고침");
@@ -267,14 +269,14 @@ test("링크 도구는 Windows 경로 링크의 주소를 문장부호 앞 역�
   const editor = screen.getByRole("textbox", { name: "설명" });
   await editor.getByText(/끝$/).click();
   await editor.getByRole("link", { name: "a" }).hover();
-  await expect.poll(() => visible(".link-preview .link-display")).toBeTruthy();
+  await expect.poll(() => visible(milkdownDom.linkPreviewAddress)).toBeTruthy();
 
-  expect(visible(".link-preview .link-display")!.textContent).toBe("C:\\work\\.beads\\a.md");
-  await userEvent.click(visible(".link-preview .link-icon")!);
+  expect(visible(milkdownDom.linkPreviewAddress)!.textContent).toBe("C:\\work\\.beads\\a.md");
+  await userEvent.click(visible(milkdownDom.linkPreviewIcon)!);
   await expect.poll(() => writeText.mock.lastCall?.[0]).toBe("C:\\work\\.beads\\a.md");
-  await userEvent.click(visible(".link-edit-button")!);
-  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
-  expect((visible(".link-edit input") as HTMLInputElement).value).toBe("C:\\work\\.beads\\a.md");
+  await userEvent.click(visible(milkdownDom.linkEditButton)!);
+  await expect.poll(() => visible(milkdownDom.linkInput)).toBeTruthy();
+  expect((visible(milkdownDom.linkInput) as HTMLInputElement).value).toBe("C:\\work\\.beads\\a.md");
   writeText.mockRestore();
 });
 
@@ -288,10 +290,10 @@ test("링크 도구의 수정 칸에서 Windows 경로 링크의 주소를 일�
   const editor = screen.getByRole("textbox", { name: "설명" });
   await editor.getByText(/끝$/).click();
   await editor.getByRole("link", { name: "a" }).hover();
-  await expect.poll(() => visible(".link-edit-button")).toBeTruthy();
-  await userEvent.click(visible(".link-edit-button")!);
-  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
-  await userEvent.click(visible(".link-edit input")!);
+  await expect.poll(() => visible(milkdownDom.linkEditButton)).toBeTruthy();
+  await userEvent.click(visible(milkdownDom.linkEditButton)!);
+  await expect.poll(() => visible(milkdownDom.linkInput)).toBeTruthy();
+  await userEvent.click(visible(milkdownDom.linkInput)!);
   await userEvent.keyboard("{End}{Backspace}{Backspace}{Backspace}{Backspace}b.md{Enter}");
 
   // 기본 직렬화가 문장부호 앞 `\`를 `\\`로 escape하므로, 이 주소는 CommonMark로 파싱해도 고친 경로가 됩니다.
@@ -324,17 +326,17 @@ test("링크 도구 미리보기의 주소 글자는 경로 종류와 관계없�
   for (const [name, url] of links) {
     const link = editor.getByRole("link", { name });
     await link.hover();
-    await expect.poll(() => visible(".link-preview .link-display")?.textContent).toBe(url);
+    await expect.poll(() => visible(milkdownDom.linkPreviewAddress)?.textContent).toBe(url);
     await expect
-      .poll(() => visible(".link-preview .link-display")!.getAttribute("href"))
+      .poll(() => visible(milkdownDom.linkPreviewAddress)!.getAttribute("href"))
       .toBe(link.element().getAttribute("href"));
   }
 });
 
 /** 열려 있는 링크 도구의 주소 칸에 `address`를 넣고 Enter로 확인합니다. */
 async function confirmLinkAddress(address: string) {
-  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
-  await userEvent.fill(visible(".link-edit input")!, address);
+  await expect.poll(() => visible(milkdownDom.linkInput)).toBeTruthy();
+  await userEvent.fill(visible(milkdownDom.linkInput)!, address);
   await userEvent.keyboard("{Enter}");
 }
 
@@ -377,7 +379,7 @@ test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고, 모
   await userEvent.keyboard("{End} 고침");
   await expect.poll(() => diagramColors(screen.container)).toHaveLength(2);
   const light = diagramColors(screen.container);
-  const diagrams = Array.from(screen.container.querySelectorAll(".preview svg"));
+  const diagrams = Array.from(screen.container.querySelectorAll(milkdownDom.previewDiagram));
 
   document.documentElement.dataset.theme = "desk-dark";
   await expect
@@ -412,10 +414,10 @@ test("어두운 테마에서 코드 블록의 모든 강조 토큰은 블록 바
   );
   await expect.poll(() => tokenColor(screen.container, "return")).not.toBe("");
   const background = getComputedStyle(
-    screen.container.querySelector(".milkdown-code-block")!,
+    screen.container.querySelector(milkdownDom.codeBlock)!,
   ).backgroundColor;
 
-  const tokens = screen.container.querySelectorAll<HTMLElement>(".cm-line span");
+  const tokens = screen.container.querySelectorAll<HTMLElement>(codeMirrorDom.token);
   expect(tokens.length).toBeGreaterThan(20);
   for (const token of tokens) {
     const color = getComputedStyle(token).color;
@@ -435,11 +437,11 @@ test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고, 코
   await editor.getByText("저장 전 문단").click();
   await userEvent.keyboard("{End} 고침");
   await expect.poll(() => tokenColor(screen.container, "return")).toBe(LIGHT_KEYWORD);
-  const code = screen.container.querySelector(".cm-content")!;
+  const code = screen.container.querySelector(codeMirrorDom.content)!;
 
   document.documentElement.dataset.theme = "desk-dark";
   const background = getComputedStyle(
-    screen.container.querySelector(".milkdown-code-block")!,
+    screen.container.querySelector(milkdownDom.codeBlock)!,
   ).backgroundColor;
   expect(contrast(tokenColor(screen.container, "return"), background)).toBeGreaterThanOrEqual(4.5);
   await expect.element(editor.getByText("저장 전 문단 고침")).toBeVisible();
@@ -457,7 +459,9 @@ test("어두운 테마에서도 코드 블록의 현재 줄, 고른 글자, 괄�
     </LocaleProvider>,
   );
   await expect.poll(() => tokenColor(screen.container, "return")).not.toBe("");
-  const view = EditorView.findFromDOM(screen.container.querySelector<HTMLElement>(".cm-editor")!)!;
+  const view = EditorView.findFromDOM(
+    screen.container.querySelector<HTMLElement>(codeMirrorDom.editor)!,
+  )!;
   const afterBracket = view.state.doc.toString().indexOf("create(") + "create(".length;
   view.focus();
 
@@ -474,7 +478,7 @@ test("어두운 테마에서도 코드 블록의 현재 줄, 고른 글자, 괄�
   expect(dark.activeLine).toBeGreaterThanOrEqual(light.activeLine);
   expect(dark.selection).toBeGreaterThanOrEqual(light.selection);
   expect(dark.matchingBracket).toBeGreaterThanOrEqual(light.matchingBracket);
-  const tokens = view.dom.querySelectorAll<HTMLElement>(".cm-activeLine span");
+  const tokens = view.dom.querySelectorAll<HTMLElement>(codeMirrorDom.activeLineToken);
   expect(tokens.length).toBeGreaterThan(5);
   for (const token of tokens) {
     const color = getComputedStyle(token).color;
@@ -491,17 +495,17 @@ test("어두운 테마에서도 코드 블록의 같은 낱말 강조, 검색 �
 
   const word = doc.indexOf("intent ");
   view.dispatch({ selection: { anchor: word, head: word + "intent".length } });
-  const selectionMatch = await markOverText(view, ".cm-selectionMatch");
+  const selectionMatch = await markOverText(view, codeMirrorDom.selectionMatch);
 
   view.dispatch({ selection: { anchor: 0 } });
   await userEvent.keyboard("{ControlOrMeta>}f{/ControlOrMeta}intent{Enter}");
-  const searchMatch = await markOverText(view, ".cm-searchMatch:not(.cm-searchMatch-selected)");
-  const currentSearchMatch = await markOverText(view, ".cm-searchMatch-selected");
+  const searchMatch = await markOverText(view, codeMirrorDom.searchMatch);
+  const currentSearchMatch = await markOverText(view, codeMirrorDom.currentSearchMatch);
   await userEvent.keyboard("{Escape}");
 
   await typeOnNewLastLine(view, "for");
   await userEvent.click(await completionOption(view));
-  const snippetField = await markOverText(view, ".cm-snippetField");
+  const snippetField = await markOverText(view, codeMirrorDom.snippetField);
 
   const marks = { selectionMatch, searchMatch, currentSearchMatch, snippetField };
   // 밝은 테마는 CodeMirror 기본 테마의 색 그대로입니다.
@@ -531,13 +535,15 @@ test("어두운 테마에서도 코드 블록의 caret과 끌어 놓을 자리 �
       dataTransfer: new DataTransfer(),
     }),
   );
-  await expect.poll(() => view.dom.querySelector(".cm-cursor")).not.toBeNull();
-  await expect.poll(() => view.dom.querySelector(".cm-dropCursor")).not.toBeNull();
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.cursor)).not.toBeNull();
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.dropCursor)).not.toBeNull();
 
   const cursors = inBothThemes(() => {
     const background = getComputedStyle(view.dom).backgroundColor;
-    const caret = getComputedStyle(view.dom.querySelector(".cm-cursor")!).borderLeftColor;
-    const dropCursor = getComputedStyle(view.dom.querySelector(".cm-dropCursor")!).borderLeftColor;
+    const caret = getComputedStyle(view.dom.querySelector(codeMirrorDom.cursor)!).borderLeftColor;
+    const dropCursor = getComputedStyle(
+      view.dom.querySelector(codeMirrorDom.dropCursor)!,
+    ).borderLeftColor;
     return {
       colors: { caret, dropCursor },
       caret: contrast(caret, background),
@@ -557,9 +563,9 @@ test("어두운 테마에서도 코드 블록의 자동 완성 목록은 밝은 
 
   const tooltip = inBothThemes(() => {
     const background = getComputedStyle(view.dom).backgroundColor;
-    const box = getComputedStyle(view.dom.querySelector(".cm-tooltip-autocomplete")!);
+    const box = getComputedStyle(view.dom.querySelector(codeMirrorDom.completionList)!);
     const item = getComputedStyle(
-      view.dom.querySelector(".cm-tooltip-autocomplete li:not([aria-selected])")!,
+      view.dom.querySelector(codeMirrorDom.unselectedCompletionOption)!,
     ).color;
     return {
       colors: { background: box.backgroundColor, border: box.borderTopColor, item },
@@ -584,12 +590,14 @@ test("어두운 테마에서도 코드 블록의 접힌 코드 자리 표시는 
   const view = await renderCodeEditor(TYPESCRIPT);
   view.dispatch({ selection: { anchor: view.state.doc.line(3).from } });
   expect(foldCode(view)).toBe(true);
-  await expect.poll(() => view.dom.querySelector(".cm-foldPlaceholder")).not.toBeNull();
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.foldPlaceholder)).not.toBeNull();
 
   const fold = inBothThemes(() => {
     const background = getComputedStyle(view.dom).backgroundColor;
-    const activeLine = getComputedStyle(view.dom.querySelector(".cm-activeLine")!).backgroundColor;
-    const placeholder = getComputedStyle(view.dom.querySelector(".cm-foldPlaceholder")!);
+    const activeLine = getComputedStyle(
+      view.dom.querySelector(codeMirrorDom.activeLine)!,
+    ).backgroundColor;
+    const placeholder = getComputedStyle(view.dom.querySelector(codeMirrorDom.foldPlaceholder)!);
     const line = paint(background, activeLine);
     const fill = paint(background, activeLine, placeholder.backgroundColor);
     return {
@@ -619,7 +627,7 @@ test("어두운 테마에서도 코드 블록의 줄 이동 dialog에 있는 go 
   const { goButton } = await openLineDialogWithSearch(view);
   const read = () => {
     const button = getComputedStyle(goButton);
-    const panel = getComputedStyle(goButton.closest(".cm-panel")!);
+    const panel = getComputedStyle(goButton.closest(codeMirrorDom.panel)!);
     const stops = Array.from(button.backgroundImage.matchAll(/rgba?\([^)]*\)/g), ([stop]) => stop);
     return {
       colors: {
@@ -682,11 +690,13 @@ test("그림의 한글 라벨은 노드 상자 안에 들어가고, 지원하지
     </LocaleProvider>,
   );
   await expect.poll(() => diagramColors(screen.container)).toHaveLength(1);
-  const [unsupported, diagram] = screen.container.querySelectorAll(".milkdown-code-block");
+  const [unsupported, diagram] = screen.container.querySelectorAll(milkdownDom.codeBlock);
 
-  expect(unsupported!.querySelector(".preview-panel")).toBeNull();
-  await expect.element(unsupported!.querySelector<HTMLElement>(".cm-content")).toBeVisible();
-  const nodes = diagram!.querySelectorAll(".preview svg .pele-node");
+  expect(unsupported!.querySelector(milkdownDom.previewPanel)).toBeNull();
+  await expect
+    .element(unsupported!.querySelector<HTMLElement>(codeMirrorDom.content))
+    .toBeVisible();
+  const nodes = diagram!.querySelectorAll(`${milkdownDom.previewDiagram} .pele-node`);
   expect(nodes).toHaveLength(2);
   for (const node of nodes) {
     const box = node.querySelector("rect")!.getBoundingClientRect();
@@ -708,7 +718,9 @@ test("그려진 그림만 눌러 크게 볼 수 있고, 크게 본 그림은 원
     </LocaleProvider>,
   );
   await expect.poll(() => diagramColors(screen.container)).toHaveLength(1);
-  const [unsupported, plain] = screen.container.querySelectorAll<HTMLElement>(".cm-content");
+  const [unsupported, plain] = screen.container.querySelectorAll<HTMLElement>(
+    codeMirrorDom.content,
+  );
   await userEvent.click(unsupported!);
   await userEvent.click(plain!);
   expect(document.querySelector("dialog")).toBeNull();
@@ -716,7 +728,7 @@ test("그려진 그림만 눌러 크게 볼 수 있고, 크게 본 그림은 원
   await screen.getByRole("button", { name: "그림 크게 보기" }).click();
   const dialog = page.getByRole("dialog", { name: "크게 본 그림" });
   await expect.element(dialog).toBeVisible();
-  const original = screen.container.querySelector<SVGSVGElement>(".preview svg")!;
+  const original = screen.container.querySelector<SVGSVGElement>(milkdownDom.previewDiagram)!;
   const enlarged = dialog.element().querySelector<SVGSVGElement>("svg.pele")!;
   expect(enlarged.getBoundingClientRect().width).toBeGreaterThan(
     original.getBoundingClientRect().width,
@@ -791,9 +803,9 @@ test("읽기 화면의 그림은 코드를 숨기고 간선 글자까지 그리�
   );
   await expect.poll(() => diagramColors(screen.container)).toHaveLength(3);
 
-  for (const block of screen.container.querySelectorAll(".milkdown-code-block")) {
-    expect(block.querySelector<HTMLElement>(".cm-content")!.checkVisibility()).toBe(false);
-    expect(block.querySelector(".preview svg")!.textContent).toContain("처리");
+  for (const block of screen.container.querySelectorAll(milkdownDom.codeBlock)) {
+    expect(block.querySelector<HTMLElement>(codeMirrorDom.content)!.checkVisibility()).toBe(false);
+    expect(block.querySelector(milkdownDom.previewDiagram)!.textContent).toContain("처리");
   }
   const ids = Array.from(
     screen.container.querySelectorAll("[data-mermaid-preview] > svg [id]"),
@@ -819,9 +831,9 @@ test("새 이슈 설명처럼 빈 편집기에 붙여 넣은 그림은 코드와
       new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }),
     );
   await expect.poll(() => diagramColors(screen.container)).toHaveLength(1);
-  const block = screen.container.querySelector<HTMLElement>(".milkdown-code-block")!;
-  const code = block.querySelector<HTMLElement>(".cm-content")!;
-  const preview = () => block.querySelector(".preview svg")?.textContent ?? null;
+  const block = screen.container.querySelector<HTMLElement>(milkdownDom.codeBlock)!;
+  const code = block.querySelector<HTMLElement>(codeMirrorDom.content)!;
+  const preview = () => block.querySelector(milkdownDom.previewDiagram)?.textContent ?? null;
 
   await expect.element(code).toBeVisible();
   await expect.element(screen.getByText("미리보기", { exact: true })).toBeVisible();
@@ -832,10 +844,10 @@ test("새 이슈 설명처럼 빈 편집기에 붙여 넣은 그림은 코드와
     await userEvent.fill(code, `flowchart LR\n A[${input}] --> B`);
   }
   await expect.poll(preview).toContain("마지막 입력");
-  expect(block.querySelector(".preview")!.textContent).not.toContain("첫 입력");
+  expect(block.querySelector(milkdownDom.preview)!.textContent).not.toContain("첫 입력");
 
   await userEvent.fill(code, "flowchart LR\n A[");
-  await expect.poll(() => block.querySelector(".preview-panel")).toBeNull();
+  await expect.poll(() => block.querySelector(milkdownDom.previewPanel)).toBeNull();
   await expect.element(code).toBeVisible();
   await userEvent.fill(code, "flowchart LR\n  A[시작] -->|처리| B[완료]");
   await expect.poll(preview).toContain("시작");
@@ -902,17 +914,17 @@ function nextFrame() {
 async function codeIndicators(view: EditorView, at: number) {
   const background = getComputedStyle(view.dom).backgroundColor;
   view.dispatch({ selection: { anchor: at } });
-  await expect.poll(() => view.dom.querySelector(".cm-matchingBracket")).not.toBeNull();
-  const activeLine = getComputedStyle(view.dom.querySelector(".cm-activeLine")!).backgroundColor;
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.matchingBracket)).not.toBeNull();
+  const activeLine = getComputedStyle(
+    view.dom.querySelector(codeMirrorDom.activeLine)!,
+  ).backgroundColor;
   const matchingBracket = getComputedStyle(
-    view.dom.querySelector(".cm-matchingBracket")!,
+    view.dom.querySelector(codeMirrorDom.matchingBracket)!,
   ).backgroundColor;
   view.dispatch({ selection: { anchor: at - 10, head: at } });
-  await expect
-    .poll(() => view.dom.querySelector(".cm-selectionLayer .cm-selectionBackground"))
-    .not.toBeNull();
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.selection)).not.toBeNull();
   const selection = getComputedStyle(
-    view.dom.querySelector(".cm-selectionLayer .cm-selectionBackground")!,
+    view.dom.querySelector(codeMirrorDom.selection)!,
   ).backgroundColor;
 
   const line = paint(background, activeLine);
@@ -934,7 +946,9 @@ async function renderCodeEditor(value: string) {
     </LocaleProvider>,
   );
   await expect.poll(() => tokenColor(screen.container, "return")).not.toBe("");
-  const view = EditorView.findFromDOM(screen.container.querySelector<HTMLElement>(".cm-editor")!)!;
+  const view = EditorView.findFromDOM(
+    screen.container.querySelector<HTMLElement>(codeMirrorDom.editor)!,
+  )!;
   view.focus();
   return view;
 }
@@ -962,22 +976,22 @@ async function typeOnNewLastLine(view: EditorView, text: string) {
 
 /** 열린 자동 완성 목록의 첫 항목입니다. 목록이 열릴 때까지 기다립니다. */
 async function completionOption(view: EditorView) {
-  await expect.poll(() => view.dom.querySelector(".cm-tooltip-autocomplete li")).not.toBeNull();
-  return view.dom.querySelector<HTMLElement>(".cm-tooltip-autocomplete li")!;
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.completionOption)).not.toBeNull();
+  return view.dom.querySelector<HTMLElement>(codeMirrorDom.completionOption)!;
 }
 
 /** 코드 블록에서 검색 panel을 연 뒤 줄 이동 dialog(Mod-Alt-g)를 열고, 두 panel의 버튼을 돌려줍니다. */
 async function openLineDialogWithSearch(view: EditorView) {
   view.dispatch({ selection: { anchor: 0 } });
   await userEvent.keyboard("{ControlOrMeta>}f{/ControlOrMeta}");
-  await expect.poll(() => view.dom.querySelector(".cm-search")).not.toBeNull();
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.searchPanel)).not.toBeNull();
   view.focus();
   await userEvent.keyboard("{ControlOrMeta>}{Alt>}g{/Alt}{/ControlOrMeta}");
-  await expect.poll(() => view.dom.querySelector(".cm-dialog")).not.toBeNull();
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.lineDialog)).not.toBeNull();
   return {
-    goButton: view.dom.querySelector<HTMLElement>(".cm-dialog form button.cm-button")!,
-    closeButton: view.dom.querySelector<HTMLElement>(".cm-dialog-close")!,
-    searchCloseButton: view.dom.querySelector<HTMLElement>(".cm-search [name=close]")!,
+    goButton: view.dom.querySelector<HTMLElement>(codeMirrorDom.lineDialogGoButton)!,
+    closeButton: view.dom.querySelector<HTMLElement>(codeMirrorDom.lineDialogCloseButton)!,
+    searchCloseButton: view.dom.querySelector<HTMLElement>(codeMirrorDom.searchCloseButton)!,
   };
 }
 
@@ -1024,10 +1038,12 @@ async function markOverText(view: EditorView, selector: string) {
   await expect.poll(() => view.dom.querySelector(selector)).not.toBeNull();
   return inBothThemes(() => {
     const background = getComputedStyle(view.dom).backgroundColor;
-    const activeLine = getComputedStyle(view.dom.querySelector(".cm-activeLine")!).backgroundColor;
+    const activeLine = getComputedStyle(
+      view.dom.querySelector(codeMirrorDom.activeLine)!,
+    ).backgroundColor;
     const color = getComputedStyle(view.dom.querySelector(selector)!).backgroundColor;
     const marked = paint(background, activeLine, color);
-    const textColors = [view.dom, ...view.dom.querySelectorAll(".cm-line span")].map(
+    const textColors = [view.dom, ...view.dom.querySelectorAll(codeMirrorDom.token)].map(
       (element) => getComputedStyle(element).color,
     );
     return {
@@ -1051,15 +1067,18 @@ function paint(...colors: string[]) {
 
 /** 그림이 그려진 블록마다 첫 노드의 채움 색을 돌려줍니다. */
 function diagramColors(container: HTMLElement) {
-  return Array.from(container.querySelectorAll(".milkdown-code-block .preview svg"), (svg) => {
-    const node = svg.querySelector(".pele-node rect");
-    return node ? getComputedStyle(node).fill : "";
-  });
+  return Array.from(
+    container.querySelectorAll(`${milkdownDom.codeBlock} ${milkdownDom.previewDiagram}`),
+    (svg) => {
+      const node = svg.querySelector(".pele-node rect");
+      return node ? getComputedStyle(node).fill : "";
+    },
+  );
 }
 
 /** 코드 블록에서 글자가 text인 첫 강조 토큰의 글자 색입니다. 언어를 불러와 강조하기 전에는 빈 문자열입니다. */
 function tokenColor(container: HTMLElement, text: string) {
-  const token = Array.from(container.querySelectorAll(".cm-line span")).find(
+  const token = Array.from(container.querySelectorAll(codeMirrorDom.token)).find(
     (span) => span.textContent === text,
   );
   return token ? getComputedStyle(token).color : "";

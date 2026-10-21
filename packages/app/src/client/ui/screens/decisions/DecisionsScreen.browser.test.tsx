@@ -26,10 +26,11 @@ const DECISIONS: DecisionSummary[] = [
 vi.mock("@/client/modules/decisions/application/useDecisions", () => ({
   useDecisions: () => ({ data: DECISIONS, error: null, loading: false }),
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  IssueDetailRoute: () => null,
-  useIssueHref: () => (id: string) => `/decisions?issue=${id}`,
-}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock(
+    "/decisions",
+  ),
+);
 
 /** e2e가 쓰던 창 폭입니다. Chrome 110%에서 폭 500px 창의 CSS viewport는 454px이고, 세로 scrollbar가 항상 보이면 441px입니다. */
 const WIDTHS = [441, 454, 480, 500, 768, 1024, 1440];

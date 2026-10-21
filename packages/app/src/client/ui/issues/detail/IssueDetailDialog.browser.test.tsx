@@ -28,12 +28,13 @@ vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({
     run: async (write: (workspace: string) => unknown) => write("demo"),
   }),
 }));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/issues",
-  useSearchParams: () => new URLSearchParams({ issue: "desk-1" }),
-  useRouter: () => ({ push: router.push, replace: () => {} }),
-}));
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/issues",
+    search: () => new URLSearchParams({ issue: "desk-1" }),
+    router,
+  }),
+);
 
 function Screen({
   side = null,

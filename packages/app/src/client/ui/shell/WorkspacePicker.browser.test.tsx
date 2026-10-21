@@ -5,11 +5,12 @@ import { koMessages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { WorkspacePicker } from "./WorkspacePicker";
 
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "first" }),
-  usePathname: () => "/w/first/issues",
-  useRouter: () => ({ push: vi.fn<(href: string) => void>() }),
-}));
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    workspace: "first",
+    screenPath: "/issues",
+  }),
+);
 const FIRST = { root: "/workspaces/first", slug: "first" };
 const SECOND = { root: "/workspaces/second", slug: "second" };
 

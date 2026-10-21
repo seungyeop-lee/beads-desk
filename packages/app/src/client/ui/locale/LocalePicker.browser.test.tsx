@@ -7,9 +7,11 @@ import { LocaleProvider } from "./LocaleProvider";
 
 const refresh = vi.hoisted(() => vi.fn<() => void>());
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: () => {}, replace: () => {}, refresh }),
-}));
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    router: { refresh },
+  }),
+);
 
 test("지금 언어를 선택된 값으로 보이고, 언어를 고르면 서버가 읽을 쿠키에 남긴 뒤 화면을 다시 그리게 한다", async () => {
   onTestFinished(() => {

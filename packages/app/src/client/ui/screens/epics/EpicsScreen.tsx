@@ -3,7 +3,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useDeferredValue, useMemo, useState, type ReactNode } from "react";
+import { useDeferredValue, useId, useMemo, useState, type ReactNode } from "react";
 import { useEpicDescendants, useEpics } from "@/client/modules/epics/application/useEpics";
 import { groupEpics, type EpicGroupKind } from "@/client/modules/epics/domain/epicGroups";
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
@@ -224,8 +224,9 @@ function EpicSection({
   const { epic, totalChildren, closedChildren } = summary;
   const graphHref = useGraphHref();
   const messages = useMessages();
+  const titleId = useId();
   return (
-    <section className="surface">
+    <article className="surface" aria-labelledby={titleId}>
       <header className="grid grid-cols-[2rem_3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 py-2 xl:flex xl:gap-4 pr-5 pl-3">
         <button
           type="button"
@@ -242,6 +243,7 @@ function EpicSection({
           className="w-12 shrink-0 rounded text-left text-xs text-base-content/55"
         />
         <Link
+          id={titleId}
           className="min-w-0 grow text-[15px] wrap-anywhere font-semibold decoration-base-content/30 underline-offset-4 hover:underline"
           href={issueHref(epic.id)}
           scroll={false}
@@ -294,7 +296,7 @@ function EpicSection({
           writes={writes}
         />
       )}
-    </section>
+    </article>
   );
 }
 

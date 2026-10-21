@@ -8,6 +8,7 @@ import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { GraphScreen } from "./GraphScreen";
+import { reactFlowDom } from "./reactFlowDom.testkit";
 
 let graph: GraphData = { issues: [], dependencies: [], ancestorEpics: {} };
 let address = new URLSearchParams();
@@ -18,18 +19,19 @@ let detailShown = false;
 vi.mock("@/client/modules/graph/application/useGraph", () => ({
   useGraph: () => ({ data: graph, error: null, loading: false }),
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () => ({
+  ...(await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock(
+    "/graph",
+  ),
   IssueDetailRoute: () =>
     detailShown ? <section aria-label="상세 자리" className="h-96 w-full shrink-0" /> : null,
-  useIssueHref: () => (id: string) => `/graph?issue=${id}`,
-  useScreenDetailReady: () => true,
 }));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/graph",
-  useSearchParams: () => address,
-  useRouter: () => ({ push: () => {}, replace: () => {} }),
-}));
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/graph",
+    search: () => address,
+  }),
+);
 
 async function renderGraph(scope: "epic" | "center", id: string, data: GraphData) {
   graph = data;
@@ -214,11 +216,11 @@ function cardText(container: Locator, title: string) {
 async function coveredEdges(screen: Awaited<ReturnType<typeof renderGraph>>, count: number) {
   const canvas = screen.getByRole("region", { name: "의존 그래프" }).element();
   await expect.poll(() => canvas.querySelectorAll("path[data-edge]").length).toBe(count);
-  const boxes = [...canvas.querySelectorAll<HTMLElement>(".react-flow__node")].map((node) => ({
+  const boxes = [...canvas.querySelectorAll<HTMLElement>(reactFlowDom.node)].map((node) => ({
     id: node.dataset.id!,
     box: node.getBoundingClientRect(),
   }));
-  return [...canvas.querySelectorAll<SVGGElement>(".react-flow__edge")].flatMap((edge) => {
+  return [...canvas.querySelectorAll<SVGGElement>(reactFlowDom.edge)].flatMap((edge) => {
     const [from, to] = edge.dataset.id!.replace(/^[^:]*:/, "").split("->");
     const points = pathPoints(edge.querySelector<SVGPathElement>("path[data-edge]")!);
     const covering = boxes
@@ -296,7 +298,7 @@ test("4단계 에픽은 선후 관계 없음 목록을 접고 읽을 수 있는 
 /** 그래프를 끌어 옮겨 기준 위치를 화면 밖으로 보낸 뒤 확대해, 첫 화면과 다른 위치와 배율을 만듭니다. */
 async function moveAwayAndZoomIn(screen: Awaited<ReturnType<typeof renderGraph>>) {
   const canvas = screen.getByRole("region", { name: "의존 그래프" });
-  const viewport = canvas.element().querySelector<HTMLElement>(".react-flow__viewport")!;
+  const viewport = canvas.element().querySelector<HTMLElement>(reactFlowDom.viewport)!;
   const before = viewport.style.transform;
   await dragCanvas(screen);
   await canvas.getByRole("button", { name: "확대" }).click();
@@ -317,7 +319,7 @@ function graphZoom(screen: Awaited<ReturnType<typeof renderGraph>>) {
   const viewport = screen
     .getByRole("region", { name: "의존 그래프" })
     .element()
-    .querySelector<HTMLElement>(".react-flow__viewport")!;
+    .querySelector<HTMLElement>(reactFlowDom.viewport)!;
   return Number(/scale\(([^)]+)\)/.exec(viewport.style.transform)![1]);
 }
 
@@ -339,12 +341,12 @@ test("선행·후속 보기에서 화면을 옮긴 뒤 기준 이슈로 이동 �
     ),
   );
   const flow = screen.getByRole("region", { name: "의존 그래프" }).element();
-  const node = () => flow.querySelector('.react-flow__node[data-id="focus-center"]')!;
+  const node = () => flow.querySelector(reactFlowDom.nodeOf("focus-center"))!;
   await expect.poll(() => node()).toBeTruthy();
   await moveAwayAndZoomIn(screen);
   const zoom = graphZoom(screen);
   const distance = () => {
-    const pane = flow.querySelector(".react-flow")!.getBoundingClientRect();
+    const pane = flow.querySelector(reactFlowDom.pane)!.getBoundingClientRect();
     const box = node().getBoundingClientRect();
     return Math.hypot(
       box.left + box.width / 2 - (pane.left + pane.width / 2),
@@ -383,7 +385,7 @@ test("순서 보기에서 화면을 옮긴 뒤 진행 중 단계로 이동 단�
   const zoom = graphZoom(screen);
   // 단계 이름의 가로 중심은 그래프 영역 가운데에, 윗변은 위쪽 여백 아래에 와야 합니다.
   const distance = () => {
-    const pane = flow.element().querySelector(".react-flow")!.getBoundingClientRect();
+    const pane = flow.element().querySelector(reactFlowDom.pane)!.getBoundingClientRect();
     const box = label.element().getBoundingClientRect();
     return Math.hypot(
       box.left + box.width / 2 - (pane.left + pane.width / 2),
@@ -407,8 +409,8 @@ test("캔버스를 끌어 옮긴 뒤 이슈 갱신으로 선후 관계 없음 �
   const blocks = [["keep-2", "keep-1"]] as const;
   const screen = await renderGraph("epic", "keep-epic", graphData(issues, [...blocks]));
   const canvas = screen.getByRole("region", { name: "의존 그래프" });
-  const flow = canvas.element().querySelector<HTMLElement>(".react-flow")!;
-  const viewport = flow.querySelector<HTMLElement>(".react-flow__viewport")!;
+  const flow = canvas.element().querySelector<HTMLElement>(reactFlowDom.pane)!;
+  const viewport = flow.querySelector<HTMLElement>(reactFlowDom.viewport)!;
   await expect.element(canvas.getByRole("link", { name: /위치 유지 다음/ })).toBeVisible();
   const initial = viewport.style.transform;
   await dragCanvas(screen);
@@ -822,7 +824,7 @@ test("캔버스를 끌어 옮기거나 확대하면 미니맵의 보이는 영�
     canvas
       .getByRole("img", { name: "그래프 미니맵" })
       .element()
-      .querySelector(".react-flow__minimap-mask")
+      .querySelector(reactFlowDom.minimapMask)
       ?.getAttribute("d");
   await expect.poll(mask).toBeTruthy();
   const first = mask();
@@ -891,8 +893,8 @@ for (const theme of ["desk", "desk-dark"])
 /** 미니맵 노드 10개가 그려질 때까지 기다린 뒤, 노드마다 위치와 칠한 색, 기준 이슈 강조 여부를 읽습니다. */
 async function minimapNodes(screen: Awaited<ReturnType<typeof renderGraph>>) {
   const minimap = screen.getByRole("img", { name: "그래프 미니맵" }).element();
-  await expect.poll(() => minimap.querySelectorAll(".react-flow__minimap-node").length).toBe(10);
-  return [...minimap.querySelectorAll(".react-flow__minimap-node")].map((node) => ({
+  await expect.poll(() => minimap.querySelectorAll(reactFlowDom.minimapNode).length).toBe(10);
+  return [...minimap.querySelectorAll(reactFlowDom.minimapNode)].map((node) => ({
     x: Number(node.getAttribute("x")),
     fill: getComputedStyle(node).fill,
     stroke: getComputedStyle(node).stroke,
@@ -906,7 +908,7 @@ async function expectNodeInsideCanvas(screen: Awaited<ReturnType<typeof renderGr
   const canvas = screen.getByRole("region", { name: "의존 그래프" }).element();
   await expect
     .poll(() => {
-      const node = canvas.querySelector(`.react-flow__node[data-id="${id}"]`);
+      const node = canvas.querySelector(reactFlowDom.nodeOf(id));
       if (!node) return false;
       const [box, bounds] = [node, canvas].map((it) => it.getBoundingClientRect());
       return (
@@ -950,7 +952,7 @@ for (const [scope, id] of [
     const screen = await renderGraph(scope, id, CYCLE);
     expect(await coveredEdges(screen, 3)).toEqual([]);
     const canvas = screen.getByRole("region", { name: "의존 그래프" }).element();
-    const nodes = [...canvas.querySelectorAll<HTMLElement>(".react-flow__node")];
+    const nodes = [...canvas.querySelectorAll<HTMLElement>(reactFlowDom.node)];
     expect(nodes).toHaveLength(3);
     expect(new Set(nodes.map((node) => node.getBoundingClientRect().x)).size).toBe(1);
     const bounds = canvas.getBoundingClientRect();
@@ -1178,7 +1180,7 @@ test("에픽 순서 보기는 열마다 단계 이름과 진행 요약을 보이
   await expect.element(screen.getByText("전체 4단계 중 2단계 진행 중")).toBeVisible();
   for (const label of ["1단계 · 완료", "2단계 · 진행 중", "3단계", "4단계"])
     await expect.element(canvas.getByText(label, { exact: true })).toBeVisible();
-  const second = canvas.element().querySelector('.react-flow__node[data-id="plan-2"]')!;
+  const second = canvas.element().querySelector(reactFlowDom.nodeOf("plan-2"))!;
   expect(
     canvas.getByText("2단계 · 진행 중", { exact: true }).element().getBoundingClientRect().x,
   ).toBeCloseTo(second.getBoundingClientRect().x, 0);

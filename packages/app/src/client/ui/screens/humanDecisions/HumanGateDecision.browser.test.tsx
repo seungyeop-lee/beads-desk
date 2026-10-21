@@ -23,9 +23,9 @@ vi.mock("@/client/modules/humanGates/application/usePreviousGateRounds", () => (
 vi.mock("@/client/modules/issues/application/useIssueDetail", () => ({
   useIssueDetail: (id: string) => ({ data: issueDetail(id), error: null, loading: false }),
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  useIssueHref: () => (id: string) => `/human?issue=${id}`,
-}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/human"),
+);
 
 for (const { previousGateCount, sections } of [
   {

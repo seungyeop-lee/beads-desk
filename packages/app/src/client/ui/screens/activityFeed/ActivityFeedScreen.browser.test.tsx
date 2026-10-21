@@ -32,16 +32,18 @@ vi.mock("@/client/infra/activityFeed/activitySeenStore", () => ({
 vi.mock("@/client/infra/workspaces/documentWorkspace", () => ({
   documentWorkspace: () => tab.workspace,
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  IssueDetailRoute: () => null,
-  useIssueHref: () => (id: string) => `/activity?issue=${id}`,
-}));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: tab.workspace }),
-  usePathname: () => `/w/${tab.workspace}/activity`,
-  useSearchParams: () => new URLSearchParams(tab.query),
-  useRouter: () => ({ push: () => {}, replace: () => {} }),
-}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock(
+    "/activity",
+  ),
+);
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    workspace: () => tab.workspace,
+    screenPath: "/activity",
+    search: () => new URLSearchParams(tab.query),
+  }),
+);
 
 function entry(key: string, at: number): ActivityEntry {
   return {

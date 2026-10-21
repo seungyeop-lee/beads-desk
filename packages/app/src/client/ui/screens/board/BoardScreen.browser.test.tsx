@@ -45,16 +45,14 @@ vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({
     run: async (write: () => unknown) => write(),
   }),
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  IssueDetailRoute: () => null,
-  useIssueHref: () => (id: string) => `/board?issue=${id}`,
-}));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ workspace: "demo" }),
-  usePathname: () => "/w/demo/board",
-  useSearchParams: () => new URLSearchParams(),
-  useRouter: () => ({ push: () => {}, replace: () => {} }),
-}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/board"),
+);
+vi.mock("next/navigation", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
+    screenPath: "/board",
+  }),
+);
 
 // 열린 gate를 정하지 않은 테스트는 gate 없이 그립니다.
 beforeEach(() => {

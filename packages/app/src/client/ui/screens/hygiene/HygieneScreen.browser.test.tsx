@@ -33,10 +33,9 @@ vi.mock("@/client/modules/hygiene/application/useHygiene", () => ({
     loading: false,
   }),
 }));
-vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
-  IssueDetailRoute: () => null,
-  useIssueHref: () => (id: string) => `/hygiene?issue=${id}`,
-}));
+vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
+  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/hygiene"),
+);
 
 const CARD_TITLES = [
   messages.hygiene.stale.title,
