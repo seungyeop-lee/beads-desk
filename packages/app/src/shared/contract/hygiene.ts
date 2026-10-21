@@ -1,4 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
+import type { IssueRef } from "@beads-desk/bd/types";
+
+export type { IssueRef };
 
 export const HYGIENE_PATH = "/api/hygiene";
 
@@ -17,8 +20,6 @@ export function parseStaleDays(params: URLSearchParams): StaleDays | null {
   const value = Number(params.get("staleDays") ?? DEFAULT_STALE_DAYS);
   return STALE_DAYS.find((days) => days === value) ?? null;
 }
-
-export type IssueRef = { id: string; title: string };
 
 /** 정리 페이지의 점검 가운데 기준 일수와 관계없는 것의 결과입니다. */
 export type HygieneReport = {

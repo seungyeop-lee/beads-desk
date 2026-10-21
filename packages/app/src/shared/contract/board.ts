@@ -1,4 +1,6 @@
-import type { BoardColumn, Issue } from "@beads-desk/bd/issue";
+import type { BoardColumn } from "@beads-desk/bd/issue";
+import type { BoardIssue } from "@beads-desk/bd/types";
+import type { EveryOrder } from "./everyOrder";
 
 export type { BoardColumn };
 
@@ -16,11 +18,4 @@ export const BOARD_COLUMNS = [
 ] as const satisfies EveryOrder<BoardColumn>;
 
 /** 한 이슈는 한 열에만 들어갑니다. */
-export type BoardItem = { column: BoardColumn; issue: Issue };
-
-/** U의 값을 빠짐없이 한 번씩 담는 모든 순서의 tuple입니다. */
-type EveryOrder<U, Each = U> = [U] extends [never]
-  ? readonly []
-  : Each extends U
-    ? readonly [Each, ...EveryOrder<Exclude<U, Each>>]
-    : never;
+export type BoardItem = BoardIssue;

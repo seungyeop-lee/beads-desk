@@ -1,4 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
+import type { EpicStatus } from "@beads-desk/bd/types";
 
 export const EPICS_PATH = "/api/epics";
 
@@ -6,11 +7,7 @@ export function epicDescendantsPath(epicId: string): string {
   return `${EPICS_PATH}/${encodeURIComponent(epicId)}/descendants`;
 }
 
-export type EpicSummary = {
-  epic: Issue;
-  totalChildren: number;
-  closedChildren: number;
-};
+export type EpicSummary = EpicStatus;
 
 export type EpicDescendants = {
   issues: Issue[];

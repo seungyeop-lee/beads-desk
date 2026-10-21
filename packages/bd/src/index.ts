@@ -42,6 +42,8 @@ export {
   deferIssue,
   type DeferUntil,
   deleteIssue,
+  ISSUE_TEXT_FIELDS,
+  type IssueTextField,
   dismissHuman,
   removeDependency,
   respondToHuman,

@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./issue": "./src/issue.ts",
+    "./types": "./src/types.ts",
     "./fakeBd.testkit": "./src/fakeBd.testkit.ts"
   },
   "scripts": {

@@ -1,4 +1,9 @@
-import { type BdOutcome, type CloseOutcome } from "@beads-desk/bd";
+import {
+  ISSUE_TEXT_FIELDS,
+  type BdOutcome,
+  type CloseOutcome,
+  type IssueTextField,
+} from "@beads-desk/bd";
 import { findWorkspace } from "@/server/infra/runtime/serverRuntime";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
 import { bdErrorMessage, serverMessages } from "@/server/web/locale/serverMessages";
@@ -18,15 +23,6 @@ import {
 
 // Server Action은 화면을 거치지 않은 POST 요청으로도 호출되므로, TypeScript 타입과 상관없이 모든 입력을 다시 검사합니다.
 
-const TEXT_FIELDS = new Set([
-  "title",
-  "description",
-  "design",
-  "acceptanceCriteria",
-  "notes",
-  "assignee",
-]);
-
 export function isString(value: unknown): value is string {
   return typeof value === "string";
 }
@@ -35,10 +31,19 @@ function isPriority(value: unknown): value is number {
   return (PRIORITIES as readonly unknown[]).includes(value);
 }
 
+// 문자열 필드는 bd의 목록을 따릅니다. IssueChanges에 문자열이 아닌 필드가 생기면 그 검사를 여기에 더해야 typecheck를 통과합니다.
+const FIELD_CHECKS = new Map<string, (value: unknown) => boolean>([
+  ...ISSUE_TEXT_FIELDS.map((field) => [field, isString] as const),
+  ...Object.entries({ priority: isPriority } satisfies Record<
+    Exclude<keyof IssueChanges, IssueTextField>,
+    (value: unknown) => boolean
+  >),
+]);
+
 export function isIssueChanges(value: unknown): value is IssueChanges {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-  return Object.entries(value).every(([field, fieldValue]) =>
-    field === "priority" ? isPriority(fieldValue) : TEXT_FIELDS.has(field) && isString(fieldValue),
+  return Object.entries(value).every(
+    ([field, fieldValue]) => FIELD_CHECKS.get(field)?.(fieldValue) === true,
   );
 }
 

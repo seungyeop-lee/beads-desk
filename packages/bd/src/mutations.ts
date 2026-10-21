@@ -58,15 +58,22 @@ export async function createIssue(cwd: string, issue: NewIssue): Promise<BdOutco
     : outputError("missingCreatedIssueId");
 }
 
+/** 문자열로 바꾸는 필드입니다. 바꿀 수 있는 필드 가운데 priority만 숫자입니다. */
+export const ISSUE_TEXT_FIELDS = [
+  "title",
+  "description",
+  "design",
+  "acceptanceCriteria",
+  "notes",
+  "assignee",
+] as const;
+
+export type IssueTextField = (typeof ISSUE_TEXT_FIELDS)[number];
+
 /** 빈 문자열은 그 필드를 비웁니다. */
-export type IssueFieldChanges = {
-  title?: string;
-  description?: string;
-  design?: string;
-  acceptanceCriteria?: string;
-  notes?: string;
+export type IssueFieldChanges = { [Field in IssueTextField]?: string } & {
+  /** 0(긴급)부터 4(백로그)까지입니다. */
   priority?: number;
-  assignee?: string;
 };
 
 const FIELD_FLAGS: Record<keyof IssueFieldChanges, string> = {

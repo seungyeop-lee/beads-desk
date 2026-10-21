@@ -26,7 +26,8 @@ import {
   updateIssueAction,
 } from "./issueActions";
 
-vi.mock("@beads-desk/bd", () => ({
+vi.mock("@beads-desk/bd", async (importOriginal) => ({
+  ...(await importOriginal<typeof bd>()),
   addComment: vi.fn<typeof bd.addComment>(),
   addDependency: vi.fn<typeof bd.addDependency>(),
   addLabel: vi.fn<typeof bd.addLabel>(),

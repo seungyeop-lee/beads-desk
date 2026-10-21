@@ -32,9 +32,9 @@ const boundaries = {
     message: "playground package는 app의 코드와 테스트 helper에 의존하지 않습니다.",
   },
   bdServerPackage: {
-    regex: "^@beads-desk/bd(?:$|/(?!issue$))",
+    regex: "^@beads-desk/bd(?:$|/(?!(?:issue|types)$))",
     message:
-      "Client, shared, 화면 route(`app/(client)`), route group 밖의 app 파일은 bd 실행 구현 대신 client-safe model(`@beads-desk/bd/issue`)만 사용합니다.",
+      "Client, shared, 화면 route(`app/(client)`), route group 밖의 app 파일은 bd 실행 구현 대신 이슈 model(`@beads-desk/bd/issue`)과 type entry(`@beads-desk/bd/types`)만 사용합니다.",
   },
   clientRouteServerSurface: {
     regex: `^@/server/(?!${clientRouteServerAllowed})|^(?:\\.\\./)+server/(?!${clientRouteServerAllowed})`,
@@ -190,6 +190,19 @@ export default defineConfig([
   {
     files: ["packages/bd/src/**/*.ts"],
     rules: restrict(boundaries.bdPackage),
+  },
+  {
+    files: ["packages/bd/src/types.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Program > :not(ExportNamedDeclaration[exportKind='type'][source])",
+          message:
+            "`@beads-desk/bd/types`는 다른 module의 type을 `export type { ... } from`으로만 다시 내보냅니다.",
+        },
+      ],
+    },
   },
   {
     files: ["packages/promo/**/*.{ts,tsx}"],
