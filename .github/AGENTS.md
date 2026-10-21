@@ -15,6 +15,12 @@ act pull_request -j package-smoke -P ubuntu-latest=catthehacker/ubuntu:act-lates
 - workflow의 job ID나 파일 이름을 바꾸면 이 문서의 act 명령도 함께 고칩니다. `pnpm run check`의 unit test(`packages/app/scripts/actCommands.test.ts`)가 이 문서에 있는 act 명령의 `-j` job ID가 workflow 중 정확히 한 곳에 있는지, `-W` 경로에 파일이 있는지, 두 workflow에 같은 job ID가 없는지 검사합니다.
 - Apple Silicon에서 act가 `--container-architecture linux/amd64`를 쓰라는 경고를 출력해도 이 옵션은 주지 않습니다. Docker Desktop의 containerd image store에서는 act가 amd64 이미지의 `PATH`를 읽지 못해, node로 실행하는 action이 `exec: "node": executable file not found in $PATH`로 실패합니다.
 
+## windows-smoke
+
+`check.yml`의 `windows-smoke` job은 `windows-latest` runner에서 실행되므로 act로 실행할 수 없습니다. 이 job을 고쳤으면 push한 뒤 PR의 GitHub Actions 실행 결과로 확인합니다. 이 job은 `package-smoke`가 artifact로 올린 tarball을 설치하는데, act에서는 `package-smoke`의 artifact 업로드 단계를 건너뛰므로 업로드도 PR 실행 결과로만 확인할 수 있습니다.
+
+job이 실패하면 마지막 `Print the server log` 단계에 출력된 서버 로그에서 원인을 확인합니다.
+
 ## release.yml
 
 게시 흐름은 `docs/release.md`에 있습니다. `workflow_run`은 default branch에 있는 `release.yml`로 실행되므로, PR에서 고친 `release.yml`은 main에 들어간 뒤부터 적용됩니다.
