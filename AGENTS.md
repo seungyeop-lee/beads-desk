@@ -50,7 +50,7 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 
 `packages/app/src`는 실행 위치에 따라 `app`, `client`, `server`, `shared`로 나누고, 각각을 다시 layer로 나눕니다. 경로마다 두는 것은 아래와 같습니다.
 
-- `app/(client)`: 화면 route의 `page.tsx`와 `layout.tsx`. 화면 자체는 `client/ui/screens`에 두고 조립만 합니다. Server Component인 page와 layout은 `server/web`에서 요청의 언어를 읽는 `locale/requestLocale`, 테마를 읽는 `theme/requestTheme`, 등록한 workspace를 찾는 `workspaces/registeredWorkspaces`만 import합니다
+- `app/(client)`: 화면 route의 `page.tsx`와 `layout.tsx`. 화면 자체는 `client/ui/screens`에 두고 조립만 합니다. Server Component인 page와 layout은 `server/web`에서 `eslint.config.js`의 `clientRouteServerFiles`에 적은 파일만 import합니다
 - `app/(server)`: Route Handler. `server/web`의 `*RouteApi.ts`만 호출합니다
 - `client/ui`: 화면, component, 스타일
 - `client/modules/<기능>/application`: 기능 상태와 조회·갱신 순서. React hook을 포함합니다

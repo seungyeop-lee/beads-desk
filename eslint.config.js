@@ -4,6 +4,15 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+// 화면 route(`app/(client)`)의 Server Component가 import할 수 있는 `server/web` 파일입니다.
+// 루트 AGENTS.md는 파일 이름을 적지 않고 이 목록을 가리키므로, 허용 목록은 여기에만 둡니다.
+const clientRouteServerFiles = [
+  "locale/requestLocale",
+  "theme/requestTheme",
+  "workspaces/registeredWorkspaces",
+];
+const clientRouteServerAllowed = `web/(?:${clientRouteServerFiles.join("|")})$`;
+
 // 문서로만 적어 두면 낡는 경계를 여기서 강제합니다.
 // 각 패턴은 `@/` alias와 상대 경로 양쪽을 모두 막습니다.
 const boundaries = {
@@ -25,7 +34,15 @@ const boundaries = {
   bdServerPackage: {
     regex: "^@beads-desk/bd(?:$|/(?!issue$))",
     message:
-      "Client, shared, 화면 route(`app/(client)`)는 bd 실행 구현 대신 client-safe model(`@beads-desk/bd/issue`)만 사용합니다.",
+      "Client, shared, 화면 route(`app/(client)`), route group 밖의 app 파일은 bd 실행 구현 대신 client-safe model(`@beads-desk/bd/issue`)만 사용합니다.",
+  },
+  clientRouteServerSurface: {
+    regex: `^@/server/(?!${clientRouteServerAllowed})|^(?:\\.\\./)+server/(?!${clientRouteServerAllowed})`,
+    message: `화면 route(\`app/(client)\`)는 \`server/web\`에서 ${clientRouteServerFiles.map((file) => `\`${file}\``).join(", ")}만 import합니다.`,
+  },
+  serverFromAppRoot: {
+    regex: "^@/server(?:/|$)|^(?:\\.\\./)+server(?:/|$)",
+    message: "route group 밖의 app 파일(`icon.ts` 등)은 server를 import하지 않습니다.",
   },
   serverRouteSurface: {
     regex:
@@ -216,7 +233,11 @@ export default defineConfig([
   },
   {
     files: ["packages/app/src/app/(client)/**/*.{ts,tsx}"],
-    rules: restrict(boundaries.bdServerPackage),
+    rules: restrict(boundaries.bdServerPackage, boundaries.clientRouteServerSurface),
+  },
+  {
+    files: ["packages/app/src/app/*.{ts,tsx}"],
+    rules: restrict(boundaries.bdServerPackage, boundaries.serverFromAppRoot),
   },
   {
     files: ["packages/app/src/shared/**/*.{ts,tsx}"],
