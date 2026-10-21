@@ -4,6 +4,14 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-10-21
+
+### Added
+
+- Windows support. Install beads-desk with npm and run `bd-desk start`, `restart`, and `stop` on Windows. The server finds `bd` installed with npm (`npm install -g @beads/bd`) and runs its `bd.exe` directly. If the server cannot run `bd`, `bd-desk start` tells you to set `BD_BIN` to the full path of `bd.exe`. Starting beads-desk from a path that differs from the workspace path only in letter case opens the same workspace.
+- Absolute-path file links and images in an issue body also open when the path starts with a Windows drive letter, such as `C:\Users\me\report.md` or `C:/tmp/a.png`. This includes reference-style links and images, and you can enter a drive path as a link address in the Markdown editor's link tool. A backslash before punctuation, as in `C:\work\.beads\a.md`, is kept when you open, copy, edit, or save the link.
+- On Windows, local file links outside the workspace open from `%TEMP%`, not from `C:\tmp` or `C:\var\tmp`, and `~\` in `BEADS_DESK_LOCAL_FILE_ROOTS` means your home directory. A file whose path was replaced by a symbolic link or another file after the server checked it does not open.
+
 ## [0.6.1] - 2026-10-21
 
 ### Changed
