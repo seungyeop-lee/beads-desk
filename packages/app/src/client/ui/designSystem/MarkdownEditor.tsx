@@ -18,6 +18,7 @@ import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
 import { localMarkdownUrl } from "./localMarkdownUrl";
 import { MermaidDiagramDialog } from "./MermaidDiagramDialog";
 import { createMermaidPreview, diagramAt } from "./mermaidPreview";
+import { remarkWindowsPathSource, sourceUrlOf, windowsPath } from "./windowsPathSource";
 
 type Controls = {
   crepe: CrepeBuilder;
@@ -86,7 +87,7 @@ export function MarkdownEditor({
         { languages },
         { codeHighlighting, codeEditorTheme },
         { editorViewCtx, editorViewOptionsCtx, serializerCtx },
-        { $prose, callCommand },
+        { $prose, $remark, callCommand },
         { Plugin },
         commonmark,
         gfm,
@@ -131,20 +132,37 @@ export function MarkdownEditor({
           linkLabel: labels.link,
         });
       }
+      // link와 image의 sourceUrl은 remarkWindowsPathSource가 남긴 원문 주소로, 경로를 되살릴 때만 쓰고 markdown이나
+      // HTML 속성으로는 내보내지 않습니다(null인 속성은 DOM에 붙지 않습니다).
+      // 아래 parseMarkdown runner는 Milkdown 기본 runner에 sourceUrl만 더한 것이므로, Milkdown을 올리면 기본 runner와 비교합니다.
+      const sourceUrl = { default: null, validate: "string|null" };
       crepe.editor.config((ctx) => {
         ctx.update(commonmark.linkSchema.key, (previous) => (schemaCtx) => {
           const schema = previous(schemaCtx);
           return {
             ...schema,
+            attrs: { ...schema.attrs, sourceUrl },
+            parseMarkdown: {
+              ...schema.parseMarkdown,
+              runner: (state, node, markType) => {
+                state.openMark(markType, {
+                  href: node.url,
+                  title: node.title,
+                  sourceUrl: sourceUrlOf(node),
+                });
+                state.next(node.children);
+                state.closeMark(markType);
+              },
+            },
             toDOM: (mark) => {
               const dom = schema.toDOM!(mark, false) as [string, Record<string, unknown>];
               // Milkdown은 http, https, mailto 같은 허용 scheme 밖의 href를 비웁니다. `C:/a.md`처럼 드라이브 문자가
               // scheme으로 읽히는 Windows 경로도 비워지므로, 앱 안 주소로 바뀌는 href는 원래 값에서 바꾸고
               // 바뀌지 않는 href만 Milkdown이 거른 값을 씁니다.
-              const original = String(mark.attrs.href);
+              const original = windowsPath(String(mark.attrs.href), mark.attrs.sourceUrl);
               const opened = localMarkdownUrl(original, documentWorkspace() ?? "");
               const href = opened === original ? dom[1].href : opened;
-              return [dom[0], { ...dom[1], href }];
+              return [dom[0], { ...dom[1], href, sourceUrl: null }];
             },
           };
         });
@@ -152,10 +170,29 @@ export function MarkdownEditor({
           const schema = previous(schemaCtx);
           return {
             ...schema,
-            toDOM: (node) => [
-              "img",
-              { ...node.attrs, src: localMarkdownUrl(node.attrs.src, documentWorkspace() ?? "") },
-            ],
+            attrs: { ...schema.attrs, sourceUrl },
+            parseMarkdown: {
+              ...schema.parseMarkdown,
+              runner: (state, node, type) => {
+                state.addNode(type, {
+                  src: node.url,
+                  alt: node.alt ?? "",
+                  title: node.title ?? "",
+                  sourceUrl: sourceUrlOf(node),
+                });
+              },
+            },
+            toDOM: (node) => {
+              const src = windowsPath(node.attrs.src, node.attrs.sourceUrl);
+              return [
+                "img",
+                {
+                  ...node.attrs,
+                  src: localMarkdownUrl(src, documentWorkspace() ?? ""),
+                  sourceUrl: null,
+                },
+              ];
+            },
           };
         });
         ctx.update(editorViewOptionsCtx, (options) => ({
@@ -176,6 +213,7 @@ export function MarkdownEditor({
           handleDrop: (_view, event) => Boolean(event.dataTransfer?.files.length),
         }));
       });
+      crepe.editor.use($remark("windowsPathSource", () => remarkWindowsPathSource));
       crepe.setReadonly(readOnly);
       // Crepe의 markdownUpdated는 200ms 늦게 오고 편집기를 닫으면 버려져, 바로 저장하면 마지막 입력이 빠집니다.
       crepe.editor.use(

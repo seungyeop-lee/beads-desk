@@ -26,6 +26,12 @@ const TYPESCRIPT = [
 /** CodeMirror 기본 강조(defaultHighlightStyle)가 키워드에 쓰는 #708입니다. */
 const LIGHT_KEYWORD = "rgb(119, 0, 136)";
 
+/** 로컬 파일 API 주소이면 그 주소가 여는 경로를, 아니면 null을 돌려줍니다. */
+function localPath(url: string | null) {
+  const parsed = new URL(url ?? "", location.href);
+  return parsed.pathname === LOCAL_FILES_PATH ? parsed.searchParams.get("path") : null;
+}
+
 afterEach(() => {
   document.documentElement.removeAttribute("data-theme");
 });
@@ -60,10 +66,6 @@ test("드라이브 문자로 시작하는 Windows 절대경로의 링크와 이�
     </LocaleProvider>,
   );
 
-  const localPath = (url: string | null) => {
-    const parsed = new URL(url ?? "", location.href);
-    return parsed.pathname === LOCAL_FILES_PATH ? parsed.searchParams.get("path") : null;
-  };
   const image = screen.getByRole("img", { name: "역슬래시 그림" });
   await expect.element(image).toBeInTheDocument();
   expect(localPath(image.element().getAttribute("src"))).toBe("C:\\x\\y.png");
@@ -76,6 +78,23 @@ test("드라이브 문자로 시작하는 Windows 절대경로의 링크와 이�
     expect(localPath(href)).toBe(path);
   }
   expect(screen.getByText("스크립트").element().closest("a")?.getAttribute("href")).toBe("");
+});
+
+test("Windows 경로의 문장부호 앞 역슬래시는 CommonMark escape로 지우지 않고 로컬 파일 API 주소에 그대로 담는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        readOnly
+        value={"[a](C:\\work\\.beads\\a.md) ![밑줄 그림](C:\\a_b\\_x.png)"}
+      />
+    </LocaleProvider>,
+  );
+
+  const link = screen.getByRole("link", { name: "a" });
+  await expect.element(link).toBeInTheDocument();
+  expect(localPath(link.element().getAttribute("href"))).toBe("C:\\work\\.beads\\a.md");
+  const image = screen.getByRole("img", { name: "밑줄 그림" }).element();
+  expect(localPath(image.getAttribute("src"))).toBe("C:\\a_b\\_x.png");
 });
 
 test("제목으로 시작하는 본문은 읽을 때도 편집할 때도 글자를 고르는 동안 움직이지 않는다", async () => {
