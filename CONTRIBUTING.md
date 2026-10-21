@@ -16,6 +16,8 @@ Code comments, test names, commit messages, [`AGENTS.md`](AGENTS.md), and `docs/
 
 ## Development setup
 
+Development and the verification commands below are supported on macOS and Linux only. On Windows, only installing and running the published package is supported.
+
 You need:
 
 - Node.js 24 or later. If you use nvm, run `nvm use` at the repository root to select the version in `.nvmrc`.

@@ -70,9 +70,10 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 
 ## Requirements
 
-- macOS or Linux. Tested on macOS with `bd` 1.3.1. Windows is not supported.
+- macOS, Linux, or Windows. Tested with `bd` 1.3.1 on macOS and on the GitHub Actions `windows-latest` runner. The Windows tests install beads-desk with npm and use a workspace in embedded mode.
 - Node.js 22 or later
 - The `bd` CLI. If `bd` is not on your `PATH`, set the `BD_BIN` environment variable to the path of the executable when you start the server.
+  - On Windows, `bd` installed with npm (`npm install -g @beads/bd`) is found automatically. If you installed `bd` another way and the server cannot find it, set `BD_BIN` to the full path of `bd.exe`, as shown in [Troubleshooting](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#troubleshooting).
 - A beads workspace: a directory where you ran `bd init`
 
 ## Getting started

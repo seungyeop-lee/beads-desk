@@ -45,11 +45,12 @@ To be notified when your agents leave something for you, open Settings and turn 
 
 ## Local file links in issues
 
-Absolute-path file links and images in an issue body open when the file is in one of these directories:
+Absolute-path file links and images in an issue body open in the app. On Windows, paths with a drive letter, such as `C:\Users\me\report.md` and `C:/Users/me/report.md`, work too. A file opens only when it is in one of these directories:
 
 - The directory of the workspace in the tab's URL
 - A worktree of its git repository (a directory listed by `git worktree list`)
-- `/tmp`, `/var/tmp`, or the OS temporary directory (`$TMPDIR` on macOS)
+- The OS temporary directory (`$TMPDIR` on macOS, `%TEMP%` on Windows)
+- `/tmp` and `/var/tmp`, on macOS and Linux only
 
 Other files show `This file is outside the allowed roots.`
 
@@ -61,10 +62,17 @@ To open files in other directories, start the server with those directories in t
 BEADS_DESK_LOCAL_FILE_ROOTS="<directory>:<another directory>" bd-desk start
 ```
 
-- Separate directories with `:`, as in `PATH`.
-- Use absolute paths or paths starting with `~`. A leading `~` is expanded to your home directory even inside quotes. Relative paths are ignored.
+In PowerShell on Windows:
+
+```powershell
+$env:BEADS_DESK_LOCAL_FILE_ROOTS = "<directory>;<another directory>"
+bd-desk start
+```
+
+- Separate directories with `:`, as in `PATH`. On Windows, separate them with `;`.
+- Use absolute paths or paths starting with `~`. A leading `~` is expanded to your home directory even inside quotes; on Windows, `~\` works as well as `~/`. Relative paths are ignored.
 - Only files inside the listed directories open. Symlinks are judged by the real path they point to, so a symlink inside a listed directory does not open a file outside it. Directories that do not exist are skipped.
-- The value is read when the server starts. If a server is already running, `bd-desk start` only adds the workspace and ignores the new value. To change it, run `bd-desk restart` with the variable set. If you omit the variable on `restart`, the server restarts without the extra directories, so consider exporting it from your shell profile.
+- The value is read when the server starts. If a server is already running, `bd-desk start` only adds the workspace and ignores the new value. To change it, run `bd-desk restart` with the variable set. If you omit the variable on `restart`, the server restarts without the extra directories, so consider setting it in your shell profile.
 
 An opened file is shown according to its extension:
 
@@ -80,7 +88,7 @@ To uninstall, stop the server first with `bd-desk stop`, then run `npm uninstall
 
 ## File locations
 
-The server state file (`server.json`) and log (`server.log`) are stored in `$XDG_RUNTIME_DIR/beads-desk`. If `XDG_RUNTIME_DIR` is not set, they are stored in `beads-desk` under the OS temporary directory.
+The server state file (`server.json`) and log (`server.log`) are stored in `$XDG_RUNTIME_DIR/beads-desk`. If `XDG_RUNTIME_DIR` is not set, they are stored in `beads-desk` under the OS temporary directory, which is `%TEMP%\beads-desk` on Windows.
 
 ## Troubleshooting
 
@@ -88,6 +96,12 @@ If the server fails to start, check `server.log` (see [File locations](#file-loc
 
 - `No beads workspace found: <directory>`: Run the command in a directory that contains `.beads`, or in one of its subdirectories. For a new project, run `bd init` first.
 - `Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.` (macOS, Linux): Add `bd` to your `PATH` or set `BD_BIN`, then run `bd-desk restart` in the same shell.
-- `Warning: the server could not run bd. Make sure bd.exe is on PATH, or set BD_BIN to the full path of bd.exe.` (Windows): Add the directory that contains `bd.exe` to your `PATH`, or set `BD_BIN` to the full path of `bd.exe`, then run `bd-desk restart` in the same shell. If you installed bd with pnpm or volta, set `BD_BIN` to `bd.exe`, not to the `bd.cmd` shim.
+- `Warning: the server could not run bd. Make sure bd.exe is on PATH, or set BD_BIN to the full path of bd.exe.` (Windows): Add the directory that contains `bd.exe` to your `PATH`, or set `BD_BIN` to the full path of `bd.exe`, then run `bd-desk restart` in the same shell. If you installed bd with pnpm or volta, set `BD_BIN` to `bd.exe`, not to the `bd.cmd` shim. In PowerShell:
+
+  ```powershell
+  $env:BD_BIN = "<full path of bd.exe>"
+  bd-desk restart
+  ```
+
 - `Port <number> is already in use.`: Another program is using the port you passed to `--port`. Pass a different port, or omit `--port` to use the first free port.
 - `The running server (pid <pid>) is not responding. Stop it with bd-desk stop, then start again.`: Run `bd-desk stop`, then `bd-desk start`. If it happens again, check `server.log`.

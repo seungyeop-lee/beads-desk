@@ -54,7 +54,7 @@ body:
     id: os
     attributes:
       label: Operating system
-      description: Name and version, for example macOS 15.5 or Ubuntu 24.04.
+      description: Name and version, for example macOS 15.5, Ubuntu 24.04, or Windows 11.
     validations:
       required: true
   - type: input
@@ -67,5 +67,5 @@ body:
     attributes:
       label: Relevant part of server.log
       description: |
-        The log is at `$XDG_RUNTIME_DIR/beads-desk/server.log`. If `XDG_RUNTIME_DIR` is not set, it is at `beads-desk/server.log` in the OS temporary directory (`$TMPDIR` on macOS). Paste the lines from around the time the problem happened, and remove issue titles, paths, or other data you do not want to make public.
+        The log is at `$XDG_RUNTIME_DIR/beads-desk/server.log`. If `XDG_RUNTIME_DIR` is not set, it is at `beads-desk/server.log` in the OS temporary directory (`$TMPDIR` on macOS, `%TEMP%` on Windows). Paste the lines from around the time the problem happened, and remove issue titles, paths, or other data you do not want to make public.
       render: text
