@@ -48,12 +48,15 @@ test("화면 탭은 묶음 순서대로 놓이고 그래프 탭은 없으며, �
   `);
 });
 
-test("설정 단추를 누르면 설정 창이 열리고, Escape를 누르면 닫힌다", async () => {
+test("설정 단추를 누르면 설정 창이 열리고, Escape로 닫은 뒤 다시 누르면 다시 열린다", async () => {
   const screen = await renderHeader();
   const settings = screen.getByRole("dialog", { name: messages.settings.title });
+  const open = screen.getByRole("button", { name: messages.settings.title, exact: true });
 
-  await screen.getByRole("button", { name: messages.settings.title, exact: true }).click();
+  await open.click();
   await expect.element(settings).toBeVisible();
   await userEvent.keyboard("{Escape}");
   await expect.element(settings).not.toBeInTheDocument();
+  await open.click();
+  await expect.element(settings).toBeVisible();
 });
