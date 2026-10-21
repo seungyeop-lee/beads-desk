@@ -182,6 +182,61 @@ jobs:
             if ($status -ne $expected[$path]) { throw "Expected $($expected[$path]) for $path, got $status." }
           }
 
+      # Windows 파일 시스템은 대소문자를 구분하지 않으므로, 대소문자만 다른 경로로 시작해도 workspace는 하나로 등록돼야 합니다.
+      # 셸은 현재 디렉터리의 대소문자를 바꿀 수 있어서, 입력한 경로를 그대로 cwd로 주도록 node로 bd-desk.js를 실행합니다.
+      - name: Start from paths that differ only in case
+        run: |
+          $bdDesk = Join-Path (npm root -g) '@seungyeop-lee\beads-desk\bin\bd-desk.js'
+          $script = Join-Path $env:RUNNER_TEMP run-bd-desk.mjs
+          Set-Content $script @'
+          import { spawnSync } from "node:child_process";
+          import { realpathSync } from "node:fs";
+          const [bdDesk, command, cwd] = process.argv.slice(2);
+          const git = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd, encoding: "utf8" });
+          console.log(`cwd: ${cwd}`);
+          console.log(`realpathSync: ${realpathSync(cwd)}`);
+          console.log(`realpathSync.native: ${realpathSync.native(cwd)}`);
+          console.log(`git rev-parse --show-toplevel: ${git.stdout.trim()}`);
+          const result = spawnSync(process.execPath, [bdDesk, command], { cwd, encoding: "utf8" });
+          console.log(`bd-desk ${command} exited with ${result.status}`);
+          console.log(result.stdout + result.stderr);
+          process.exit(result.status ?? 1);
+          '@
+          function Invoke-BdDesk($command, $cwd) {
+            # 종료 코드 1을 기대하는 실행도 있으므로, 이 함수 안에서는 실패한 node가 단계를 멈추지 않게 합니다.
+            $PSNativeCommandUseErrorActionPreference = $false
+            Push-Location -LiteralPath $cwd
+            "process.cwd() after Set-Location: $(node -p 'process.cwd()')" | Out-Host
+            Pop-Location
+            $output = node $script $bdDesk $command $cwd
+            $output | Out-Host
+            $status = $LASTEXITCODE
+            # pwsh는 마지막 native 명령의 종료 코드로 단계를 끝내므로, 기대한 종료 코드 1이 단계의 실패로 남지 않게 지웁니다.
+            $global:LASTEXITCODE = 0
+            @{ Output = $output; Status = $status }
+          }
+
+          # 한 경로에서 실패해도 나머지 경로의 결과를 로그에 남기도록, 실패를 모아 마지막에 알립니다.
+          $failures = @()
+          $nested = New-Item -ItemType Directory (Join-Path $env:WORKSPACE Nested\Deeper)
+          foreach ($cwd in $env:WORKSPACE.ToLowerInvariant(), $env:WORKSPACE.ToUpperInvariant(), $nested.FullName.ToLowerInvariant()) {
+            $result = Invoke-BdDesk start $cwd
+            if ($result.Status -ne 0 -or $result.Output -cnotcontains "URL: $env:DESK_URL") { $failures += "start from $cwd did not print the workspace URL: $env:DESK_URL" }
+          }
+          $workspaces = @((Invoke-RestMethod "$env:DESK_SERVER/api/workspaces").data.workspaces)
+          $workspaces | ConvertTo-Json
+          if ($workspaces.Count -ne 1 -or $workspaces[0].root -cne $env:WORKSPACE) { $failures += "Expected only $env:WORKSPACE to be registered." }
+
+          $result = Invoke-BdDesk restart $env:WORKSPACE.ToUpperInvariant()
+          if ($result.Status -ne 0 -or $result.Output -cnotcontains "URL: $env:DESK_URL") { $failures += "restart from $($env:WORKSPACE.ToUpperInvariant()) did not print the workspace URL: $env:DESK_URL" }
+
+          # .beads가 없는 git 저장소에서는 git 최상위에서 멈추고, 그 위에 있는 workspace의 .beads를 찾지 않아야 합니다.
+          $repo = New-Item -ItemType Directory (Join-Path $env:WORKSPACE Inner)
+          git -C $repo init --quiet
+          $result = Invoke-BdDesk start $repo.FullName.ToLowerInvariant()
+          if ($result.Status -ne 1) { $failures += "start from a git repository without .beads found a workspace above its top level." }
+          if ($failures) { throw ($failures -join "`n") }
+
       - name: Stop the server
         run: |
           bd-desk stop
