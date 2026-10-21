@@ -59,13 +59,14 @@ for (const width of [455, 500, 1440]) {
     for (const { epic, closedChildren, totalChildren } of EPICS) {
       const fraction = `${closedChildren}/${totalChildren}`;
       const card = screen.getByRole("article", { name: epic.title, exact: true });
-      // 진행 개수는 분수 열과 퍼센트 열을 감싼 요소입니다.
-      const count = card.getByText(`${fraction}·100%`, { exact: true }).element();
+      // 진행 개수는 분수 열과 퍼센트 열로 나뉩니다.
+      const count = card.getByTitle(messages.epics.closedChildCount, { exact: true }).element();
       const columns = [fraction, "·100%"].map((text) =>
         card.getByText(text, { exact: true }).element(),
       );
       const cardBox = card.element().getBoundingClientRect();
       const box = count.getBoundingClientRect();
+      expect(count.textContent).toBe(`${fraction}·100%`);
       expect(lineCount(columns[0]!), `${width}px ${fraction} 줄 수`).toBe(1);
       for (const column of columns) {
         expect(column.scrollWidth, `${width}px ${fraction} 열 넘침`).toBeLessThanOrEqual(
@@ -132,12 +133,15 @@ for (const width of [2000, 1280, 1100, 768]) {
         const card = screen.getByRole("article", { name: epic.title, exact: true });
         const chip = card.getByText(statusLabel(MESSAGES[locale], epic.status), { exact: true });
         record("상태 칩 왼쪽", box(chip).left);
+        // 닫은 날짜가 없는 닫힌 에픽은 막대·닫은 날짜 열이 비어 있습니다.
         const middle =
-          epic.status === "closed"
-            ? card.element().querySelector("time")
-            : card
+          epic.status !== "closed"
+            ? card
                 .getByRole("progressbar", { name: MESSAGES[locale].epics.progress(epic.id) })
-                .element();
+                .element()
+            : epic.closedAt === null
+              ? null
+              : card.getByRole("time").element();
         if (middle) {
           record("막대·닫은 날짜 왼쪽", middle.getBoundingClientRect().left);
           record("막대·닫은 날짜 오른쪽", middle.getBoundingClientRect().right);
@@ -145,7 +149,8 @@ for (const width of [2000, 1280, 1100, 768]) {
         const fraction = card.getByText(`${closedChildren}/${totalChildren}`, { exact: true });
         record("분수 왼쪽", box(fraction).left);
         record("분수 오른쪽", box(fraction).right);
-        record("진행 개수 오른쪽", fraction.element().parentElement!.getBoundingClientRect().right);
+        const count = card.getByTitle(MESSAGES[locale].epics.closedChildCount, { exact: true });
+        record("진행 개수 오른쪽", box(count).right);
         const order = card.getByRole("link", { name: MESSAGES[locale].graph.epicOrder });
         record("순서 보기 왼쪽", box(order).left);
       }
@@ -222,8 +227,7 @@ test("접힌 닫힌 묶음의 에픽도 검색하면 보이고, 검색하는 동
   await expect.element(closedGroup).toHaveAttribute("aria-expanded", "true");
   await expect.element(screen.getByRole("link", { name: "열린 에픽" })).not.toBeInTheDocument();
   await expect.element(openGroup).not.toBeInTheDocument();
-  const count = screen.getByRole("heading", { level: 1 }).element().nextElementSibling;
-  expect(count?.textContent).toBe("1");
+  await expect.element(screen.getByRole("heading", { level: 1 })).toHaveAccessibleDescription("1");
 
   await search.fill("DESK-");
   await closedGroup.click();
@@ -400,17 +404,12 @@ test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 �
   };
   const screen = await renderScreen();
 
-  // 에픽 카드마다 머리에 진행률 막대가 하나씩 있습니다.
-  const cards = screen
-    .getByRole("progressbar")
-    .elements()
-    .filter((bar) => bar.closest("header"))
-    .map((bar) => bar.getAttribute("aria-label"));
-  expect(cards).toEqual(
-    ["desk-parent", "desk-root", "desk-task.1"].map((id) => messages.epics.progress(id)),
-  );
-  const count = screen.getByRole("heading", { level: 1 }).element().nextElementSibling;
-  expect(count?.textContent).toBe("3");
+  const cards = screen.getByRole("article");
+  expect(cards.elements()).toHaveLength(3);
+  for (const [index, title] of ["상위 에픽", "상위 없는 에픽", "작업 아래 에픽"].entries()) {
+    await expect.element(cards.nth(index)).toHaveAccessibleName(title);
+  }
+  await expect.element(screen.getByRole("heading", { level: 1 })).toHaveAccessibleDescription("3");
 
   const childEpicRow = screen.getByRole("row", { name: /하위 에픽/ });
   await expect
@@ -499,10 +498,14 @@ for (const locale of ["ko", "en"] as const) {
       </LocaleProvider>,
     );
 
-    const count = screen.getByText("1/3 · 33%", { exact: true }).element();
-    const cell = count.closest("td")!;
+    const row = screen.getByRole("row", { name: /하위 에픽 B/ });
+    const count = row.getByText("1/3 · 33%", { exact: true }).element();
+    const bar = row
+      .getByRole("progressbar", { name: MESSAGES[locale].epics.progress("desk-a.1") })
+      .element();
+    const cell = row.getByRole("cell").filter({ hasText: "1/3 · 33%" }).element();
     const cellBox = cell.getBoundingClientRect();
-    for (const element of [count, count.previousElementSibling!]) {
+    for (const element of [count, bar]) {
       const box = element.getBoundingClientRect();
       expect(box.left, `${locale} ${element.tagName} 왼쪽 끝`).toBeGreaterThanOrEqual(cellBox.left);
       expect(box.right, `${locale} ${element.tagName} 오른쪽 끝`).toBeLessThanOrEqual(

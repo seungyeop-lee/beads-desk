@@ -406,6 +406,7 @@ export const enMessages: Messages = {
     groups: { open: "Open epics", closed: "Closed epics" },
     toggleGroup: (label, expanded) => `${expanded ? "Collapse" : "Expand"} ${label}`,
     closedOn: (date) => `Closed ${date}`,
+    closedChildCount: "Closed child issues",
   },
   graph: {
     scopes: { epic: "Order", center: "Blocks chain" },

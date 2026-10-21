@@ -2,6 +2,8 @@ import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { ActivityList } from "./ActivityList";
+import { codeMirrorDom } from "@/client/ui/designSystem/codeMirrorDom.testkit";
+import { milkdownDom } from "@/client/ui/designSystem/milkdownDom.testkit";
 
 vi.mock("@/client/modules/issues/application/useIssueHistory", () => ({
   useIssueHistory: () => ({ data: [], error: null, loading: false }),
@@ -27,7 +29,9 @@ test("활동 목록에 섞인 댓글의 mermaid 그림을 코드 대신 그림�
   );
 
   await expect
-    .poll(() => screen.container.querySelector(".preview svg")?.textContent)
+    .poll(() => screen.container.querySelector(milkdownDom.previewDiagram)?.textContent)
     .toContain("활동 그림");
-  expect(screen.container.querySelector<HTMLElement>(".cm-content")!.checkVisibility()).toBe(false);
+  expect(
+    screen.container.querySelector<HTMLElement>(codeMirrorDom.content)!.checkVisibility(),
+  ).toBe(false);
 });

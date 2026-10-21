@@ -4,6 +4,8 @@ import { render } from "vitest-browser-react";
 import { escapeStepHandlers } from "@/client/ui/designSystem/modal";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { EditableMarkdown } from "./EditableMarkdown";
+import { codeMirrorDom } from "@/client/ui/designSystem/codeMirrorDom.testkit";
+import { milkdownDom } from "@/client/ui/designSystem/milkdownDom.testkit";
 
 test("Windows 경로 링크가 있는 본문에서 다른 문단만 고쳐 저장하면 링크 원문은 글자 그대로 남는다", async () => {
   const link = "[a](C:\\work\\.beads\\a.md) ![그림](C:\\a_b\\_x.png)";
@@ -41,8 +43,8 @@ test("코드 블록 안에서 언어를 바꾸고 고친 뒤 Ctrl/Cmd+Enter를 �
     .getByRole("listitem")
     .filter({ hasText: /^JavaScript$/ })
     .click();
-  await expect.poll(() => editor.element().querySelector(".preview-panel")).toBeNull();
-  await userEvent.click(editor.element().querySelector(".cm-content")!);
+  await expect.poll(() => editor.element().querySelector(milkdownDom.previewPanel)).toBeNull();
+  await userEvent.click(editor.element().querySelector(codeMirrorDom.content)!);
   await userEvent.keyboard("{ControlOrMeta>}{End}{/ControlOrMeta} // 고침");
   await userEvent.keyboard("{ControlOrMeta>}{Enter}{/ControlOrMeta}");
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HelpTooltip } from "./HelpTooltip";
 
@@ -17,15 +17,23 @@ type Props = {
 /** 화면 맨 위의 제목 줄입니다. */
 export function ScreenHeader({ title, tone, count, loading, help, children }: Props) {
   const messages = useMessages();
+  const countId = useId();
   return (
     <header className="@container flex flex-wrap items-end gap-x-6 gap-y-3 pt-4">
       <div className="relative flex min-w-0 items-center gap-3">
         {tone && <span className={`tone-dot ${tone} size-3`} />}
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <h1
+          className="text-2xl font-bold tracking-tight"
+          aria-describedby={count !== undefined ? countId : undefined}
+        >
+          {title}
+        </h1>
         {/* 설명은 이 div 아래에 제목과 같은 왼쪽 끝부터 띄우고, 폭은 header(@container) 폭 이하로 줄입니다. */}
         {help && <HelpTooltip help={help} />}
         {count !== undefined && (
-          <span className="font-mono text-sm text-base-content/45 tabular-nums">{count}</span>
+          <span id={countId} className="font-mono text-sm text-base-content/45 tabular-nums">
+            {count}
+          </span>
         )}
         {loading && (
           <span

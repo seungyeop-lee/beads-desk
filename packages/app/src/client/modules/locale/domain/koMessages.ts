@@ -422,6 +422,7 @@ export const koMessages = {
     toggleGroup: (label: string, expanded: boolean) =>
       `${label} 묶음 ${expanded ? "접기" : "펼치기"}`,
     closedOn: (date: string) => `닫은 날 ${date}`,
+    closedChildCount: "닫힌 하위 이슈 수",
   },
   graph: {
     scopes: { epic: "순서", center: "선행·후속" },

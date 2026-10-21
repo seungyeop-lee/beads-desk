@@ -347,8 +347,12 @@ function EpicCount({
   total: number;
   percent: number | null;
 }) {
+  const messages = useMessages();
   return (
-    <span className="flex shrink-0 gap-1.5 whitespace-nowrap font-mono text-xs text-base-content/55 tabular-nums">
+    <span
+      title={messages.epics.closedChildCount}
+      className="flex shrink-0 gap-1.5 whitespace-nowrap font-mono text-xs text-base-content/55 tabular-nums"
+    >
       <span className="w-14 text-right">
         {closed}/{total}
       </span>

@@ -3,6 +3,8 @@ import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { MarkdownEditor } from "./MarkdownEditor";
+import { codeMirrorDom } from "./codeMirrorDom.testkit";
+import { milkdownDom } from "./milkdownDom.testkit";
 
 // pele module은 테스트 파일마다 처음 불러올 때 한 번만 만들어집니다. 이 파일에 그림을 그리는 테스트를 더하면 먼저 실행된 테스트가
 // module을 불러 와서 아래 테스트가 module을 기다리게 만들 수 없으므로, 그런 테스트는 MarkdownEditor.browser.test.tsx에 둡니다.
@@ -31,7 +33,7 @@ test("mermaid가 아닌 코드 블록만 있는 본문은 pele module을 요청�
 
   await expect.element(screen.getByText("const value = 1;", { exact: true })).toBeVisible();
   await expect.element(screen.getByText("const other = 2;", { exact: true })).toBeVisible();
-  expect(screen.container.querySelector(".preview-panel")).toBeNull();
+  expect(screen.container.querySelector(milkdownDom.previewPanel)).toBeNull();
   expect(peleModule.requested).toBe(false);
   await screen.unmount();
 });
@@ -45,11 +47,14 @@ test("pele module이 늦게 도착하면 그동안 다른 언어로 바꾼 블�
       />
     </LocaleProvider>,
   );
-  await expect.poll(() => screen.container.querySelectorAll(".cm-content")).toHaveLength(2);
+  await expect.poll(() => screen.container.querySelectorAll(codeMirrorDom.content)).toHaveLength(2);
   await expect.poll(() => peleModule.requested).toBe(true);
-  const [first, second] = screen.container.querySelectorAll(".milkdown-code-block");
+  const [first, second] = screen.container.querySelectorAll(milkdownDom.codeBlock);
 
-  await userEvent.fill(first!.querySelector(".cm-content")!, "flowchart LR\n A[폐기할 입력] --> B");
+  await userEvent.fill(
+    first!.querySelector(codeMirrorDom.content)!,
+    "flowchart LR\n A[폐기할 입력] --> B",
+  );
   await screen
     .getByRole("button", { name: /^mermaid$/i })
     .first()
@@ -58,20 +63,20 @@ test("pele module이 늦게 도착하면 그동안 다른 언어로 바꾼 블�
     .getByRole("listitem")
     .filter({ hasText: /^JavaScript$/ })
     .click();
-  expect(screen.container.querySelector(".preview svg")).toBeNull();
+  expect(screen.container.querySelector(milkdownDom.previewDiagram)).toBeNull();
   peleModule.release();
 
   await expect
-    .poll(() => second!.querySelector(".preview svg")?.textContent)
+    .poll(() => second!.querySelector(milkdownDom.previewDiagram)?.textContent)
     .toContain("남은 그림");
   // 같은 종류의 그림은 요청한 순서대로 끝나므로, 나중에 요청한 그림이 나타나면 먼저 요청한 그림은 모두 끝났습니다.
   await userEvent.fill(
-    second!.querySelector(".cm-content")!,
+    second!.querySelector(codeMirrorDom.content)!,
     "flowchart LR\n A[마지막 그림] --> B",
   );
   await expect
-    .poll(() => second!.querySelector(".preview svg")?.textContent)
+    .poll(() => second!.querySelector(milkdownDom.previewDiagram)?.textContent)
     .toContain("마지막 그림");
-  expect(first!.querySelector(".preview-panel")).toBeNull();
-  expect(first!.querySelector(".cm-content")?.textContent).toContain("폐기할 입력");
+  expect(first!.querySelector(milkdownDom.previewPanel)).toBeNull();
+  expect(first!.querySelector(codeMirrorDom.content)?.textContent).toContain("폐기할 입력");
 });
