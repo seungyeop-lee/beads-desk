@@ -48,7 +48,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
           />
         </div>
         <div className="flex items-center justify-end gap-3">
-          <span className="text-xs text-base-content/40">Ctrl/⌘ + Enter</span>
+          <span className="text-xs text-base-content/40">{messages.comments.submitHint}</span>
           <button
             type="submit"
             className="btn btn-sm btn-primary"

@@ -23,7 +23,7 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
   });
   const next = page.getByRole("region", { name: "다음에 할 일" });
   const screens = page.getByRole("navigation", { name: "화면" });
-  const picker = page.getByRole("combobox", { name: "workspace", exact: true });
+  const picker = page.getByRole("combobox", { name: "이 탭의 workspace", exact: true });
   const epicProgress = page.getByRole("region", {
     name: "에픽 진행률",
     exact: true,
@@ -112,5 +112,7 @@ test("등록한 workspace가 하나뿐이면 헤더에 workspace 선택을 보�
   await page.goto("focus");
   // 선택 대신 이 탭의 workspace 이름만 보이면 목록을 받은 뒤입니다.
   await expect(page.getByTitle(workspace.path, { exact: true })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "workspace", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "이 탭의 workspace", exact: true })).toHaveCount(
+    0,
+  );
 });

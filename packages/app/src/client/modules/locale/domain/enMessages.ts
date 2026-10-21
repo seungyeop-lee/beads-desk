@@ -18,6 +18,7 @@ export const enMessages: Messages = {
     screens: "Screens",
     newIssue: "New issue",
     awaitingCount: (count) => `${count} waiting`,
+    workspace: "Workspace in this tab",
   },
   settings: {
     title: "Settings",
@@ -293,6 +294,7 @@ export const enMessages: Messages = {
     newComment: "New comment",
     placeholder: "Leave a comment",
     submit: "Comment",
+    submitHint: "Ctrl/⌘ + Enter to comment",
   },
   activity: {
     title: "Activity",

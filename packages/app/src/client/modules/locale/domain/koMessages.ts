@@ -32,6 +32,7 @@ export const koMessages = {
     newIssue: "새 이슈",
     /** 스크린 리더가 상단 탭 이름 뒤에 이어 읽는 개수입니다. 화면에는 숫자만 보입니다. */
     awaitingCount: (count: number) => `${count}개`,
+    workspace: "이 탭의 workspace",
   },
   settings: {
     title: "설정",
@@ -302,6 +303,7 @@ export const koMessages = {
     newComment: "새 댓글",
     placeholder: "댓글을 남기세요",
     submit: "댓글 남기기",
+    submitHint: "Ctrl/⌘ + Enter로 남기기",
   },
   activity: {
     title: "활동",

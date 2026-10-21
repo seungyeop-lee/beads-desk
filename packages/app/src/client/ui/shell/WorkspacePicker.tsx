@@ -2,6 +2,7 @@ import { useRouter } from "next/navigation";
 import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspaces";
 import { useScreenPathname, useWorkspaceSlug } from "@/client/ui/address/workspaceAddress";
 import { FolderIcon } from "@/client/ui/designSystem/icons";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { workspaceHref } from "@/shared/contract/workspaces";
 
 /**
@@ -13,6 +14,7 @@ export function WorkspacePicker() {
   const current = useWorkspaceSlug();
   const screenPathname = useScreenPathname();
   const router = useRouter();
+  const messages = useMessages();
 
   const currentRoot = data?.workspaces.find((workspace) => workspace.slug === current)?.root;
   if (!data) return null;
@@ -32,7 +34,7 @@ export function WorkspacePicker() {
       <FolderIcon width={15} height={15} className="pointer-events-none absolute left-2.5" />
       <select
         className="ghost-select min-w-0 max-w-full pl-8"
-        aria-label="workspace"
+        aria-label={messages.shell.workspace}
         title={currentRoot}
         value={current}
         onChange={(event) => router.push(switchedHref(event.target.value, screenPathname))}
