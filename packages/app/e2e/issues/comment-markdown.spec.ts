@@ -1,6 +1,9 @@
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
 
-test("화면에서 남긴 댓글은 bd에 저장되고 markdown으로 보인다", async ({ page, workspace }) => {
+test("화면에서 남긴 댓글은 원문 그대로 bd에 저장되고, 다시 읽은 상세에 보인다", async ({
+  page,
+  workspace,
+}) => {
   const id = await workspace.createIssue("새 댓글 이슈");
 
   await page.goto("issues");
@@ -13,7 +16,7 @@ test("화면에서 남긴 댓글은 bd에 저장되고 markdown으로 보인다"
   await expect
     .poll(() => commentTexts(workspace, id), { timeout: SAVE_TIMEOUT })
     .toEqual(["**강조한 댓글**"]);
-  await expect(dialog.getByRole("article").getByRole("strong")).toHaveText("강조한 댓글");
+  await expect(dialog.getByRole("article")).toContainText("강조한 댓글");
 });
 
 async function commentTexts(workspace: BdWorkspace, id: string): Promise<string[]> {

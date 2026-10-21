@@ -1,10 +1,11 @@
 import { expect, test } from "../support/bdWorkspace";
 import { TIMEOUT_SCALE } from "../support/stress";
+import { titleRow } from "../support/tableRows";
 
 // CLI로 바꾼 내용은 새로고침 없이 화면에 오므로, 그 반영을 기다리는 시간을 넉넉히 잡습니다.
 const NOTIFY_TIMEOUT = 10_000 * TIMEOUT_SCALE;
 
-test("상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸면 새로고침하지 않아도 화면에 반영된다", async ({
+test("선행 이슈에 막힌 이슈는 목록과 상세에 막힘으로 보이고, 상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸거나 선행 이슈를 닫으면 새로고침하지 않아도 화면에 반영된다", async ({
   page,
   workspace,
 }) => {
@@ -13,9 +14,16 @@ test("상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸면 새로
     [["main", "dependency"]],
   );
 
+  await page.goto("issues");
+  await expect(
+    titleRow(page, "주 이슈").getByRole("link", { name: `${dependency}을(를) 기다리는 중` }),
+  ).toBeVisible();
+
   await page.goto(`issues?issue=${main}&side=${dependency}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
+  const banner = dialog.getByRole("region", { name: "먼저 끝나야 하는 이슈가 있습니다" });
   const side = page.getByRole("region", { name: `${dependency} 이슈 옆 패널` });
+  await expect(banner.getByRole("link", { name: "선행 이슈", exact: true })).toBeVisible();
   await expect(dialog.getByLabel("상태", { exact: true })).toHaveValue("open");
   await expect(side.getByRole("heading", { name: "선행 이슈" })).toBeVisible();
   await expect(side.getByText("막힘", { exact: true })).toHaveCount(0);
@@ -27,6 +35,10 @@ test("상세와 옆 패널이 열린 채로 CLI에서 상태를 바꾸면 새로
     timeout: NOTIFY_TIMEOUT,
   });
   await expect(side.getByText("막힘", { exact: true })).toBeVisible({ timeout: NOTIFY_TIMEOUT });
+
+  await workspace.bd("close", dependency);
+
+  await expect(banner).toHaveCount(0, { timeout: NOTIFY_TIMEOUT });
 });
 
 test("페이지를 연 직후 CLI로 만든 이슈를 놓치지 않는다", async ({ page, workspace }) => {

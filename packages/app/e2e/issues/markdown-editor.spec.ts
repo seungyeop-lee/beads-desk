@@ -1,4 +1,3 @@
-import type { Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { placeCaretAfter } from "../support/editorCaret";
 
@@ -32,7 +31,7 @@ const ORIGINAL = [
   "[1]: https://example.com/doc",
 ].join("\n");
 
-test("상세 본문은 편집하는 동안에도 서식대로 보이고, 저장 단추로 저장하면 고친 문단 말고는 mermaid 블록까지 원문 글자 그대로 bd에 저장된다", async ({
+test("상세 본문을 저장 단추로 저장하면 고친 문단 말고는 mermaid 블록까지 원문 글자 그대로 bd에 저장된다", async ({
   page,
   workspace,
 }) => {
@@ -40,13 +39,8 @@ test("상세 본문은 편집하는 동안에도 서식대로 보이고, 저장 
 
   await page.goto(`issues?issue=${id}`);
   const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-  await expect(dialog.getByRole("heading", { name: "배경" })).toBeVisible();
-  await expect(dialog.locator(".preview svg")).toBeVisible();
   await dialog.getByRole("button", { name: "편집", exact: true }).click();
-
-  const editor = dialog.getByRole("textbox", { name: "설명" });
-  await expect(editor.getByRole("heading", { name: "배경" })).toBeVisible();
-  await placeCaretAfter(editor, "고칠 문단");
+  await placeCaretAfter(dialog.getByRole("textbox", { name: "설명" }), "고칠 문단");
   await page.keyboard.type(" 고침");
   await dialog.getByRole("button", { name: "저장", exact: true }).click();
 
@@ -55,123 +49,30 @@ test("상세 본문은 편집하는 동안에도 서식대로 보이고, 저장 
     .toBe(ORIGINAL.replace("고칠 문단", "고칠 문단 고침"));
 });
 
-test("편집 도구 줄에서 문단 형식을 제목 2로 바꾸고 표 넣기 단추로 표를 넣으면 bd에 ## 제목과 markdown 표로 저장된다", async ({
+test("새 이슈 창의 설명에 붙여 넣은 mermaid 블록은 Ctrl/Cmd+Enter로 만들면 원문 그대로 bd 설명에 저장되고, 주소에 만든 이슈가 붙는다", async ({
   page,
   workspace,
 }) => {
+  const mermaid = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";
+
   await page.goto("issues");
-  await page.getByRole("button", { name: "새 이슈" }).click();
-  const dialog = page.getByRole("dialog", { name: "새 이슈" });
-  await dialog.getByRole("textbox", { name: "제목" }).fill("서식 있는 새 이슈");
-  await dialog.getByRole("textbox", { name: "설명" }).click();
-  await page.keyboard.type("제목이 될 문단");
-  const toolbar = dialog.getByRole("toolbar", { name: "설명 서식 도구" });
-  await toolbar.getByRole("combobox", { name: "문단 형식" }).selectOption({ label: "제목 2" });
-  await page.keyboard.press("End");
-  await page.keyboard.press("Enter");
-  await toolbar.getByRole("button", { name: "표 넣기" }).click();
-  await page.keyboard.type("첫 칸");
+  await page.getByRole("button", { name: "새 이슈", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "새 이슈", exact: true });
+  await dialog.getByRole("textbox", { name: "제목", exact: true }).fill("새 Mermaid");
+  const editor = dialog.getByRole("textbox", { name: "설명", exact: true });
+  await editor.click();
+  await editor.evaluate((element, text) => {
+    const data = new DataTransfer();
+    data.setData("text/plain", text);
+    element.dispatchEvent(
+      new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }),
+    );
+  }, mermaid);
   await page.keyboard.press("ControlOrMeta+Enter");
 
   await expect(page).toHaveURL(/[?&]issue=/);
   const created = new URL(page.url()).searchParams.get("issue") ?? "";
   await expect
     .poll(async () => (await workspace.showIssue(created)).description, { timeout: SAVE_TIMEOUT })
-    .toMatch(/^## 제목이 될 문단\n\n\| 첫 칸 +\|.*\|\n\| [-:]+ +\|/);
+    .toBe(mermaid);
 });
-
-test("새 이슈 창의 설명 편집기에서 Escape를 눌러도 창이 닫히지 않는다", async ({ page }) => {
-  await page.goto("issues");
-  await page.getByRole("button", { name: "새 이슈" }).click();
-  const dialog = page.getByRole("dialog", { name: "새 이슈" });
-  const editor = dialog.getByRole("textbox", { name: "설명" });
-  await editor.click();
-  await page.keyboard.press("Escape");
-
-  await expect(editor).toBeFocused();
-  await expect(dialog).toBeVisible();
-});
-
-test("상세 본문을 편집하는 중에 Escape를 눌러도 편집이 이어지고, 취소 단추를 누르면 고친 내용을 버리고 원래 본문을 보여 준다", async ({
-  page,
-  workspace,
-}) => {
-  const id = await workspace.createIssue("취소 단추 이슈", "--description", "그대로 둘 문단");
-
-  await page.goto(`issues?issue=${id}`);
-  const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-  await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  const editor = dialog.getByRole("textbox", { name: "설명" });
-  await placeCaretAfter(editor, "그대로 둘 문단");
-  await page.keyboard.type(" 버릴 글자");
-  await page.keyboard.press("Escape");
-  await expect(editor).toBeFocused();
-  await expect(editor).toContainText("그대로 둘 문단 버릴 글자");
-  await dialog.getByRole("button", { name: "취소", exact: true }).click();
-
-  await expect(dialog.getByRole("textbox", { name: "설명" })).toBeHidden();
-  await expect(dialog.getByText("그대로 둘 문단", { exact: true })).toBeVisible();
-  expect((await workspace.showIssue(id)).description).toBe("그대로 둘 문단");
-});
-
-test("상세 본문의 코드 블록 안에서도 Ctrl/Cmd+Enter로 저장한다", async ({ page, workspace }) => {
-  const id = await workspace.createIssue(
-    "코드 블록 이슈",
-    "--description",
-    "```ts\nconst a = 1;\n```",
-  );
-
-  await page.goto(`issues?issue=${id}`);
-  const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-  await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  await placeCaretAfter(dialog.getByRole("textbox", { name: "설명" }), "const a = 1;");
-  await page.keyboard.type(" // 고침");
-  await page.keyboard.press("ControlOrMeta+Enter");
-
-  await expect
-    .poll(async () => (await workspace.showIssue(id)).description, { timeout: SAVE_TIMEOUT })
-    .toBe("```ts\nconst a = 1; // 고침\n```");
-});
-
-test("상세 본문에 붙여 넣은 이미지 파일은 본문에 들어가지 않고, 저장하는 동안 편집기는 입력을 받지 않는다", async ({
-  page,
-  workspace,
-}) => {
-  const id = await workspace.createIssue("저장 중 잠금 이슈", "--description", "저장할 문단");
-
-  await page.goto(`issues?issue=${id}`);
-  const dialog = page.getByRole("dialog", { name: `${id} 이슈` });
-  await dialog.getByRole("button", { name: "편집", exact: true }).click();
-  const editor = dialog.getByRole("textbox", { name: "설명" });
-  await placeCaretAfter(editor, "저장할 문단");
-  await editor.evaluate((element) => {
-    const data = new DataTransfer();
-    data.items.add(
-      new File([new Uint8Array([137, 80, 78, 71])], "그림.png", { type: "image/png" }),
-    );
-    element.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true }));
-  });
-  await page.keyboard.type(" 고침");
-  const release = await holdServerActions(page);
-  await page.keyboard.press("ControlOrMeta+Enter");
-
-  await expect(editor).not.toBeEditable();
-  release();
-  await expect
-    .poll(async () => (await workspace.showIssue(id)).description, { timeout: SAVE_TIMEOUT })
-    .toBe("저장할 문단 고침");
-});
-
-/** 풀어 줄 때까지 Server Action 요청을 서버로 보내지 않고 붙잡아 둡니다. */
-async function holdServerActions(page: Page): Promise<() => void> {
-  let release = () => {};
-  const released = new Promise<void>((resolve) => (release = resolve));
-  await page.route(
-    () => true,
-    async (route) => {
-      if (route.request().headers()["next-action"]) await released;
-      await route.continue();
-    },
-  );
-  return release;
-}

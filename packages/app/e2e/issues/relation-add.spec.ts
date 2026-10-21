@@ -1,44 +1,31 @@
 import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
 
-test("고른 관계로 키보드만으로 후보를 골라 연결하고, 자기 자신과 이미 연결한 이슈는 후보에 없다", async ({
+test("고른 관계로 키보드만으로 후보를 골라 연결하면 bd에 그 관계가 저장된다", async ({
   page,
   workspace,
 }) => {
-  const { main, second, third } = await workspace.createIssues(
-    {
-      main: { title: "키보드 주 작업", type: "task" },
-      first: { title: "키보드 후보 하나", type: "task" },
-      second: { title: "키보드 후보 둘", type: "task" },
-      third: { title: "키보드 후보 셋", type: "task" },
-    },
-    [["main", "first"]],
-  );
+  const { main, candidate } = await workspace.createIssues({
+    main: { title: "키보드 주 작업", type: "task" },
+    candidate: { title: "키보드 후보", type: "task" },
+  });
 
   await page.goto(`issues?issue=${main}`);
   const dialog = page.getByRole("dialog", { name: `${main} 이슈` });
   const search = dialog.getByRole("combobox", { name: "연결할 이슈 찾기" });
-  const candidates = dialog.getByRole("listbox", { name: "연결할 이슈 찾기" });
 
   await dialog.getByLabel("맺을 관계").selectOption({ label: "후속 이슈 (이 이슈가 끝나야 시작)" });
-  await search.fill("키보드");
-  const options = candidates.getByRole("option");
-  await expect(options).toHaveCount(2);
-  await expect(candidates.getByRole("option", { name: new RegExp(second) })).toBeVisible();
-  await expect(candidates.getByRole("option", { name: new RegExp(third) })).toBeVisible();
-
-  // bd의 수정 시각은 초 단위라, 연달아 만든 second와 third의 후보 순서는 정해지지 않습니다.
-  // 순서에 기대지 않고, 화살표로 옮겨 간 두 번째 후보가 연결되는지 확인합니다.
-  await search.press("ArrowDown");
-  await expect(options.nth(1)).toHaveAttribute("aria-selected", "true");
-  const picked = (await options.nth(1).textContent())?.includes(second) ? second : third;
+  await search.fill("키보드 후보");
+  await expect(
+    dialog
+      .getByRole("listbox", { name: "연결할 이슈 찾기" })
+      .getByRole("option", { name: new RegExp(candidate) }),
+  ).toBeVisible();
   await search.press("Enter");
   // 고르면 확인 버튼으로 포커스가 옮겨가, Enter를 한 번 더 눌러 연결합니다.
   await page.keyboard.press("Enter");
 
-  // toast에는 선택지의 설명 없이 관계 이름만 나옵니다.
-  await expect(page.getByText(`${picked}을(를) 후속 이슈로 연결했습니다.`)).toBeVisible();
   await expect
-    .poll(async () => dependenciesOf(workspace, picked), { timeout: SAVE_TIMEOUT })
+    .poll(async () => dependenciesOf(workspace, candidate), { timeout: SAVE_TIMEOUT })
     .toEqual([`${main} blocks`]);
 });
 

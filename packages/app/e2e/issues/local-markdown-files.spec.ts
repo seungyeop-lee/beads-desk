@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { copyFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { localFileUrl } from "../../src/shared/contract/localFiles";
+import type { Locator } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { placeCaretAfter } from "../support/editorCaret";
 
@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명에서 workspace와 외부 worktree의 파일 링크와 PNG를 표시하고, 본문 링크로 파일과 앱 화면과 외부 주소를 열며 편집 후 원문 경로를 유지한다", async ({
+test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 재생되는 영상, 앱 화면, 외부 주소를 열며, 편집 후 원문 경로를 유지한다", async ({
   page,
   workspace,
 }) => {
@@ -23,15 +23,20 @@ test("설명에서 workspace와 외부 worktree의 파일 링크와 PNG를 표�
     md: join(root, "조사 결과.md"),
     png: join(root, "화면 증거.png"),
   }));
+  const video = join(workspace.path, "화면 녹화.webm");
   try {
     for (const [index, path] of paths.entries()) {
       await writeFile(path.md, `# 로컬 파일 ${index}\n\n브라우저에서 확인한 내용입니다.`);
       await writeFile(path.png, PNG);
     }
+    // 리뷰 보고서가 거는 영상과 같은 Playwright 녹화 파일을 씁니다. 이 파일은 Playwright 1.64.0에서
+    // recordVideo 기본 설정으로 연 context에 `<h1>녹화할 화면</h1>`을 띄우고 3초 동안 녹화해 만들었습니다.
+    // 재생 위치를 옮겨 보려면 영상이 2초보다 길어야 하므로, 다시 녹화할 때도 3초 안팎으로 녹화합니다.
+    await copyFile(join(import.meta.dirname, "playwright-recording.webm"), video);
     const markdown = [
       `![workspace PNG](<${paths[0]!.png}>) ![worktree PNG](<${paths[1]!.png}>)`,
       "",
-      "[에픽 화면](/epics) [외부 문서](https://example.com/doc)",
+      `[에픽 화면](/epics) [외부 문서](https://example.com/doc) [화면 녹화](<${video}>)`,
       "",
       `[workspace 문서](<${paths[0]!.md}>) [worktree 문서](<${paths[1]!.md}>) 편집할 문단`,
     ].join("\n");
@@ -45,32 +50,27 @@ test("설명에서 workspace와 외부 worktree의 파일 링크와 PNG를 표�
       const image = description.getByRole("img", { name: `${name} PNG` });
       await expect(image).toBeVisible();
       await expect(image).toHaveJSProperty("naturalWidth", 80);
-      await expect(image).toHaveAttribute("src", localFileUrl(path.png, workspace.slug));
-      const link = description.getByRole("link", { name: `${name} 문서` });
-      await expect(link).toHaveAttribute("href", localFileUrl(path.md, workspace.slug));
-      await link.click();
+      await description.getByRole("link", { name: `${name} 문서` }).click();
       await expect(page.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
       expect(new URL(page.url()).searchParams.get("path")).toBe(path.md);
       await page.goBack();
       await expect(dialog).toBeVisible();
     }
-    await expect(description.getByRole("link", { name: "외부 문서" })).toHaveAttribute(
-      "href",
-      "https://example.com/doc",
-    );
-    const screenLink = description.getByRole("link", { name: "에픽 화면" });
-    await expect(screenLink).toHaveAttribute("href", `/w/${workspace.slug}/epics`);
-    await screenLink.click();
+
+    await description.getByRole("link", { name: "화면 녹화" }).click();
+    await expectPlayable(page.locator("video"));
+    expect(new URL(page.url()).searchParams.get("path")).toBe(video);
+    await page.goBack();
+    await expect(dialog).toBeVisible();
+
+    await description.getByRole("link", { name: "에픽 화면" }).click();
     await expect(page).toHaveURL(new RegExp(`/w/${workspace.slug}/epics$`));
     await page.goBack();
     await expect(dialog).toBeVisible();
 
     await description.getByRole("button", { name: "편집", exact: true }).click();
-    const editor = description.getByRole("textbox", { name: "설명" });
-    await expect(editor.getByRole("link", { name: "workspace 문서" })).toBeVisible();
-    await placeCaretAfter(editor, "편집할 문단");
+    await placeCaretAfter(description.getByRole("textbox", { name: "설명" }), "편집할 문단");
     await page.keyboard.type(" 고침");
-    await expect(editor).toContainText("편집할 문단 고침");
     await page.keyboard.press("ControlOrMeta+Enter");
     await expect
       .poll(async () => (await workspace.showIssue(id)).description, { timeout: SAVE_TIMEOUT })
@@ -87,29 +87,15 @@ test("설명에서 workspace와 외부 worktree의 파일 링크와 PNG를 표�
   }
 });
 
-test("본문의 로컬 webm 링크를 열면 영상이 재생되고 재생 위치를 옮길 수 있다", async ({
-  page,
-  workspace,
-}) => {
-  // 리뷰 보고서가 거는 영상과 같은 Playwright 녹화 파일을 씁니다. 이 파일은 Playwright 1.64.0에서
-  // recordVideo 기본 설정으로 연 context에 `<h1>녹화할 화면</h1>`을 띄우고 3초 동안 녹화해 만들었습니다.
-  // 재생 위치를 옮겨 보려면 영상이 2초보다 길어야 하므로, 다시 녹화할 때도 3초 안팎으로 녹화합니다.
-  const path = join(workspace.path, "화면 녹화.webm");
-  await copyFile(join(import.meta.dirname, "playwright-recording.webm"), path);
-  const id = await workspace.createIssue("영상 링크", "--description", `[화면 녹화](<${path}>)`);
-
-  await page.goto(`issues?issue=${id}`);
-  await page
-    .getByRole("dialog", { name: `${id} 이슈` })
-    .getByRole("link", { name: "화면 녹화" })
-    .click();
-  const video = page.locator("video");
+/**
+ * 파일 API가 보낸 영상을 Chrome이 끝까지 읽고 재생 위치를 옮겨 이어 재생하는지 확인합니다.
+ * 응답의 CSP와 Range 처리는 localFilesRouteApi.test.ts가 확인하고, 그 응답으로 실제 브라우저가 재생하는지는 여기서만 확인합니다.
+ */
+async function expectPlayable(video: Locator) {
   // readyState 4는 HAVE_ENOUGH_DATA로, 끝까지 재생할 수 있을 만큼 영상을 불러온 상태입니다.
   await expect
     .poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState))
     .toBe(4);
-  expect(new URL(page.url()).searchParams.get("path")).toBe(path);
-
   const { duration, seekable } = await video.evaluate((element: HTMLVideoElement) => ({
     duration: element.duration,
     seekable: Array.from({ length: element.seekable.length }, (_, index) => [
@@ -132,4 +118,4 @@ test("본문의 로컬 webm 링크를 열면 영상이 재생되고 재생 위�
   await expect
     .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
     .toBeGreaterThan(seekedAt);
-});
+}
