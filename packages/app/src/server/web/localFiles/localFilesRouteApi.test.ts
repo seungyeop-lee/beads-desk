@@ -18,7 +18,15 @@ vi.mock("@/server/web/locale/requestLocale", () => ({ requestLocale: async () =>
 const get = (path: string, headers?: Record<string, string>) =>
   handleLocalFileRequest(new Request(`http://localhost${localFileUrl(path, "repo")}`, { headers }));
 
+// git hook 안에서 실행하면 GIT_DIR 등이 hook을 실행한 저장소를 가리켜, fixture를 만드는 git과 서버가 worktree를 찾는 git이
+// 그 저장소를 대상으로 실행됩니다. fixture를 만들 때와 테스트마다 GIT_ 환경 변수를 뺍니다.
+function unsetGitEnv(): void {
+  for (const key of Object.keys(process.env))
+    if (key.startsWith("GIT_")) vi.stubEnv(key, undefined);
+}
+
 beforeAll(async () => {
+  unsetGitEnv();
   // fixture는 기본 허용 루트(/tmp, /var/tmp, os.tmpdir()) 밖이어야 허용 밖 접근의 403 검사가 성립하므로,
   // 임시 디렉터리가 모두 기본 허용 루트가 된 지금은 프로젝트 디렉터리 아래에 만듭니다.
   parent = await mkdtemp(join(process.cwd(), "beads-desk-local-files-"));
@@ -58,6 +66,7 @@ beforeAll(async () => {
 // 개발자가 셸에 export한 허용 루트를 물려받으면 허용 밖이어야 할 파일이 허용되어 403 검사가 실패합니다.
 // 모든 테스트를 설정하지 않은 상태에서 시작하고, 허용 루트가 필요한 테스트만 값을 지정합니다.
 beforeEach(() => {
+  unsetGitEnv();
   vi.stubEnv("BEADS_DESK_LOCAL_FILE_ROOTS", undefined);
 });
 afterEach(() => {
