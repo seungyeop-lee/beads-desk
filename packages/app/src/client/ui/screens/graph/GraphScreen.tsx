@@ -17,6 +17,7 @@ import {
   useIssueHref,
   useScreenDetailReady,
 } from "@/client/ui/issues/IssueDetailRoute";
+import { ISSUE_DETAIL_PARAMS, ISSUE_PARAM, SIDE_PARAM } from "@/client/ui/issues/issueDetailParams";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { EdgeLegend } from "./EdgeLegend";
@@ -55,14 +56,13 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
       onClose={() => router.replace(backHref, { scroll: false })}
       // Escape는 옆 패널, 상세, 그래프 순으로 한 단계씩 닫습니다. 옆 패널은 옆 패널의 닫기 단추처럼 history에 쌓아 닫습니다.
       {...escapeStepHandlers(() => {
-        if (params.has("side")) {
+        if (params.has(SIDE_PARAM)) {
           const next = new URLSearchParams(params);
-          next.delete("side");
+          next.delete(SIDE_PARAM);
           router.push(`?${next}`, { scroll: false });
-        } else if (params.has("issue")) {
+        } else if (params.has(ISSUE_PARAM)) {
           replaceQueryOnly((next) => {
-            next.delete("issue");
-            next.delete("side");
+            for (const name of ISSUE_DETAIL_PARAMS) next.delete(name);
           });
         } else return false;
         return true;

@@ -81,7 +81,10 @@ test("상세 위에 겹쳐 연 그래프 안에 상세와 옆 패널이 열린 �
   );
   const origin = `/issues?issue=${second}`;
   const returnTo = `returnTo=${encodeURIComponent(origin)}`;
-  await page.goto(`issues?center=${second}&issue=${second}&side=${first}&${returnTo}`);
+  // section은 옆 패널을 닫는 Escape에서는 남고, 상세를 닫는 Escape에서 issue와 함께 지워져야 합니다.
+  await page.goto(
+    `issues?center=${second}&issue=${second}&side=${first}&section=human-gate&${returnTo}`,
+  );
   const screenDetail = page.getByRole("dialog", { name: `${second} 이슈` });
   const canvas = page.getByRole("region", { name: "의존 그래프" });
   const detail = page.getByRole("region", { name: `${second} 이슈`, exact: true });
@@ -92,7 +95,9 @@ test("상세 위에 겹쳐 연 그래프 안에 상세와 옆 패널이 열린 �
   await page.keyboard.press("Escape");
   await expect(side).toHaveCount(0);
   await expect(detail).toBeVisible();
-  await expect(page).toHaveURL(`issues?center=${second}&issue=${second}&${returnTo}`);
+  await expect(page).toHaveURL(
+    `issues?center=${second}&issue=${second}&section=human-gate&${returnTo}`,
+  );
 
   await page.keyboard.press("Escape");
   await expect(detail).toHaveCount(0);
