@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { constants } from "node:os";
+import { bdBin } from "./bdBin";
 import { isRecord } from "./issue";
 
 export type BdResult = {
@@ -159,9 +160,16 @@ async function startDoltServer(cwd: string): Promise<boolean> {
 
 // 대화형 UI 요청마다 Dolt auto-push가 일어나지 않도록 항상 sandbox mode로 실행합니다.
 function spawnBd(args: string[], cwd: string): Promise<BdResult> {
+  let bin: string;
+  try {
+    bin = bdBin();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return Promise.resolve({ code: SPAWN_FAILURE_CODE, stdout: "", stderr: message });
+  }
   return new Promise((resolve) => {
     // spawn을 정적 분석하면 Turbopack이 프로젝트 전체를 server 출력 추적 대상에 넣습니다.
-    const child = spawn(/*turbopackIgnore: true*/ bdBin(), ["--sandbox", ...args], {
+    const child = spawn(/*turbopackIgnore: true*/ bin, ["--sandbox", ...args], {
       cwd,
       env: bdEnv(),
       shell: false,
@@ -214,11 +222,6 @@ function bdEnv(): NodeJS.ProcessEnv {
   };
   for (const key of DB_LOCATION_ENV) delete env[key];
   return env;
-}
-
-/** 실행할 bd를 고르는 규칙입니다. e2e fixture가 서버와 같은 bd를 실행하도록 이 규칙을 가져가 씁니다. */
-export function bdBin(): string {
-  return process.env.BD_BIN || "bd";
 }
 
 /** bd를 실행하고 JSON 출력을 해석합니다. */

@@ -49,6 +49,22 @@ describe("runBd", () => {
     expect(result.stderr).toContain("ENOENT");
   });
 
+  test("Windows에서 실행할 bd.exe를 찾지 못하면 bd를 실행하지 않고 종료 코드 127과 BD_BIN 안내를 돌려준다", async () => {
+    const platform = Object.getOwnPropertyDescriptor(process, "platform")!;
+    Object.defineProperty(process, "platform", { ...platform, value: "win32" });
+    vi.stubEnv("BD_BIN", "");
+    vi.stubEnv("PATH", fakeBd.workDir);
+
+    try {
+      const result = await runBd(["list"], { cwd: fakeBd.workDir });
+
+      expect(result.code).toBe(127);
+      expect(result.stderr).toContain("Set BD_BIN to the full path of bd.exe");
+    } finally {
+      Object.defineProperty(process, "platform", platform);
+    }
+  });
+
   test("실행할 디렉터리가 없으면 bd가 없다는 오류 대신 디렉터리가 없다고 알린다", async () => {
     await useFakeBd("echo ok");
     const missing = join(fakeBd.workDir, "deleted-workspace");
