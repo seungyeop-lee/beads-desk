@@ -13,16 +13,14 @@ export function routeApiRequest(path = "/api", init?: RequestInit): Request {
   return new Request(url, init);
 }
 
-const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
-
 // 이 module을 import한 테스트 파일은 workspace를 고정해 두고, 테스트가 끝나면 원래 값과 mock을 되돌립니다.
 // bd 함수 mock은 파일마다 목록이 다르므로 각 테스트 파일의 vi.mock에서 골라 만듭니다.
 beforeEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = routeApiWorkspace;
+  vi.stubEnv("BEADS_DESK_WORKSPACE", routeApiWorkspace);
 });
 
 afterEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = originalWorkspace;
+  vi.unstubAllEnvs();
   vi.resetAllMocks();
 });
 

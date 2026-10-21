@@ -48,17 +48,16 @@ vi.mock("@/server/web/locale/requestLocale", () => ({
   requestLocale: () => Promise.resolve("ko"),
 }));
 
-const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 /** `/workspace` 디렉터리를 화면 주소에서 가리키는 이름입니다. */
 const routeApiWorkspaceSlug = "workspace";
 const written = { ok: true, value: null } as const;
 
 beforeEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = "/workspace";
+  vi.stubEnv("BEADS_DESK_WORKSPACE", "/workspace");
 });
 
 afterEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = originalWorkspace;
+  vi.unstubAllEnvs();
   vi.resetAllMocks();
 });
 

@@ -12,7 +12,6 @@ import {
 
 let launchRoot: string;
 let otherRoot: string;
-const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 
 async function beadsWorkspace(): Promise<string> {
   const root = await tempDir("beads-desk-runtime-");
@@ -66,11 +65,11 @@ beforeEach(async () => {
   delete (globalThis as Record<symbol, unknown>)[Symbol.for("beads-desk.serverRuntime")];
   launchRoot = await beadsWorkspace();
   otherRoot = await beadsWorkspace();
-  process.env.BEADS_DESK_WORKSPACE = launchRoot;
+  vi.stubEnv("BEADS_DESK_WORKSPACE", launchRoot);
 });
 
 afterEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = originalWorkspace;
+  vi.unstubAllEnvs();
 });
 
 function roots(): string[] {
@@ -131,7 +130,7 @@ test("worktree에서 띄우면 worktree 최상위 디렉터리를 등록한다",
   const nested = join(worktree, "packages", "app");
   await mkdir(nested, { recursive: true });
   delete (globalThis as Record<symbol, unknown>)[Symbol.for("beads-desk.serverRuntime")];
-  process.env.BEADS_DESK_WORKSPACE = nested;
+  vi.stubEnv("BEADS_DESK_WORKSPACE", nested);
 
   expect(roots()).toEqual([worktree]);
 });

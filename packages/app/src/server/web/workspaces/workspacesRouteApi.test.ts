@@ -11,7 +11,6 @@ vi.mock("@/server/web/locale/requestLocale", () => ({
 
 let launchRoot: string;
 let otherRoot: string;
-const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 
 async function beadsWorkspace(): Promise<string> {
   const root = await realpath(await mkdtemp(join(tmpdir(), "beads-desk-workspaces-")));
@@ -34,11 +33,11 @@ beforeEach(async () => {
   delete (globalThis as Record<symbol, unknown>)[Symbol.for("beads-desk.serverRuntime")];
   launchRoot = await beadsWorkspace();
   otherRoot = await beadsWorkspace();
-  process.env.BEADS_DESK_WORKSPACE = launchRoot;
+  vi.stubEnv("BEADS_DESK_WORKSPACE", launchRoot);
 });
 
 afterEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = originalWorkspace;
+  vi.unstubAllEnvs();
 });
 
 const entry = (root: string) => ({ root, slug: basename(root) });

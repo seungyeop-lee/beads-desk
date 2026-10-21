@@ -9,16 +9,15 @@ vi.mock("@/server/web/locale/requestLocale", () => ({
 }));
 
 const fakeBd = fakeBdWorkspace("beads-desk-issues-");
-const originalWorkspace = process.env.BEADS_DESK_WORKSPACE;
 
 // workspace 디렉터리가 테스트마다 바뀌므로, 서버 전역의 등록 목록도 새 디렉터리로 다시 만들게 지웁니다.
 beforeEach(() => {
   delete (globalThis as Record<symbol, unknown>)[Symbol.for("beads-desk.serverRuntime")];
-  process.env.BEADS_DESK_WORKSPACE = fakeBd.workDir;
+  vi.stubEnv("BEADS_DESK_WORKSPACE", fakeBd.workDir);
 });
 
 afterEach(() => {
-  process.env.BEADS_DESK_WORKSPACE = originalWorkspace;
+  vi.unstubAllEnvs();
 });
 
 /**
