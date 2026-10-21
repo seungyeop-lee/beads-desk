@@ -63,6 +63,10 @@ export function boardColumns(
   return columns;
 }
 
+/**
+ * 닫힌 열에 남길 이슈의 닫힌 시각 하한입니다. today는 오늘 현지 자정부터이고, 3d·7d·30d는 지금부터 N×24시간 전부터입니다.
+ * 나머지 기간은 "지금으로부터 N일 안에 닫힌 이슈"를 보여 주는 것이 의도이므로, 날짜 필터의 자정 경계(localDayRange)에 맞추지 않습니다.
+ */
 function closedSince(closedWindow: ClosedWindow, now: number): number {
   if (closedWindow === "today") {
     const today = new Date(now);

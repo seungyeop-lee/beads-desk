@@ -37,7 +37,7 @@ export function parseIssueDateFilter(
 
 /**
  * 시작일과 종료일("YYYY-MM-DD")이 덮는 시각 범위입니다. start 이상 end 미만이 범위 안이고, 두 날 모두 하루 전체를 포함합니다.
- * 날짜가 null인 쪽은 끝을 열어 두어 -Infinity나 Infinity입니다. 날짜로 기록을 거르는 화면은 모두 이 경계를 씁니다.
+ * 날짜가 null인 쪽은 끝을 열어 두어 -Infinity나 Infinity입니다. 시작일과 종료일을 골라 기록을 거르는 화면은 모두 이 경계를 씁니다.
  */
 export function localDayRange(
   from: string | null,
