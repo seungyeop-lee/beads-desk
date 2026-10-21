@@ -13,6 +13,8 @@
 - `bd-desk restart`: 추가한 workspace와 그 URL을 유지한 채 같은 포트로 서버를 다시 시작합니다. 지금 디렉터리의 workspace가 추가돼 있으면 그 workspace의 URL을, 아니면 서버 URL을 출력합니다. 실행 중인 서버가 없으면 지금 디렉터리의 workspace로 서버를 시작합니다.
 - `bd-desk --help`(또는 `-h`): 사용법을 출력합니다.
 
+workspace가 Dolt 서버를 쓰도록 설정돼 있으면(server mode), `bd-desk stop`은 beads-desk 서버만 종료하고 bd가 띄운 Dolt 서버는 계속 실행됩니다. bd는 Dolt 서버를 자신을 실행한 bd 명령보다 오래 살아 있도록 별도의 background process로 띄웁니다. Dolt 서버를 끄려면 workspace 디렉터리에서 `bd dolt stop`을 실행합니다. workspace를 지우거나 옮길 때는 그 전에 이 명령으로 Dolt 서버를 끕니다. shared-server mode에서는 이 컴퓨터의 모든 beads 프로젝트가 Dolt 서버 하나를 함께 쓰므로, `bd dolt stop`을 실행하면 다른 프로젝트가 쓰는 서버도 함께 꺼집니다.
+
 main checkout에 `.beads`가 있는 git 저장소라면, 그 저장소의 worktree에서 실행해도 됩니다. bd와 마찬가지로 worktree를 workspace로 쓰고, main 저장소의 이슈를 보여 줍니다.
 
 ## 옵션

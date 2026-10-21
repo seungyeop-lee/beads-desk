@@ -13,6 +13,8 @@ Run `bd-desk` in a beads workspace directory or any of its subdirectories.
 - `bd-desk restart`: Restarts the server on the same port, keeping the added workspaces and their URLs. It prints the URL of the current directory's workspace if that workspace was added, and the server URL otherwise. If no server is running, it starts one for the current directory.
 - `bd-desk --help` (or `-h`): Prints the usage.
 
+If the workspace is configured to use a Dolt server (server mode), `bd-desk stop` stops only the beads-desk server, and the Dolt server that bd started keeps running. bd starts the Dolt server as a separate background process so that it outlives the bd command that started it. To stop it, run `bd dolt stop` in the workspace directory. Do this before you delete or move the workspace. In shared-server mode, all beads projects on the machine share one Dolt server, so `bd dolt stop` stops it for the other projects too.
+
 In a git worktree of a repository whose main checkout has `.beads`, the worktree becomes the workspace and shows the main repository's issues, as `bd` does.
 
 ## Options
