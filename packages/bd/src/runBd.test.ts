@@ -41,7 +41,7 @@ describe("runBd", () => {
   });
 
   test("bd 실행 파일이 없으면 종료 코드 127과 실행 오류 메시지를 돌려준다", async () => {
-    process.env.BD_BIN = join(fakeBd.workDir, "missing-bd");
+    vi.stubEnv("BD_BIN", join(fakeBd.workDir, "missing-bd"));
 
     const result = await runBd(["list"], { cwd: fakeBd.workDir });
 

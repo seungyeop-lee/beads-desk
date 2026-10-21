@@ -1,7 +1,7 @@
 import { chmod, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 
 export type FakeResponse = { stdout?: string; stderr?: string; code?: number };
 
@@ -12,7 +12,8 @@ export async function fixture(name: string): Promise<string> {
 
 /**
  * bd 실행을 가짜 스크립트로 대신하는 테스트 환경입니다.
- * 테스트마다 임시 디렉터리를 새로 만들고, 테스트가 끝나면 BD_BIN을 원래 값으로 되돌립니다.
+ * 테스트마다 임시 디렉터리를 새로 만들고, 가짜 bd를 `vi.stubEnv`로 BD_BIN에 지정합니다.
+ * 테스트가 끝나면 `vi.unstubAllEnvs()`를 호출하므로, 테스트 파일이 `vi.stubEnv`로 바꾼 다른 환경 변수도 함께 되돌아갑니다.
  */
 export function fakeBdWorkspace(prefix: string): {
   /** 테스트마다 새로 만드는 임시 workspace 디렉터리입니다. */
@@ -28,21 +29,20 @@ export function fakeBdWorkspace(prefix: string): {
   fixture(name: string): Promise<string>;
 } {
   let currentDir = "";
-  const originalBdBin = process.env.BD_BIN;
 
   beforeEach(async () => {
     currentDir = await realpath(await mkdtemp(join(tmpdir(), prefix)));
   });
 
   afterEach(() => {
-    process.env.BD_BIN = originalBdBin;
+    vi.unstubAllEnvs();
   });
 
   async function install(body: string): Promise<void> {
     const fakeBd = join(currentDir, "fake-bd");
     await writeFile(fakeBd, `#!/bin/sh\n${body}\n`);
     await chmod(fakeBd, 0o755);
-    process.env.BD_BIN = fakeBd;
+    vi.stubEnv("BD_BIN", fakeBd);
   }
 
   return {
