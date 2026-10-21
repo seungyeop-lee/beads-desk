@@ -40,7 +40,12 @@ let pidLog: string;
 let serverScript: string;
 const openBrowser = vi.fn<(url: string) => void>();
 let printed: string[];
-let nextPort = 39_600 + Math.floor(Math.random() * 300);
+/**
+ * 테스트 포트는 OS가 나가는 연결에 배정하는 ephemeral 포트 범위(Linux 32768~60999, macOS와 Windows 49152~65535) 밖에서 고릅니다.
+ * 같은 기기의 어떤 연결이든 그 포트를 local 포트로 쓰고 있거나 TIME_WAIT로 남기고 있으면 listen이 EADDRINUSE로 실패합니다.
+ * 시작 포트는 32000 미만이고 daemon 하나가 포트 10개를 차지하므로, 이 파일에서 daemon을 76개까지 만들어도 32768을 넘지 않습니다.
+ */
+let nextPort = 20_000 + Math.floor(Math.random() * 12_000);
 
 beforeEach(async () => {
   root = await realpath(await mkdtemp(join(tmpdir(), "beads-desk-daemon-")));
@@ -479,6 +484,9 @@ test("다른 서버가 IPv6로 쓰고 있는 포트를 지정하면 서버를 �
 /** 다른 서버처럼 이 주소에서 요청을 받아 포트를 차지합니다. next dev는 IPv6 전체 주소(`::`)에서 받습니다. */
 async function listen(port: number, host: string): Promise<Server> {
   const server = createServer();
-  await new Promise<void>((resolve) => server.listen(port, host, resolve));
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, host, resolve);
+  });
   return server;
 }
