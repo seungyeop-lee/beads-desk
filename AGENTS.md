@@ -74,7 +74,7 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
   - 화면을 그리는 코드는 `useMessages()`로, 이벤트 처리처럼 browser에서만 실행되는 코드는 `documentMessages()`로 사전을 읽습니다.
   - Server Action과 Route API가 화면에 보내는 오류 문구는 `server/web/locale/serverMessages.ts`에 두 언어로 넣습니다.
 - 디렉터리는 함께 바뀌는 기능 이름으로 묶습니다. `utils`, `helpers`, `common` 같은 역할 이름 디렉터리는 만들지 않습니다.
-- 테스트에서만 쓰는 팩토리, fixture, 가짜 bd 같은 코드는 그 코드를 쓰는 테스트 가까이에 `*.testkit.ts`(component fixture는 `*.testkit.tsx`)로 둡니다. 테스트가 아닌 파일은 `vitest`와 `*.testkit` 파일을 import하지 않습니다.
+- 테스트에서만 쓰는 팩토리, fixture, 가짜 bd 같은 코드는 그 코드를 쓰는 테스트 가까이에 `*.testkit.ts`(component fixture는 `*.testkit.tsx`)로 둡니다. `packages/app/src`와 `packages/bd/src`에서 테스트가 아닌 파일은 `vitest`와 `*.testkit` 파일을 import하지 않습니다.
 
 import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `packages/app/src/server/architecture.test.ts`가, 파일 단위 순환은 oxlint의 `import/no-cycle`이 검사합니다. 경계를 바꾸면 이 검사들도 함께 고칩니다.
 

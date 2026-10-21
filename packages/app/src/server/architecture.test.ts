@@ -1,11 +1,18 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname, join, matchesGlob, relative, resolve, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, test } from "vitest";
 
 const SRC_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const APP_DIR = resolve(SRC_DIR, "..");
 const PACKAGES_DIR = resolve(APP_DIR, "..");
+const REPO_DIR = resolve(PACKAGES_DIR, "..");
+
+// lint와 같은 파일을 테스트 코드로 보도록 eslint 설정의 기준을 그대로 읽습니다.
+// 설정 파일이 JS이고 src 밖에 있어서, 정적 import는 typecheck(`allowJs: false`)와 lint(상위 디렉터리 파일 import 금지)에서 실패합니다.
+const { testCode } = (await import(pathToFileURL(join(REPO_DIR, "eslint.config.js")).href)) as {
+  testCode: readonly string[];
+};
 
 type Layer =
   | "app"
@@ -234,10 +241,14 @@ function sourceFilesIn(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) return sourceFilesIn(full);
-    if (!/\.(?:ts|tsx)$/.test(entry.name) || /\.(?:test|testkit)\.(?:ts|tsx)$/.test(entry.name))
-      return [];
+    if (!/\.(?:ts|tsx)$/.test(entry.name) || isTestCode(full)) return [];
     return [full];
   });
+}
+
+function isTestCode(file: string): boolean {
+  const path = relative(REPO_DIR, file).split(sep).join("/");
+  return testCode.some((glob) => matchesGlob(path, glob));
 }
 
 const IMPORT_PATTERN = /(?:from|import)\s*\(?\s*["']([^"']+)["']/g;

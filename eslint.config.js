@@ -167,7 +167,8 @@ const restrict = (...patterns) => ({
 });
 
 // 테스트 지원 파일(`*.testkit.ts`, `*.testkit.tsx`)은 테스트 파일처럼 production layer 규칙에서 뺍니다.
-const testCode = ["**/*.test.ts", "**/*.test.tsx", "**/*.testkit.ts", "**/*.testkit.tsx"];
+// `packages/app/src/server/architecture.test.ts`도 이 값을 읽어 같은 파일을 테스트 코드로 보므로, 기준은 여기서만 고칩니다.
+export const testCode = ["**/*.test.ts", "**/*.test.tsx", "**/*.testkit.ts", "**/*.testkit.tsx"];
 
 export default defineConfig([
   globalIgnores(["**/node_modules/**", "**/.next/**", "**/next-env.d.ts", "**/dist/**"]),
@@ -198,7 +199,8 @@ export default defineConfig([
   },
   {
     // 아래 layer 규칙이 `@typescript-eslint/no-restricted-imports`의 패턴을 덮어쓰므로, 모든 layer에 걸리는 이 규칙은 base rule로 따로 둡니다.
-    files: ["packages/app/src/**/*.{ts,tsx}"],
+    // bd package는 app의 server bundle에 들어가므로 같은 규칙을 겁니다.
+    files: ["packages/app/src/**/*.{ts,tsx}", "packages/bd/src/**/*.ts"],
     ignores: testCode,
     rules: {
       "no-restricted-imports": ["error", { patterns: [boundaries.testSupportFromProduction] }],
