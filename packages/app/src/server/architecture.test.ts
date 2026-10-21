@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, matchesGlob, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import ts from "typescript";
 import { expect, test } from "vitest";
 
 const SRC_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -136,6 +137,26 @@ test("adapter layer 아래에 다른 layer 이름을 다시 두지 않는다", (
 test("app과 bd package의 src에는 역할 이름으로 묶은 디렉터리를 두지 않는다", () => {
   expect([SRC_DIR, join(PACKAGES_DIR, "bd/src")].flatMap(roleNamedDirectoriesIn)).toEqual([]);
 });
+
+test("oxlint의 화면 문구 규칙은 eslint 설정이 테스트 코드로 보는 .tsx 파일을 검사에서 뺀다", () => {
+  expect(jsxNoLiteralsExcludedFiles().toSorted()).toEqual(
+    testCode.filter((glob) => glob.endsWith(".tsx")).toSorted(),
+  );
+});
+
+type OxlintConfig = {
+  overrides: { excludeFiles?: string[]; rules: Record<string, unknown> }[];
+};
+
+function jsxNoLiteralsExcludedFiles(): string[] {
+  const file = join(REPO_DIR, ".oxlintrc.json");
+  // `.oxlintrc.json`은 주석이 있는 JSON이라 `JSON.parse`로 읽지 못합니다.
+  const { config } = ts.parseConfigFileTextToJson(file, readFileSync(file, "utf8")) as {
+    config: OxlintConfig;
+  };
+  const override = config.overrides.find((entry) => "react/jsx-no-literals" in entry.rules);
+  return override?.excludeFiles ?? [];
+}
 
 function describeBoundaryViolation(): string | null {
   for (const file of sourceFilesIn(SRC_DIR)) {

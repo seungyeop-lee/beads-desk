@@ -167,7 +167,9 @@ const restrict = (...patterns) => ({
 });
 
 // 테스트 지원 파일(`*.testkit.ts`, `*.testkit.tsx`)은 테스트 파일처럼 production layer 규칙에서 뺍니다.
-// `packages/app/src/server/architecture.test.ts`도 이 값을 읽어 같은 파일을 테스트 코드로 보므로, 기준은 여기서만 고칩니다.
+// `packages/app/src/server/architecture.test.ts`도 이 값을 읽어 같은 파일을 테스트 코드로 봅니다.
+// `.oxlintrc.json`은 이 값을 import할 수 없어서 `react/jsx-no-literals` override의 `excludeFiles`에 `.tsx` glob을 따로 적습니다.
+// 이 값을 고치면 그 사본도 함께 고칩니다. 두 값이 다르면 `architecture.test.ts`가 실패합니다.
 export const testCode = ["**/*.test.ts", "**/*.test.tsx", "**/*.testkit.ts", "**/*.testkit.tsx"];
 
 export default defineConfig([
