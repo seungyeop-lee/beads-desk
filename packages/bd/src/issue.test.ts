@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { fixture } from "./fakeBd";
+import { fixture } from "./fakeBd.testkit";
 import {
   awaitingHuman,
   awaitsHumanDecision,

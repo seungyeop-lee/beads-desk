@@ -156,6 +156,13 @@ export const test = base.extend<
 
 export { expect };
 
+/** bd에 저장된 이슈 상태가 status가 될 때까지 SAVE_TIMEOUT 동안 다시 확인합니다. */
+export async function expectStatus(workspace: BdWorkspace, id: string, status: string) {
+  await expect
+    .poll(async () => (await workspace.showIssue(id)).status, { timeout: SAVE_TIMEOUT })
+    .toBe(status);
+}
+
 /** template을 복사해 workspace를 만들고 서버에 등록합니다. */
 async function createWorkspace(
   appServerUrl: string,

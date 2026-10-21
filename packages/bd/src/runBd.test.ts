@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { fakeBdWorkspace } from "./fakeBd";
+import { fakeBdWorkspace } from "./fakeBd.testkit";
 import { runBd, runBdChecked } from "./runBd";
 
 const fakeBd = fakeBdWorkspace("beads-desk-bd-");

@@ -1,6 +1,6 @@
-import { basename } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { fakeBdWorkspace } from "@/server/infra/fakeBd.testkit";
+import { fakeBdWorkspace } from "@beads-desk/bd/fakeBd.testkit";
+import { fakeBdRouteApiRequest } from "@/server/web/http/fakeBdRouteApi.testkit";
 import { handleActivityFeedRequest } from "./activityFeedRouteApi";
 
 // Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.
@@ -19,12 +19,6 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
 });
-
-function request(query: string): Request {
-  const url = new URL(`/api/activity?${query}`, "http://localhost");
-  url.searchParams.set("workspace", basename(fakeBd.workDir));
-  return new Request(url);
-}
 
 test("bd export 레코드에서 조회 범위 안의 기록을 새것부터 limit건까지 돌려주고, gate의 기록은 뺀다", async () => {
   const exported = [
@@ -54,7 +48,7 @@ test("bd export 레코드에서 조회 범위 안의 기록을 새것부터 limi
   const until = Date.parse("2026-10-21T00:00:00Z");
 
   const response = await handleActivityFeedRequest(
-    request(`since=${since}&until=${until}&limit=1`),
+    fakeBdRouteApiRequest(fakeBd.workDir, `/api/activity?since=${since}&until=${until}&limit=1`),
   );
 
   expect(response.status).toBe(200);
@@ -82,7 +76,9 @@ test.each(["limit=0", "limit=abc", "since=x&limit=10", "until=&limit=10"])(
   async (query) => {
     await fakeBd.useFakeBd({});
 
-    const response = await handleActivityFeedRequest(request(query));
+    const response = await handleActivityFeedRequest(
+      fakeBdRouteApiRequest(fakeBd.workDir, `/api/activity?${query}`),
+    );
 
     expect(response.status).toBe(400);
     expect((await response.json()).ok).toBe(false);

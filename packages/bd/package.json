@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./issue": "./src/issue.ts"
+    "./issue": "./src/issue.ts",
+    "./fakeBd.testkit": "./src/fakeBd.testkit.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p ."

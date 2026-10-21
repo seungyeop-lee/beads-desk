@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
+import { expect, expectStatus, test } from "../support/bdWorkspace";
 
 test("CLI로 보류한 결정은 보류로 보이고, 화면에서 열림으로 되돌릴 수 있다", async ({
   page,
@@ -58,10 +58,4 @@ async function submitCloseReason(page: Page) {
 
 function rowStatus(page: Page, id: string) {
   return page.getByRole("combobox", { name: `${id} 상태`, exact: true });
-}
-
-async function expectStatus(workspace: BdWorkspace, id: string, status: string) {
-  await expect
-    .poll(async () => (await workspace.showIssue(id)).status, { timeout: SAVE_TIMEOUT })
-    .toBe(status);
 }

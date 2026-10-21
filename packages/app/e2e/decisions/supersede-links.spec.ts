@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { koMessages as messages } from "../../src/client/modules/locale/domain/koMessages";
 import { expect, test, type BdWorkspace } from "../support/bdWorkspace";
+import { titleRow } from "../support/tableRows";
 
 const TITLES = {
   old: "이전 결정: 작업 상태는 bd 저장 상태로만 나눈다",
@@ -32,13 +33,6 @@ async function seedDecisions(workspace: BdWorkspace) {
   });
   await workspace.bd("supersede", ids.old, "--with", ids.new);
   return ids;
-}
-
-function titleRow(page: Page, title: string) {
-  return page
-    .getByRole("main")
-    .getByRole("row")
-    .filter({ has: page.getByRole("link", { name: title, exact: true }) });
 }
 
 async function closeDetail(page: Page, id: string) {

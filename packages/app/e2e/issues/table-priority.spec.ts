@@ -1,6 +1,6 @@
-import type { Page } from "@playwright/test";
 import { koMessages as messages } from "../../src/client/modules/locale/domain/koMessages";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
+import { titleRow } from "../support/tableRows";
 
 test("이슈 표에서 제목으로 상세를 열고 닫은 뒤, 표에서 바꾼 우선순위가 bd에 저장된다", async ({
   page,
@@ -27,10 +27,3 @@ test("이슈 표에서 제목으로 상세를 열고 닫은 뒤, 표에서 바�
     .poll(async () => (await workspace.showIssue(edited)).priority, { timeout: SAVE_TIMEOUT })
     .toBe(0);
 });
-
-function titleRow(page: Page, title: string) {
-  return page
-    .getByRole("main")
-    .getByRole("row")
-    .filter({ has: page.getByRole("link", { name: title, exact: true }) });
-}

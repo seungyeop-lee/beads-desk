@@ -8,6 +8,7 @@ import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
+import { contrast } from "./colorContrast.testkit";
 import { MarkdownEditor } from "./MarkdownEditor";
 
 const DIAGRAM = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";
@@ -957,22 +958,4 @@ function tokenColor(container: HTMLElement, text: string) {
     (span) => span.textContent === text,
   );
   return token ? getComputedStyle(token).color : "";
-}
-
-/** 두 색의 WCAG 대비율입니다. */
-function contrast(a: string, b: string) {
-  const [lighter, darker] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (lighter! + 0.05) / (darker! + 0.05);
-}
-
-/** 색을 캔버스에 칠해 sRGB 값으로 바꾼 뒤 구한 WCAG 상대 휘도입니다. */
-function luminance(color: string) {
-  const context = document.createElement("canvas").getContext("2d")!;
-  context.fillStyle = color;
-  context.fillRect(0, 0, 1, 1);
-  const [r, g, b] = Array.from(context.getImageData(0, 0, 1, 1).data, (value) => {
-    const c = value / 255;
-    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }

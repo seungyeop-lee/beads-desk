@@ -2,17 +2,8 @@ import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { GraphData } from "@/shared/contract/graph";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
+import { blocks } from "./blocksFixture.testkit";
 import { epicPlan } from "./epicPlan";
-
-/** [먼저 끝나야 하는 이슈, 기다리는 이슈]를 bd의 blocks 의존으로 바꿉니다. */
-function blocks(...pairs: [string, string][]): IssueDependency[] {
-  return pairs.map(([before, after]) => ({
-    issueId: after,
-    dependsOnId: before,
-    type: "blocks",
-    createdAt: 0,
-  }));
-}
 
 /** epic의 후손 이슈(children)와 에픽 밖 이슈(others)로 그래프 데이터를 만듭니다. */
 function graph(children: Issue[], others: Issue[], dependencies: IssueDependency[]): GraphData {
@@ -40,7 +31,12 @@ test("닫힌 이슈도 단계에 넣고, 닫히지 않은 이슈가 남은 가�
         issue("y"),
       ],
       [],
-      blocks(["a", "b"], ["b", "c"], ["c", "d"], ["x", "y"]),
+      blocks(
+        { blocker: "a", blocked: "b" },
+        { blocker: "b", blocked: "c" },
+        { blocker: "c", blocked: "d" },
+        { blocker: "x", blocked: "y" },
+      ),
     ),
     "epic",
   );
@@ -57,7 +53,7 @@ test("모든 단계의 이슈가 닫혔으면 진행 중인 단계가 없고, �
     graph(
       [issue("a", { status: "closed" }), issue("b", { status: "closed" })],
       [],
-      blocks(["a", "b"]),
+      blocks({ blocker: "a", blocked: "b" }),
     ),
     "epic",
   );
@@ -79,7 +75,7 @@ test("에픽 안에서 blocks 관계가 없는 후손 이슈는 선후 관계 �
         issue("before-other"),
       ],
       [issue("other")],
-      blocks(["a", "b"], ["before-other", "other"]),
+      blocks({ blocker: "a", blocked: "b" }, { blocker: "before-other", blocked: "other" }),
     ),
     "epic",
   );
@@ -130,7 +126,10 @@ test("blocks로 연결된 feature·epic은 단계에 남고, 연결되지 않은
     issue("nested-epic", { issueType: "epic" }),
     issue("task"),
   ];
-  const dependencies = blocks(["feature", "nested-epic"], ["nested-epic", "task"]);
+  const dependencies = blocks(
+    { blocker: "feature", blocked: "nested-epic" },
+    { blocker: "nested-epic", blocked: "task" },
+  );
   const before = epicPlan(graph(connected, [], dependencies), "epic");
   const withUnlinkedEpic = epicPlan(
     graph([...connected, issue("unlinked-epic", { issueType: "epic" })], [], dependencies),
@@ -149,7 +148,12 @@ test("후손 이슈를 직접 막는 에픽 밖 이슈를 outside로 담아 단�
     graph(
       [issue("a"), issue("b")],
       [issue("ext"), issue("ext-before"), issue("ext-after")],
-      blocks(["ext-before", "ext"], ["ext", "a"], ["a", "b"], ["b", "ext-after"]),
+      blocks(
+        { blocker: "ext-before", blocked: "ext" },
+        { blocker: "ext", blocked: "a" },
+        { blocker: "a", blocked: "b" },
+        { blocker: "b", blocked: "ext-after" },
+      ),
     ),
     "epic",
   );
@@ -168,7 +172,11 @@ test("gate는 단계에 넣지 않아, gate만 있는 열은 단계 수에서 �
     graph(
       [issue("a", { status: "closed" }), issue("b"), issue("inner", { issueType: "gate" })],
       [issue("outer", { issueType: "gate" })],
-      blocks(["a", "inner"], ["inner", "b"], ["outer", "a"]),
+      blocks(
+        { blocker: "a", blocked: "inner" },
+        { blocker: "inner", blocked: "b" },
+        { blocker: "outer", blocked: "a" },
+      ),
     ),
     "epic",
   );

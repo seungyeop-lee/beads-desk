@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { fakeBdWorkspace } from "./fakeBd";
+import { fakeBdWorkspace } from "./fakeBd.testkit";
 import { parseIssues, type Issue } from "./issue";
 import {
   boardIssues,

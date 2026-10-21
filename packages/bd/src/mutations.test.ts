@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { fakeBdWorkspace } from "./fakeBd";
+import { fakeBdWorkspace } from "./fakeBd.testkit";
 import {
   addComment,
   addDependency,

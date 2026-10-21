@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, SAVE_TIMEOUT, test, type BdWorkspace } from "../support/bdWorkspace";
+import { expect, expectStatus, test } from "../support/bdWorkspace";
 import { answerNextConfirm } from "../support/confirmDialog";
 
 test("결정 A를 상세에서 결정 B로 대체하면 A가 닫히고, 결정 화면에서 B가 A를 대체한 것으로 보인다", async ({
@@ -72,10 +72,4 @@ async function pickTarget(page: Page, id: string, method: string, query: string,
     .getByRole("listbox", { name: "대상 이슈 찾기" })
     .getByRole("option", { name: new RegExp(target) })
     .click();
-}
-
-async function expectStatus(workspace: BdWorkspace, id: string, status: string) {
-  await expect
-    .poll(async () => (await workspace.showIssue(id)).status, { timeout: SAVE_TIMEOUT })
-    .toBe(status);
 }

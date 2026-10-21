@@ -1,7 +1,8 @@
 import * as bd from "@beads-desk/bd";
 import type { IssueStatus } from "@beads-desk/bd/issue";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
+import { routeApiWorkspaceSlug } from "@/server/web/http/routeApi.testkit";
 import type {
   DeferUntil,
   IssueChanges,
@@ -48,18 +49,7 @@ vi.mock("@/server/web/locale/requestLocale", () => ({
   requestLocale: () => Promise.resolve("ko"),
 }));
 
-/** `/workspace` 디렉터리를 화면 주소에서 가리키는 이름입니다. */
-const routeApiWorkspaceSlug = "workspace";
 const written = { ok: true, value: null } as const;
-
-beforeEach(() => {
-  vi.stubEnv("BEADS_DESK_WORKSPACE", "/workspace");
-});
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.resetAllMocks();
-});
 
 describe("updateIssueAction", () => {
   test("workspace에서 필드를 바꾸고, 바로 변경을 확인해 다른 화면에 알린다", async () => {

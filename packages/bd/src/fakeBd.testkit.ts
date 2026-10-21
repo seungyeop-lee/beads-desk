@@ -5,11 +5,15 @@ import { afterEach, beforeEach, vi } from "vitest";
 
 export type FakeResponse = { stdout?: string; stderr?: string; code?: number };
 
+/** 저장해 둔 bd 출력 fixture를 읽습니다. */
+export async function fixture(name: string): Promise<string> {
+  return readFile(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
+}
+
 /**
- * bd 실행을 가짜 스크립트로 대신하는 app 서버 테스트 환경입니다.
- * `packages/bd/src/fakeBd.ts`와 같은 방식으로, 테스트마다 임시 디렉터리를 새로 만들고 가짜 bd를 `vi.stubEnv`로 BD_BIN에 지정합니다.
+ * bd 실행을 가짜 스크립트로 대신하는 테스트 환경입니다. app 서버 테스트도 `@beads-desk/bd/fakeBd.testkit`으로 이 환경을 씁니다.
+ * 테스트마다 임시 디렉터리를 새로 만들고, 가짜 bd를 `vi.stubEnv`로 BD_BIN에 지정합니다.
  * 테스트가 끝나면 `vi.unstubAllEnvs()`를 호출하므로, 테스트 파일이 `vi.stubEnv`로 바꾼 다른 환경 변수도 함께 되돌아갑니다.
- * app은 bd 패키지의 테스트 헬퍼를 import할 수 없어 이 복사본을 둡니다.
  * 가짜 bd는 실행마다 cwd와 인자를 calls.log에 남기므로, bd를 실행했는지와 어떤 인자를 넘겼는지 확인할 수 있습니다.
  */
 export function fakeBdWorkspace(prefix: string): {
@@ -22,6 +26,8 @@ export function fakeBdWorkspace(prefix: string): {
   useFakeBd(responses: Record<string, FakeResponse>): Promise<void>;
   /** 주어진 셸 본문을 그대로 실행하는 가짜 bd를 지정합니다. */
   useFakeBdScript(body: string): Promise<void>;
+  /** 저장해 둔 bd 출력 fixture를 읽습니다. */
+  fixture(name: string): Promise<string>;
   /** 가짜 bd가 남긴 호출 기록을 읽습니다. bd를 실행하지 않은 테스트에서는 읽기가 실패합니다. */
   callsLog(): Promise<string>;
 } {
@@ -63,6 +69,7 @@ export function fakeBdWorkspace(prefix: string): {
       );
     },
     useFakeBdScript: install,
+    fixture,
     callsLog() {
       return readFile(join(currentDir, "calls.log"), "utf8");
     },

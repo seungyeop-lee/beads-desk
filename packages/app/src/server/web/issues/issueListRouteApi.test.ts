@@ -1,6 +1,6 @@
-import { basename } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { fakeBdWorkspace } from "@/server/infra/fakeBd.testkit";
+import { fakeBdWorkspace } from "@beads-desk/bd/fakeBd.testkit";
+import { fakeBdRouteApiRequest } from "@/server/web/http/fakeBdRouteApi.testkit";
 import { handleIssueTextSearchRequest, handleIssueListRequest } from "./issueListRouteApi";
 
 // Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.
@@ -35,12 +35,6 @@ async function useFakeBd(
   });
 }
 
-function request(path: string): Request {
-  const url = new URL(path.startsWith("/") ? path : `/api/issues${path}`, "http://localhost");
-  url.searchParams.set("workspace", basename(fakeBd.workDir));
-  return new Request(url);
-}
-
 const issues = JSON.stringify([
   { id: "demo-1", title: "첫 이슈", status: "open" },
   { id: "demo-2", title: "둘째 이슈", status: "in_progress" },
@@ -51,7 +45,9 @@ test("지정한 상태의 이슈를 workspace에서 조회해 돌려준다", asy
     stdout: issues,
   });
 
-  const response = await handleIssueListRequest(request("?status=open,in_progress"));
+  const response = await handleIssueListRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/issues?status=open,in_progress"),
+  );
   const body = await response.json();
 
   expect(response.status).toBe(200);
@@ -65,7 +61,9 @@ test("지정한 상태의 이슈를 workspace에서 조회해 돌려준다", asy
 test("상태를 지정하지 않으면 모든 상태의 이슈를 조회한다", async () => {
   await useFakeBd("list --json --tree=false --all --limit 0", { stdout: issues });
 
-  const response = await handleIssueListRequest(request(""));
+  const response = await handleIssueListRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/issues"),
+  );
 
   expect(response.status).toBe(200);
 });
@@ -80,7 +78,9 @@ test("목록에는 막고 있는 이슈 id와 bd ready 여부를 채워 돌려�
     },
   );
 
-  const body = await (await handleIssueListRequest(request(""))).json();
+  const body = await (
+    await handleIssueListRequest(fakeBdRouteApiRequest(fakeBd.workDir, "/api/issues"))
+  ).json();
 
   expect(body.data).toMatchObject([
     { id: "demo-1", blockedBy: ["demo-9"] },
@@ -91,7 +91,9 @@ test("목록에는 막고 있는 이슈 id와 bd ready 여부를 채워 돌려�
 test("ready를 지정하면 바로 작업할 수 있는 이슈를 조회한다", async () => {
   await useFakeBd("ready --limit 0 --json", { stdout: issues });
 
-  const response = await handleIssueListRequest(request("?status=ready"));
+  const response = await handleIssueListRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/issues?status=ready"),
+  );
 
   expect(response.status).toBe(200);
 });
@@ -99,7 +101,9 @@ test("ready를 지정하면 바로 작업할 수 있는 이슈를 조회한다",
 test("상태 query가 올바르지 않으면 bd를 실행하지 않고 400을 돌려준다", async () => {
   await useFakeBd("unused", {});
 
-  const response = await handleIssueListRequest(request("?status=bogus"));
+  const response = await handleIssueListRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/issues?status=bogus"),
+  );
 
   expect(response.status).toBe(400);
   expect((await response.json()).ok).toBe(false);
@@ -112,7 +116,9 @@ test("bd가 실패하면 bd의 오류 메시지와 500을 돌려준다", async (
     code: 1,
   });
 
-  const response = await handleIssueListRequest(request("?status=open"));
+  const response = await handleIssueListRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/issues?status=open"),
+  );
 
   expect(response.status).toBe(500);
   expect(await response.json()).toEqual({ ok: false, error: "database is locked" });
@@ -135,7 +141,9 @@ test("본문 검색은 notes나 댓글에 검색어가 든 이슈와 맞은 곳�
     export: { stdout: exported.map((record) => JSON.stringify(record)).join("\n") },
   });
 
-  const response = await handleIssueTextSearchRequest(request("/api/issue-search?text=토큰"));
+  const response = await handleIssueTextSearchRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/issue-search?text=토큰"),
+  );
 
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({
@@ -150,7 +158,9 @@ test("본문 검색은 notes나 댓글에 검색어가 든 이슈와 맞은 곳�
 test("본문 검색어가 비어 있으면 bd를 실행하지 않고 400을 돌려준다", async () => {
   await useFakeBd("unused", {});
 
-  const response = await handleIssueTextSearchRequest(request("/api/issue-search?text=%20"));
+  const response = await handleIssueTextSearchRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/issue-search?text=%20"),
+  );
 
   expect(response.status).toBe(400);
   expect((await response.json()).ok).toBe(false);

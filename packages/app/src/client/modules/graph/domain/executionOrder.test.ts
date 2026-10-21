@@ -1,17 +1,7 @@
-import type { IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
+import { blocks } from "./blocksFixture.testkit";
 import { executionOrder, type OrderComponent } from "./executionOrder";
-
-/** [먼저 끝나야 하는 이슈, 기다리는 이슈]를 bd의 blocks 의존으로 바꿉니다. */
-function blocks(...pairs: [string, string][]): IssueDependency[] {
-  return pairs.map(([before, after]) => ({
-    issueId: after,
-    dependsOnId: before,
-    type: "blocks",
-    createdAt: 0,
-  }));
-}
 
 const layerIds = (layers: OrderComponent["layers"]) =>
   layers.map((layer) => layer.map(({ id }) => id));
@@ -19,7 +9,7 @@ const layerIds = (layers: OrderComponent["layers"]) =>
 test("blocks로 이어진 이슈를 먼저 할 것부터 layer에 두고, blocks 관계가 없는 이슈는 unlinked로 따로 모은다", () => {
   const order = executionOrder(
     [issue("c"), issue("a"), issue("b"), issue("alone")],
-    blocks(["a", "b"], ["b", "c"]),
+    blocks({ blocker: "a", blocked: "b" }, { blocker: "b", blocked: "c" }),
   );
 
   expect(order.components.map((component) => layerIds(component.layers))).toEqual([
@@ -36,7 +26,11 @@ test("blocks로 이어진 이슈를 먼저 할 것부터 layer에 두고, blocks
 test("여러 이슈를 기다리는 이슈는 가장 늦게 끝나는 이슈 다음 layer에 두고, layer를 건너뛰는 간선은 사이 layer에 아무것도 두지 않는다", () => {
   const order = executionOrder(
     [issue("a"), issue("b"), issue("c")],
-    blocks(["a", "b"], ["b", "c"], ["a", "c"]),
+    blocks(
+      { blocker: "a", blocked: "b" },
+      { blocker: "b", blocked: "c" },
+      { blocker: "a", blocked: "c" },
+    ),
   );
 
   expect(layerIds(order.components[0]!.layers)).toEqual([["a"], ["b"], ["c"]]);
@@ -45,7 +39,12 @@ test("여러 이슈를 기다리는 이슈는 가장 늦게 끝나는 이슈 다
 test("서로 기다리는 순환은 한 layer에 함께 두고, 순환을 기다리는 이슈는 그 다음 layer에 둔다", () => {
   const order = executionOrder(
     [issue("a"), issue("b"), issue("c"), issue("d")],
-    blocks(["a", "b"], ["b", "c"], ["c", "b"], ["c", "d"]),
+    blocks(
+      { blocker: "a", blocked: "b" },
+      { blocker: "b", blocked: "c" },
+      { blocker: "c", blocked: "b" },
+      { blocker: "c", blocked: "d" },
+    ),
   );
 
   expect(layerIds(order.components[0]!.layers)).toEqual([["a"], ["b", "c"], ["d"]]);
@@ -55,7 +54,14 @@ test("서로 기다리는 순환은 한 layer에 함께 두고, 순환을 기다
 test("순환마다 처음 만난 이슈에서 출발해 돌아오는 가장 짧은 경로를 하나씩 돌려준다", () => {
   const order = executionOrder(
     [issue("a"), issue("b"), issue("c"), issue("x"), issue("y")],
-    blocks(["a", "b"], ["b", "c"], ["c", "a"], ["b", "a"], ["x", "y"], ["y", "x"]),
+    blocks(
+      { blocker: "a", blocked: "b" },
+      { blocker: "b", blocked: "c" },
+      { blocker: "c", blocked: "a" },
+      { blocker: "b", blocked: "a" },
+      { blocker: "x", blocked: "y" },
+      { blocker: "y", blocked: "x" },
+    ),
   );
 
   expect(order.cycles).toEqual([
@@ -79,7 +85,11 @@ test("blocks가 아닌 관계와 목록 밖 이슈와의 관계는 그리지 않
 test("이어지지 않은 묶음은 이슈가 많은 것부터 둔다", () => {
   const order = executionOrder(
     [issue("s-1"), issue("s-2"), issue("b-1"), issue("b-2"), issue("b-3")],
-    blocks(["s-1", "s-2"], ["b-1", "b-2"], ["b-2", "b-3"]),
+    blocks(
+      { blocker: "s-1", blocked: "s-2" },
+      { blocker: "b-1", blocked: "b-2" },
+      { blocker: "b-2", blocked: "b-3" },
+    ),
   );
 
   expect(order.components.map((component) => layerIds(component.layers))).toEqual([
@@ -97,7 +107,12 @@ test("첫 layer는 우선순위 순으로, 다음 layer는 기다리는 이슈�
       issue("join"),
       issue("after-high"),
     ],
-    blocks(["low", "after-low"], ["high", "after-high"], ["high", "join"], ["low", "join"]),
+    blocks(
+      { blocker: "low", blocked: "after-low" },
+      { blocker: "high", blocked: "after-high" },
+      { blocker: "high", blocked: "join" },
+      { blocker: "low", blocked: "join" },
+    ),
   );
 
   expect(layerIds(order.components[0]!.layers)).toEqual([

@@ -3,6 +3,7 @@ import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { VIEWPORT_MARGIN } from "@/client/modules/graph/domain/graphViewport";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import { contrast, srgb } from "@/client/ui/designSystem/colorContrast.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
@@ -559,37 +560,12 @@ function lineLook(line: Element) {
   };
 }
 
-/** 계산된 CSS 색을 canvas에 칠해 0~255 sRGB 값으로 바꿉니다. 투명한 색이면 실패합니다. */
-function srgb(color: string): [number, number, number] {
-  const context = document.createElement("canvas").getContext("2d")!;
-  context.fillStyle = color;
-  context.fillRect(0, 0, 1, 1);
-  const [r, g, b, alpha] = context.getImageData(0, 0, 1, 1).data;
-  expect(alpha, `${color}는 불투명해야 합니다`).toBe(255);
-  return [r!, g!, b!];
-}
-
 /** HSL 채도(0~1)입니다. 회색이면 0입니다. */
 function saturation(color: string): number {
   const channels = srgb(color).map((value) => value / 255);
   const [max, min] = [Math.max(...channels), Math.min(...channels)];
   const lightness = (max + min) / 2;
   return max === min ? 0 : (max - min) / (1 - Math.abs(2 * lightness - 1));
-}
-
-/** WCAG 상대 휘도입니다. */
-function luminance(color: string): number {
-  const [r, g, b] = srgb(color);
-  const linear = (value: number) => {
-    const c = value / 255;
-    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
-}
-
-function contrast(a: string, b: string): number {
-  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (light! + 0.05) / (dark! + 0.05);
 }
 
 test("간선 종류마다 화살촉은 선과 같은 색이고, 관련 간선에는 화살촉이 없다", async () => {

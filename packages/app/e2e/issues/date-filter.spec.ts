@@ -1,12 +1,5 @@
 import { expect, test } from "../support/bdWorkspace";
-
-// 브라우저도 같은 컴퓨터의 시간대를 쓰므로, 화면이 보는 오늘과 같은 날짜입니다.
-function localDay(offsetDays = 0): string {
-  const date = new Date();
-  date.setDate(date.getDate() + offsetDays);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
+import { localDay } from "../support/localDate";
 
 test("필터 줄에서 날짜 기준과 기간을 바꾸면 목록과 탭 개수가 바뀌고, 주소와 보기 탭 링크에 남는다", async ({
   page,
