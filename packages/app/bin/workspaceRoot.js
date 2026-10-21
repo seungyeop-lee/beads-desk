@@ -14,14 +14,19 @@ import { dirname, join, resolve } from "node:path";
  * `.beads/redirect`로 다른 `.beads`의 DB를 쓰는 디렉터리도 workspace는 redirect 대상이 아니라 redirect를 둔 디렉터리입니다.
  * bd는 그 디렉터리에서 실행해도 redirect를 따라가고, git을 읽는 기능은 그 디렉터리의 저장소를 기준으로 동작해야 합니다.
  * symlink를 거친 경로와 실제 경로가 다른 workspace로 등록되지 않게 실제 경로를 돌려줍니다.
+ * Windows에서는 대소문자만 다른 경로도 디스크에 있는 대소문자로 풀어, 같은 workspace가 두 번 등록되거나
+ * git 최상위 비교가 어긋나 저장소 밖의 `.beads`를 찾지 않게 합니다.
  *
  * @param {string} path
+ * @param {NodeJS.Platform} [platform] 테스트에서 다른 플랫폼의 규칙을 확인할 때만 지정합니다.
  * @returns {string | null}
  */
-export function findWorkspaceRoot(path) {
+export function findWorkspaceRoot(path, platform = process.platform) {
   if (!isDirectory(resolve(path))) return null;
-  const start = realpathSync(resolve(path));
-  const git = gitRepository(start);
+  // realpathSync는 Windows에서 입력한 대소문자를 그대로 두고, realpathSync.native는 디스크에 있는 대소문자를 돌려줍니다.
+  const realpath = platform === "win32" ? realpathSync.native : realpathSync;
+  const start = realpath(resolve(path));
+  const git = gitRepository(start, realpath);
   for (let dir = start; ; dir = dirname(dir)) {
     if (hasBeadsProject(dir)) return dir;
     if (dir === git?.topLevel || dirname(dir) === dir) break;
@@ -64,7 +69,7 @@ function redirectTarget(dir) {
  * dir이 속한 git 저장소의 최상위 디렉터리와 공용 git 디렉터리를 돌려줍니다. worktree면 공용 git 디렉터리가 main 저장소의 `.git`입니다.
  * git 저장소가 아니거나 git이 없으면 null을 돌려줍니다.
  */
-function gitRepository(dir) {
+function gitRepository(dir, realpath) {
   // git hook 안에서 실행하면 GIT_DIR 등이 다른 저장소를 가리키므로, dir만으로 저장소를 찾게 GIT_ 환경 변수를 뺍니다.
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (key.startsWith("GIT_")) delete env[key];
@@ -75,7 +80,7 @@ function gitRepository(dir) {
   );
   const [topLevel, commonDir] = result.status === 0 ? result.stdout.trim().split("\n") : [];
   return topLevel && commonDir
-    ? { topLevel: realpathSync(topLevel), commonDir: realpathSync(commonDir) }
+    ? { topLevel: realpath(topLevel), commonDir: realpath(commonDir) }
     : null;
 }
 
