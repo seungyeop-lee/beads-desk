@@ -97,6 +97,57 @@ test("Windows 경로의 문장부호 앞 역슬래시는 CommonMark escape로 �
   expect(localPath(image.getAttribute("src"))).toBe("C:\\a_b\\_x.png");
 });
 
+test("Windows 경로 링크와 그림이 있는 문단을 고쳐도 주소는 원문 그대로 저장한다", async () => {
+  const destinations = [
+    "(C:\\work\\.beads\\a.md)",
+    "(<d:\\work\\.x\\조사 결과.md>)",
+    "(C:\\a_b\\_x.png)",
+  ];
+  const changed = vi.fn<(markdown: string) => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        value={`[a]${destinations[0]} [공백 문서]${destinations[1]} ![밑줄 그림]${destinations[2]} 끝`}
+        label="설명"
+        onChange={changed}
+      />
+    </LocaleProvider>,
+  );
+  await screen.getByRole("textbox", { name: "설명" }).getByText("공백 문서").click();
+  await userEvent.keyboard("고침");
+
+  await expect.poll(() => changed.mock.lastCall?.[0]).toContain("고침");
+  for (const destination of destinations) {
+    expect(changed.mock.lastCall![0]).toContain(destination);
+  }
+});
+
+test("편집기에서 Windows 경로 링크의 주소를 고치면 고친 주소를 저장한다", async () => {
+  const changed = vi.fn<(markdown: string) => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value={"[a](C:\\work\\.beads\\a.md) 끝"} label="설명" onChange={changed} />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText(/끝$/).click();
+  await editor.getByRole("link", { name: "a" }).hover();
+  await expect.poll(() => visible(".link-edit-button")).toBeTruthy();
+  await userEvent.click(visible(".link-edit-button")!);
+  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
+  await userEvent.fill(visible(".link-edit input")!, "docs/b.md");
+  await userEvent.keyboard("{Enter}");
+
+  await expect.poll(() => changed.mock.lastCall?.[0]).toBe("[a](docs/b.md) 끝");
+});
+
+/** 화면에 보이는 첫 요소입니다. Milkdown 링크 도구는 숨겨 둔 채 미리 만들어 두므로 보이는 것만 고릅니다. */
+function visible(selector: string) {
+  return Array.from(document.querySelectorAll<HTMLElement>(selector)).find((element) =>
+    element.checkVisibility(),
+  );
+}
+
 test("제목으로 시작하는 본문은 읽을 때도 편집할 때도 글자를 고르는 동안 움직이지 않는다", async () => {
   const body = "### 배경\n\n드래그해서 고를 문단입니다.";
   for (const readOnly of [true, false]) {

@@ -18,7 +18,12 @@ import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
 import { localMarkdownUrl } from "./localMarkdownUrl";
 import { MermaidDiagramDialog } from "./MermaidDiagramDialog";
 import { createMermaidPreview, diagramAt } from "./mermaidPreview";
-import { remarkWindowsPathSource, sourceUrlOf, windowsPath } from "./windowsPathSource";
+import {
+  remarkWindowsPathSource,
+  sourceUrlOf,
+  windowsPath,
+  windowsPathHandlers,
+} from "./windowsPathSource";
 
 type Controls = {
   crepe: CrepeBuilder;
@@ -86,7 +91,7 @@ export function MarkdownEditor({
         { toolbar },
         { languages },
         { codeHighlighting, codeEditorTheme },
-        { editorViewCtx, editorViewOptionsCtx, serializerCtx },
+        { editorViewCtx, editorViewOptionsCtx, remarkStringifyOptionsCtx, serializerCtx },
         { $prose, $remark, callCommand },
         { Plugin },
         commonmark,
@@ -132,9 +137,10 @@ export function MarkdownEditor({
           linkLabel: labels.link,
         });
       }
-      // link와 image의 sourceUrl은 remarkWindowsPathSource가 남긴 원문 주소로, 경로를 되살릴 때만 쓰고 markdown이나
-      // HTML 속성으로는 내보내지 않습니다(null인 속성은 DOM에 붙지 않습니다).
-      // 아래 parseMarkdown runner는 Milkdown 기본 runner에 sourceUrl만 더한 것이므로, Milkdown을 올리면 기본 runner와 비교합니다.
+      // link와 image의 sourceUrl은 remarkWindowsPathSource가 남긴 원문 주소로, 경로를 되살리고 저장할 markdown에 원문
+      // 주소를 쓸 때만 쓰고 HTML 속성으로는 내보내지 않습니다(null인 속성은 DOM에 붙지 않습니다).
+      // 아래 parseMarkdown과 toMarkdown runner는 Milkdown 기본 runner에 sourceUrl만 더한 것이므로, Milkdown을 올리면
+      // 기본 runner와 비교합니다.
       const sourceUrl = { default: null, validate: "string|null" };
       crepe.editor.config((ctx) => {
         ctx.update(commonmark.linkSchema.key, (previous) => (schemaCtx) => {
@@ -163,6 +169,16 @@ export function MarkdownEditor({
               const opened = localMarkdownUrl(original, documentWorkspace() ?? "");
               const href = opened === original ? dom[1].href : opened;
               return [dom[0], { ...dom[1], href, sourceUrl: null }];
+            },
+            toMarkdown: {
+              ...schema.toMarkdown,
+              runner: (state, mark) => {
+                state.withMark(mark, "link", undefined, {
+                  title: mark.attrs.title,
+                  url: mark.attrs.href,
+                  data: { sourceUrl: mark.attrs.sourceUrl },
+                });
+              },
             },
           };
         });
@@ -193,8 +209,23 @@ export function MarkdownEditor({
                 },
               ];
             },
+            toMarkdown: {
+              ...schema.toMarkdown,
+              runner: (state, node) => {
+                state.addNode("image", undefined, undefined, {
+                  title: node.attrs.title,
+                  url: node.attrs.src,
+                  alt: node.attrs.alt,
+                  data: { sourceUrl: node.attrs.sourceUrl },
+                });
+              },
+            },
           };
         });
+        ctx.update(remarkStringifyOptionsCtx, (options) => ({
+          ...options,
+          handlers: { ...options.handlers, ...windowsPathHandlers },
+        }));
         ctx.update(editorViewOptionsCtx, (options) => ({
           ...options,
           attributes: readOnly

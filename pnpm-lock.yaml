@@ -269,6 +269,9 @@ importers:
       daisyui:
         specifier: ^5.7.47
         version: 5.7.47
+      mdast-util-to-markdown:
+        specifier: ^2.2.0
+        version: 2.2.0
       pele:
         specifier: 1.7.0
         version: 1.7.0
