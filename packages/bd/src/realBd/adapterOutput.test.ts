@@ -88,7 +88,7 @@ test("bd orphans 결과에서 커밋 메시지에 id가 나온 열린 이슈와 
   });
 });
 
-test("다른 담당자의 이슈를 가져가면 bd의 거부 사유 첫 줄만 돌려준다", async () => {
+test("다른 담당자의 이슈를 가져가면 bd의 거부 사유 첫 줄만 돌려주고, 이슈의 상태와 담당자는 그대로다", async () => {
   const id = value(await createIssue(cwd, { title: "남의 작업" }));
   await run("bd", "update", id, "--assignee", "someone-else");
 
@@ -98,6 +98,10 @@ test("다른 담당자의 이슈를 가져가면 bd의 거부 사유 첫 줄만 
     error: { message: expect.stringContaining('already assigned to "someone-else"') },
   });
   expect(result).toMatchObject({ error: { message: expect.not.stringContaining("\n") } });
+  expect(value(await showIssue(cwd, id))).toMatchObject({
+    status: "open",
+    assignee: "someone-else",
+  });
 });
 
 test("순환 의존을 맺으면 bd의 거부 사유를 돌려준다", async () => {

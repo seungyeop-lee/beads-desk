@@ -761,6 +761,7 @@ test("편집기를 감싼 form과 dialog는 그림 dialog를 Esc, 닫기 단추,
   await expect.element(dialog).toBeVisible();
   await userEvent.keyboard("{Escape}");
   await expect.element(dialog).not.toBeInTheDocument();
+  await expect.element(button).toHaveFocus();
 
   (button.element() as HTMLElement).focus();
   await userEvent.keyboard("{Enter}");
@@ -777,6 +778,110 @@ test("편집기를 감싼 form과 dialog는 그림 dialog를 Esc, 닫기 단추,
   expect(cancelled).not.toHaveBeenCalled();
   expect(closed).not.toHaveBeenCalled();
   await expect.element(editor.getByText("저장 전 문단 고침")).toBeVisible();
+});
+
+test("읽기 화면의 그림은 코드를 숨기고 간선 글자까지 그리며, 같은 접근성 제목을 쓴 그림이 여러 편집기에 있어도 SVG id가 서로 다르다", async () => {
+  // 접근성 제목은 SVG 안에 id로 들어가므로, 같은 제목의 그림을 여러 개 두어 id 충돌을 확인합니다.
+  const titled = DIAGRAM.replace("flowchart LR\n", "flowchart LR\n  accTitle: 처리 흐름\n");
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor readOnly value={`${titled}\n\n${titled}`} />
+      <MarkdownEditor readOnly value={titled} />
+    </LocaleProvider>,
+  );
+  await expect.poll(() => diagramColors(screen.container)).toHaveLength(3);
+
+  for (const block of screen.container.querySelectorAll(".milkdown-code-block")) {
+    expect(block.querySelector<HTMLElement>(".cm-content")!.checkVisibility()).toBe(false);
+    expect(block.querySelector(".preview svg")!.textContent).toContain("처리");
+  }
+  const ids = Array.from(
+    screen.container.querySelectorAll("[data-mermaid-preview] > svg [id]"),
+    (node) => node.id,
+  );
+  expect(ids).toHaveLength(3);
+  expect(new Set(ids).size).toBe(ids.length);
+});
+
+test("새 이슈 설명처럼 빈 편집기에 붙여 넣은 그림은 코드와 미리보기를 함께 보이고, 마지막 입력만 그리며, 문법 오류면 코드만 보이다가 고치면 다시 그린다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value="" label="설명" placeholder="설명을 적습니다" onChange={() => {}} />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.click();
+  const data = new DataTransfer();
+  data.setData("text/plain", DIAGRAM);
+  editor
+    .element()
+    .dispatchEvent(
+      new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }),
+    );
+  await expect.poll(() => diagramColors(screen.container)).toHaveLength(1);
+  const block = screen.container.querySelector<HTMLElement>(".milkdown-code-block")!;
+  const code = block.querySelector<HTMLElement>(".cm-content")!;
+  const preview = () => block.querySelector(".preview svg")?.textContent ?? null;
+
+  await expect.element(code).toBeVisible();
+  await expect.element(screen.getByText("미리보기", { exact: true })).toBeVisible();
+  await expect.element(screen.getByRole("button", { name: "코드 숨기기" })).toBeVisible();
+  expect(preview()).toContain("시작");
+
+  for (const input of ["첫 입력", "둘째 입력", "마지막 입력"]) {
+    await userEvent.fill(code, `flowchart LR\n A[${input}] --> B`);
+  }
+  await expect.poll(preview).toContain("마지막 입력");
+  expect(block.querySelector(".preview")!.textContent).not.toContain("첫 입력");
+
+  await userEvent.fill(code, "flowchart LR\n A[");
+  await expect.poll(() => block.querySelector(".preview-panel")).toBeNull();
+  await expect.element(code).toBeVisible();
+  await userEvent.fill(code, "flowchart LR\n  A[시작] -->|처리| B[완료]");
+  await expect.poll(preview).toContain("시작");
+});
+
+test("편집 도구 줄에서 문단 형식을 제목 2로 바꾸고 표 넣기로 넣은 표에 글자를 적으면 ## 제목과 markdown 표로 바뀐다", async () => {
+  const changed = vi.fn<(markdown: string) => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value="" label="설명" onChange={changed} />
+    </LocaleProvider>,
+  );
+  await screen.getByRole("textbox", { name: "설명" }).click();
+  await userEvent.keyboard("제목이 될 문단");
+  const toolbar = screen.getByRole("toolbar", { name: "설명 서식 도구" });
+  await toolbar.getByRole("combobox", { name: "문단 형식" }).selectOptions("제목 2");
+  await userEvent.keyboard("{End}{Enter}");
+  await toolbar.getByRole("button", { name: "표 넣기" }).click();
+  await userEvent.keyboard("첫 칸");
+
+  await expect
+    .poll(() => changed.mock.lastCall?.[0])
+    .toMatch(/^## 제목이 될 문단\n\n\| 첫 칸 +\|.*\|\n\| [-:]+ +\|/);
+});
+
+test("편집 중에 붙여 넣은 이미지 파일은 본문에 들어가지 않고, 이어서 입력한 글자만 남는다", async () => {
+  const changed = vi.fn<(markdown: string) => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value="저장할 문단" label="설명" onChange={changed} />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText("저장할 문단").click();
+  await userEvent.keyboard("{End}");
+  const data = new DataTransfer();
+  data.items.add(new File([new Uint8Array([137, 80, 78, 71])], "그림.png", { type: "image/png" }));
+  editor
+    .element()
+    .dispatchEvent(
+      new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }),
+    );
+  await userEvent.keyboard(" 고침");
+
+  await expect.poll(() => changed.mock.lastCall?.[0]).toBe("저장할 문단 고침");
+  expect(editor.element().querySelector("img")).toBeNull();
 });
 
 /** 사용자가 끌어서 고를 때처럼 문단 앞부분을 고르고, 편집기가 그 선택을 바로 읽게 selectionchange를 보냅니다. */

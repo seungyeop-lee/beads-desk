@@ -1,5 +1,6 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import type { BrowserCommandContext } from "vitest/node";
 
 /**
  * 컴포넌트를 고정 데이터로 실제 chromium에서 그려, 가로 넘침·줄 수·경계 좌표처럼 CSS 배치로 정해지는 결과를 검사합니다.
@@ -45,6 +46,12 @@ export default defineConfig({
       // 스크롤바를 보이게 띄워, 스크롤바가 자리를 차지하는 브라우저에서만 생기는 넘침과 어긋남도 검사에 드러나게 합니다.
       provider: playwright({ launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] } }),
       instances: [{ browser: "chromium", viewport: { width: 1440, height: 900 } }],
+      // userEvent에는 마우스 단추를 누른 채로 두는 동작이 없어, 누르는 동안의 커서와 끌기 시작을 확인하는 테스트가 이 명령으로 누르고 뗍니다.
+      // 마우스는 마지막으로 옮긴 자리(userEvent.hover)에서 누르고 뗍니다.
+      commands: {
+        mouseDown: ({ page }: BrowserCommandContext) => page.mouse.down(),
+        mouseUp: ({ page }: BrowserCommandContext) => page.mouse.up(),
+      },
     },
   },
 });

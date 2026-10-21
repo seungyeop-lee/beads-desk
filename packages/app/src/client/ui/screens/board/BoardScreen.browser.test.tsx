@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { page } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
@@ -8,6 +8,14 @@ import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
 import type { BoardItem } from "@/shared/contract/board";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { BoardScreen } from "./BoardScreen";
+
+// vitest.browser.config.ts의 browser.commands에 둔 명령입니다.
+declare module "vitest/browser" {
+  interface BrowserCommands {
+    mouseDown: () => Promise<void>;
+    mouseUp: () => Promise<void>;
+  }
+}
 
 // 바로 작업 가능 열에 카드를 쌓아 화면 높이를 넘게 하고, 나머지 열은 비워 빈 열의 높이도 함께 잽니다.
 const ITEMS: BoardItem[] = Array.from({ length: 14 }, (_, index) => ({
@@ -120,4 +128,35 @@ test("카드는 짧은 ID를 복사 단추로 보이고, 카드를 덮는 링크
   await expect
     .element(screen.getByRole("region", { name: "막힘", exact: true }))
     .toMatchTextContent(messages.blocking.waitingOn("desk-first"));
+});
+
+test("카드의 ID 복사 단추에서 끌면 끌기가 시작되지 않고, 카드에서 끌면 시작되며, 카드를 누르는 동안 grabbing 커서를 보인다", async () => {
+  reads.items = [{ column: "ready", issue: issue("desk-card", { title: "끌어 볼 작업" }) }];
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <BoardScreen />
+    </LocaleProvider>,
+  );
+  const card = screen.getByRole("link", { name: "desk-card 끌어 볼 작업" });
+  const copyButton = screen.getByRole("button", { name: messages.copyId.labelOf("desk-card") });
+  let dragStarts = 0;
+  const countDragStart = () => dragStarts++;
+  document.addEventListener("dragstart", countDragStart);
+  try {
+    // 같은 열 안에서 놓으므로 상태는 바꾸지 않습니다.
+    await userEvent.hover(copyButton);
+    await commands.mouseDown();
+    await userEvent.hover(card);
+    await commands.mouseUp();
+    expect(dragStarts, "복사 단추에서 끈 횟수").toBe(0);
+
+    await userEvent.hover(card);
+    await commands.mouseDown();
+    expect(getComputedStyle(card.element()).cursor).toBe("grabbing");
+    await userEvent.hover(copyButton);
+    await commands.mouseUp();
+    await expect.poll(() => dragStarts).toBe(1);
+  } finally {
+    document.removeEventListener("dragstart", countDragStart);
+  }
 });

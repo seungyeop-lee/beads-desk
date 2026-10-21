@@ -20,6 +20,22 @@ vi.mock("pele/lazy", async (importOriginal) => {
 
 const markdown = (code: string) => `\`\`\`mermaid\n${code}\n\`\`\``;
 
+// pele module을 한 번도 요청하지 않았을 때만 확인할 수 있으므로, 그림을 그리는 아래 테스트보다 먼저 둡니다.
+test("mermaid가 아닌 코드 블록만 있는 본문은 pele module을 요청하지 않는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor readOnly value={"```ts\nconst value = 1;\n```"} />
+      <MarkdownEditor value={"```ts\nconst other = 2;\n```"} label="설명" />
+    </LocaleProvider>,
+  );
+
+  await expect.element(screen.getByText("const value = 1;", { exact: true })).toBeVisible();
+  await expect.element(screen.getByText("const other = 2;", { exact: true })).toBeVisible();
+  expect(screen.container.querySelector(".preview-panel")).toBeNull();
+  expect(peleModule.requested).toBe(false);
+  await screen.unmount();
+});
+
 test("pele module이 늦게 도착하면 그동안 다른 언어로 바꾼 블록에는 그림을 넣지 않고, 나머지 블록은 그린다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">

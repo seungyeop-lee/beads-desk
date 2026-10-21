@@ -281,7 +281,7 @@ test("판단을 기다리는 이슈의 행에만 판단 기다림 표시가 붙�
   await expect.element(chip(/평범한 작업/)).not.toBeInTheDocument();
 });
 
-test("human gate에 막힌 행의 gate 링크는 막힌 이슈의 상세를 gate 응답 칸 주소로 열고, 제목과 gate가 아닌 막힘 링크는 영역 없이 연다", async () => {
+test("human gate에 막힌 행의 gate 링크는 막힌 이슈의 상세를 gate 응답 칸 주소로 열고, 제목과 gate가 아닌 막힘 링크는 영역 없이 열며, 선행 이슈의 행에는 막힘 링크가 없다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
       <IssueTable
@@ -305,6 +305,9 @@ test("human gate에 막힌 행의 gate 링크는 막힌 이슈의 상세를 gate
   expect(href(messages.blocking.waitingOn("desk-prior")).getAttribute("href")).toBe(
     "/issues?issue=desk-prior",
   );
+  const priorTitle = href("선행 작업");
+  const priorRow = page.elementLocator(priorTitle.closest("tr")!);
+  expect(priorRow.getByRole("link").elements()).toEqual([priorTitle]);
 });
 
 test("기다리는 이슈가 있는 행에만 제목 옆에 대기 수가 붙는다", async () => {

@@ -4,6 +4,19 @@ import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { StatusSelect } from "./StatusSelect";
 
+test("바꾸기가 실패하면, 닫는 사유 창에서 취소한 경우처럼 고른 상태를 버리고 원래 상태를 다시 보인다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <StatusSelect value="in_progress" issueType="task" onChange={async () => false} />
+    </LocaleProvider>,
+  );
+  const select = screen.getByRole("combobox");
+
+  await select.selectOptions("closed");
+
+  await expect.element(select).toHaveValue("in_progress");
+});
+
 /** 표 폭에 따라 chip이 놓일 수 있는 소수 픽셀 위치입니다. 화살표를 칸 경계에서 딱 끊어 그리면 이런 위치에서 줄이 빠져 납작해집니다. */
 const OFFSETS = [0, 0.1, 0.25, 0.3, 0.5, 0.66, 0.75, 0.9].flatMap((left) =>
   [0, 0.3, 0.5].map((top) => ({ left, top })),
