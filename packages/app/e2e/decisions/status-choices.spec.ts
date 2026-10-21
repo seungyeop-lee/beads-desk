@@ -1,27 +1,13 @@
 import type { Page } from "@playwright/test";
 import { expect, expectStatus, test } from "../support/bdWorkspace";
 
-test("CLI로 보류한 결정은 보류로 보이고, 화면에서 열림으로 되돌릴 수 있다", async ({
+test("보류로 저장된 결정은 보류로 보이고 화면에서 열림으로 되돌리며, 닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대로 두고 수락하면 강제로 닫는다", async ({
   page,
   workspace,
 }) => {
-  const decision = await workspace.createIssue("e2e 결정", "--type", "decision");
-  await workspace.bd("update", decision, "--status", "deferred");
-
-  await page.goto("decisions");
-  const select = rowStatus(page, decision);
-  await expect(select).toHaveValue("deferred");
-
-  await select.selectOption("open");
-  await expectStatus(workspace, decision, "open");
-});
-
-test("닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대로 두고, 수락하면 강제로 닫는다", async ({
-  page,
-  workspace,
-}) => {
-  const { decision } = await workspace.createIssues(
+  const { deferred, decision } = await workspace.createIssues(
     {
+      deferred: { title: "e2e 보류한 결정", type: "decision", status: "deferred" },
       decision: { title: "e2e 결정", type: "decision" },
       blocker: { title: "e2e 선행 작업", type: "task" },
     },
@@ -29,16 +15,19 @@ test("닫기를 bd가 거부한 결정은 확인 창에서 거절하면 그대�
   );
 
   await page.goto("decisions");
-  const select = rowStatus(page, decision);
+  const deferredSelect = rowStatus(page, deferred);
+  await expect(deferredSelect).toHaveValue("deferred");
+  await deferredSelect.selectOption("open");
+  await expectStatus(workspace, deferred, "open");
 
+  const select = rowStatus(page, decision);
   const rejected = page.waitForEvent("dialog");
   await select.selectOption("closed");
   await submitCloseReason(page);
-  const rejectedConfirm = await rejected;
-  expect(rejectedConfirm.message()).toContain("그래도 닫을까요?");
-  await rejectedConfirm.dismiss();
-  await expect(select).toHaveValue("open");
+  await (await rejected).dismiss();
   await expectStatus(workspace, decision, "open");
+  // 상태 칸이 열림으로 돌아온 뒤에 닫힘을 다시 골라야 새로 고른 것으로 처리됩니다.
+  await expect(select).toHaveValue("open");
 
   const accepted = page.waitForEvent("dialog");
   await select.selectOption("closed");

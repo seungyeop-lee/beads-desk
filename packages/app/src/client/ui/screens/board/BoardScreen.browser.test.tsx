@@ -2,6 +2,7 @@ import { expect, test, vi } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
@@ -23,15 +24,18 @@ const ITEMS: BoardItem[] = Array.from({ length: 14 }, (_, index) => ({
   issue: issue(`desk-${index}`, { title: `쌓인 작업 ${index}` }),
 }));
 
-/** 테스트마다 화면이 서버에서 읽을 보드 카드를 정합니다. */
-const reads = vi.hoisted(() => ({ items: [] as BoardItem[] }));
+/** 테스트마다 화면이 서버에서 읽을 보드 카드와 열린 gate를 정합니다. */
+const reads = vi.hoisted(() => ({
+  items: [] as BoardItem[],
+  gateTitles: new Map() as GateTitles,
+}));
 
 // 화면이 서버에서 읽는 보드와 주소를 읽어 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
 vi.mock("@/client/modules/board/application/useBoard", () => ({
   useBoard: () => ({ data: reads.items, error: null, loading: false }),
 }));
 vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
-  useGateTitles: () => new Map(),
+  useGateTitles: () => reads.gateTitles,
 }));
 vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({
   useIssueWrites: () => ({
@@ -144,6 +148,25 @@ test("카드는 짧은 ID를 복사 단추로 보이고, 카드를 덮는 링크
   await expect
     .element(screen.getByRole("region", { name: "막힘", exact: true }))
     .toMatchTextContent(messages.blocking.waitingOn("desk-first"));
+});
+
+test("human gate가 막는 막힌 카드는 사람 확인 기다림과 gate 제목을 보인다", async () => {
+  reads.items = [
+    {
+      column: "blocked",
+      issue: issue("desk-work", { title: "검토받을 작업", blockedBy: ["desk-prior", "desk-gate"] }),
+    },
+  ];
+  reads.gateTitles = new Map([["desk-gate", { title: "Review: desk-work", humanGate: true }]]);
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <BoardScreen />
+    </LocaleProvider>,
+  );
+  const blocked = screen.getByRole("region", { name: "막힘", exact: true });
+
+  await expect.element(blocked).toMatchTextContent(messages.humanGate.waiting);
+  await expect.element(blocked).toMatchTextContent("Review: desk-work");
 });
 
 test("카드의 ID 복사 단추에서 끌면 끌기가 시작되지 않고, 카드에서 끌면 시작되며, 카드를 누르는 동안 grabbing 커서를 보인다", async () => {

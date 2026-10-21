@@ -1,4 +1,4 @@
-import { expect, test, vi } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
@@ -24,10 +24,11 @@ const REPORT: HygieneReport = {
 };
 
 // 화면이 서버에서 읽는 점검 결과와, 주소를 읽어 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
+// 오래 방치된 이슈는 기본 기준인 30일로 읽을 때만 한 건을 돌려줍니다.
 vi.mock("@/client/modules/hygiene/application/useHygiene", () => ({
   useHygiene: () => ({ data: REPORT, error: null, loading: false }),
-  useStaleIssues: () => ({
-    data: [issue("desk-stale", { title: "오래된 이슈" })],
+  useStaleIssues: (staleDays: number) => ({
+    data: staleDays === 30 ? [issue("desk-stale", { title: "오래된 이슈" })] : [],
     error: null,
     loading: false,
   }),
@@ -45,13 +46,17 @@ const CARD_TITLES = [
   messages.hygiene.orphans.title,
 ];
 
-async function cardTitleBoxes(width: number) {
-  await page.viewport(width, 900);
-  const screen = await render(
+function renderHygiene() {
+  return render(
     <LocaleProvider locale="ko">
       <HygieneScreen />
     </LocaleProvider>,
   );
+}
+
+async function cardTitleBoxes(width: number) {
+  await page.viewport(width, 900);
+  const screen = await renderHygiene();
   return CARD_TITLES.map((title) => ({
     title,
     box: screen
@@ -77,4 +82,33 @@ test("좁은 창에서는 카드가 한 열에 Stale, Duplicates, Missing sectio
   expect(boxes.map(({ box }) => box.left)).toEqual(boxes.map(() => left));
   const byTop = boxes.toSorted((a, b) => a.box.top - b.box.top).map(({ title }) => title);
   expect(byTop).toEqual(CARD_TITLES);
+});
+
+test("중복 후보 쌍에서 한쪽을 다른 쪽의 중복으로 닫기 전에, 어느 이슈를 어느 이슈의 중복으로 닫는지 확인을 받는다", async () => {
+  // 확인 창에서 거절해 Server Action은 실행하지 않습니다.
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  onTestFinished(() => confirm.mockRestore());
+  const screen = await renderHygiene();
+
+  await screen
+    .getByRole("button", { name: messages.hygiene.duplicates.closeAs("desk-dup1", "desk-dup2") })
+    .click();
+
+  expect(confirm).toHaveBeenCalledWith(
+    messages.closeAsReplaced.confirm.duplicate("desk-dup1", "desk-dup2"),
+  );
+});
+
+test("오래 방치된 이슈의 기준 일수를 바꾸면 그 카드만 새 기준으로 읽은 결과를 보이고, 다른 카드의 목록은 그대로 보인다", async () => {
+  const screen = await renderHygiene();
+  const stale = screen.getByRole("region", { name: messages.hygiene.stale.title });
+  const lint = screen.getByRole("region", { name: messages.hygiene.lint.title });
+  await expect.element(stale.getByRole("link", { name: /desk-stale/ })).toBeVisible();
+
+  await stale
+    .getByRole("combobox", { name: messages.hygiene.stale.days })
+    .selectOptions(messages.hygiene.stale.dayOption(7));
+
+  await expect.element(stale.getByText(messages.hygiene.stale.empty(7))).toBeVisible();
+  await expect.element(lint.getByRole("listitem")).toHaveLength(REPORT.lint.length);
 });

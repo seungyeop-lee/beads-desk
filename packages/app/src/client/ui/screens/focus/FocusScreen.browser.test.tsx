@@ -1,6 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
+import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicSummary } from "@/shared/contract/epics";
@@ -19,10 +20,11 @@ const ISSUES: Issue[] = [
   issue("desk-after-doing", { title: "진행 뒤 작업", blockedBy: ["desk-doing"] }),
 ];
 
-/** 테스트마다 화면이 서버에서 읽을 이슈 목록과 에픽 진행률을 정합니다. 에픽 진행률이 null이면 아직 읽는 중입니다. */
+/** 테스트마다 화면이 서버에서 읽을 이슈 목록, 에픽 진행률, 열린 gate를 정합니다. 에픽 진행률이 null이면 아직 읽는 중입니다. */
 const reads = vi.hoisted(() => ({
   issues: [] as Issue[],
   epics: [] as EpicSummary[] | null,
+  gateTitles: new Map() as GateTitles,
 }));
 
 // 화면이 서버에서 읽는 목록과 주소, 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
@@ -36,7 +38,7 @@ vi.mock("@/client/modules/humanDecisions/application/useHumanDecisionCount", () 
   useHumanDecisionCount: () => ({ data: 0, error: null, loading: false }),
 }));
 vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
-  useGateTitles: () => new Map(),
+  useGateTitles: () => reads.gateTitles,
 }));
 vi.mock("@/client/ui/issues/IssueDetailRoute", () => ({
   IssueDetailRoute: () => null,
@@ -136,4 +138,20 @@ test("에픽 진행률을 다 읽기 전에도 지금 화면을 그리고, 에�
     </LocaleProvider>,
   );
   await expect.element(epicProgress).toBeVisible();
+});
+
+test("human gate가 막는 막힘 행은 사람 확인 기다림과 gate 제목을 보인다", async () => {
+  reads.issues = [
+    issue("desk-prior", { title: "선행 작업", ready: true }),
+    issue("desk-work", { title: "검토받을 작업", blockedBy: ["desk-prior", "desk-gate"] }),
+  ];
+  reads.epics = [];
+  reads.gateTitles = new Map([["desk-gate", { title: "Review: desk-work", humanGate: true }]]);
+  const screen = await renderFocus();
+  const blocked = screen
+    .getByRole("region", { name: messages.workStates.labels.blocked, exact: true })
+    .getByRole("listitem");
+
+  await expect.element(blocked).toMatchTextContent(messages.humanGate.waiting);
+  await expect.element(blocked).toMatchTextContent("Review: desk-work");
 });

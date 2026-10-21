@@ -51,6 +51,11 @@ export default defineConfig({
       commands: {
         mouseDown: ({ page }: BrowserCommandContext) => page.mouse.down(),
         mouseUp: ({ page }: BrowserCommandContext) => page.mouse.up(),
+        // 운영체제의 밝은·어두운 모드를 따르는 테마를 확인하는 테스트가 이 명령으로 운영체제 설정을 바꿉니다. null이면 바꾼 설정을 되돌립니다.
+        emulateColorScheme: (
+          { page }: BrowserCommandContext,
+          colorScheme: "light" | "dark" | null,
+        ) => page.emulateMedia({ colorScheme }),
       },
     },
   },

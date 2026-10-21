@@ -57,6 +57,23 @@ test("응답 없이 닫는 데 성공해도 패널이 빠지기 전에는 알리
     .toHaveTextContent(messages.humanDecision.dismissed(ISSUE_ID));
 });
 
+test("응답 없이 닫는 동안에는 응답 편집기를 감추고, 취소하면 적어 둔 응답을 다시 보인다", async () => {
+  const screen = await render(<Panel shown />);
+  const response = screen.getByRole("textbox", {
+    name: messages.humanDecision.response,
+    includeHidden: true,
+  });
+  await response.click();
+  await userEvent.keyboard("아직 정하지 못했습니다");
+
+  await screen.getByRole("button", { name: messages.humanDecision.dismiss }).click();
+  await expect.element(response).not.toBeVisible();
+
+  await screen.getByRole("button", { name: messages.common.cancel }).click();
+  await expect.element(response).toBeVisible();
+  await expect.element(response).toHaveTextContent("아직 정하지 못했습니다");
+});
+
 test("응답을 적기 전에는 응답 버튼이 막혀 있어 마우스를 받지 않고, 버튼 위에서 pointer를 보이지 않는다", async () => {
   const screen = await render(<Panel shown />);
   const respond = screen.getByRole("button", { name: messages.humanDecision.respond });
