@@ -14,10 +14,16 @@ const DESTINATION_FORMS: Record<string, RegExp | undefined> = {
   destinationLiteral: new RegExp(`^${LITERAL}$`),
   destinationRaw: new RegExp(`^${RAW}$`),
 };
+/** remark-inline-links가 참조 node를 바꿔 만드는 node의 종류입니다. */
+const INLINED_TYPES: Record<string, string | undefined> = {
+  linkReference: "link",
+  imageReference: "image",
+};
 
 type MarkdownNode = {
   type: string;
   url?: unknown;
+  identifier?: string;
   position?: { start: { offset?: number }; end: { offset?: number } };
   data?: object;
   children?: MarkdownNode[];
@@ -29,26 +35,77 @@ type MarkdownNode = {
  *
  * remark-inline-links 다음에 실행해야 합니다. 편집기(Milkdown)에서는 이 plugin보다 remark-inline-links가 먼저 실행되어,
  * 참조 링크와 참조 그림(`[a][ref]`, `![a][ref]`)이 원문 위치와 참조 이름이 없는 link·image node로 바뀌고 정의(`[ref]: …`)는
- * 지워집니다. 그래서 원문 위치가 없는 node는 문서 전체의 정의 원문에서 파싱하면 그 주소가 되는 원문 주소를 찾습니다.
- * 그런 정의가 여럿이면 문서에서 처음 나온 정의를 씁니다.
+ * 지워집니다. 그래서 같은 processor의 parser로 원문을 다시 파싱해(parse는 transformer를 실행하지 않습니다) 참조마다 이름으로
+ * 가리키는 정의를 문서 순서대로 구하고, 원문 위치가 없는 link·image node와 차례로 짝지어 그 정의의 원문에서 주소를 찾습니다.
+ * remark-inline-links는 참조를 같은 자리의 node로 바꾸므로 두 순서는 같고, 같은 parser이므로 코드 블록 안의 `]:` 같은 글자는
+ * 정의로 읽히지 않습니다. 다른 plugin이 node를 더하거나 빼서 개수, 종류, 주소가 하나라도 어긋나면 어느 참조에도 원문 주소를
+ * 남기지 않습니다.
  */
-export function remarkWindowsPathSource() {
+export function remarkWindowsPathSource(this: { parse(markdown: string): unknown }) {
   return (tree: MarkdownNode, file: { value: unknown }) => {
     const markdown = String(file.value);
-    const visit = (node: MarkdownNode) => {
-      const start = node.position?.start.offset;
-      const end = node.position?.end.offset;
-      if ((node.type === "link" || node.type === "image") && typeof node.url === "string") {
-        const source =
-          start !== undefined && end !== undefined
-            ? sourceUrlIn(markdown.slice(start, end), "](", node.url)
-            : sourceUrlIn(markdown, "]:", node.url);
-        if (source !== null) node.data = { ...node.data, sourceUrl: source };
-      }
-      node.children?.forEach(visit);
-    };
-    visit(tree);
+    const destinations = nodesIn(tree).filter(
+      (node) => (node.type === "link" || node.type === "image") && typeof node.url === "string",
+    );
+    const inlined = destinations.filter((node) => sourceTextOf(node, markdown) === null);
+    const references =
+      inlined.length === 0 ? [] : referencedDefinitions(this.parse(markdown) as MarkdownNode);
+    const paired =
+      references.length === inlined.length &&
+      references.every(
+        (reference, index) =>
+          reference.type === inlined[index]!.type &&
+          reference.definition.url === inlined[index]!.url,
+      );
+    const definitionOf = new Map(
+      paired ? inlined.map((node, index) => [node, references[index]!.definition]) : [],
+    );
+
+    for (const node of destinations) {
+      const url = node.url as string;
+      const text = sourceTextOf(node, markdown);
+      const definition = definitionOf.get(node);
+      const source =
+        text !== null
+          ? sourceUrlIn(text, "](", url)
+          : definition
+            ? sourceUrlIn(sourceTextOf(definition, markdown) ?? "", "]:", url)
+            : null;
+      if (source !== null) node.data = { ...node.data, sourceUrl: source };
+    }
   };
+}
+
+/** tree의 node를 문서 순서(전위 순회)로 늘어놓습니다. remark-inline-links가 참조를 바꾸는 순서와 같습니다. */
+function nodesIn(tree: MarkdownNode): MarkdownNode[] {
+  return [tree, ...(tree.children ?? []).flatMap(nodesIn)];
+}
+
+/**
+ * 참조 링크와 참조 그림마다 그 참조가 이름으로 가리키는 정의를 문서 순서대로 구합니다. 같은 이름의 정의가 여럿이면 CommonMark처럼
+ * 처음 나온 정의를 쓰고, 정의가 없는 참조는 remark-inline-links도 바꾸지 않으므로 뺍니다.
+ */
+function referencedDefinitions(tree: MarkdownNode) {
+  const nodes = nodesIn(tree);
+  const definitions = new Map<string, MarkdownNode>();
+  for (const node of nodes) {
+    const name = node.identifier?.toUpperCase();
+    if (node.type === "definition" && name !== undefined && !definitions.has(name)) {
+      definitions.set(name, node);
+    }
+  }
+  return nodes.flatMap((node) => {
+    const type = INLINED_TYPES[node.type];
+    const definition = definitions.get(node.identifier?.toUpperCase() ?? "");
+    return type && definition ? [{ type, definition }] : [];
+  });
+}
+
+/** node가 차지하는 원문입니다. 원문 위치가 없으면 null입니다. */
+function sourceTextOf(node: MarkdownNode, markdown: string): string | null {
+  const start = node.position?.start.offset;
+  const end = node.position?.end.offset;
+  return start !== undefined && end !== undefined ? markdown.slice(start, end) : null;
 }
 
 /** remarkWindowsPathSource가 node에 남긴 원문 주소입니다. 없으면 null입니다. */

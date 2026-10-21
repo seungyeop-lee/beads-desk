@@ -11,10 +11,18 @@ import {
 } from "./windowsPathSource";
 
 type Destination = { type: string; url?: string; data?: unknown };
+type Root = { children: object[] };
 
-/** markdown을 편집기처럼 파싱해, link와 image node마다 그릴 때 쓰는 경로를 구합니다. */
-function openedPaths(markdown: string): string[] {
-  const processor = unified().use(remarkParse).use(remarkInlineLinks).use(remarkWindowsPathSource);
+/**
+ * markdown을 편집기처럼 파싱해, link와 image node마다 그릴 때 쓰는 경로를 구합니다.
+ * `transform`을 주면 remark-inline-links와 remarkWindowsPathSource 사이에서 tree를 바꿉니다.
+ */
+function openedPaths(markdown: string, transform: (tree: Root) => void = () => {}): string[] {
+  const processor = unified()
+    .use(remarkParse)
+    .use(remarkInlineLinks)
+    .use(() => (tree) => transform(tree as unknown as Root))
+    .use(remarkWindowsPathSource);
   const tree = processor.runSync(processor.parse(markdown), markdown);
   const paths: string[] = [];
   const visit = (node: Destination & { children?: Destination[] }) => {
@@ -38,6 +46,42 @@ test.each([
   ['[a][r]\n\n[r]: <D:\\작업 트리\\-x\\(1).md> "제목"', "D:\\작업 트리\\-x\\(1).md"],
 ])("역슬래시 드라이브 경로는 escape로 지워진 `\\`를 살린다: %s", (markdown, path) => {
   expect(openedPaths(markdown)).toEqual([path]);
+});
+
+test.each([
+  [
+    "문장부호 앞 `\\` 하나만 다른 정의 둘",
+    "[s][a] [t][b]\n\n[a]: C:\\x\\.y\n[b]: C:\\x.y",
+    ["C:\\x\\.y", "C:\\x.y"],
+  ],
+  [
+    "앞선 코드 블록 안의 정의 모양 글자",
+    "[t][b]\n\n```\n[b]: C:\\x\\.y\n```\n\n[b]: C:\\x.y",
+    ["C:\\x.y"],
+  ],
+  ["앞선 인라인 코드 안의 정의 모양 글자", "`[b]: C:\\x\\.y ` [t][b]\n\n[b]: C:\\x.y", ["C:\\x.y"]],
+  [
+    "같은 이름의 정의 둘",
+    "![t][B] [u][c]\n\n[b]: C:\\x.y\n[b]: C:\\x\\.y\n[c]: C:\\z\\_w",
+    ["C:\\x.y", "C:\\z\\_w"],
+  ],
+])(
+  "참조 링크와 참조 그림은 이름으로 가리키는 정의의 원문 주소를 쓴다: %s",
+  (_, markdown, paths) => {
+    expect(openedPaths(markdown)).toEqual(paths);
+  },
+);
+
+test("원문 위치가 없는 link·image node와 원문의 참조가 순서대로 짝지어지지 않으면 원문 주소를 되살리지 않는다", () => {
+  const markdown = "[t][b]\n\n[b]: C:\\x\\.y";
+  const addLink = (tree: Root) => {
+    tree.children.unshift({
+      type: "paragraph",
+      children: [{ type: "link", url: "C:\\x.y", children: [] }],
+    });
+  };
+
+  expect(openedPaths(markdown, addLink)).toEqual(["C:\\x.y", "C:\\x.y"]);
 });
 
 test.each([

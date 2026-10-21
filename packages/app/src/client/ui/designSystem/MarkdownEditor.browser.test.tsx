@@ -130,6 +130,48 @@ test("Windows 경로 링크와 그림이 있는 문단을 고쳐도 주소는 �
   expect(changed.mock.lastCall![0]).toContain("[참조 문서](C:\\work\\.beads\\b.md)");
 });
 
+test.each([
+  [
+    "문장부호 앞 `\\` 하나만 다른 정의 둘",
+    "[앞 정의][a] [뒤 정의][b] 끝\n\n[a]: C:\\x\\.y\n[b]: C:\\x.y",
+    [
+      ["앞 정의", "C:\\x\\.y"],
+      ["뒤 정의", "C:\\x.y"],
+    ],
+  ],
+  [
+    "앞선 코드 블록 안의 정의 모양 글자",
+    "[뒤 정의][b] 끝\n\n```\n[b]: C:\\x\\.y\n```\n\n[b]: C:\\x.y",
+    [["뒤 정의", "C:\\x.y"]],
+  ],
+])(
+  "Windows 경로 참조 링크는 이름으로 가리키는 정의의 원문 주소로 열고, 링크가 있는 문단을 고쳐도 그 원문 주소로 저장한다: %s",
+  async (_, markdown, links) => {
+    const changed = vi.fn<(markdown: string) => void>();
+    const screen = await render(
+      <LocaleProvider locale="ko">
+        <MarkdownEditor value={markdown} label="설명" onChange={changed} />
+      </LocaleProvider>,
+    );
+    const editor = screen.getByRole("textbox", { name: "설명" });
+
+    for (const [name, path] of links) {
+      const link = editor.getByRole("link", { name });
+      await expect.element(link).toBeInTheDocument();
+      expect(localPath(link.element().getAttribute("href"))).toBe(path);
+    }
+    await editor.getByText(links[0]![0]!).click();
+    await userEvent.keyboard("고침");
+
+    await expect.poll(() => changed.mock.lastCall?.[0]).toContain("고침");
+    // 편집기는 참조 링크를 인라인 링크로 바꿔 씁니다. 그 주소가 각 참조가 가리키는 정의의 원문이어야 합니다.
+    const saved = [...changed.mock.lastCall![0].matchAll(/\]\(([^)]+)\)/g)].map(
+      (match) => match[1],
+    );
+    expect(saved).toEqual(links.map(([, path]) => path));
+  },
+);
+
 test("편집기에서 Windows 경로 링크의 주소를 고치면 고친 주소를 저장한다", async () => {
   const changed = vi.fn<(markdown: string) => void>();
   const screen = await render(
