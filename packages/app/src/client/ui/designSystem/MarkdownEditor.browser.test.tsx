@@ -257,6 +257,37 @@ test("링크 도구의 수정 칸에서 Windows 경로 링크의 주소를 일�
   expect(localPath(href)).toBe("C:\\work\\.beads\\b.md");
 });
 
+test("링크 도구 미리보기의 주소 글자는 경로 종류와 관계없이 본문의 같은 링크와 같은 주소를 연다", async () => {
+  const links = [
+    ["역슬래시", "C:\\work\\.beads\\a.md"],
+    ["슬래시", "d:/work/b.md"],
+    ["절대경로", "/Users/me/a.md"],
+    ["화면", "/epics"],
+    ["외부", "https://example.com/a"],
+    ["상대경로", "docs/a.md"],
+    ["스크립트", "javascript:alert(1)"],
+  ];
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        value={`${links.map(([name, url]) => `[${name}](${url})`).join(" ")} 끝`}
+        label="설명"
+      />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText(/끝$/).click();
+
+  for (const [name, url] of links) {
+    const link = editor.getByRole("link", { name });
+    await link.hover();
+    await expect.poll(() => visible(".link-preview .link-display")?.textContent).toBe(url);
+    await expect
+      .poll(() => visible(".link-preview .link-display")!.getAttribute("href"))
+      .toBe(link.element().getAttribute("href"));
+  }
+});
+
 /** 열려 있는 링크 도구의 주소 칸에 `address`를 넣고 Enter로 확인합니다. */
 async function confirmLinkAddress(address: string) {
   await expect.poll(() => visible(".link-edit input")).toBeTruthy();

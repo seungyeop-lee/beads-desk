@@ -16,6 +16,7 @@ import { documentWorkspace } from "@/client/infra/workspaces/documentWorkspace";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
 import { drivePathLinkTool } from "./linkToolDrivePath";
+import { previewAddressLinkTool } from "./linkToolPreviewAddress";
 import { localMarkdownUrl } from "./localMarkdownUrl";
 import { MermaidDiagramDialog } from "./MermaidDiagramDialog";
 import { createMermaidPreview, diagramAt } from "./mermaidPreview";
@@ -129,6 +130,13 @@ export function MarkdownEditor({
           previewLoading: labels.previewLoading,
           previewToggleText: (previewOnly) => (previewOnly ? labels.showCode : labels.hideCode),
         });
+      // 링크 href로 여는 주소입니다. Milkdown은 http, https, mailto 같은 허용 scheme 밖의 href를 비웁니다.
+      // `C:/a.md`처럼 드라이브 문자가 scheme으로 읽히는 Windows 경로도 비워지므로, 앱 안 주소로 바뀌는 href는
+      // 원래 값에서 바꾸고 바뀌지 않는 href만 Milkdown과 같은 방식으로 거릅니다.
+      const linkAddress = (href: string) => {
+        const opened = localMarkdownUrl(href, documentWorkspace() ?? "");
+        return opened === href ? commonmark.sanitizeLinkHref(href) : opened;
+      };
       if (!readOnly) {
         crepe.addFeature(linkTooltip).addFeature(toolbar, {
           boldLabel: labels.bold,
@@ -137,14 +145,15 @@ export function MarkdownEditor({
           codeLabel: labels.inlineCode,
           linkLabel: labels.link,
         });
-        crepe.editor.use(
+        crepe.editor.use([
           $prose(
             (ctx) =>
               new Plugin({
                 view: (view) => drivePathLinkTool(view, commonmark.linkSchema.type(ctx)),
               }),
           ),
-        );
+          $prose(() => new Plugin({ view: (view) => previewAddressLinkTool(view, linkAddress) })),
+        ]);
       }
       // link의 href와 image의 src에는 원문에서 되살린 경로를 둡니다. Milkdown 링크 도구는 href만 읽어 미리 보여 주고
       // 복사하고 수정 칸에 채우므로, 파싱한 주소를 두면 `C:\work\.beads`가 `C:\work.beads`로 보입니다.
@@ -174,12 +183,7 @@ export function MarkdownEditor({
             },
             toDOM: (mark) => {
               const dom = schema.toDOM!(mark, false) as [string, Record<string, unknown>];
-              // Milkdown은 http, https, mailto 같은 허용 scheme 밖의 href를 비웁니다. `C:/a.md`처럼 드라이브 문자가
-              // scheme으로 읽히는 Windows 경로도 비워지므로, 앱 안 주소로 바뀌는 href는 원래 값에서 바꾸고
-              // 바뀌지 않는 href만 Milkdown이 거른 값을 씁니다.
-              const original = String(mark.attrs.href);
-              const opened = localMarkdownUrl(original, documentWorkspace() ?? "");
-              const href = opened === original ? dom[1].href : opened;
+              const href = linkAddress(String(mark.attrs.href));
               return [dom[0], { ...dom[1], href, sourceUrl: null }];
             },
             toMarkdown: {
