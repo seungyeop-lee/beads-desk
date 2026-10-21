@@ -7,7 +7,7 @@ const ENGLISH_TITLE =
   "Read every word of this long English issue title without opening its detail or hovering, while keeping different node heights and all dependency edges readable";
 
 // 그래프를 닫았을 때 출발 화면의 주소와 옆 패널로 돌아가는지는 이 시나리오에서만 확인합니다. 다른 그래프 시나리오에 같은 확인을 더하지 않습니다.
-test("상세에서 연 그래프를 상세 위에 겹쳐 열고, 닫기·바깥 클릭·Escape·브라우저 뒤로가기로 닫으면 출발 목록과 상세, 옆 패널이 다시 열리지 않고 그대로 보인다", async ({
+test("상세에서 연 그래프를 상세 위에 겹쳐 열고, 닫기·바깥 클릭·Escape·브라우저 뒤로가기로 닫으면 출발 목록과 상세, 옆 패널이 다시 열리지 않고 그대로 보이며, 그래프 안에 상세와 옆 패널이 열린 주소에서는 Escape를 누를 때마다 옆 패널, 상세, 그래프 순으로 하나씩 닫힌다", async ({
   page,
   workspace,
 }) => {
@@ -68,63 +68,52 @@ test("상세에서 연 그래프를 상세 위에 겹쳐 열고, 닫기·바깥 
   await expect(canvas).toBeVisible();
   await page.keyboard.press("Escape");
   await expectOriginKept();
-});
 
-// 페이지를 누르지 않고 연달아 누른 Escape와, 그래프 안을 누른 뒤 누른 Escape는 브라우저가 dialog에 다르게 전달하므로 둘 다 확인합니다.
-test("상세 위에 겹쳐 연 그래프 안에 상세와 옆 패널이 열린 주소로 들어와 페이지를 누르지 않고 Escape를 누를 때마다, 그리고 그래프 안을 눌러 상세와 옆 패널을 다시 연 뒤 Escape를 누를 때마다 옆 패널, 상세, 그래프 순으로 하나씩 닫힌다", async ({
-  page,
-  workspace,
-}) => {
-  const { first, second } = await workspace.createIssues(
-    { first: { title: "단계 닫기 선행" }, second: { title: "단계 닫기 기준" } },
-    [["second", "first"]],
-  );
-  const origin = `/issues?issue=${second}`;
-  const returnTo = `returnTo=${encodeURIComponent(origin)}`;
+  // 페이지를 누르지 않고 연달아 누른 Escape와, 그래프 안을 누른 뒤 누른 Escape는 브라우저가 dialog에 다르게 전달하므로 둘 다 확인합니다.
+  const stepOrigin = `/issues?issue=${second}`;
+  const returnTo = `returnTo=${encodeURIComponent(stepOrigin)}`;
+  const graphDetail = page.getByRole("region", { name: `${second} 이슈`, exact: true });
+  const graphSide = page.getByRole("region", { name: `${first} 이슈 옆 패널` });
   // section은 옆 패널을 닫는 Escape에서는 남고, 상세를 닫는 Escape에서 issue와 함께 지워져야 합니다.
   await page.goto(
     `issues?center=${second}&issue=${second}&side=${first}&section=human-gate&${returnTo}`,
   );
-  const screenDetail = page.getByRole("dialog", { name: `${second} 이슈` });
-  const canvas = page.getByRole("region", { name: "의존 그래프" });
-  const detail = page.getByRole("region", { name: `${second} 이슈`, exact: true });
-  const side = page.getByRole("region", { name: `${first} 이슈 옆 패널` });
-  await expect(canvas.getByRole("link", { name: /단계 닫기 기준/ })).toBeVisible();
-  await expect(side).toBeVisible();
+  await expect(canvas.getByRole("link", { name: /모달 출발 기준/ })).toBeVisible();
+  await expect(graphSide).toBeVisible();
 
   await page.keyboard.press("Escape");
-  await expect(side).toHaveCount(0);
-  await expect(detail).toBeVisible();
+  await expect(graphSide).toHaveCount(0);
+  await expect(graphDetail).toBeVisible();
   await expect(page).toHaveURL(
     `issues?center=${second}&issue=${second}&section=human-gate&${returnTo}`,
   );
 
   await page.keyboard.press("Escape");
-  await expect(detail).toHaveCount(0);
+  await expect(graphDetail).toHaveCount(0);
   await expect(canvas).toBeVisible();
   await expect(page).toHaveURL(`issues?center=${second}&${returnTo}`);
 
-  await canvas.getByRole("link", { name: /단계 닫기 기준/ }).click();
-  await detail
+  await canvas.getByRole("link", { name: /모달 출발 기준/ }).click();
+  await graphDetail
     .getByRole("region", { name: "연결된 이슈", exact: true })
-    .getByRole("link", { name: `${first} 단계 닫기 선행`, exact: true })
+    .getByRole("link", { name: `${first} 모달 출발 선행`, exact: true })
     .click();
-  await expect(side).toBeVisible();
+  await expect(graphSide).toBeVisible();
 
   // 그래프 안을 눌러 연 상세는 issue를 기존 query 뒤에 붙입니다.
   await page.keyboard.press("Escape");
-  await expect(side).toHaveCount(0);
-  await expect(detail).toBeVisible();
+  await expect(graphSide).toHaveCount(0);
+  await expect(graphDetail).toBeVisible();
   await expect(page).toHaveURL(`issues?center=${second}&${returnTo}&issue=${second}`);
 
   await page.keyboard.press("Escape");
-  await expect(detail).toHaveCount(0);
+  await expect(graphDetail).toHaveCount(0);
   await expect(canvas).toBeVisible();
   await expect(page).toHaveURL(`issues?center=${second}&${returnTo}`);
 
   await page.keyboard.press("Escape");
   await expect(canvas).toHaveCount(0);
-  await expect(page).toHaveURL(`.${origin}`);
+  await expect(page).toHaveURL(`.${stepOrigin}`);
   await expect(screenDetail).toBeVisible();
 });
 
@@ -161,12 +150,10 @@ test("에픽 상세에서 연 그래프의 머리글 제목은 에픽 상세를 
     .click();
   const detail = graph.getByRole("region", { name: `${epic} 이슈` });
   await expect(detail).toBeVisible();
-  await expect(detail.getByRole("link", { name: "선행·후속 그래프" })).toHaveCount(0);
   await detail.getByRole("link", { name: "순서 보기" }).click();
   await expect(page).toHaveURL(new RegExp(`/epics\\?epic=${epic}(?:&returnTo=[^&]+)?$`));
   await expect(detail).toHaveCount(0);
   await expect(secondNode).toBeVisible();
-  await expect(close).toHaveAttribute("href", `/w/${workspace.slug}${origin}`);
   await close.click();
   await expect(page).toHaveURL(`.${origin}`);
 

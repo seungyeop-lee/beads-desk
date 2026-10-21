@@ -52,6 +52,22 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
 
+test("보드는 막힘, 바로 작업 가능, 진행 중, 닫힘 열만 이 순서로 보인다", async () => {
+  reads.items = [];
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <BoardScreen />
+    </LocaleProvider>,
+  );
+
+  expect(
+    screen
+      .getByRole("region")
+      .elements()
+      .map((column) => column.getAttribute("aria-label")),
+  ).toEqual(["막힘", "바로 작업 가능", "진행 중", "닫힘"]);
+});
+
 test("넓은 창에서 열이 화면 높이를 채우고 카드 목록만 열 안에서 스크롤된다", async () => {
   reads.items = ITEMS;
   await page.viewport(1280, 720);

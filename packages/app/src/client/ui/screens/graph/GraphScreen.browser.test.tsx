@@ -487,6 +487,73 @@ test("선후 관계 없는 이슈가 없는 에픽은 패널과 패널 조작을
   );
 });
 
+test("키보드로 펼친 선후 관계 없음 목록은 이슈를 다시 읽어도, 그래프 안에 상세를 열었다 닫아도 펼친 채로 남는다", async () => {
+  await page.viewport(1440, 900);
+  // 4단계 에픽은 이 창 폭에서 목록을 접은 채로 시작합니다.
+  const issues: Record<string, IssueSeed> = {
+    "kept-epic": { title: "펼침 유지", issueType: "epic" },
+    "kept-1": { title: "펼침 첫 단계", parent: "kept-epic" },
+    "kept-2": { title: "펼침 둘째 단계", parent: "kept-epic" },
+    "kept-3": { title: "펼침 셋째 단계", parent: "kept-epic" },
+    "kept-4": { title: "펼침 넷째 단계", parent: "kept-epic" },
+    "kept-alone": { title: "펼침 독립 작업", parent: "kept-epic" },
+  };
+  const blocks = [
+    ["kept-2", "kept-1"],
+    ["kept-3", "kept-2"],
+    ["kept-4", "kept-3"],
+  ] as const;
+  const screen = await renderGraph("epic", "kept-epic", graphData(issues, [...blocks]));
+  const rerender = () =>
+    screen.rerender(
+      <LocaleProvider locale="ko">
+        <GraphScreen />
+      </LocaleProvider>,
+    );
+  const panel = screen.getByRole("region", { name: "선후 관계 없음" });
+  const expand = panel.getByRole("button", { name: "선후 관계 없는 이슈 목록 펼치기" });
+  const collapse = panel.getByRole("button", { name: "선후 관계 없는 이슈 목록 접기" });
+  // 목록을 새로 그리면 펼친 채로 시작했다가 그래프 배치를 잰 뒤에 접으므로, 노드가 그려지고 그 처리가 끝난 뒤에 읽습니다.
+  const expectStillExpanded = async () => {
+    await expect
+      .element(
+        screen
+          .getByRole("region", { name: "의존 그래프" })
+          .getByRole("link", { name: /펼침 넷째 단계/ }),
+      )
+      .toBeVisible();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    expect(collapse.element().getAttribute("aria-expanded")).toBe("true");
+  };
+  await expect.element(expand).toHaveAttribute("aria-expanded", "false");
+
+  (expand.element() as HTMLElement).focus();
+  await userEvent.keyboard("{Enter}");
+  await expect.element(collapse).toHaveAttribute("aria-expanded", "true");
+
+  graph = graphData(
+    { ...issues, "kept-alone": { title: "다시 읽은 독립 작업", parent: "kept-epic" } },
+    [...blocks],
+  );
+  await rerender();
+  await expect.element(panel.getByRole("link", { name: /다시 읽은 독립 작업/ })).toBeVisible();
+  await expectStillExpanded();
+
+  detailShown = true;
+  try {
+    address = new URLSearchParams({ epic: "kept-epic", issue: "kept-alone" });
+    await rerender();
+    await expect.element(screen.getByRole("region", { name: "상세 자리" })).toBeVisible();
+    await expectStillExpanded();
+  } finally {
+    detailShown = false;
+  }
+  address = new URLSearchParams({ epic: "kept-epic" });
+  await rerender();
+  await expect.element(screen.getByRole("region", { name: "상세 자리" })).not.toBeInTheDocument();
+  await expectStillExpanded();
+});
+
 // 간선 종류(blocks, gate, human gate, 관련, 발견)와 해소된 관계가 모두 들어 있는 이슈 중심 그래프입니다.
 const ALL_EDGES = graphData(
   {
@@ -1003,6 +1070,31 @@ test("관계가 없는 이슈를 기준으로 열면 캔버스 대신 빈 상태
     )
     .toBeVisible();
   expect(screen.getByRole("region", { name: "의존 그래프" }).elements()).toHaveLength(0);
+});
+
+test("복귀 정보 없이 연 그래프에서 출발 화면으로 돌아가는 링크는 머리글의 닫기 하나뿐이다", async () => {
+  const screen = await renderGraph(
+    "center",
+    "back-center",
+    graphData({ "back-before": { title: "복귀 선행" }, "back-center": { title: "복귀 기준" } }, [
+      ["back-center", "back-before"],
+    ]),
+  );
+  await expect
+    .element(
+      screen.getByRole("region", { name: "의존 그래프" }).getByRole("link", { name: /복귀 선행/ }),
+    )
+    .toBeVisible();
+
+  const back = "/w/demo/issues?issue=back-center";
+  expect(
+    screen
+      .getByRole("dialog")
+      .getByRole("link")
+      .elements()
+      .filter((link) => link.getAttribute("href") === back)
+      .map((link) => link.getAttribute("aria-label")),
+  ).toEqual(["닫기"]);
 });
 
 test("이슈 중심 보기는 기준 이슈 노드만 강조하고, 관련·양방향 발견 간선을 blocks 사슬과 구분해 방향대로 읽는다", async () => {

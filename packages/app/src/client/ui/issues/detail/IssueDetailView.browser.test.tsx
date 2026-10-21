@@ -64,6 +64,31 @@ test("에픽 상세에서 순서 보기와 선행·후속 그래프 링크가 �
   );
 });
 
+test("하위 이슈만 연결된 에픽 상세는 순서 보기만 보이고 선행·후속 그래프 링크는 없다", async () => {
+  const screen = await renderDetail(
+    issueDetail("desk-1", {
+      title: "하위만 있는 에픽",
+      issueType: "epic",
+      dependents: [
+        {
+          id: "desk-2",
+          title: "하위 작업",
+          status: "open",
+          priority: 2,
+          issueType: "task",
+          dependencyType: "parent-child",
+          awaitType: "",
+        },
+      ],
+    }),
+  );
+
+  await expect
+    .element(screen.getByRole("link", { name: messages.graph.epicOrder, exact: true }))
+    .toBeVisible();
+  expect(screen.getByRole("link", { name: messages.graph.blockingChain }).query()).toBeNull();
+});
+
 test("막힘 안내, 사람 확인 영역, 연결된 이슈 목록은 선행 이슈와 gate의 ID를 복사 단추로 보인다", async () => {
   const gate = {
     id: "desk-gate",

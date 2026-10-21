@@ -1,3 +1,4 @@
+import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -14,11 +15,11 @@ vi.mock("@/client/modules/issues/application/useIssueList", () => ({
   }),
 }));
 
-async function renderDialog() {
+async function renderDialog(fixedParent?: Issue) {
   const onClose = vi.fn<() => void>();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <NewIssueDialog onCreated={() => {}} onClose={onClose} />
+      <NewIssueDialog onCreated={() => {}} onClose={onClose} fixedParent={fixedParent} />
     </LocaleProvider>,
   );
   const dialog = screen.getByRole("dialog", { name: messages.newIssue.title });
@@ -60,4 +61,19 @@ test("상위 이슈 후보 목록에서 Escape를 누르면 목록만 닫히고 
 
   await expect.element(clear).not.toBeInTheDocument();
   await expect.element(search).toHaveValue("");
+});
+
+test("상위 에픽을 정해 두고 연 새 이슈 창은 그 에픽 제목을 보이고 제목 칸에 초점을 두며, 상위 이슈를 찾거나 지울 수 없다", async () => {
+  const { dialog } = await renderDialog(
+    issue("desk-fixed", { title: "하위를 만들 에픽", issueType: "epic" }),
+  );
+
+  await expect.element(dialog.getByText("하위를 만들 에픽")).toBeVisible();
+  await expect.element(dialog.getByRole("textbox", { name: messages.issue.title })).toHaveFocus();
+  await expect
+    .element(dialog.getByRole("combobox", { name: messages.newIssue.parentSearch }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(dialog.getByRole("button", { name: messages.newIssue.clearParent }))
+    .not.toBeInTheDocument();
 });

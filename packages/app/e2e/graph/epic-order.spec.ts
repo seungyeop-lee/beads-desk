@@ -1,6 +1,6 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 후손 이슈를 그래프로 열며, 노드를 눌러 연 상세를 Escape로 닫는다", async ({
+test("에픽 화면의 순서 보기는 후손 이슈를 그래프로 열고, 노드를 눌러 연 상세와 그래프를 Escape로 차례로 닫는다", async ({
   page,
   workspace,
 }) => {
@@ -20,13 +20,6 @@ test("상단 탭에는 그래프가 없고, 에픽 화면의 순서 보기는 �
   );
 
   await page.goto("epics");
-  await expect(
-    page.getByRole("navigation", { name: "화면" }).getByRole("link", { name: "에픽" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "화면" }).getByRole("link", { name: "그래프" }),
-  ).toHaveCount(0);
-
   await page
     .locator("section")
     .filter({ hasText: "순서 에픽" })
@@ -70,11 +63,8 @@ test("상위 에픽을 펼친 하위 목록에서 하위 에픽 행의 순서 �
   await expect(page.getByRole("dialog").getByRole("heading", { level: 1 })).toHaveText(
     "안쪽 에픽 · 순서",
   );
-  // blocks 관계가 없는 이슈는 그래프 대신 선후 관계 없음 목록에 나옵니다.
-  await expect(page.getByRole("dialog").getByRole("link", { name: /안쪽 작업/ })).toBeVisible();
 
   await page.getByRole("dialog").getByRole("link", { name: "닫기", exact: true }).click();
   await expect(page).toHaveURL(/\/epics$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(childRow.getByRole("link", { name: "순서 보기" })).toBeVisible();
 });

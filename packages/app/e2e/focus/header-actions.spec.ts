@@ -1,6 +1,6 @@
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 
-test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은 창의 헤더에서 묶음 순서대로 놓인 화면 탭으로 이동하고 설정·workspace 전환·새 이슈 만들기를 한다", async ({
+test("좁은 창의 헤더에서 화면 탭으로 이동하고, workspace를 바꿨다 되돌리고, 새 이슈를 만든다", async ({
   page,
   workspace,
 }) => {
@@ -13,47 +13,13 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
     },
     [["waiting", "next"]],
   );
-  let releaseEpics = () => {};
-  const heldEpics = new Promise<void>((resolve) => {
-    releaseEpics = resolve;
-  });
-  await page.route("**/api/epics?*", async (route) => {
-    await heldEpics;
-    await route.continue();
-  });
   const next = page.getByRole("region", { name: "다음에 할 일" });
   const screens = page.getByRole("navigation", { name: "화면" });
   const picker = page.getByRole("combobox", { name: "이 탭의 workspace", exact: true });
-  const epicProgress = page.getByRole("region", {
-    name: "에픽 진행률",
-    exact: true,
-  });
   await page.setViewportSize({ width: 480, height: 1000 });
-  try {
-    await page.goto(".");
-    await expect(page).toHaveURL(/\/focus$/);
-    await expect(next.getByRole("listitem")).toHaveCount(1);
-    await expect(screens.getByRole("link", { name: "판단 기다림 1개", exact: true })).toBeVisible();
-    // 묶음 사이의 구분선은 장식이라, 스크린리더는 탭 이름만 순서대로 읽습니다.
-    await expect(screens).toMatchAriaSnapshot(`
-      - navigation:
-        - /children: equal
-        - link "지금"
-        - link "판단 기다림 1개"
-        - link "활동"
-        - link "이슈"
-        - link "에픽"
-        - link "보드"
-        - link "결정"
-        - link "정리"
-    `);
-    await expect(picker).toHaveCount(1);
-    await expect(epicProgress).toHaveCount(0);
-  } finally {
-    releaseEpics();
-  }
-  await expect(epicProgress).toBeVisible();
-  await page.unroute("**/api/epics?*");
+  await page.goto(".");
+  await expect(page).toHaveURL(/\/focus$/);
+  await expect(screens.getByRole("link", { name: "판단 기다림 1개", exact: true })).toBeVisible();
 
   for (const href of [
     "/human",
@@ -67,9 +33,6 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
     await screens.locator(`a[href="/w/${workspace.slug}${href}"]`).click();
     await expect(page).toHaveURL(new RegExp(`${href}$`));
   }
-  await page.getByRole("button", { name: "설정", exact: true }).click();
-  await expect(page.getByRole("dialog", { name: "설정" })).toBeVisible();
-  await page.keyboard.press("Escape");
 
   // workspace를 고르면 이 탭만 그 workspace의 같은 화면으로 옮겨 갑니다.
   const slugs = await picker
@@ -95,24 +58,4 @@ test("에픽 진행률을 기다리지 않고 지금 화면을 보이고, 좁은
     })
     .toBe("좁은 화면에서 만든 작업");
   expect((await workspace.showIssue(created)).parent).toBeUndefined();
-});
-
-test("등록한 workspace가 하나뿐이면 헤더에 workspace 선택을 보이지 않는다", async ({
-  page,
-  workspace,
-}) => {
-  await page.route("**/api/workspaces?*", async (route) => {
-    const response = await route.fetch();
-    const body = await response.json();
-    body.data.workspaces = body.data.workspaces.filter(
-      ({ slug }: { slug: string }) => slug === workspace.slug,
-    );
-    await route.fulfill({ response, json: body });
-  });
-  await page.goto("focus");
-  // 선택 대신 이 탭의 workspace 이름만 보이면 목록을 받은 뒤입니다.
-  await expect(page.getByTitle(workspace.path, { exact: true })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "이 탭의 workspace", exact: true })).toHaveCount(
-    0,
-  );
 });

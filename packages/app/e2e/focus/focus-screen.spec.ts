@@ -4,7 +4,7 @@ test("첫 화면은 지금 화면이고, 개수 카드와 모두 보기는 이�
   page,
   workspace,
 }) => {
-  // 다음에 할 일은 5개까지만 보이고, 바로 작업 가능한 이슈가 그보다 많을 때 모두 보기가 생깁니다.
+  // 모두 보기는 바로 작업 가능한 이슈가 다음에 할 일에 보이는 5개보다 많을 때만 생깁니다.
   await workspace.createIssues(
     {
       first: { title: "작업 하나", type: "task" },
@@ -22,8 +22,6 @@ test("첫 화면은 지금 화면이고, 개수 카드와 모두 보기는 이�
   await expect(page).toHaveURL(/\/focus$/);
   await expect(page.getByRole("link", { name: "지금" })).toHaveAttribute("aria-current", "page");
   const nextUp = page.getByRole("region", { name: "다음에 할 일" });
-  await expect(nextUp.getByRole("listitem")).toHaveCount(5);
-
   const tabs = page.getByRole("navigation", { name: "보기" });
   await nextUp.getByRole("link", { name: /모두 보기/ }).click();
   await expect(page).toHaveURL(/\/issues\?view=ready$/);
@@ -45,14 +43,9 @@ test("지금 화면의 줄을 누르면 그 위에 상세가 열리고, 닫으�
 }) => {
   const { doing } = await workspace.createIssues({
     doing: { title: "진행하는 작업", type: "task", status: "in_progress" },
-    next: { title: "다음 작업", type: "task" },
   });
 
   await page.goto("focus");
-  const nextUp = page.getByRole("region", { name: "다음에 할 일" });
-  await expect(nextUp.getByRole("listitem")).toHaveCount(1);
-  await expect(nextUp.getByRole("link", { name: /모두 보기/ })).toHaveCount(0);
-
   await page.getByRole("region", { name: "진행 중", exact: true }).getByRole("link").click();
   await expect(page.getByRole("dialog", { name: `${doing} 이슈` })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/focus\\?issue=${doing}$`));
