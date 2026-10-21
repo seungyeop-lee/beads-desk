@@ -1,4 +1,4 @@
-import { expect, test, vi } from "vitest";
+import { beforeEach, expect, test, vi } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
@@ -55,6 +55,11 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
+
+// 열린 gate를 정하지 않은 테스트는 gate 없이 그립니다.
+beforeEach(() => {
+  reads.gateTitles = new Map();
+});
 
 test("보드는 막힘, 바로 작업 가능, 진행 중, 닫힘 열만 이 순서로 보인다", async () => {
   reads.items = [];

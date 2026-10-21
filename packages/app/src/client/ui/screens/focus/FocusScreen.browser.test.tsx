@@ -1,5 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { expect, test, vi } from "vitest";
+import { beforeEach, expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
@@ -50,6 +50,11 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
+
+// 열린 gate를 정하지 않은 테스트는 gate 없이 그립니다.
+beforeEach(() => {
+  reads.gateTitles = new Map();
+});
 
 const WAITERS = /\d+개 대기/;
 

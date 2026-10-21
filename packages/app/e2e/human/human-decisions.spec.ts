@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { commentTexts, createHumanGate } from "../support/humanGates";
 
-test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가서 질문 하나에 응답하고 다른 질문은 응답 없이 닫으면, 응답은 댓글로, 닫는 사유는 닫은 사유로 남고 새로고침하지 않아도 탭의 개수가 줄어 사라진다", async ({
+test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가서 질문 하나에 응답하고 다른 질문은 응답 없이 닫으면, 응답은 댓글로, 닫는 사유는 닫은 사유로 남고 새로고침하지 않아도 탭의 개수가 줄어 사라지며, 응답을 적는 중에 고른 테마와 설정에서 고른 언어는 바로 적용되고 새로고침해도 유지된다", async ({
   page,
   workspace,
 }) => {
@@ -17,6 +17,7 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
     plain: { title: "평범한 작업", type: "task" },
   });
 
+  await page.emulateMedia({ colorScheme: "light" });
   await page.goto("focus");
   await page.getByRole("link", { name: "판단 기다림 2", exact: true }).click();
   await expect(page).toHaveURL(/\/human/);
@@ -26,8 +27,21 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
   const decision = page.getByRole("region", { name: "인증 방식을 정해 주세요" });
   await expect(decision).toContainText("OAuth2와 세션 쿠키 중 무엇으로 할까요?");
 
-  await decision.getByRole("textbox", { name: "응답", exact: true }).click();
+  const response = decision.getByRole("textbox", { name: "응답", exact: true });
+  await response.click();
   await page.keyboard.type("OAuth2로 진행해 주세요");
+
+  // 설정에서 고른 테마와 언어는 picker가 쿠키에 남기고, router.refresh로 서버가 그 쿠키를 읽어 layout의 <html>에 넣습니다.
+  // 이 연결과 refresh가 작성 중인 응답을 지우지 않는지는 다른 테스트가 확인하지 않으므로 여기서 확인합니다.
+  await page.getByRole("button", { name: "설정" }).click();
+  await page
+    .getByRole("dialog", { name: "설정" })
+    .getByRole("combobox", { name: "테마" })
+    .selectOption("dark");
+  await expect.poll(() => appliedScheme(page)).toBe("dark");
+  await expect(response).toHaveText("OAuth2로 진행해 주세요");
+  await page.keyboard.press("Escape");
+
   await decision.getByRole("button", { name: "응답하고 닫기" }).click();
   await expect(questionRow).toHaveCount(0, { timeout: SAVE_TIMEOUT });
   await expect
@@ -37,6 +51,11 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
     .toBe("closed");
   expect(await commentTexts(workspace, question)).toEqual(["Response: OAuth2로 진행해 주세요"]);
   await expect(screenTab(page, "판단 기다림 1개")).toBeVisible();
+
+  await page.reload();
+  await expect.poll(() => appliedScheme(page)).toBe("dark");
+  const html = await (await page.request.get("human")).text();
+  expect(html).toContain('data-theme="desk-dark"');
 
   const staleDecision = page.getByRole("region", { name: "더는 필요 없는 질문" });
   await staleDecision.getByRole("button", { name: "응답 없이 닫기" }).click();
@@ -49,6 +68,17 @@ test("지금 화면의 판단 기다림 카드로 판단 기다림 화면에 가
     .toBe("Dismissed: 요구 사항이 바뀜");
   await expect(page.getByText("판단을 기다리는 이슈가 없습니다.")).toBeVisible();
   await expect(screenTab(page, "판단 기다림")).toBeVisible();
+
+  await page.getByRole("button", { name: "설정" }).click();
+  await page
+    .getByRole("dialog", { name: "설정" })
+    .getByRole("combobox", { name: "언어" })
+    .selectOption("en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByText("No issues are waiting for a human decision.")).toBeVisible();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByText("No issues are waiting for a human decision.")).toBeVisible();
 });
 
 test("human gate는 human 라벨이 붙어도 확인 요청 묶음에만 보이고, 사유와 막고 있는 작업을 보이며, 오른쪽에 보이는 항목을 주소가 가리키고 새로고침해도 유지되고, 응답해 닫으면 목록에서 빠져 남은 항목으로 넘어간다", async ({
@@ -113,6 +143,11 @@ test("human gate는 human 라벨이 붙어도 확인 요청 묶음에만 보이�
   await expect(page).toHaveURL(new RegExp(`item=${question}$`));
   await expect(page.getByRole("region", { name: "남은 질문" })).toBeVisible();
 });
+
+/** 지금 화면에 적용된 테마가 밝은지 어두운지입니다. daisyUI 테마마다 `color-scheme`이 정해져 있습니다. */
+function appliedScheme(page: Page) {
+  return page.locator("html").evaluate((html) => getComputedStyle(html).colorScheme);
+}
 
 function screenTab(page: Page, name: string) {
   return page.getByRole("navigation", { name: "화면" }).getByRole("link", { name, exact: true });
