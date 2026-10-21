@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { routeApiRequest } from "@/server/web/http/routeApiTest";
+import { routeApiRequest } from "@/server/web/http/routeApi.testkit";
 import { withRequestWorkspace } from "./requestWorkspace";
 
 vi.mock("@/server/web/locale/requestLocale", () => ({ requestLocale: async () => "ko" }));

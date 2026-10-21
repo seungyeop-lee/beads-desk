@@ -1,7 +1,7 @@
 import type { BdOutcome, CloseOutcome } from "@beads-desk/bd";
 import { describe, expect, test, vi } from "vitest";
 import { checkWorkspaceChangesNow } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
-import { routeApiWorkspaceSlug } from "@/server/web/http/routeApiTest";
+import { routeApiWorkspaceSlug } from "@/server/web/http/routeApi.testkit";
 import { write, writeClose } from "./issueActionGuards";
 
 vi.mock("@/server/infra/workspaceChanges/workspaceChangeFeed", () => ({

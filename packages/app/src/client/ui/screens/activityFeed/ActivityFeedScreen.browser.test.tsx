@@ -3,7 +3,7 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture";
+import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
 import type { ActivityEntry } from "@/shared/contract/activityFeed";
 import { ActivityFeedScreen } from "./ActivityFeedScreen";
 

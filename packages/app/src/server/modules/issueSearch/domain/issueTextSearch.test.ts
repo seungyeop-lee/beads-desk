@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { exportedIssue } from "@/shared/domain/issues/issueFixture";
+import { exportedIssue } from "@/shared/domain/issues/issueFixture.testkit";
 import { searchIssueText } from "./issueTextSearch";
 
 function comment(text: string) {

@@ -4,7 +4,7 @@ import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { HumanGateSummary, PreviousGateRound } from "@/shared/contract/humanGates";
-import { issue, issueDetail } from "@/shared/domain/issues/issueFixture";
+import { issue, issueDetail } from "@/shared/domain/issues/issueFixture.testkit";
 import { HumanGateDecision } from "./HumanGateDecision";
 
 const WORK = issue("desk-work", { title: "로그인 화면 다시 그리기" });

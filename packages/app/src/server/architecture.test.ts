@@ -219,7 +219,8 @@ function sourceFilesIn(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) return sourceFilesIn(full);
-    if (!/\.(?:ts|tsx)$/.test(entry.name) || /\.test\.(?:ts|tsx)$/.test(entry.name)) return [];
+    if (!/\.(?:ts|tsx)$/.test(entry.name) || /\.(?:test|testkit)\.(?:ts|tsx)$/.test(entry.name))
+      return [];
     return [full];
   });
 }

@@ -1,7 +1,7 @@
 import { rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { beforeEach, expect, test } from "vitest";
-import { fakeBdWorkspace } from "@/server/infra/fakeBd";
+import { fakeBdWorkspace } from "@/server/infra/fakeBd.testkit";
 import { readIssueExport } from "./issueExportCache";
 
 const fakeBd = fakeBdWorkspace("beads-desk-export-");

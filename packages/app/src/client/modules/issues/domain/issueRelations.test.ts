@@ -1,6 +1,6 @@
 import type { IssueLink } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import {
   dependencyToAdd,
   hasGraphLink,

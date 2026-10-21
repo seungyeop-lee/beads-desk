@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { labelChoices, NO_LABEL } from "./issueLabelFilter";
 
 describe("labelChoices", () => {

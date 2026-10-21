@@ -6,7 +6,7 @@ import {
   type IssueRef,
 } from "@beads-desk/bd";
 import { beforeEach, expect, test, vi } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { readHygieneReport } from "./hygieneReport";
 
 vi.mock("@beads-desk/bd", () => ({

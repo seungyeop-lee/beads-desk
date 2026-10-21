@@ -1,6 +1,6 @@
 import { listIssues, withWorkSignals } from "@beads-desk/bd";
 import { beforeEach, expect, test, vi } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { readEpicDescendants } from "./epicDescendants";
 
 vi.mock("@beads-desk/bd", async (importOriginal) => ({

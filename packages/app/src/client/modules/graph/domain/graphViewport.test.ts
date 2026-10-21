@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import type { GraphLayout } from "./graphLayout";
 import { NODE_WIDTH } from "./graphLayout";
 import {

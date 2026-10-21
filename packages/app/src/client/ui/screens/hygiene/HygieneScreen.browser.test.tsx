@@ -4,7 +4,7 @@ import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { HygieneReport } from "@/shared/contract/hygiene";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { HygieneScreen } from "./HygieneScreen";
 
 const ref = (id: string) => ({ id, title: `${id} 제목` });

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { exportedIssue } from "@/shared/domain/issues/issueFixture";
+import { exportedIssue } from "@/shared/domain/issues/issueFixture.testkit";
 import type { ActivityFeedQuery } from "@/shared/contract/activityFeed";
 import { activityFeedPage } from "./activityFeed";
 

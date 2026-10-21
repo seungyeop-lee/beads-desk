@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { issueDetail } from "@/shared/domain/issues/issueFixture";
+import { issueDetail } from "@/shared/domain/issues/issueFixture.testkit";
 import { IssueDetailDialog } from "./IssueDetailDialog";
 
 /** dialog가 서버에서 읽을 상세입니다. null이면 아직 받는 중입니다. */

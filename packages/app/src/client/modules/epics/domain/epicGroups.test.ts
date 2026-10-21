@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { EpicSummary } from "@/shared/contract/epics";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { groupEpics } from "./epicGroups";
 
 function summary(id: string, status: string): EpicSummary {

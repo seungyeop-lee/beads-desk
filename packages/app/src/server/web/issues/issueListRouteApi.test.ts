@@ -1,6 +1,6 @@
 import { basename } from "node:path";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { fakeBdWorkspace } from "@/server/infra/fakeBd";
+import { fakeBdWorkspace } from "@/server/infra/fakeBd.testkit";
 import { handleIssueTextSearchRequest, handleIssueListRequest } from "./issueListRouteApi";
 
 // Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.

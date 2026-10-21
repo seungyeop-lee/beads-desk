@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { GraphData } from "@/shared/contract/graph";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { centerGraph } from "./centerGraph";
 import { epicPlan } from "./epicPlan";
 import { NODE_HEIGHT, PLAN_NODE_HEIGHT } from "./graphLayout";

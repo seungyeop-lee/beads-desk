@@ -1,7 +1,7 @@
 import { epicStatuses, type EpicStatus } from "@beads-desk/bd";
 import { expect, test, vi } from "vitest";
-import { expectRouteData, routeApiRequest } from "@/server/web/http/routeApiTest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { expectRouteData, routeApiRequest } from "@/server/web/http/routeApi.testkit";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { handleEpicsRequest } from "./epicsRouteApi";
 
 vi.mock("@beads-desk/bd", async (importOriginal) => ({

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { fakeBdWorkspace } from "./fakeBd";
+import { fakeBdWorkspace } from "./fakeBd.testkit";
 
 // 셸에 BD_BIN이 있어도 "원래 없던 BD_BIN"을 재현하도록, 헬퍼가 원래 값을 읽기 전에 지웁니다.
 delete process.env.BD_BIN;

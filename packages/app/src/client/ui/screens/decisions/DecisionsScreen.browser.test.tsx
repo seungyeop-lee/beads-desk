@@ -6,7 +6,7 @@ import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { DecisionSummary } from "@/shared/contract/decisions";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { DecisionsScreen } from "./DecisionsScreen";
 
 const KOREAN =

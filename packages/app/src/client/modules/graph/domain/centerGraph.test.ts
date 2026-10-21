@@ -1,6 +1,6 @@
 import type { IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { centerGraph } from "./centerGraph";
 import { executionOrder } from "./executionOrder";
 import { scopedIssues } from "./graphScope";

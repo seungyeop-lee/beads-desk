@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { sortByRequestedAt } from "./humanDecisionsView";
 
 function gateSummary(id: string, fields: Partial<Issue> = {}): HumanGateSummary {

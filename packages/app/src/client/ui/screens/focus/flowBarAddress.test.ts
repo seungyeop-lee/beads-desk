@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { focusStats } from "@/client/modules/focus/domain/focusStats";
 import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { refineIssues } from "@/client/modules/issues/domain/issueListView";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
 import { readIssueListAddress } from "@/client/ui/screens/issues/issueListAddress";

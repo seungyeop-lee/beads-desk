@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { groupByWorkState, issueListGroups, parseViewState, workState } from "./workState";
 

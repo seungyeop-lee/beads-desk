@@ -80,8 +80,11 @@ const boundaries = {
   sharedDomainTechnology: {
     regex: "^(?![./]|@/shared/domain(?:/|$)).+",
     message: "shared domain은 공통 업무 규칙만 사용하며 외부 기술과 저장 계약에 의존하지 않습니다.",
-    // type 참조는 런타임 의존이 아니므로 테스트 팩토리(`issueFixture.ts`)가 issue model type을 가져오는 것은 허용합니다.
-    allowTypeImports: true,
+  },
+  testSupportFromProduction: {
+    regex: "^@?vitest(?:[-/]|$)|\\.testkit$",
+    message:
+      "테스트가 아닌 파일은 vitest와 테스트 지원 파일(`*.testkit.ts`, `*.testkit.tsx`)을 import하지 않습니다. 테스트에서만 쓰는 코드는 `*.testkit.ts`로 둡니다.",
   },
   clientUiFromApplication: {
     regex: "^@/client/ui(?:/|$)|^(?:\\.\\./)+ui(?:/|$)",
@@ -145,6 +148,9 @@ const restrict = (...patterns) => ({
   "@typescript-eslint/no-restricted-imports": ["error", { patterns }],
 });
 
+// 테스트 지원 파일(`*.testkit.ts`, `*.testkit.tsx`)은 테스트 파일처럼 production layer 규칙에서 뺍니다.
+const testCode = ["**/*.test.ts", "**/*.test.tsx", "**/*.testkit.ts", "**/*.testkit.tsx"];
+
 export default defineConfig([
   globalIgnores(["**/node_modules/**", "**/.next/**", "**/next-env.d.ts", "**/dist/**"]),
   js.configs.recommended,
@@ -173,12 +179,20 @@ export default defineConfig([
     rules: restrict(boundaries.playgroundPackage),
   },
   {
+    // 아래 layer 규칙이 `@typescript-eslint/no-restricted-imports`의 패턴을 덮어쓰므로, 모든 layer에 걸리는 이 규칙은 base rule로 따로 둡니다.
+    files: ["packages/app/src/**/*.{ts,tsx}"],
+    ignores: testCode,
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [boundaries.testSupportFromProduction] }],
+    },
+  },
+  {
     files: ["packages/app/src/server/**/*.{ts,tsx}"],
     rules: restrict(boundaries.parentFileImport, boundaries.clientFromServer),
   },
   {
     files: ["packages/app/src/server/modules/*/application/**/*.{ts,tsx}"],
-    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    ignores: testCode,
     rules: restrict(
       boundaries.parentFileImport,
       boundaries.clientFromServer,
@@ -201,7 +215,7 @@ export default defineConfig([
   },
   {
     files: ["packages/app/src/shared/**/*.{ts,tsx}"],
-    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    ignores: testCode,
     rules: {
       ...restrict(
         boundaries.sharedIsolation,
@@ -242,7 +256,7 @@ export default defineConfig([
   },
   {
     files: ["packages/app/src/shared/domain/**/*.{ts,tsx}"],
-    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    ignores: testCode,
     rules: restrict(
       boundaries.sharedIsolation,
       boundaries.sharedContractFromDomain,
@@ -261,7 +275,7 @@ export default defineConfig([
   },
   {
     files: ["packages/app/src/client/modules/*/application/**/*.{ts,tsx}"],
-    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    ignores: testCode,
     rules: {
       ...restrict(
         ...clientBoundaries,

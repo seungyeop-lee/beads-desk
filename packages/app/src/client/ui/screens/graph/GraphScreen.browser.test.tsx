@@ -5,7 +5,7 @@ import { VIEWPORT_MARGIN } from "@/client/modules/graph/domain/graphViewport";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { GraphScreen } from "./GraphScreen";
 
 let graph: GraphData = { issues: [], dependencies: [], ancestorEpics: {} };

@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 import { ALL_STATUSES, type IssueListFilter } from "@/shared/contract/issueList";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { useIssueCandidates, useIssueList } from "./useIssueList";
 
 const readIssueList = vi.hoisted(() =>

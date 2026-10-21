@@ -9,8 +9,8 @@ import {
   expectRouteBdError,
   expectRouteData,
   routeApiRequest,
-} from "@/server/web/http/routeApiTest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+} from "@/server/web/http/routeApi.testkit";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { handleHumanGatesRequest, handlePreviousGateRoundsRequest } from "./humanGatesRouteApi";
 
 vi.mock("@beads-desk/bd", () => ({

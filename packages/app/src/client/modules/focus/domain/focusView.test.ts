@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import { focusView } from "./focusView";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 
 const ids = (issues: Issue[]) => issues.map(({ id }) => id);
 

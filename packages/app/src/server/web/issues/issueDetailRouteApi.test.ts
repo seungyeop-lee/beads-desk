@@ -5,8 +5,8 @@ import {
   expectRouteBdError,
   expectRouteData,
   routeApiRequest,
-} from "@/server/web/http/routeApiTest";
-import { issueDetail } from "@/shared/domain/issues/issueFixture";
+} from "@/server/web/http/routeApi.testkit";
+import { issueDetail } from "@/shared/domain/issues/issueFixture.testkit";
 import { handleIssueDetailRequest, handleIssueHistoryRequest } from "./issueDetailRouteApi";
 
 vi.mock("@beads-desk/bd", () => ({

@@ -8,7 +8,7 @@ import { koMessages as messages } from "@/client/modules/locale/domain/koMessage
 import { statusLabel } from "@/client/ui/issues/issueLabels";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicDescendants, EpicSummary } from "@/shared/contract/epics";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { graphHref } from "@/client/ui/screens/graph/graphAddress";
 import { EpicsScreen } from "./EpicsScreen";
 

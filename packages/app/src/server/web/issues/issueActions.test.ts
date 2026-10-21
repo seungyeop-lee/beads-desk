@@ -8,7 +8,7 @@ import type {
   LinkableDependencyType,
   Replacement,
 } from "@/shared/contract/issueActions";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import {
   addCommentAction,
   addDependencyAction,

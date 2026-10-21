@@ -1,6 +1,6 @@
 import type { IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { executionOrder, type OrderComponent } from "./executionOrder";
 
 /** [먼저 끝나야 하는 이슈, 기다리는 이슈]를 bd의 blocks 의존으로 바꿉니다. */

@@ -4,7 +4,7 @@ import {
   expectRouteBdError,
   expectRouteData,
   routeApiRequest,
-} from "@/server/web/http/routeApiTest";
+} from "@/server/web/http/routeApi.testkit";
 import { handleGraphRequest } from "./graphRouteApi";
 
 vi.mock("@beads-desk/bd", () => ({ dependencyGraph: vi.fn<typeof dependencyGraph>() }));

@@ -2,8 +2,8 @@ import { expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { IssuesScreen } from "./IssuesScreen";
 
 const ISSUES = Array.from({ length: 40 }, (_, index) =>

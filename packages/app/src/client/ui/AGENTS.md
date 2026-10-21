@@ -4,6 +4,6 @@
 
 - 고정 데이터로 렌더링하고, class 이름이 아니라 실제 너비에서 잰 크기와 좌표를 검사합니다.
 - 화면 단위로 렌더링할 때는 서버에서 읽는 hook(`useDecisions` 등)과 `IssueDetailRoute`를 `vi.mock`으로 바꿉니다. `next/navigation` hook을 쓰는 컴포넌트는 `next/navigation`도 `vi.mock`으로 바꿉니다. `next/link`는 그대로 렌더링됩니다.
-- 상단 머리글 아래에서 화면을 검사할 때는 `shell/AppLayoutFixture`로 실제 `AppHeader`와 함께 그립니다. 머리글이 서버에서 읽는 hook(`useHumanDecisionCount`, `useWorkspaces`, `useHumanDecisionNotices`)은 `packages/app/vitest.browser.setup.ts`가 모든 테스트 파일에서 고정 값으로 바꿔 둡니다. 다른 값이 필요한 테스트 파일은 같은 module을 직접 `vi.mock`합니다.
+- 상단 머리글 아래에서 화면을 검사할 때는 `shell/AppLayoutFixture.testkit.tsx`의 `AppLayoutFixture`로 실제 `AppHeader`와 함께 그립니다. 머리글이 서버에서 읽는 hook(`useHumanDecisionCount`, `useWorkspaces`, `useHumanDecisionNotices`)은 `packages/app/vitest.browser.setup.ts`가 모든 테스트 파일에서 고정 값으로 바꿔 둡니다. 다른 값이 필요한 테스트 파일은 같은 module을 직접 `vi.mock`합니다.
 - 컴포넌트 테스트 설정은 `"use server"` 파일을 호출하면 실패하는 함수로 바꿔 불러오므로, Server Action을 실행해야 하는 동작은 e2e로 확인합니다.
 - 실패하면 `packages/app/.vitest/attachments/failure-screenshots`에 screenshot이 남습니다.

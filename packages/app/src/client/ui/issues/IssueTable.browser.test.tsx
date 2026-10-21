@@ -6,7 +6,7 @@ import type { IssueWrites } from "@/client/modules/issues/application/useIssueWr
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { enMessages } from "@/client/modules/locale/domain/enMessages";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LabelEditor } from "./detail/LabelEditor";
 import { IssueTable } from "./IssueTable";

@@ -5,7 +5,7 @@ import type { IssueWrites } from "@/client/modules/issues/application/useIssueWr
 import type { WorkStateGroup } from "@/client/modules/issues/domain/workState";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { IssueGroups } from "./IssueGroups";
 
 const GROUPS: WorkStateGroup[] = [

@@ -6,9 +6,9 @@ import type { IssueWrites } from "@/client/modules/issues/application/useIssueWr
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { ToastRegion } from "@/client/ui/designSystem/Toast";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture";
+import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
-import { issue, issueDetail } from "@/shared/domain/issues/issueFixture";
+import { issue, issueDetail } from "@/shared/domain/issues/issueFixture.testkit";
 import { HumanDecisionsScreen } from "./HumanDecisionsScreen";
 
 const QUESTION_ID = "desk-q1";

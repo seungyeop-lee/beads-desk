@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { DecisionSummary } from "@/shared/contract/decisions";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { decisionGroups } from "./decisionsView";
 
 function summary(

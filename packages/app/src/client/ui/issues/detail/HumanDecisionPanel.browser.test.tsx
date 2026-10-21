@@ -4,7 +4,7 @@ import { render } from "vitest-browser-react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { issueDetail } from "@/shared/domain/issues/issueFixture";
+import { issueDetail } from "@/shared/domain/issues/issueFixture.testkit";
 import { HumanDecisionPanel } from "./HumanDecisionPanel";
 
 const WRITES: IssueWrites = {

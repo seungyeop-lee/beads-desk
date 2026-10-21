@@ -1,7 +1,7 @@
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import type { GraphData } from "@/shared/contract/graph";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { centerGraph } from "./centerGraph";
 import { ARROW_LENGTH, auxiliaryEdgeLook, hasArrow } from "./edgeKind";
 import { epicPlan } from "./epicPlan";

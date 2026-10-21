@@ -4,9 +4,9 @@ import { render } from "vitest-browser-react";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture";
+import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
 import type { BoardItem } from "@/shared/contract/board";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { BoardScreen } from "./BoardScreen";
 
 // 바로 작업 가능 열에 카드를 쌓아 화면 높이를 넘게 하고, 나머지 열은 비워 빈 열의 높이도 함께 잽니다.

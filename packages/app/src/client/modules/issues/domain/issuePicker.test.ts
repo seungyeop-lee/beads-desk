@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
 import { epicsFirst, PICKER_LIMIT, pickerCandidates } from "./issuePicker";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 
 const ids = (issues: Issue[]) => issues.map((it) => it.id);
 

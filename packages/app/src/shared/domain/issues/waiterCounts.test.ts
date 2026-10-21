@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { waiterCounts } from "./waiterCounts";
 
 const countOf = (counts: ReadonlyMap<string, number>, id: string) => counts.get(id) ?? 0;

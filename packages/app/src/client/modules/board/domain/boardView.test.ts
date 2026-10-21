@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
 import type { BoardItem } from "@/shared/contract/board";
-import { issue } from "@/shared/domain/issues/issueFixture";
+import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { boardColumns, dropOutcome, type ClosedWindow } from "./boardView";
 
 const now = new Date(2026, 9, 13, 15, 0).getTime();
