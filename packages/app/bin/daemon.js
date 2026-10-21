@@ -265,6 +265,8 @@ export function createDaemon({
 }
 
 // 서버가 띄운 하위 process까지 함께 끝나도록 process group 전체에 보냅니다.
+// Windows에는 process group이 없어 서버 pid에만 보냅니다. 서버가 detached 없이 띄운 bd 같은 하위 process는
+// Node(libuv)가 부모가 종료되면 함께 종료되는 job object에 넣으므로, 서버를 종료하면 같이 끝납니다.
 function signalGroup(pid, signal) {
   try {
     process.kill(process.platform === "win32" ? pid : -pid, signal);
