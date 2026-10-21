@@ -12,6 +12,35 @@
       { "assertFunctionNames": ["expect", "expectRouteData", "expectRouteBdError"] }
     ]
   },
+  "overrides": [
+    {
+      // 화면 문구는 사전에서 읽고, allowedStrings에는 두 언어에서 같은 글자로 보이는 식별자와 기호만 넣습니다.
+      "files": ["packages/app/src/client/ui/**/*.tsx"],
+      "excludeFiles": ["**/*.test.tsx", "**/*.testkit.tsx"],
+      "rules": {
+        "react/jsx-no-literals": [
+          "error",
+          {
+            "restrictedAttributes": ["aria-label", "title", "placeholder", "alt"],
+            "allowedStrings": [
+              "beads-desk",
+              "ID",
+              "P",
+              "·",
+              "/",
+              "%",
+              "~",
+              ":",
+              "+",
+              "←",
+              "→",
+              "🕘"
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "env": {
     "builtin": true,
     "browser": true,

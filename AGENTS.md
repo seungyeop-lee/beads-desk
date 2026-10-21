@@ -70,6 +70,7 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 - 화면 사이를 오가는 주소(`/issues?view=ready`, 그래프의 복귀 주소)는 workspace 없는 화면 경로로 만들고, 링크와 router에 넘길 때 `client/ui/address/workspaceAddress.ts`의 `useWorkspaceHref`로 workspace 주소로 바꿉니다. 지금 주소의 화면 경로는 `useScreenPathname`으로 읽습니다. browser에서만 실행되는 코드는 `documentWorkspace()`로 탭의 workspace 이름을 읽습니다.
 - `@beads-desk/bd`는 server에서만 import합니다. client, shared, `app/(client)`는 bd를 실행하지 않는 이슈 model(`@beads-desk/bd/issue`)만 import합니다.
 - 화면 문구는 `client/modules/locale/domain`의 `koMessages.ts`와 `enMessages.ts`에 모두 넣습니다. 두 사전은 같은 type이라 한쪽에만 넣으면 typecheck가 실패합니다. 영어 문구는 bd CLI 출력의 용어(`DEPENDS ON`, `BLOCKS`, `ready` 등)를 따릅니다.
+  - `client/ui`의 `.tsx`에서 JSX 글자나 `aria-label`, `title`, `placeholder`, `alt`에 문자열을 직접 쓰면 oxlint의 `react/jsx-no-literals`가 실패합니다. 두 언어에서 같은 글자인 식별자나 기호(`ID`, `·`)는 `.oxlintrc.json`의 `allowedStrings`에 넣습니다. `{"..."}`로 감싼 문자열은 이 규칙이 검사하지 않으므로, 감싸서 lint를 피하지 않습니다.
   - 화면을 그리는 코드는 `useMessages()`로, 이벤트 처리처럼 browser에서만 실행되는 코드는 `documentMessages()`로 사전을 읽습니다.
   - Server Action과 Route API가 화면에 보내는 오류 문구는 `server/web/locale/serverMessages.ts`에 두 언어로 넣습니다.
 - 디렉터리는 함께 바뀌는 기능 이름으로 묶습니다. `utils`, `helpers`, `common` 같은 역할 이름 디렉터리는 만들지 않습니다.
