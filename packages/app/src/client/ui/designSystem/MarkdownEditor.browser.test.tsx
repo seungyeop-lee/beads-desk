@@ -149,6 +149,78 @@ test("편집기에서 Windows 경로 링크의 주소를 고치면 고친 주소
   await expect.poll(() => changed.mock.lastCall?.[0]).toBe("[a](docs/b.md) 끝");
 });
 
+test("링크 도구로 고른 글자에 Windows 드라이브 경로를 넣으면 그 경로의 링크가 되고, 허용하지 않는 scheme의 주소는 비운다", async () => {
+  const cases = [
+    ["C:\\work\\a.md", "[문서](C:\\work\\a.md) 끝"],
+    ["javascript:alert(1)", "[문서]() 끝"],
+  ];
+  for (const [address, saved] of cases) {
+    const changed = vi.fn<(markdown: string) => void>();
+    const screen = await render(
+      <LocaleProvider locale="ko">
+        <MarkdownEditor value="문서 끝" label="설명" onChange={changed} />
+      </LocaleProvider>,
+    );
+    await screen.getByRole("textbox", { name: "설명" }).getByText("문서 끝").click();
+    await userEvent.keyboard("{Home}{Shift>}{ArrowRight}{ArrowRight}{/Shift}");
+    await expect.poll(() => visible('[data-toolbar-item="link"]')).toBeTruthy();
+    await userEvent.click(visible('[data-toolbar-item="link"]')!);
+    await confirmLinkAddress(address);
+
+    await expect.poll(() => changed.mock.lastCall?.[0]).toBe(saved);
+    await screen.unmount();
+  }
+});
+
+test("링크 도구로 기존 링크의 주소를 Windows 드라이브 경로로 고치면 그 경로를 저장하고 링크가 그 경로를 연다", async () => {
+  const changed = vi.fn<(markdown: string) => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value="[a](docs/a.md) 끝" label="설명" onChange={changed} />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText(/끝$/).click();
+  await editor.getByRole("link", { name: "a" }).hover();
+  await expect.poll(() => visible(".link-edit-button")).toBeTruthy();
+  await userEvent.click(visible(".link-edit-button")!);
+  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
+  await userEvent.fill(visible(".link-edit input")!, "C:/work/b.md");
+  await userEvent.click(visible(".link-edit .confirm")!);
+
+  await expect.poll(() => changed.mock.lastCall?.[0]).toBe("[a](C:/work/b.md) 끝");
+  const href = editor.getByRole("link", { name: "a" }).element().getAttribute("href");
+  expect(localPath(href)).toBe("C:/work/b.md");
+  expect(visible(".link-edit input")).toBeUndefined();
+});
+
+test("링크 도구에서 Windows 경로 링크의 주소를 고치지 않고 확인하면 원문 주소를 그대로 저장한다", async () => {
+  const changed = vi.fn<(markdown: string) => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor value={"[a](C:\\work\\.beads\\a.md) 끝"} label="설명" onChange={changed} />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText(/끝$/).click();
+  await editor.getByRole("link", { name: "a" }).hover();
+  await expect.poll(() => visible(".link-edit-button")).toBeTruthy();
+  await userEvent.click(visible(".link-edit-button")!);
+  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
+  await userEvent.keyboard("{Enter}");
+  await editor.getByText(/끝$/).click();
+  await userEvent.keyboard("{End}고침");
+
+  await expect.poll(() => changed.mock.lastCall?.[0]).toBe("[a](C:\\work\\.beads\\a.md) 끝고침");
+});
+
+/** 열려 있는 링크 도구의 주소 칸에 `address`를 넣고 Enter로 확인합니다. */
+async function confirmLinkAddress(address: string) {
+  await expect.poll(() => visible(".link-edit input")).toBeTruthy();
+  await userEvent.fill(visible(".link-edit input")!, address);
+  await userEvent.keyboard("{Enter}");
+}
+
 /** 화면에 보이는 첫 요소입니다. Milkdown 링크 도구는 숨겨 둔 채 미리 만들어 두므로 보이는 것만 고릅니다. */
 function visible(selector: string) {
   return Array.from(document.querySelectorAll<HTMLElement>(selector)).find((element) =>

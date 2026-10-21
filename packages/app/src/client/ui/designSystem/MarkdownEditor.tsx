@@ -15,6 +15,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { documentWorkspace } from "@/client/infra/workspaces/documentWorkspace";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
+import { drivePathLinkTool } from "./linkToolDrivePath";
 import { localMarkdownUrl } from "./localMarkdownUrl";
 import { MermaidDiagramDialog } from "./MermaidDiagramDialog";
 import { createMermaidPreview, diagramAt } from "./mermaidPreview";
@@ -136,6 +137,14 @@ export function MarkdownEditor({
           codeLabel: labels.inlineCode,
           linkLabel: labels.link,
         });
+        crepe.editor.use(
+          $prose(
+            (ctx) =>
+              new Plugin({
+                view: (view) => drivePathLinkTool(view, commonmark.linkSchema.type(ctx)),
+              }),
+          ),
+        );
       }
       // link와 image의 sourceUrl은 remarkWindowsPathSource가 남긴 원문 주소로, 경로를 되살리고 저장할 markdown에 원문
       // 주소를 쓸 때만 쓰고 HTML 속성으로는 내보내지 않습니다(null인 속성은 DOM에 붙지 않습니다).

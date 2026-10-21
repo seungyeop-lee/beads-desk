@@ -12,7 +12,7 @@ const SCREEN_ROOTS: ReadonlySet<string> = new Set([
 const APP_ROOTS: ReadonlySet<string> = new Set(["/w", "/api", "/_next"]);
 // 드라이브 문자 뒤에 구분자까지 있어야 경로로 봅니다. `x:y` 같은 한 글자 scheme의 URL과
 // 드라이브 상대 경로(`C:a.md`)는 그대로 둡니다.
-const WINDOWS_DRIVE_PATH = /^[a-z]:[\\/]/i;
+export const WINDOWS_DRIVE_PATH = /^[a-z]:[\\/]/i;
 
 /** 화면 경로와 로컬 파일은 문서를 보는 workspace를 기준으로 열므로, 그 workspace의 이름을 함께 받습니다. */
 export function localMarkdownUrl(url: string, workspace: string): string {
