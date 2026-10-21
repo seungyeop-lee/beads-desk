@@ -237,9 +237,42 @@ jobs:
           if ($result.Status -ne 1) { $failures += "start from a git repository without .beads found a workspace above its top level." }
           if ($failures) { throw ($failures -join "`n") }
 
+      # Windows에서 bd-desk stop은 서버 pid만 종료하므로, 서버가 실행하던 bd가 남지 않는지 확인합니다.
+      # 이슈 목록을 계속 요청해 서버 아래에서 bd가 실행되는 동안 stop합니다.
       - name: Stop the server
         run: |
-          bd-desk stop
+          $serverPid = (Get-Content (Join-Path (node -p "require('os').tmpdir()") beads-desk\server.json) | ConvertFrom-Json).pid
+          # Windows는 부모가 종료돼도 하위 process의 ParentProcessId를 바꾸지 않으므로, 종료된 서버 pid로도 남은 하위 process를 찾을 수 있습니다.
+          function Get-ServerDescendants {
+            $all = @(Get-CimInstance Win32_Process)
+            $found = @()
+            $parents = @($serverPid)
+            while ($parents) {
+              $children = @($all | Where-Object { $parents -contains $_.ParentProcessId })
+              $found += $children
+              $parents = @($children.ProcessId)
+            }
+            , $found
+          }
+          $load = Start-ThreadJob -ArgumentList "$env:DESK_SERVER/api/issues?workspace=desk-smoke" {
+            param($url)
+            while ($true) { try { Invoke-WebRequest $url | Out-Null } catch { Start-Sleep -Milliseconds 100 } }
+          }
+          try {
+            $deadline = (Get-Date).AddSeconds(30)
+            do { $before = Get-ServerDescendants } until (@($before | Where-Object Name -eq 'bd.exe').Count -or (Get-Date) -gt $deadline)
+            $before | Format-Table ProcessId, ParentProcessId, Name, CommandLine -AutoSize -Wrap
+            if (-not @($before | Where-Object Name -eq 'bd.exe').Count) { throw "bd never ran under the server while the issue list was requested." }
+            bd-desk stop
+            $after = Get-ServerDescendants
+          } finally {
+            Stop-Job $load
+            Remove-Job $load -Force
+          }
+          if ($after.Count) {
+            $after | Format-Table ProcessId, ParentProcessId, Name, CommandLine -AutoSize -Wrap
+            throw "Processes started by the server remain after bd-desk stop."
+          }
           $responding = $true
           try { Invoke-WebRequest "$env:DESK_SERVER/api/health" -TimeoutSec 5 | Out-Null } catch { $responding = $false }
           if ($responding) { throw "The server still responds after bd-desk stop." }
