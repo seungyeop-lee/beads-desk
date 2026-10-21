@@ -28,6 +28,7 @@ const LOCK_TIMEOUT_MS = SERVER_READY_TIMEOUT_MS + STOP_TIMEOUT_MS + 5_000;
  * @param {(url: string) => void} options.openBrowser
  * @param {number} options.defaultPort 포트를 지정하지 않으면 이 포트부터 비어 있는 포트를 씁니다.
  * @param {(message: string) => void} [options.print]
+ * @param {NodeJS.Platform} [options.platform] 서버가 bd를 실행하지 못했을 때 출력할 안내를 고르는 플랫폼입니다. 테스트에서 다른 플랫폼의 안내를 확인할 때만 지정합니다.
  */
 export function createDaemon({
   runtimeDir,
@@ -35,6 +36,7 @@ export function createDaemon({
   openBrowser,
   defaultPort,
   print = console.log,
+  platform = process.platform,
 }) {
   mkdirSync(runtimeDir, { recursive: true, mode: 0o700 });
   const statePath = join(runtimeDir, "server.json");
@@ -167,8 +169,12 @@ export function createDaemon({
       throw new Error(`${error.message} Log: ${logPath}`, { cause: error });
     }
     if ((await readHealth(url))?.runtime?.bdVersion === null) {
+      // Windows의 서버는 npm이 만든 bd.cmd shim만 bd.exe로 풀어 실행하고, pnpm이나 volta의 shim은 BD_BIN에 지정해도 실행하지 못합니다.
+      // 그래서 Windows에서는 BD_BIN에 bd.exe 경로를 지정하라고 안내합니다.
       print(
-        "Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.",
+        platform === "win32"
+          ? "Warning: the server could not run bd. Make sure bd.exe is on PATH, or set BD_BIN to the full path of bd.exe."
+          : "Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.",
       );
     }
     return { url, port };

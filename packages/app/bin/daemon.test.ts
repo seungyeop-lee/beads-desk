@@ -61,12 +61,13 @@ afterEach(async () => {
   }
 });
 
-function daemon(env: NodeJS.ProcessEnv = {}) {
+function daemon(env: NodeJS.ProcessEnv = {}, platform?: NodeJS.Platform) {
   const defaultPort = nextPort;
   nextPort += 10;
   return createDaemon({
     runtimeDir: join(root, "runtime"),
     defaultPort,
+    platform,
     openBrowser,
     print: (message: string) => printed.push(message),
     serverCommand: (port: number, workspaceRoot: string) => ({
@@ -400,15 +401,27 @@ test("하위 디렉터리에서 시작하면 상위의 beads workspace로 띄운
   await commands.stop();
 });
 
-test("서버가 bd를 실행하지 못하면 시작은 하되 경고를 출력한다", async () => {
-  const commands = daemon({ BD_MISSING: "1" });
-  const first = await workspace("first");
+test.each([
+  [
+    "win32",
+    "Warning: the server could not run bd. Make sure bd.exe is on PATH, or set BD_BIN to the full path of bd.exe.",
+  ],
+  [
+    "linux",
+    "Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.",
+  ],
+] as const)(
+  "%s에서 서버가 bd를 실행하지 못하면 시작은 하되 그 플랫폼의 경고를 출력한다",
+  async (platform, warning) => {
+    const commands = daemon({ BD_MISSING: "1" }, platform);
+    const first = await workspace("first");
 
-  expect(await commands.start({ cwd: first, open: false })).toBe(0);
+    expect(await commands.start({ cwd: first, open: false })).toBe(0);
 
-  expect(printed).toContainEqual(expect.stringContaining("could not run bd"));
-  await commands.stop();
-});
+    expect(printed).toContain(warning);
+    await commands.stop();
+  },
+);
 
 test("실행 중인 서버와 다른 포트를 지정하면 포트를 바꾸지 않고 restart를 안내한다", async () => {
   const commands = daemon();

@@ -87,6 +87,7 @@ BEADS_DESK_LOCAL_FILE_ROOTS="<디렉터리>:<다른 디렉터리>" bd-desk start
 서버가 시작되지 않으면 먼저 `server.log`([파일 위치](#파일-위치) 참고)를 확인합니다. CLI 메시지는 영어로만 출력됩니다.
 
 - `No beads workspace found: <디렉터리>`: `.beads`가 있는 디렉터리나 그 하위 디렉터리에서 실행합니다. 새 프로젝트라면 먼저 `bd init`을 실행합니다.
-- `Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.`: `bd`를 `PATH`에 추가하거나 `BD_BIN`을 지정한 뒤, 같은 셸에서 `bd-desk restart`를 실행합니다.
+- `Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.`(macOS, Linux): `bd`를 `PATH`에 추가하거나 `BD_BIN`을 지정한 뒤, 같은 셸에서 `bd-desk restart`를 실행합니다.
+- `Warning: the server could not run bd. Make sure bd.exe is on PATH, or set BD_BIN to the full path of bd.exe.`(Windows): `bd.exe`가 있는 디렉터리를 `PATH`에 추가하거나 `BD_BIN`에 `bd.exe`의 전체 경로를 지정한 뒤, 같은 셸에서 `bd-desk restart`를 실행합니다. pnpm이나 volta로 bd를 설치했다면 `BD_BIN`에 `bd.cmd` shim이 아니라 `bd.exe`를 지정합니다.
 - `Port <번호> is already in use.`: `--port`로 지정한 포트를 다른 프로그램이 쓰고 있습니다. 다른 포트를 지정하거나, `--port`를 빼고 실행해 비어 있는 첫 포트를 쓰게 합니다.
 - `The running server (pid <pid>) is not responding. Stop it with bd-desk stop, then start again.`: `bd-desk stop`을 실행한 뒤 다시 `bd-desk start`를 실행합니다. 같은 문제가 반복되면 `server.log`를 확인합니다.

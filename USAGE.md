@@ -87,6 +87,7 @@ The server state file (`server.json`) and log (`server.log`) are stored in `$XDG
 If the server fails to start, check `server.log` (see [File locations](#file-locations)).
 
 - `No beads workspace found: <directory>`: Run the command in a directory that contains `.beads`, or in one of its subdirectories. For a new project, run `bd init` first.
-- `Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.`: Add `bd` to your `PATH` or set `BD_BIN`, then run `bd-desk restart` in the same shell.
+- `Warning: the server could not run bd. Make sure bd is on PATH, or set BD_BIN to its path.` (macOS, Linux): Add `bd` to your `PATH` or set `BD_BIN`, then run `bd-desk restart` in the same shell.
+- `Warning: the server could not run bd. Make sure bd.exe is on PATH, or set BD_BIN to the full path of bd.exe.` (Windows): Add the directory that contains `bd.exe` to your `PATH`, or set `BD_BIN` to the full path of `bd.exe`, then run `bd-desk restart` in the same shell. If you installed bd with pnpm or volta, set `BD_BIN` to `bd.exe`, not to the `bd.cmd` shim.
 - `Port <number> is already in use.`: Another program is using the port you passed to `--port`. Pass a different port, or omit `--port` to use the first free port.
 - `The running server (pid <pid>) is not responding. Stop it with bd-desk stop, then start again.`: Run `bd-desk stop`, then `bd-desk start`. If it happens again, check `server.log`.
