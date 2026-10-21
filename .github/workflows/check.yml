@@ -166,6 +166,22 @@ jobs:
           if ($output -cnotcontains "URL: $env:DESK_URL") { throw "restart did not print the same workspace URL: $env:DESK_URL" }
           Invoke-WebRequest $env:DESK_URL | Out-Null
 
+      # 서버는 C 드라이브의 npm 전역 디렉터리에서 실행되므로, 기본 허용 루트에 /tmp가 남아 있으면 C:\tmp의 파일이 200이 됩니다.
+      - name: Request local files
+        run: |
+          $inside = Join-Path $env:WORKSPACE local-file.md
+          Set-Content $inside inside
+          New-Item -ItemType Directory -Force C:\tmp | Out-Null
+          Set-Content C:\tmp\local-file.md outside
+          $expected = [ordered]@{ $inside = 200; 'C:\Windows\win.ini' = 403; 'C:\tmp\local-file.md' = 403 }
+          foreach ($path in $expected.Keys) {
+            # 화면의 localFileUrl과 같은 query로 요청합니다.
+            $query = "path=$([uri]::EscapeDataString($path))&workspace=desk-smoke"
+            $status = (Invoke-WebRequest "$env:DESK_SERVER/api/local-files?$query" -SkipHttpErrorCheck).StatusCode
+            "$path -> $status"
+            if ($status -ne $expected[$path]) { throw "Expected $($expected[$path]) for $path, got $status." }
+          }
+
       - name: Stop the server
         run: |
           bd-desk stop
