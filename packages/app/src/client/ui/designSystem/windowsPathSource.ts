@@ -25,7 +25,12 @@ type MarkdownNode = {
 
 /**
  * 역슬래시로 시작하는 드라이브 경로를 가리키는 link와 image node의 `data.sourceUrl`에 원문 주소를 남기는 remark plugin입니다.
- * 원문 주소를 찾지 못하면 아무것도 남기지 않습니다. 참조 링크(`[a][ref]`)는 원문에 주소가 없어 남기지 않습니다.
+ * 원문 주소를 찾지 못하면 아무것도 남기지 않습니다.
+ *
+ * remark-inline-links 다음에 실행해야 합니다. 편집기(Milkdown)에서는 이 plugin보다 remark-inline-links가 먼저 실행되어,
+ * 참조 링크와 참조 그림(`[a][ref]`, `![a][ref]`)이 원문 위치와 참조 이름이 없는 link·image node로 바뀌고 정의(`[ref]: …`)는
+ * 지워집니다. 그래서 원문 위치가 없는 node는 문서 전체의 정의 원문에서 파싱하면 그 주소가 되는 원문 주소를 찾습니다.
+ * 그런 정의가 여럿이면 문서에서 처음 나온 정의를 씁니다.
  */
 export function remarkWindowsPathSource() {
   return (tree: MarkdownNode, file: { value: unknown }) => {
@@ -33,13 +38,11 @@ export function remarkWindowsPathSource() {
     const visit = (node: MarkdownNode) => {
       const start = node.position?.start.offset;
       const end = node.position?.end.offset;
-      if (
-        (node.type === "link" || node.type === "image") &&
-        typeof node.url === "string" &&
-        start !== undefined &&
-        end !== undefined
-      ) {
-        const source = sourceUrlIn(markdown.slice(start, end), node.url);
+      if ((node.type === "link" || node.type === "image") && typeof node.url === "string") {
+        const source =
+          start !== undefined && end !== undefined
+            ? sourceUrlIn(markdown.slice(start, end), "](", node.url)
+            : sourceUrlIn(markdown, "]:", node.url);
         if (source !== null) node.data = { ...node.data, sourceUrl: source };
       }
       node.children?.forEach(visit);
@@ -101,10 +104,13 @@ function keepSourceUrl(handle: Handle & { peek?: Handle }): Handle {
   return keep;
 }
 
-/** `[text](주소 "title")`이나 `![alt](주소)` 원문에서 파싱하면 `url`이 되는 드라이브 경로 주소를 찾습니다. */
-function sourceUrlIn(text: string, url: string): string | null {
-  for (let at = text.indexOf("]("); at !== -1; at = text.indexOf("](", at + 1)) {
-    const rest = text.slice(at + 2);
+/**
+ * 원문 `text`에서 `opener` 바로 뒤에 오는 주소 가운데, 파싱하면 `url`이 되는 드라이브 경로 주소를 찾습니다.
+ * `opener`는 인라인 링크(`[text](주소 "title")`, `![alt](주소)`)이면 `](`, 정의(`[ref]: 주소 "title"`)이면 `]:`입니다.
+ */
+function sourceUrlIn(text: string, opener: "](" | "]:", url: string): string | null {
+  for (let at = text.indexOf(opener); at !== -1; at = text.indexOf(opener, at + 1)) {
+    const rest = text.slice(at + opener.length);
     const source = (BRACKETED_DESTINATION.exec(rest) ?? BARE_DESTINATION.exec(rest))?.[1];
     if (source !== undefined && parsesTo(source, url)) return source;
   }

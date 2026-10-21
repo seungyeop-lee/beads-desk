@@ -33,6 +33,9 @@ test.each([
   ['[a](<D:\\작업 트리\\-x\\(1).md> "제목")', "D:\\작업 트리\\-x\\(1).md"],
   ["![그림](C:\\work\\.beads\\a.png)", "C:\\work\\.beads\\a.png"],
   ["[\\](C:\\x](C:\\y\\.md)", "C:\\y\\.md"],
+  ["[a][r]\n\n[r]: C:\\work\\.beads\\a.md", "C:\\work\\.beads\\a.md"],
+  ["![그림][r]\n\n[r]:\n  C:\\a_b\\_x.png", "C:\\a_b\\_x.png"],
+  ['[a][r]\n\n[r]: <D:\\작업 트리\\-x\\(1).md> "제목"', "D:\\작업 트리\\-x\\(1).md"],
 ])("역슬래시 드라이브 경로는 escape로 지워진 `\\`를 살린다: %s", (markdown, path) => {
   expect(openedPaths(markdown)).toEqual([path]);
 });
@@ -43,7 +46,6 @@ test.each([
   ["[a](C:/work/\\_a.md)", "C:/work/_a.md"],
   ["[a](/tmp/\\_a.md)", "/tmp/_a.md"],
   ["[a](https://example.com/\\_a)", "https://example.com/_a"],
-  ["[a][r]\n\n[r]: C:\\work\\.beads\\a.md", "C:\\work.beads\\a.md"],
 ])("그 밖의 주소는 파싱한 주소를 그대로 쓴다: %s", (markdown, path) => {
   expect(openedPaths(markdown)).toEqual([path]);
 });

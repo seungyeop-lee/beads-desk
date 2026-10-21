@@ -80,12 +80,14 @@ test("드라이브 문자로 시작하는 Windows 절대경로의 링크와 이�
   expect(screen.getByText("스크립트").element().closest("a")?.getAttribute("href")).toBe("");
 });
 
-test("Windows 경로의 문장부호 앞 역슬래시는 CommonMark escape로 지우지 않고 로컬 파일 API 주소에 그대로 담는다", async () => {
+test("Windows 경로의 문장부호 앞 역슬래시는 인라인 링크와 참조 링크 모두 CommonMark escape로 지우지 않고 로컬 파일 API 주소에 그대로 담는다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
         readOnly
-        value={"[a](C:\\work\\.beads\\a.md) ![밑줄 그림](C:\\a_b\\_x.png)"}
+        value={
+          "[a](C:\\work\\.beads\\a.md) ![밑줄 그림](C:\\a_b\\_x.png) [참조 문서][r] ![참조 그림][s]\n\n[r]: C:\\work\\.beads\\b.md\n[s]: C:\\a_b\\_y.png"
+        }
       />
     </LocaleProvider>,
   );
@@ -95,6 +97,10 @@ test("Windows 경로의 문장부호 앞 역슬래시는 CommonMark escape로 �
   expect(localPath(link.element().getAttribute("href"))).toBe("C:\\work\\.beads\\a.md");
   const image = screen.getByRole("img", { name: "밑줄 그림" }).element();
   expect(localPath(image.getAttribute("src"))).toBe("C:\\a_b\\_x.png");
+  const reference = screen.getByRole("link", { name: "참조 문서" }).element();
+  expect(localPath(reference.getAttribute("href"))).toBe("C:\\work\\.beads\\b.md");
+  const referenceImage = screen.getByRole("img", { name: "참조 그림" }).element();
+  expect(localPath(referenceImage.getAttribute("src"))).toBe("C:\\a_b\\_y.png");
 });
 
 test("Windows 경로 링크와 그림이 있는 문단을 고쳐도 주소는 원문 그대로 저장한다", async () => {
@@ -107,7 +113,7 @@ test("Windows 경로 링크와 그림이 있는 문단을 고쳐도 주소는 �
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
-        value={`[a]${destinations[0]} [공백 문서]${destinations[1]} ![밑줄 그림]${destinations[2]} 끝`}
+        value={`[a]${destinations[0]} [공백 문서]${destinations[1]} ![밑줄 그림]${destinations[2]} [참조 문서][r] 끝\n\n[r]: C:\\work\\.beads\\b.md`}
         label="설명"
         onChange={changed}
       />
@@ -120,6 +126,8 @@ test("Windows 경로 링크와 그림이 있는 문단을 고쳐도 주소는 �
   for (const destination of destinations) {
     expect(changed.mock.lastCall![0]).toContain(destination);
   }
+  // 편집기는 참조 링크를 인라인 링크로 바꿔 쓰고 정의는 쓰지 않습니다. 이슈 본문에서는 keepUnchangedBlocks가 정의를 되돌립니다.
+  expect(changed.mock.lastCall![0]).toContain("[참조 문서](C:\\work\\.beads\\b.md)");
 });
 
 test("편집기에서 Windows 경로 링크의 주소를 고치면 고친 주소를 저장한다", async () => {
