@@ -10,8 +10,11 @@ const ko = {
   invalidStaleDays: "오래 방치된 이슈의 기준 일수가 올바르지 않습니다.",
   emptyTextSearch: "검색어가 비어 있습니다.",
   invalidActivityFeedQuery: "활동 기록의 조회 범위나 개수가 올바르지 않습니다.",
+  nonJsonBody: "JSON 본문만 받습니다.",
+  crossSiteForbidden: "다른 사이트에서 보낸 요청은 받지 않습니다.",
   unknownWorkspace: (root: string) =>
     `등록되지 않은 workspace입니다: ${root}. 그 디렉터리에서 bd-desk start를 실행해 등록해 주세요.`,
+  beadsWorkspaceNotFound: (path: string) => `beads workspace를 찾지 못했습니다: ${path}`,
   bdErrors: {
     emptyTitle: "제목이 비어 있습니다.",
     noChanges: "바꿀 내용이 없습니다.",
@@ -40,8 +43,11 @@ const MESSAGES: Record<Locale, typeof ko> = {
     invalidStaleDays: "The stale threshold in days is not valid.",
     emptyTextSearch: "The search text is empty.",
     invalidActivityFeedQuery: "The activity range or count is not valid.",
+    nonJsonBody: "Only JSON request bodies are accepted.",
+    crossSiteForbidden: "Cross-site requests are not accepted.",
     unknownWorkspace: (root) =>
       `This workspace is not registered: ${root}. Run bd-desk start in that directory to register it.`,
+    beadsWorkspaceNotFound: (path) => `No beads workspace found: ${path}`,
     bdErrors: {
       emptyTitle: "The title is empty.",
       noChanges: "There is nothing to change.",
