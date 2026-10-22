@@ -24,6 +24,16 @@ test("닫히지 않은 decision은 최근에 만든 것부터, 닫힌 decision�
   expect(retired.map(({ decision }) => decision.id)).toEqual(["closed-late", "closed-early"]);
 });
 
+test("만든 시각이 같은 decision은 입력 순서를 바꿔 넣어도 같은 순서로 보인다", () => {
+  const summaries = [summary("desk-10", { createdAt: 7 }), summary("desk-2", { createdAt: 7 })];
+
+  const { current } = decisionGroups(summaries);
+  const { current: reversed } = decisionGroups([...summaries].reverse());
+
+  expect(current.map(({ decision }) => decision.id)).toEqual(["desk-2", "desk-10"]);
+  expect(reversed.map(({ decision }) => decision.id)).toEqual(["desk-2", "desk-10"]);
+});
+
 test("각 decision이 대체한 decision을 함께 보인다", () => {
   const { current, retired } = decisionGroups([
     summary("v3", { createdAt: 3 }),

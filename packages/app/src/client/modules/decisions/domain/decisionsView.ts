@@ -1,4 +1,4 @@
-import { byClosedDesc } from "@/client/modules/issues/domain/issueSort";
+import { byClosedDesc, byNewestThenId } from "@/client/modules/issues/domain/issueSort";
 import type { DecisionSummary } from "@/shared/contract/decisions";
 
 export type DecisionRow = DecisionSummary & {
@@ -16,7 +16,7 @@ export function decisionGroups(summaries: DecisionSummary[]): {
 } {
   const current = summaries
     .filter(({ decision }) => decision.status !== "closed")
-    .sort((a, b) => b.decision.createdAt - a.decision.createdAt);
+    .sort((a, b) => byNewestThenId(a.decision, b.decision));
   const retired = summaries
     .filter(({ decision }) => decision.status === "closed")
     .sort((a, b) => byClosedDesc(a.decision, b.decision));
