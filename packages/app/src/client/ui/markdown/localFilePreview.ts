@@ -1,6 +1,6 @@
 import { type Language, LanguageDescription } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import { classHighlighter, highlightCode, tagHighlighter, tags } from "@lezer/highlight";
+import { highlightCode } from "@lezer/highlight";
 import {
   DOMSerializer,
   type Mark,
@@ -14,6 +14,7 @@ import {
   type EditorView,
   type MarkView,
 } from "@milkdown/kit/prose/view";
+import { StyleModule } from "style-mod";
 import {
   type LocalTextFile,
   readLocalTextFile,
@@ -24,6 +25,7 @@ import {
   type FilePreviewFormat,
   filePreviewFormat,
 } from "@/client/modules/markdown/domain/filePreview";
+import { filePreviewHighlightStyle } from "./codeHighlighting";
 
 type Labels = Messages["markdownEditor"];
 
@@ -367,35 +369,18 @@ function message(text: string) {
   return paragraph;
 }
 
-/**
- * classHighlighter에 더해, classHighlighter가 class를 붙이지 않는 토큰에도 class를 붙입니다. 취소선과 구분선은 코드 블록 강조
- * (codeHighlighting.ts)가 칠하는 토큰이고, monospace(인라인 코드와 코드 블록 글자)와 processingInstruction(#, -, *, `, > 같은
- * 표시 기호)은 markdown 원문에서 구분해 보이려는 토큰입니다.
- */
-const previewHighlighters = [
-  classHighlighter,
-  tagHighlighter([
-    { tag: tags.strikethrough, class: "tok-strikethrough" },
-    { tag: tags.contentSeparator, class: "tok-contentSeparator" },
-    { tag: tags.monospace, class: "tok-monospace" },
-    { tag: tags.processingInstruction, class: "tok-processingInstruction" },
-  ]),
-];
-
-/**
- * 원문을 형식의 language mode로 토큰으로 나눠, 토큰마다 `tok-*` class를 붙입니다.
- * 색은 markdownEditor.css가 코드 블록 강조와 같은 --code-* 변수로 정합니다.
- */
+/** 원문을 형식의 language mode로 토큰으로 나눠, 토큰마다 코드 블록과 같은 강조 규칙(codeHighlighting.ts)의 class를 붙입니다. */
 async function highlighted(
   text: string,
   format: Exclude<FilePreviewFormat, "plain">,
 ): Promise<DocumentFragment> {
   const mode = format === "diff" ? await diffMode() : await markdownMode(text);
+  StyleModule.mount(document, filePreviewHighlightStyle.module!);
   const fragment = document.createDocumentFragment();
   highlightCode(
     text,
     mode.parser.parse(text),
-    previewHighlighters,
+    filePreviewHighlightStyle,
     (part, classes) => {
       if (!classes) return fragment.append(part);
       const token = document.createElement("span");

@@ -91,6 +91,7 @@
     "remark-gfm": "^4.0.1",
     "remark-inline-links": "^7.0.0",
     "remark-parse": "^11.0.0",
+    "style-mod": "^4.1.4",
     "tailwindcss": "^4.3.3",
     "typescript": "npm:@typescript/typescript6@~6.0.2",
     "unified": "^11.0.5"

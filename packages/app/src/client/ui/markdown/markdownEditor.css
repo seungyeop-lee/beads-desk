@@ -74,7 +74,7 @@
 }
 
 /*
- * 코드 블록의 구문 강조 색입니다(codeHighlighting.ts). 밝은 테마 값은 CodeMirror 기본 강조(defaultHighlightStyle)의 색 그대로입니다.
+ * 코드 블록과 펼친 파일 미리보기의 구문 강조 색입니다(codeHighlighting.ts). 밝은 테마 값은 CodeMirror 기본 강조(defaultHighlightStyle)의 색 그대로입니다.
  * 어두운 테마 값은 같은 색상을 밝게 올린 색으로, 코드 블록 바탕(base-200)과 7:1 이상 대비됩니다.
  */
 .markdown-editor {
@@ -307,77 +307,4 @@
 }
 .markdown-editor .milkdown .file-preview-message a {
   text-decoration: underline;
-}
-
-/*
- * 펼친 파일 내용의 강조입니다(localFilePreview.ts의 tok-* class). 코드 블록 강조(codeHighlighting.ts)가 같은 토큰에 쓰는 색과 모양
- * 그대로라서, codeHighlighting.ts의 규칙을 바꾸면 여기도 함께 바꿉니다. classHighlighter는 토큰의 가장 구체적인 종류로 class를 정하므로,
- * 코드 블록 강조에서 상위 종류의 색을 물려받는 숫자(literal)와 bool(atom)은 따로 적습니다.
- * 마지막 두 규칙은 코드 블록 강조에 없는, markdown 원문의 인라인 코드·코드 블록 글자와 표시 기호(#, -, *, `, >)의 색입니다.
- */
-.markdown-editor .file-preview .tok-meta {
-  color: var(--code-meta);
-}
-.markdown-editor .file-preview .tok-link {
-  text-decoration: underline;
-}
-.markdown-editor .file-preview .tok-heading {
-  text-decoration: underline;
-  font-weight: bold;
-}
-.markdown-editor .file-preview .tok-emphasis {
-  font-style: italic;
-}
-.markdown-editor .file-preview .tok-strong {
-  font-weight: bold;
-}
-.markdown-editor .file-preview .tok-strikethrough {
-  text-decoration: line-through;
-}
-.markdown-editor .file-preview .tok-keyword {
-  color: var(--code-keyword);
-}
-.markdown-editor
-  .file-preview
-  :is(.tok-atom, .tok-bool, .tok-url, .tok-contentSeparator, .tok-labelName) {
-  color: var(--code-atom);
-}
-.markdown-editor .file-preview :is(.tok-literal, .tok-number, .tok-inserted) {
-  color: var(--code-literal);
-}
-.markdown-editor .file-preview :is(.tok-string, .tok-deleted) {
-  color: var(--code-string);
-}
-.markdown-editor .file-preview .tok-string2 {
-  color: var(--code-regexp);
-}
-.markdown-editor .file-preview .tok-variableName.tok-definition {
-  color: var(--code-definition);
-}
-.markdown-editor .file-preview .tok-variableName.tok-local {
-  color: var(--code-local);
-}
-.markdown-editor .file-preview :is(.tok-typeName, .tok-namespace) {
-  color: var(--code-type);
-}
-.markdown-editor .file-preview .tok-className {
-  color: var(--code-class);
-}
-.markdown-editor .file-preview :is(.tok-variableName2, .tok-macroName) {
-  color: var(--code-special);
-}
-.markdown-editor .file-preview .tok-propertyName.tok-definition {
-  color: var(--code-property);
-}
-.markdown-editor .file-preview .tok-comment {
-  color: var(--code-comment);
-}
-.markdown-editor .file-preview .tok-invalid {
-  color: var(--code-invalid);
-}
-.markdown-editor .file-preview .tok-monospace {
-  color: var(--code-literal);
-}
-.markdown-editor .file-preview .tok-processingInstruction {
-  color: var(--code-keyword);
 }

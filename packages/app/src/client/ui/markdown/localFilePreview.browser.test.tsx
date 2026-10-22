@@ -5,6 +5,7 @@ import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAd
 import { koMessages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
+import { codeMirrorDom } from "./codeMirrorDom.testkit";
 import { MarkdownEditor } from "./MarkdownEditor";
 
 const labels = koMessages.markdownEditor;
@@ -20,6 +21,7 @@ const MARKDOWN = [
   "",
   "```ts",
   "const answer = 42;",
+  'const unit = "개";',
   "```",
 ].join("\n");
 
@@ -44,6 +46,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  document.documentElement.removeAttribute("data-theme");
 });
 
 function renderReadOnly(value: string) {
@@ -279,21 +282,64 @@ test("md는 렌더링하지 않은 원문을 펼쳐 markdown 구문과 코드 �
   const pre = contents.element().querySelector("pre")!;
   expect(pre.textContent).toBe(MARKDOWN);
   expect(pre.querySelector("h1, strong, a")).toBeNull();
-  const tokens = (selector: string) =>
-    [...pre.querySelectorAll(selector)].map((token) => token.textContent).join("");
-  expect(tokens(".tok-heading")).toContain("조사 결과");
-  expect(tokens(".tok-strong")).toContain("굵게");
-  expect(tokens(".tok-emphasis")).toContain("기울임");
-  expect(tokens(".tok-link")).toContain("참고 문서");
-  expect(tokens(".tok-url")).toBe("https://example.com/doc");
-  expect(tokens(".tok-monospace")).toContain("inlineCall()");
-  expect(tokens(".tok-processingInstruction")).toContain("-");
-  // 코드 블록 안은 markdown이 아니라 TypeScript 토큰으로 나뉩니다.
-  expect(tokens(".tok-keyword")).toBe("const");
-  expect(tokens(".tok-variableName.tok-definition")).toBe("answer");
-  expect(tokens(".tok-number")).toBe("42");
+  const style = (text: string) => tokenStyle(pre.querySelectorAll("span"), text);
   const plain = getComputedStyle(pre).color;
-  expect(getComputedStyle(pre.querySelector(".tok-keyword")!).color).not.toBe(plain);
+  expect(style("조사 결과")).toMatchObject({ fontWeight: "700", textDecorationLine: "underline" });
+  expect(style("굵게")).toMatchObject({ fontWeight: "700" });
+  expect(style("기울임")).toMatchObject({ fontStyle: "italic" });
+  expect(style("참고 문서")).toMatchObject({ textDecorationLine: "underline" });
+  for (const text of ["https://example.com/doc", "inlineCall()", "-"]) {
+    expect(style(text)?.color).not.toBe(plain);
+  }
+  // 코드 블록 안은 markdown이 아니라 TypeScript 토큰으로 나뉘어, 선언한 이름과 keyword가 다른 색입니다.
+  for (const text of ["const", "answer", "42"]) {
+    expect(style(text)?.color).not.toBe(plain);
+  }
+  expect(style("answer")!.color).not.toBe(style("const")!.color);
+});
+
+test("펼친 md 미리보기와 본문 코드 블록은 같은 토큰을 라이트·다크 테마에서 같은 색과 모양으로 칠한다", async () => {
+  files = { "/tmp/r/report.md": () => new Response(MARKDOWN) };
+  // 본문이 코드 블록으로 끝나면 편집기가 첫 transaction에 빈 문단을 덧붙이고, 문서가 바뀌어 펼친 칩이 다시 접힙니다.
+  // 그래서 본문을 문단으로 끝냅니다.
+  const tokenTexts = ["const", '"개"', "조사 결과"];
+  const screen = await renderReadOnly(
+    [
+      "[보고서](/tmp/r/report.md)",
+      "",
+      "```markdown",
+      "# 조사 결과",
+      "```",
+      "",
+      "```ts",
+      'const unit = "개";',
+      "```",
+      "",
+      "끝",
+    ].join("\n"),
+  );
+  const codeTokens = () => screen.container.querySelectorAll(codeMirrorDom.token);
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("보고서") }));
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("보고서") });
+  await expect.element(contents.getByText("조사 결과", { exact: false })).toBeVisible();
+  const previewTokens = () => contents.element().querySelectorAll("pre span");
+  for (const text of tokenTexts) {
+    await expect.poll(() => tokenStyle(codeTokens(), text)).toBeDefined();
+  }
+
+  for (const theme of ["light", "dark"]) {
+    if (theme === "dark") document.documentElement.dataset.theme = "desk-dark";
+    const plain = getComputedStyle(contents.element()).color;
+    for (const text of tokenTexts) {
+      const preview = tokenStyle(previewTokens(), text);
+      expect({ theme, text, preview }).toEqual({
+        theme,
+        text,
+        preview: tokenStyle(codeTokens(), text),
+      });
+      expect(preview).not.toMatchObject({ color: plain, fontWeight: "400" });
+    }
+  }
 });
 
 test("최대 높이보다 긴 내용은 펼친 영역 안에서 스크롤하고, 다음 블록은 그 영역 아래에 놓인다", async () => {
@@ -396,3 +442,11 @@ test("편집 중에는 칩과 새 탭 아이콘 링크를 두지 않고 원문�
   ).toHaveLength(0);
   expect(changed).not.toHaveBeenCalled();
 });
+
+/** 글자가 text인 첫 강조 토큰의 계산된 색과 모양입니다. 그런 토큰이 없으면 undefined입니다. */
+function tokenStyle(tokens: Iterable<Element>, text: string) {
+  const token = [...tokens].find((span) => span.textContent?.trim() === text);
+  if (!token) return undefined;
+  const { color, fontWeight, fontStyle, textDecorationLine } = getComputedStyle(token);
+  return { color, fontWeight, fontStyle, textDecorationLine };
+}
