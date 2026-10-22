@@ -12,7 +12,8 @@ import { connect, createServer } from "node:net";
 import { join } from "node:path";
 import { findWorkspaceRoot } from "./workspaceRoot.js";
 
-const HOST = "127.0.0.1";
+/** 서버가 요청을 받는 localhost host입니다. `bd-desk.js`가 next start의 `--hostname`에도 씁니다. */
+export const HOST = "127.0.0.1";
 const MAX_PORT_ATTEMPTS = 100;
 const SERVER_READY_TIMEOUT_MS = 30_000;
 const STOP_TIMEOUT_MS = 5_000;
@@ -67,14 +68,9 @@ export function createDaemon({
           if (open) openBrowser(url);
           return 0;
         }
-        const server = await launch(root, port);
-        // 서버가 시작할 때 등록한 workspace를 다시 등록해 화면 주소에 쓰는 이름을 받습니다.
-        const { registered } = await registerWorkspace(server.url, root);
-        const url = workspaceUrl(server.url, registered.slug);
         print(`workspace: ${root}`);
-        print(`URL: ${url}`);
+        await startServer(root, port, open);
         print("To stop the server, run: bd-desk stop");
-        if (open) openBrowser(url);
         return 0;
       }),
 
@@ -104,11 +100,7 @@ export function createDaemon({
         if (!running) {
           const root = workspaceRootOf(cwd);
           print("No server is running. Starting a new one.");
-          const server = await launch(root, port);
-          const { registered } = await registerWorkspace(server.url, root);
-          const url = workspaceUrl(server.url, registered.slug);
-          print(`URL: ${url}`);
-          if (open) openBrowser(url);
+          await startServer(root, port, open);
           return 0;
         }
         const list = await readWorkspaces(running.url);
@@ -136,6 +128,16 @@ export function createDaemon({
         return 0;
       }),
   };
+
+  /** 서버를 띄워 workspace로 등록하고, 그 workspace의 화면 주소를 출력합니다. */
+  async function startServer(root, port, open) {
+    const server = await launch(root, port);
+    // 서버가 시작할 때 등록한 workspace를 다시 등록해 화면 주소에 쓰는 이름을 받습니다.
+    const { registered } = await registerWorkspace(server.url, root);
+    const url = workspaceUrl(server.url, registered.slug);
+    print(`URL: ${url}`);
+    if (open) openBrowser(url);
+  }
 
   /** 서버를 background로 시작하고, 요청을 받을 수 있을 때까지 기다립니다. */
   async function launch(workspaceRoot, requestedPort) {

@@ -6,9 +6,8 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createDaemon } from "./daemon.js";
+import { createDaemon, HOST } from "./daemon.js";
 
-const HOST = "127.0.0.1";
 const DEFAULT_PORT = 3000;
 
 const USAGE = `Usage: bd-desk [start|stop|restart] [--port <number>] [--open]
