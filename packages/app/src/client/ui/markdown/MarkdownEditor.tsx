@@ -18,7 +18,7 @@ import { markdownFormatControls } from "./formatCommands";
 import {
   contentUpdateView,
   drivePathLinkTool,
-  milkdownLinkAddress,
+  milkdownAddress,
   previewAddressLinkTool,
   refuseFileUpload,
   windowsPathAddressConfig,
@@ -135,7 +135,7 @@ export function MarkdownEditor({
           previewLoading: labels.previewLoading,
           previewToggleText: (previewOnly) => (previewOnly ? labels.showCode : labels.hideCode),
         });
-      const linkAddress = milkdownLinkAddress(commonmark, addressOf);
+      const address = milkdownAddress(commonmark, addressOf);
       if (!readOnly) {
         crepe.addFeature(linkTooltip).addFeature(toolbar, {
           boldLabel: labels.bold,
@@ -151,10 +151,10 @@ export function MarkdownEditor({
                 view: (view) => drivePathLinkTool(view, commonmark.linkSchema.type(ctx)),
               }),
           ),
-          $prose(() => new Plugin({ view: (view) => previewAddressLinkTool(view, linkAddress) })),
+          $prose(() => new Plugin({ view: (view) => previewAddressLinkTool(view, address) })),
         ]);
       }
-      crepe.editor.config(windowsPathAddressConfig(commonmark, core, linkAddress, addressOf));
+      crepe.editor.config(windowsPathAddressConfig(commonmark, core, address));
       crepe.editor.config((ctx) => {
         ctx.update(core.editorViewOptionsCtx, (options) => ({
           ...options,

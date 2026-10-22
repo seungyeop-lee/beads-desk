@@ -16,17 +16,18 @@ type Core = typeof import("@milkdown/kit/core");
 type OpenAddress = (url: string) => string;
 
 /**
- * 링크 href로 여는 주소를 만듭니다. Milkdown은 http, https, mailto 같은 허용 scheme 밖의 href를 `sanitizeLinkHref`로
- * 비웁니다. `C:/a.md`처럼 드라이브 문자가 scheme으로 읽히는 Windows 경로도 비워지므로, 앱 안 주소로 바뀌는 href는
- * 원래 값에서 바꾸고 바뀌지 않는 href만 Milkdown과 같은 방식으로 거릅니다.
+ * 링크 href와 그림 src로 여는 주소를 만듭니다. Milkdown은 http, https, mailto 같은 허용 scheme 밖의 href를
+ * `sanitizeLinkHref`로 비웁니다. `C:/a.md`처럼 드라이브 문자가 scheme으로 읽히는 Windows 경로도 비워지므로,
+ * 앱 안 주소로 바뀌는 주소는 원래 값에서 바꾸고 바뀌지 않는 주소만 Milkdown과 같은 방식으로 거릅니다.
+ * 그림의 src는 Milkdown 기본 image schema가 scheme을 검사하지 않지만, 링크의 href와 같은 기준으로 거릅니다.
  */
-export function milkdownLinkAddress(
+export function milkdownAddress(
   commonmark: Commonmark,
   openAddress: OpenAddress,
-): (href: string) => string {
-  return (href) => {
-    const opened = openAddress(href);
-    return opened === href ? commonmark.sanitizeLinkHref(href) : opened;
+): (url: string) => string {
+  return (url) => {
+    const opened = openAddress(url);
+    return opened === url ? commonmark.sanitizeLinkHref(url) : opened;
   };
 }
 
@@ -129,8 +130,7 @@ export function previewAddressLinkTool(
 export function windowsPathAddressConfig(
   commonmark: Commonmark,
   core: Core,
-  linkAddress: (href: string) => string,
-  imageAddress: OpenAddress,
+  address: (url: string) => string,
 ): (ctx: Ctx) => void {
   const sourceUrl = { default: null, validate: "string|null" };
   return (ctx) => {
@@ -154,7 +154,7 @@ export function windowsPathAddressConfig(
         },
         toDOM: (mark) => {
           const dom = schema.toDOM!(mark, false) as [string, Record<string, unknown>];
-          const href = linkAddress(String(mark.attrs.href));
+          const href = address(String(mark.attrs.href));
           return [dom[0], { ...dom[1], href, sourceUrl: null }];
         },
         toMarkdown: {
@@ -186,10 +186,7 @@ export function windowsPathAddressConfig(
             });
           },
         },
-        toDOM: (node) => [
-          "img",
-          { ...node.attrs, src: imageAddress(node.attrs.src), sourceUrl: null },
-        ],
+        toDOM: (node) => ["img", { ...node.attrs, src: address(node.attrs.src), sourceUrl: null }],
         toMarkdown: {
           ...schema.toMarkdown,
           runner: (state, node) => {

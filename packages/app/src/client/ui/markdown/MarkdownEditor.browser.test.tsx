@@ -88,6 +88,23 @@ test("드라이브 문자로 시작하는 Windows 절대경로의 링크와 이�
   expect(screen.getByText("스크립트").element().closest("a")?.getAttribute("href")).toBe("");
 });
 
+test("허용하지 않는 scheme의 그림 주소는 비우고, 절대경로 그림은 로컬 파일 API 주소로 그린다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        readOnly
+        value={"![스크립트 그림](javascript:alert(1)) ![절대경로 그림](/Users/me/a.png)"}
+      />
+    </LocaleProvider>,
+  );
+
+  const image = screen.getByRole("img", { name: "절대경로 그림" });
+  await expect.element(image).toBeInTheDocument();
+  expect(localPath(image.element().getAttribute("src"))).toBe("/Users/me/a.png");
+  expect(screen.getByRole("img", { name: "스크립트 그림" }).element().getAttribute("src")).toBe("");
+});
+
 test("Windows 경로의 문장부호 앞 역슬래시는 인라인 링크와 참조 링크 모두 CommonMark escape로 지우지 않고 로컬 파일 API 주소에 그대로 담는다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
