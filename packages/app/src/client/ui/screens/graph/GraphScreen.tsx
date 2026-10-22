@@ -17,12 +17,16 @@ import {
   useIssueHref,
   useScreenDetailReady,
 } from "@/client/ui/issues/IssueDetailRoute";
-import { ISSUE_DETAIL_PARAMS, ISSUE_PARAM, SIDE_PARAM } from "@/client/ui/issues/issueDetailParams";
+import {
+  ISSUE_DETAIL_PARAMS,
+  ISSUE_PARAM,
+  SIDE_PARAM,
+} from "@/client/ui/address/issueDetailParams";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { EdgeLegend } from "./EdgeLegend";
 import { EpicPlanGraph } from "./EpicPlanGraph";
-import { graphBackHref, readGraphScope } from "./graphAddress";
+import { graphBackHref, readGraphScope } from "@/client/ui/address/graphAddress";
 import { IssueGraph } from "./IssueGraph";
 import { useGraphLayout } from "./useGraphLayout";
 

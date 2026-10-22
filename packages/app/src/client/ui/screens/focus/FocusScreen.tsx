@@ -19,11 +19,11 @@ import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { UserIcon } from "@/client/ui/designSystem/icons";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
-import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
+import { issueViewHref } from "@/client/ui/address/issueListAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { FocusStatsSection } from "./FocusStatsSection";
-import { useMinuteClock } from "@/client/ui/screens/board/useMinuteClock";
+import { useMinuteClock } from "@/client/ui/designSystem/useMinuteClock";
 
 /** 개수 카드로 보이는 작업 상태입니다. 누르면 이슈 목록의 같은 보기 탭으로 이동합니다. */
 const CARD_STATES = ["in_progress", "ready", "blocked"] as const satisfies WorkState[];

@@ -103,6 +103,78 @@ const ALLOWED_DEPENDENCIES: Record<Layer, AllowedDependencies> = {
   },
 };
 
+type UiLayer =
+  | "screens"
+  | "shell"
+  | "settings"
+  | "theme"
+  | "issues"
+  | "markdown"
+  | "designSystem"
+  | "address"
+  | "locale";
+
+/**
+ * client/ui 안의 층별 의존 표입니다. 층의 역할과 순서는 packages/app/src/client/ui/AGENTS.md의 "층 위계" 절과 같습니다.
+ * 아래 방향이면 층을 건너뛰어도 되고, 위로 가는 의존, 같은 층의 옆 의존, 화면끼리의 import는 금지합니다.
+ * screens는 화면마다 한 층이라 다른 화면은 같은 층의 옆 의존이고, 같은 화면 안의 import만 허용합니다.
+ */
+const UI_ALLOWED_DEPENDENCIES: Record<UiLayer, Readonly<Partial<Record<UiLayer, true>>>> = {
+  screens: {
+    shell: true,
+    settings: true,
+    theme: true,
+    issues: true,
+    markdown: true,
+    designSystem: true,
+    address: true,
+    locale: true,
+  },
+  shell: {
+    settings: true,
+    theme: true,
+    issues: true,
+    markdown: true,
+    designSystem: true,
+    address: true,
+    locale: true,
+  },
+  settings: {
+    theme: true,
+    issues: true,
+    markdown: true,
+    designSystem: true,
+    address: true,
+    locale: true,
+  },
+  theme: {
+    issues: true,
+    markdown: true,
+    designSystem: true,
+    address: true,
+    locale: true,
+  },
+  issues: {
+    markdown: true,
+    designSystem: true,
+    address: true,
+    locale: true,
+  },
+  markdown: {
+    designSystem: true,
+    address: true,
+    locale: true,
+  },
+  designSystem: {
+    address: true,
+    locale: true,
+  },
+  address: {
+    locale: true,
+  },
+  locale: {},
+};
+
 /** Next.js가 정해진 위치에서 찾는 server entrypoint 파일입니다. app layer로 취급합니다. */
 const FRAMEWORK_ENTRYPOINTS = ["instrumentation.ts", "proxy.ts"];
 
@@ -116,6 +188,10 @@ const LAUNCHER_MODULES: Readonly<Record<string, Layer>> = {
 
 test("production import는 안쪽 layer만 가리킨다", () => {
   expect(describeBoundaryViolation()).toBeNull();
+});
+
+test("client/ui 안의 import는 층 위계를 따른다", () => {
+  expect(clientUiLayerViolation()).toBeNull();
 });
 
 test("runtime root에는 adapter layer와 modules만 둔다", () => {
@@ -183,6 +259,53 @@ function describeBoundaryViolation(): string | null {
     }
   }
   return null;
+}
+
+/** 층 위계는 생산 코드 파일의 import만 검사하며, 테스트 코드는 위에서 읽은 testCode 기준으로 제외합니다. */
+
+function clientUiLayerViolation(): string | null {
+  for (const file of sourceFilesIn(join(SRC_DIR, "client/ui"))) {
+    const fromPath = sourcePath(file);
+    for (const { specifier, line } of importsOf(file)) {
+      const targetPath = internalTargetPath(specifier, file);
+      if (!targetPath?.startsWith("client/ui/")) continue;
+      const message = uiLayerOrderViolation(fromPath, targetPath, specifier, line);
+      if (message) return message;
+    }
+  }
+  return null;
+}
+
+/**
+ * client/ui 안의 import가 층 위계를 어기면 그 내용을 돌려줍니다. 같은 위계 단위 안의 import는 허용합니다.
+ * screens는 화면마다 한 층이고 나머지는 디렉터리가 곧 층이라, 단위 이름은 `screens/<화면>` 또는 층 이름입니다.
+ */
+function uiLayerOrderViolation(
+  fromPath: string,
+  targetPath: string,
+  specifier: string,
+  line: number,
+): string | null {
+  const from = uiUnitOf(fromPath);
+  const to = uiUnitOf(targetPath);
+  if (!from) return `${fromPath}: client/ui 층 위계 표에 없는 위치에서 import합니다`;
+  if (!to) {
+    return `${fromPath}:${line}이 client/ui 층 위계 표에 없는 위치를 import합니다: ${specifier}`;
+  }
+  if (from.unit === to.unit) return null;
+  if (!UI_ALLOWED_DEPENDENCIES[from.layer][to.layer]) {
+    return `${fromPath}:${line}의 ${from.unit} → ${to.unit} 의존은 client/ui 층 위계에서 허용되지 않습니다: ${specifier}`;
+  }
+  return null;
+}
+
+/** client/ui 안 경로의 위계 단위를 돌려줍니다. 위계 표에 없는 위치는 null입니다. */
+function uiUnitOf(path: string): { unit: string; layer: UiLayer } | null {
+  const [first, second] = path.slice("client/ui/".length).split("/");
+  if (first === "screens") {
+    return second ? { unit: `screens/${second}`, layer: "screens" } : null;
+  }
+  return first in UI_ALLOWED_DEPENDENCIES ? { unit: first, layer: first as UiLayer } : null;
 }
 
 function unexpectedRootEntries(): string[] {

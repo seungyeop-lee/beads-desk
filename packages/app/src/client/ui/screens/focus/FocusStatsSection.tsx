@@ -30,7 +30,7 @@ import {
 } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
-import { issueViewHref } from "@/client/ui/screens/issues/issueListAddress";
+import { issueViewHref } from "@/client/ui/address/issueListAddress";
 
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { FLOW_SERIES, flowBarHref, type FlowSeries } from "./flowBarAddress";

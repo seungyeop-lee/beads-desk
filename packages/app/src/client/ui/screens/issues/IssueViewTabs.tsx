@@ -7,7 +7,7 @@ import {
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { issueListHref, type IssueListAddress } from "./issueListAddress";
+import { issueListHref, type IssueListAddress } from "@/client/ui/address/issueListAddress";
 
 type Props = {
   /** null이면 전체 보기입니다. */

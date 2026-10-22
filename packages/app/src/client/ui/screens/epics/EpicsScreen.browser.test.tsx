@@ -9,7 +9,7 @@ import { statusLabel } from "@/client/ui/issues/issueLabels";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicDescendants, EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
-import { graphHref } from "@/client/ui/screens/graph/graphAddress";
+import { graphHref } from "@/client/ui/address/graphAddress";
 import { EpicsScreen } from "./EpicsScreen";
 
 const EPICS: EpicSummary[] = [

@@ -4,12 +4,17 @@ import {
   nextIssueDetailTrail,
   type IssueDetailLocation,
 } from "@/client/modules/issues/domain/issueDetailTrail";
+import { graphOriginParams, readGraphScope } from "@/client/ui/address/graphAddress";
+import {
+  ISSUE_DETAIL_PARAMS,
+  ISSUE_PARAM,
+  SECTION_PARAM,
+  SIDE_PARAM,
+} from "@/client/ui/address/issueDetailParams";
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { useScreenPathname } from "@/client/ui/address/workspaceAddress";
-import { graphOriginParams, readGraphScope } from "@/client/ui/screens/graph/graphAddress";
 import { IssueDetailDialog } from "./detail/IssueDetailDialog";
 import type { ListedIssues } from "./detail/listedIssues";
-import { ISSUE_DETAIL_PARAMS, ISSUE_PARAM, SECTION_PARAM, SIDE_PARAM } from "./issueDetailParams";
 
 /** 상세 dialog를 열 때 스크롤해 보일 영역입니다. human-gate는 막힌 이슈 상세의 human gate 응답 칸입니다. */
 export type IssueDetailSection = "human-gate";

@@ -1,5 +1,5 @@
 import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
-import { ISSUE_DETAIL_PARAMS } from "@/client/ui/issues/issueDetailParams";
+import { ISSUE_DETAIL_PARAMS } from "./issueDetailParams";
 import { SCREEN_PATHS } from "@/shared/domain/screenPaths";
 
 /**

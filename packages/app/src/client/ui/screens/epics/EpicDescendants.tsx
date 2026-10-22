@@ -17,7 +17,7 @@ import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { PlusIcon } from "@/client/ui/designSystem/icons";
 import { showToast } from "@/client/ui/designSystem/Toast";
-import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
+import { useGraphHref } from "@/client/ui/address/useGraphHref";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 export function EpicDescendants({

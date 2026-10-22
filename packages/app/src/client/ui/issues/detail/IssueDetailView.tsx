@@ -9,7 +9,7 @@ import { EditableText } from "../fields/EditableText";
 import { PrioritySelect } from "../fields/PrioritySelect";
 import { StatusSelect } from "../fields/StatusSelect";
 import { TrashIcon } from "@/client/ui/designSystem/icons";
-import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
+import { useGraphHref } from "@/client/ui/address/useGraphHref";
 import { ClaimButton } from "../ClaimButton";
 import { formatTime, deferUntilLabel } from "../issueTime";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";

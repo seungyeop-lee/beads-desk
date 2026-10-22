@@ -1,6 +1,6 @@
 /*
  * 상세 dialog가 모든 화면의 주소에서 쓰는 query 이름입니다. graphAddress도 그래프 주소를 만들 때 이 이름으로 상세 query를 지웁니다.
- * IssueDetailRoute가 graphAddress를 import하므로, 두 파일이 함께 쓰는 이 이름은 IssueDetailRoute가 아니라 이 파일에 둡니다.
+ * issues의 IssueDetailRoute와 screens의 GraphScreen, address의 graphAddress가 함께 쓰므로, 셋 모두 import할 수 있는 address 층에 둡니다.
  */
 
 /** 상세 dialog로 연 이슈 id를 담는 query 이름입니다. 주소를 공유하거나 새로고침해도 같은 이슈가 열립니다. */

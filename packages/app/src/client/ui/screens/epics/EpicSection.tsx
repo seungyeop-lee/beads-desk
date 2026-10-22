@@ -8,7 +8,7 @@ import { EpicProgressBar } from "@/client/ui/issues/EpicProgress";
 import { statusLabel, statusTone } from "@/client/ui/issues/issueLabels";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
-import { useGraphHref } from "@/client/ui/screens/graph/useGraphHref";
+import { useGraphHref } from "@/client/ui/address/useGraphHref";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { EpicDescendants } from "./EpicDescendants";
 

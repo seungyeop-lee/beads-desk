@@ -1,5 +1,5 @@
 import { NON_WORK_TYPES } from "@beads-desk/bd/issue";
-import { DEFAULT_TYPES, issueListHref } from "@/client/ui/screens/issues/issueListAddress";
+import { DEFAULT_TYPES, issueListHref } from "@/client/ui/address/issueListAddress";
 
 /** 흐름 통계의 처리량 계열입니다. 그날 만든 이슈와 닫은 이슈를 셉니다. */
 export const FLOW_SERIES = ["created", "closed"] as const;

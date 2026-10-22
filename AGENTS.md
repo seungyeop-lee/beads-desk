@@ -19,7 +19,7 @@
 - 화면을 직접 조작해 보거나 데이터가 있어야 드러나는 버그를 재현할 때(`pnpm playground`로 테스트 데이터 workspace와 개발 서버를 띄웁니다): `packages/playground/AGENTS.md`
 - `packages/bd`를 고치거나 bd를 업데이트했을 때: `packages/bd/AGENTS.md`
 - launcher(`packages/app/bin`)나 배포 패키지 구성(`files`, 의존성)을 바꿀 때: `packages/app/bin/AGENTS.md`
-- 컴포넌트 테스트(`*.browser.test.tsx`)를 쓰거나 고칠 때: `packages/app/src/client/ui/AGENTS.md`
+- client/ui의 component를 새로 두거나 공통 부품의 모양을 바꿀 때, 컴포넌트 테스트(`*.browser.test.tsx`)를 쓰거나 고칠 때: `packages/app/src/client/ui/AGENTS.md`
 - e2e 시나리오를 추가하거나 고칠 때, `pnpm run check`가 e2e 테스트 수 상한으로 실패했을 때, `pnpm run test:e2e`의 실행 방식을 알아볼 때: `packages/app/e2e/AGENTS.md`
 - `.github/workflows/`를 고칠 때: `.github/AGENTS.md`
 - `packages/app/package.json`의 `version`을 바꾸거나 릴리스할 때, 릴리스가 게시되지 않았을 때, prerelease를 낼 때: `docs/release.md`
@@ -52,7 +52,7 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 
 - `app/(client)`: 화면 route의 `page.tsx`와 `layout.tsx`. 화면 자체는 `client/ui/screens`에 두고 조립만 합니다. Server Component인 page와 layout은 `eslint.config.js`의 `clientRouteServerFiles`에 적은 `server/web`·`server/infra` 파일만 import합니다
 - `app/(server)`: Route Handler. `server/web`의 `*RouteApi.ts`만 호출합니다
-- `client/ui`: 화면, component, 스타일
+- `client/ui`: 화면, component, 스타일. 층 위계와 override 규칙은 이 디렉터리의 `AGENTS.md`가 정합니다
 - `client/modules/<기능>/application`: 기능 상태와 조회·갱신 순서. React hook을 포함합니다
 - `client/modules/<기능>/domain`: 정렬·필터처럼 외부 통로 없이 성립하는 규칙
 - `client/infra`: HTTP, SSE 같은 browser 통로

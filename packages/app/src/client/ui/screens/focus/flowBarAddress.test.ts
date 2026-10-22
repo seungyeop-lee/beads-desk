@@ -6,7 +6,7 @@ import { refineIssues } from "@/client/modules/issues/domain/issueListView";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { issueListGroups } from "@/client/modules/issues/domain/workState";
-import { readIssueListAddress } from "@/client/ui/screens/issues/issueListAddress";
+import { readIssueListAddress } from "@/client/ui/address/issueListAddress";
 import { FLOW_SERIES, flowBarHref } from "./flowBarAddress";
 
 // 현지 시각으로 만들어, 테스트를 실행하는 시간대와 관계없이 하루의 경계를 확인합니다.

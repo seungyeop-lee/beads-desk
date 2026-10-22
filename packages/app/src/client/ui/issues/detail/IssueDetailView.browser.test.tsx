@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
-import { graphHref } from "@/client/ui/screens/graph/graphAddress";
+import { graphHref } from "@/client/ui/address/graphAddress";
 import { issueDetail } from "@/shared/domain/issues/issueFixture.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { IssueDetailView } from "./IssueDetailView";

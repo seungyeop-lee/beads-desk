@@ -22,7 +22,7 @@ import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { BOARD_COLUMNS, type BoardColumn } from "@/shared/domain/board/boardColumns";
-import { useMinuteClock } from "./useMinuteClock";
+import { useMinuteClock } from "@/client/ui/designSystem/useMinuteClock";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
