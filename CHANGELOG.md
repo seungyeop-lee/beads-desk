@@ -4,6 +4,33 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-10-23
+
+### Added
+
+- Links in an issue body to local `.diff`, `.patch`, `.md`, `.log`, and `.txt` files are shown as chips. Clicking a chip, or pressing Enter or Space on it, expands the file contents right below the paragraph or list item that holds the link, without leaving the issue; doing it again collapses them. Click the ↗ icon after the chip, or Cmd/Ctrl-click or middle-click the chip, to open the file in a new tab. A chip stays one chip even when part of the link text has other formatting, such as bold. Files larger than 1 MB are not loaded; a link to open the file is shown instead.
+- Expanded `.diff` and `.patch` files are shown as a diff view: each file gets a header with its path, a badge such as `new file` or `renamed`, and its added and removed line counts, and each line shows its old and new line numbers, with added and removed lines shaded and the changed words within a changed line highlighted. A file that cannot be read as a file diff is shown as text with added and removed lines colored.
+- Expanded `.md` files are shown as Markdown source with headings, emphasis, links, list markers, and code highlighted, and code blocks in the file are highlighted in their own language with the same colors as code blocks in issue bodies.
+- **Activity** screen: in a workspace where bd's events journal is on, edits to an issue's description, status, priority, type, assignee, title, labels, or defer date are listed as **Updated** records with the fields that changed. Where the journal is off, the screen shows the command that turns it on (`bd config set events-journal true`). Only changes made after the journal is on are recorded.
+- Epic progress bars also show the child issues whose status is in progress, as a separate segment after the closed ones.
+
+### Changed
+
+- Links to local files and to external addresses such as `https://` open in a new tab, so the issue you were viewing stays open. Links to app screens open in the current tab.
+- **Issues** screen: the number next to the screen title is removed, since each view tab already shows its count.
+- Screen readers announce the count next to a screen title as the title's description, and each epic card on the **Epics** screen as an article named by the epic title. Hovering the closed/total count on an epic card shows **Closed child issues**.
+
+### Fixed
+
+- An issue's activity tab shows a reopened record as **Reopened the issue.** in the UI language.
+- The accessible name of the workspace selector, the comment submit shortcut hint, and errors shown when registering a workspace follow the UI language.
+- Closing an issue detail with Escape on the graph screen removes the section from the address along with the issue.
+- **Decisions** screen: decisions created at the same time are listed in ID order.
+
+### Security
+
+- Images in the Markdown editor whose address uses a scheme the editor does not allow for links, such as `javascript:`, are no longer loaded.
+
 ## [0.7.0] - 2026-10-21
 
 ### Added
