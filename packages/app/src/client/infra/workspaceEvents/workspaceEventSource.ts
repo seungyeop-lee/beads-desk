@@ -1,15 +1,18 @@
+import { tryExclusiveLock, waitForExclusiveLock } from "@/client/infra/webLocks/navigatorLocks";
 import { documentWorkspace } from "@/client/infra/workspaces/documentWorkspace";
 import {
   INVALIDATE_EVENT,
   type InvalidateNotice,
   workspaceEventsUrl,
 } from "@/shared/contract/workspaceEvents";
+import { viewedWorkspace, viewWorkspace, watchedWorkspaces } from "./workspaceViewLocks";
+import { announceChangedWorkspace, announceWatchedWorkspaces } from "./watchedWorkspaceChanges";
+export {
+  subscribeWatchedWorkspaceChanges,
+  type WatchedWorkspaceChange,
+} from "./watchedWorkspaceChanges";
 
 type Listener = () => void;
-
-/** 연결 탭이 감시하는 workspace와, 그중 이번 알림으로 바뀌었을 수 있는 workspace입니다. */
-export type WatchedWorkspaceChange = { watched: readonly string[]; changed: readonly string[] };
-type WatchListener = (change: WatchedWorkspaceChange) => void;
 
 /** 탭 사이에 주고받는 메시지입니다. views-changed는 어느 탭이 새 workspace를 보기 시작했다는 뜻입니다. */
 type ChannelMessage = { type: "invalidate"; notice: InvalidateNotice } | { type: "views-changed" };
@@ -18,19 +21,10 @@ type ChannelMessage = { type: "invalidate"; notice: InvalidateNotice } | { type:
 // lock을 얻은 탭 하나만 SSE를 열고 받은 알림을 다른 탭에 BroadcastChannel로 전달합니다.
 const CONNECTION_LOCK = "beads-desk.workspace-events";
 const CHANNEL_NAME = "beads-desk.workspace-events";
-// 탭마다 보는 workspace를 이 이름으로 시작하는 shared lock으로 쥐고 있습니다. 연결을 연 탭은 lock 목록에서 감시할
-// workspace를 모아 연결 하나로 함께 감시합니다. 탭이 닫히면 브라우저가 lock을 풀므로 탭 목록을 따로 관리하지 않습니다.
-const VIEW_LOCK_PREFIX = "beads-desk.workspace-view:";
 
 const listeners = new Set<Listener>();
-const watchListeners = new Set<WatchListener>();
-/** 이 탭이 연결을 주도하는 동안 그 연결이 감시하는 workspace입니다. 주도하지 않으면 비어 있습니다. */
-let watchedNow: readonly string[] = [];
 let channel: BroadcastChannel | null = null;
 let stopLeading: AbortController | null = null;
-/** 이 탭이 보는 workspace의 이름입니다. 구독자가 없으면 null입니다. */
-let viewed: string | null = null;
-let releaseView: AbortController | null = null;
 /** 이 탭이 연결을 주도하는 동안, 감시할 workspace가 바뀌었는지 보고 바뀌었으면 다시 연결합니다. */
 let refreshConnection: (() => void) | null = null;
 /** 가려진 동안 받은 알림이 있으면 true입니다. */
@@ -50,7 +44,7 @@ export function subscribeWorkspaceInvalidation(listener: Listener): () => void {
   listeners.add(listener);
   if (!channel) start();
   // 같은 탭에서 다른 workspace 주소로 이동하면 화면이 구독을 해제했다가 바로 다시 구독하므로, 구독할 때마다 주소를 다시 봅니다.
-  view(documentWorkspace());
+  viewWorkspace(documentWorkspace(), announceViewedWorkspace);
   return () => {
     listeners.delete(listener);
     // 화면 조건이 바뀌면 React가 같은 시점에 구독을 해제했다가 다시 구독합니다. 그때 연결을 닫으면
@@ -74,20 +68,6 @@ export async function awaitFirstInvalidation(): Promise<void> {
   await initialNotice.promise;
 }
 
-/**
- * 이 탭이 SSE 연결을 연 동안, 연결이 감시하는 모든 workspace의 변경을 listener에 알립니다. 연결 탭은 하나뿐이어서
- * 탭이 여러 개여도 변경 하나가 한 번만 전달됩니다. 다른 탭에서는 listener가 호출되지 않습니다.
- * `subscribeWorkspaceInvalidation`과 달리 탭이 가려졌는지 따지지 않고 바로 알립니다. 이 함수는 연결을 열지 않으므로
- * 그 함수의 구독자가 있는 동안만 알림이 옵니다.
- * 구독할 때와 감시 대상이 바뀔 때, 이 탭이 연결을 놓을 때는 changed를 비워 지금 감시하는 workspace를 알리므로,
- * listener는 watched 밖의 상태를 버릴 수 있습니다.
- */
-export function subscribeWatchedWorkspaceChanges(listener: WatchListener): () => void {
-  watchListeners.add(listener);
-  listener({ watched: watchedNow, changed: [] });
-  return () => watchListeners.delete(listener);
-}
-
 function start() {
   channel = new BroadcastChannel(CHANNEL_NAME);
   channel.addEventListener("message", (event: MessageEvent<ChannelMessage>) => {
@@ -107,47 +87,33 @@ function stop() {
   channel?.close();
   channel = null;
   document.removeEventListener("visibilitychange", onVisibilityChange);
-  view(null);
+  viewWorkspace(null, announceViewedWorkspace);
   stale = false;
   leading = false;
 }
 
-/** 이 탭이 보는 workspace를 lock으로 표시하고, 새로 보기 시작했으면 연결을 연 탭이 감시 대상에 넣게 합니다. */
-function view(workspace: string | null) {
-  if (workspace === viewed) return;
-  viewed = workspace;
-  releaseView?.abort();
-  releaseView = null;
-  if (workspace === null) return;
-  const release = new AbortController();
-  releaseView = release;
-  navigator.locks
-    .request(VIEW_LOCK_PREFIX + workspace, { mode: "shared", signal: release.signal }, () => {
-      channel?.postMessage({ type: "views-changed" } satisfies ChannelMessage);
-      refreshConnection?.();
-      return new Promise<void>((resolve) =>
-        release.signal.addEventListener("abort", () => resolve(), { once: true }),
-      );
-    })
-    // lock을 얻기 전에 다른 workspace로 옮겨 가 요청을 취소했습니다.
-    .catch(() => {});
+/** 이 탭이 새 workspace를 보기 시작하면 다른 탭에 알리고, 연결을 연 탭이 감시 대상에 넣게 합니다. */
+function announceViewedWorkspace() {
+  channel?.postMessage({ type: "views-changed" } satisfies ChannelMessage);
+  refreshConnection?.();
 }
 
 async function leadConnection(signal: AbortSignal) {
   try {
-    const opened = await navigator.locks.request(CONNECTION_LOCK, { ifAvailable: true }, (lock) => {
-      leading = lock !== null;
+    const leadingNow = await tryExclusiveLock(CONNECTION_LOCK, () => {
+      leading = true;
       leadingDecided.resolve();
-      return lock ? holdConnection(signal, false) : false;
+      return holdConnection(signal, false);
     });
+    if (leadingNow) return;
+    leading = false;
+    leadingDecided.resolve();
     // 다른 탭이 연결을 갖고 있으면 그 탭이 떠날 때까지 기다렸다가 이어받습니다.
-    if (!opened) {
-      await navigator.locks.request(CONNECTION_LOCK, { signal }, (lock) => {
-        leading = lock !== null;
-        leadingDecided.resolve();
-        return holdConnection(signal, true);
-      });
-    }
+    await waitForExclusiveLock(CONNECTION_LOCK, signal, () => {
+      leading = true;
+      leadingDecided.resolve();
+      return holdConnection(signal, true);
+    });
   } catch {
     // stop()이 기다리던 lock 요청을 취소했습니다.
   }
@@ -175,7 +141,7 @@ function holdConnection(signal: AbortSignal, tookOver: boolean): Promise<true> {
       if (initialNotice !== notice) initialNotice.resolve();
       initialNotice = notice;
       watched = workspaces;
-      announceWatched(workspaces, []);
+      announceWatchedWorkspaces(workspaces);
       const opened = new EventSource(workspaceEventsUrl(workspaces));
       source = opened;
       opened.addEventListener("error", () => {
@@ -202,23 +168,13 @@ function holdConnection(signal: AbortSignal, tookOver: boolean): Promise<true> {
       () => {
         refreshConnection = null;
         source?.close();
-        announceWatched([], []);
+        announceWatchedWorkspaces([]);
         initialNotice.resolve();
         release(true);
       },
       { once: true },
     );
   });
-}
-
-/** lock으로 표시한 탭들의 workspace와 이 탭의 workspace입니다. 순서를 정해 두어 바뀌었는지 비교합니다. */
-async function watchedWorkspaces(): Promise<string[]> {
-  const { held = [] } = await navigator.locks.query();
-  const workspaces = new Set(viewed === null ? [] : [viewed]);
-  for (const { name } of held) {
-    if (name?.startsWith(VIEW_LOCK_PREFIX)) workspaces.add(name.slice(VIEW_LOCK_PREFIX.length));
-  }
-  return [...workspaces].sort();
 }
 
 function sameWorkspaces(a: string[], b: string[]): boolean {
@@ -243,18 +199,11 @@ function broadcast(notice: InvalidateNotice) {
   if (concernsThisTab(notice)) initialNotice.resolve();
   channel?.postMessage({ type: "invalidate", notice } satisfies ChannelMessage);
   receive(notice);
-  const { workspace } = notice;
-  if (workspace === undefined) announceWatched(watchedNow, watchedNow);
-  else if (watchedNow.includes(workspace)) announceWatched(watchedNow, [workspace]);
-}
-
-function announceWatched(watched: readonly string[], changed: readonly string[]) {
-  watchedNow = watched;
-  for (const listener of watchListeners) listener({ watched, changed });
+  announceChangedWorkspace(notice.workspace);
 }
 
 function concernsThisTab(notice: InvalidateNotice): boolean {
-  return notice.workspace === undefined || notice.workspace === viewed;
+  return notice.workspace === undefined || notice.workspace === viewedWorkspace();
 }
 
 function receive(notice: InvalidateNotice) {

@@ -1,3 +1,4 @@
+import { saveChoiceCookie } from "@/client/infra/cookies/saveChoiceCookie";
 import { MESSAGES, type Messages } from "@/client/modules/locale/domain/messages";
 import { isLocale, LOCALE_COOKIE, type Locale } from "@/shared/contract/locale";
 
@@ -12,5 +13,5 @@ export function documentMessages(): Messages {
 
 /** 고른 언어를 1년 동안 기억합니다. 서버는 다음 요청부터 브라우저 언어 대신 이 값을 씁니다. */
 export function saveLocale(locale: Locale) {
-  document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; samesite=lax`;
+  saveChoiceCookie(LOCALE_COOKIE, locale);
 }
