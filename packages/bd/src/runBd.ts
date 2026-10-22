@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { constants } from "node:os";
 import { bdBin } from "./bdBin";
-import { isRecord } from "./issue";
+import { isRecord } from "./bdJson";
 
 export type BdResult = {
   code: number;

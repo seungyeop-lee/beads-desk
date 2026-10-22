@@ -1,33 +1,36 @@
 export {
-  bdVersion,
   decisionRecords,
   dependencyGraph,
   type DependencyGraph,
-  duplicateCandidates,
   epicStatuses,
   exportedIssues,
   issueEvents,
-  lintFindings,
   listIssues,
-  openChangeFingerprint,
-  openGates,
-  orphanIssues,
-  previousGateRounds,
-  type PreviousGateRound,
   readyIssues,
   showIssue,
-  staleIssues,
-  type ChangeFingerprint,
   type DecisionRecord,
   type EpicStatus,
+} from "./issueQueries";
+export {
   humanDecisionIssues,
   type HumanDecisionIssues,
   humanGates,
   type HumanGate,
-  type IssueRef,
+  openGates,
+  previousGateRounds,
+  type PreviousGateRound,
+} from "./gateQueries";
+export {
+  duplicateCandidates,
+  lintFindings,
   type LintFinding,
+  orphanIssues,
   type OrphanIssue,
-} from "./queries";
+  staleIssues,
+  type IssueRef,
+} from "./hygieneQueries";
+export { openChangeFingerprint, type ChangeFingerprint } from "./changeFingerprint";
+export { bdVersion } from "./bdVersion";
 export {
   addComment,
   addDependency,

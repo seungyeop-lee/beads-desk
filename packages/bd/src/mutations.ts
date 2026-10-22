@@ -1,10 +1,9 @@
+import { isRecord, showRecordOf } from "./bdJson";
 import {
   awaitsHumanDecision,
   isOpenHumanGate,
-  isRecord,
   parseIssue,
   parseIssues,
-  showRecordOf,
   type Issue,
   type IssueStatus,
 } from "./issue";

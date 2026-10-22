@@ -1,3 +1,5 @@
+import { isRecord, recordsOf, stringOr, timestampOr } from "./bdJson";
+
 /** `bd list --status`가 받는 저장 상태입니다. */
 export const ISSUE_STATUSES = ["open", "in_progress", "blocked", "deferred", "closed"] as const;
 
@@ -44,6 +46,11 @@ export function awaitsHumanDecision(issue: Pick<Issue, "status" | "labels">): bo
  * milestone은 bd types가 관련 이슈들의 완료를 표시하고 작업 자체는 담지 않는 유형으로 설명합니다.
  */
 export const NON_WORK_TYPES: ReadonlySet<string> = new Set(["epic", "decision", "milestone"]);
+
+/** 직접 작업하는 유형의 이슈인지 확인합니다. */
+export function isWork(issue: Pick<Issue, "issueType">): boolean {
+  return !NON_WORK_TYPES.has(issue.issueType);
+}
 
 /** 저장 상태와 의존 관계, human 라벨, bd ready를 합쳐 지금 이 이슈로 무엇을 할 수 있는지 나타냅니다. */
 export type WorkState =
@@ -130,18 +137,23 @@ export type IssueComment = {
   createdAt: number;
 };
 
-export type IssueDetail = Issue & {
+/** 이슈 본문의 필드와 댓글입니다. 상세 조회와 export가 같은 형태로 출력하고, bd는 값이 빈 필드를 출력하지 않으므로 없는 본문 필드는 빈 문자열로 읽습니다. */
+type IssueBody = {
   description: string;
   design: string;
   acceptanceCriteria: string;
   notes: string;
   closeReason: string | null;
-  /** 이 이슈가 의존하는 이슈입니다. */
-  dependencies: IssueLink[];
-  /** 이 이슈에 의존하는 이슈입니다. */
-  dependents: IssueLink[];
   comments: IssueComment[];
 };
+
+export type IssueDetail = Issue &
+  IssueBody & {
+    /** 이 이슈가 의존하는 이슈입니다. */
+    dependencies: IssueLink[];
+    /** 이 이슈에 의존하는 이슈입니다. */
+    dependents: IssueLink[];
+  };
 
 export function parseIssues(value: unknown): Issue[] {
   if (!Array.isArray(value)) {
@@ -188,31 +200,18 @@ export function parseIssueDetail(value: unknown): IssueDetail | null {
   }
   return {
     ...issue,
-    description: stringOr(value.description, ""),
-    design: stringOr(value.design, ""),
-    acceptanceCriteria: stringOr(value.acceptance_criteria, ""),
-    notes: stringOr(value.notes, ""),
-    closeReason: stringOr(value.close_reason, null),
+    ...parseIssueBody(value),
     dependencies: recordsOf(value.dependencies).map(parseIssueLink),
     dependents: recordsOf(value.dependents).map(parseIssueLink),
-    comments: parseComments(value.comments),
   };
 }
 
-/**
- * `bd export`가 이슈마다 내놓는 레코드입니다. gate도 담습니다. 시각은 epoch ms입니다.
- * bd는 값이 빈 필드를 출력하지 않으므로, 없는 본문 필드는 빈 문자열로 읽습니다.
- */
-export type ExportedIssue = Issue & {
-  description: string;
-  design: string;
-  acceptanceCriteria: string;
-  notes: string;
-  /** 이슈를 만든 actor입니다. 기록되지 않았으면 빈 문자열입니다. */
-  createdBy: string;
-  closeReason: string | null;
-  comments: IssueComment[];
-};
+/** `bd export`가 이슈마다 내놓는 레코드입니다. gate도 담습니다. 시각은 epoch ms입니다. */
+export type ExportedIssue = Issue &
+  IssueBody & {
+    /** 이슈를 만든 actor입니다. 기록되지 않았으면 빈 문자열입니다. */
+    createdBy: string;
+  };
 
 export function parseExportedIssue(value: unknown): ExportedIssue | null {
   const issue = parseIssue(value);
@@ -221,11 +220,18 @@ export function parseExportedIssue(value: unknown): ExportedIssue | null {
   }
   return {
     ...issue,
+    ...parseIssueBody(value),
+    createdBy: stringOr(value.created_by, ""),
+  };
+}
+
+/** 상세 조회와 export가 같은 형태로 내놓는 이슈 본문과 댓글을 꺼냅니다. */
+function parseIssueBody(value: Record<string, unknown>): IssueBody {
+  return {
     description: stringOr(value.description, ""),
     design: stringOr(value.design, ""),
     acceptanceCriteria: stringOr(value.acceptance_criteria, ""),
     notes: stringOr(value.notes, ""),
-    createdBy: stringOr(value.created_by, ""),
     closeReason: stringOr(value.close_reason, null),
     comments: parseComments(value.comments),
   };
@@ -238,11 +244,6 @@ function parseComments(value: unknown): IssueComment[] {
     text: stringOr(comment.text, ""),
     createdAt: timestampOr(comment.created_at, 0),
   }));
-}
-
-/** bd show는 이슈 하나를 내놓을 때도 배열과 객체를 섞어 출력하므로, 어느 형태든 첫 레코드를 꺼냅니다. */
-export function showRecordOf(value: unknown): unknown {
-  return Array.isArray(value) ? value[0] : value;
 }
 
 /** 의존 관계 한 건입니다. issueId가 dependsOnId에 의존합니다. blocks이면 dependsOnId를 먼저 끝내야 합니다. 시각은 epoch ms입니다. */
@@ -365,22 +366,4 @@ function parseIssueLink(value: Record<string, unknown>): IssueLink {
     dependencyType: stringOr(value.dependency_type, ""),
     awaitType: stringOr(value.await_type, ""),
   };
-}
-
-/** bd는 결과가 없을 때 배열 대신 null을 출력하기도 하므로, 배열이 아니면 빈 목록으로 읽습니다. */
-export function recordsOf(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter(isRecord) : [];
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-export function stringOr<T extends string | null>(value: unknown, fallback: T): string | T {
-  return typeof value === "string" ? value : fallback;
-}
-
-function timestampOr<T extends number | null>(value: unknown, fallback: T): number | T {
-  const ms = typeof value === "string" ? Date.parse(value) : NaN;
-  return Number.isFinite(ms) ? ms : fallback;
 }
