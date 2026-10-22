@@ -1,6 +1,6 @@
-import { dependencyGraph } from "@beads-desk/bd";
 import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
 import { respondBdOutcome } from "@/server/web/http/routeResponse";
+import { readGraphData } from "@/server/modules/graph/application/graphData";
 import type { GraphData } from "@/shared/contract/graph";
 
 /**
@@ -9,6 +9,6 @@ import type { GraphData } from "@/shared/contract/graph";
  */
 export function handleGraphRequest(request: Request): Promise<Response> {
   return withRequestWorkspace(request, async (cwd) =>
-    respondBdOutcome<GraphData>(await dependencyGraph(cwd)),
+    respondBdOutcome<GraphData>(await readGraphData(cwd)),
   );
 }

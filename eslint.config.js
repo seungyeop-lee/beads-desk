@@ -75,7 +75,8 @@ const boundaries = {
     message: "server domain은 application과 바깥 adapter layer에 의존하지 않습니다.",
   },
   serverTechnologyFromDomain: {
-    regex: "^node:|^next(?:/|$)|^@beads-desk/bd(?:/|$)",
+    // `@beads-desk/bd/issue`와 `/types`는 bd CLI adapter가 아니라 값 없는 이슈 model이므로 domain도 씁니다.
+    regex: "^node:|^next(?:/|$)|^@beads-desk/bd(?:$|/(?!(?:issue|types)$))",
     message: "server domain은 runtime 구현과 외부 기술 package에 의존하지 않습니다.",
   },
   serverFromClient: {
@@ -96,7 +97,8 @@ const boundaries = {
     message: "shared는 runtime 구현 대신 공개 값과 순수 계약 변환을 사용합니다.",
   },
   sharedDomainTechnology: {
-    regex: "^(?![./]|@/shared/domain(?:/|$)).+",
+    // `@beads-desk/bd/issue`와 `/types`는 값 없는 이슈 model이므로 공통 업무 규칙이 쓸 수 있습니다.
+    regex: "^(?![./]|@/shared/domain(?:/|$)|@beads-desk/bd/(?:issue|types)$).+",
     message: "shared domain은 공통 업무 규칙만 사용하며 외부 기술과 저장 계약에 의존하지 않습니다.",
   },
   testSupportFromProduction: {

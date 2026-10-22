@@ -1,3 +1,5 @@
+import { isHumanGateAwait } from "@beads-desk/bd/issue";
+
 import type { AuxiliaryEdge } from "./centerGraph";
 import type { GraphLayout, PlacedEdge } from "./graphLayout";
 
@@ -32,7 +34,7 @@ export function blocksEdgeLook(
   const resolved = blocker.status === "closed";
   const gate = [blocker, issueOf(to)].find(({ issueType }) => issueType === "gate");
   if (!gate) return { kind: "blocks", resolved };
-  return { kind: gate.awaitType === "human" ? "humanGate" : "gate", resolved };
+  return { kind: isHumanGateAwait(gate) ? "humanGate" : "gate", resolved };
 }
 
 export function auxiliaryEdgeLook(relation: AuxiliaryEdge["type"]): EdgeLook {

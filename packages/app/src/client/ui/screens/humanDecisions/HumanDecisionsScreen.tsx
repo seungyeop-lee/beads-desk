@@ -1,6 +1,6 @@
 "use client";
 
-import { awaitingHuman, type Issue } from "@beads-desk/bd/issue";
+import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
@@ -29,6 +29,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateDecision } from "./HumanGateDecision";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
+import { awaitingHuman } from "@/shared/domain/issues/awaitingHuman";
 
 /** 왼쪽 목록에서 고른 항목 id를 담는 query 이름입니다. 주소에 남겨 새로고침하거나 주소를 다시 열어도 같은 항목을 보입니다. */
 const ITEM_PARAM = "item";

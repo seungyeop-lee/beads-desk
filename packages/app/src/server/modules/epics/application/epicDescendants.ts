@@ -1,4 +1,5 @@
-import { epicDescendants, listIssues, type BdOutcome } from "@beads-desk/bd";
+import { listIssues, type BdOutcome } from "@beads-desk/bd";
+import { epicDescendants } from "@/server/modules/epics/domain/epicDescendants";
 import type { EpicDescendants } from "@/shared/contract/epics";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 

@@ -1,4 +1,4 @@
-import type { Issue } from "@beads-desk/bd/issue";
+import { isOpenHumanGateLink, type Issue } from "@beads-desk/bd/issue";
 
 type GateTitle = { title: string; humanGate: boolean };
 
@@ -8,7 +8,7 @@ type GateTitle = { title: string; humanGate: boolean };
  */
 export function gateTitles(gates: readonly Issue[]): ReadonlyMap<string, GateTitle> {
   return new Map(
-    gates.map((gate) => [gate.id, { title: gate.title, humanGate: gate.awaitType === "human" }]),
+    gates.map((gate) => [gate.id, { title: gate.title, humanGate: isOpenHumanGateLink(gate) }]),
   );
 }
 

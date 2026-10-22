@@ -2,14 +2,12 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { fakeBdWorkspace } from "./fakeBd.testkit";
-import { parseIssues, type Issue } from "./issue";
+import type { Issue } from "./issue";
 import {
   bdVersion,
-  boardIssues,
   decisionRecords,
   dependencyGraph,
   duplicateCandidates,
-  epicDescendants,
   epicStatuses,
   exportedIssues,
   humanDecisionIssues,
@@ -730,36 +728,6 @@ describe("openGates", () => {
   });
 });
 
-describe("epicDescendants", () => {
-  test("epic의 하위 이슈와 그 아래 이슈를 모두 돌려주고, 다른 epic의 이슈는 뺀다", () => {
-    const issues = parseIssues([
-      { id: "e-1", issue_type: "epic", status: "open" },
-      { id: "e-1.1", issue_type: "feature", status: "open", parent: "e-1" },
-      { id: "e-1.1.1", status: "closed", parent: "e-1.1" },
-      { id: "e-1.1.1.1", status: "open", parent: "e-1.1.1" },
-      { id: "e-1.2", status: "open", parent: "e-1" },
-      { id: "e-2", issue_type: "epic", status: "open" },
-      { id: "e-2.1", status: "open", parent: "e-2" },
-      { id: "loose", status: "open" },
-    ]);
-
-    expect(
-      epicDescendants(issues, "e-1")
-        .map((issue) => issue.id)
-        .sort(),
-    ).toEqual(["e-1.1", "e-1.1.1", "e-1.1.1.1", "e-1.2"]);
-  });
-
-  test("상위 관계가 순환해도 같은 이슈를 한 번만 담는다", () => {
-    const issues = parseIssues([
-      { id: "a", status: "open", parent: "b" },
-      { id: "b", status: "open", parent: "a" },
-    ]);
-
-    expect(epicDescendants(issues, "a").map((issue) => issue.id)).toEqual(["b"]);
-  });
-});
-
 describe("showIssue", () => {
   test("댓글과 이 이슈에 의존하는 이슈까지 담아 조회한다", async () => {
     await useFakeBd({
@@ -861,183 +829,6 @@ describe("openChangeFingerprint", () => {
       ok: false,
       error: { message: "no beads workspace\n", exitCode: 1 },
     });
-  });
-});
-
-describe("boardIssues", () => {
-  test("상태로 열을 정하고, 열림 이슈는 bd ready와 bd blocked 결과로 나누며, 어느 열에도 맞지 않는 이슈는 뺀다", async () => {
-    const issue = (id: string, status: string) => ({ id, status });
-    await useFakeBd({
-      [LIST_ALL_ARGS]: {
-        stdout: JSON.stringify([
-          issue("ready", "open"),
-          issue("dep-blocked", "open"),
-          issue("doing", "in_progress"),
-          issue("doing-blocked", "in_progress"),
-          issue("marked-blocked", "blocked"),
-          issue("done", "closed"),
-          issue("deferred", "deferred"),
-          issue("pinned", "pinned"),
-          issue("hooked", "hooked"),
-          issue("custom", "review"),
-          issue("open-unknown", "open"),
-        ]),
-      },
-      [READY_ARGS]: { stdout: JSON.stringify([issue("ready", "open")]) },
-      [BLOCKED_ARGS]: {
-        stdout: JSON.stringify([
-          issue("dep-blocked", "open"),
-          issue("doing-blocked", "in_progress"),
-        ]),
-      },
-    });
-
-    const result = await boardIssues(fakeBd.workDir);
-
-    expect(
-      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
-    ).toEqual({
-      ready: "ready",
-      "dep-blocked": "blocked",
-      doing: "in_progress",
-      "doing-blocked": "blocked",
-      "marked-blocked": "blocked",
-      done: "closed",
-    });
-  });
-
-  test("human 라벨이 붙은 열림·진행 중 이슈는 어느 열에도 넣지 않고, 닫혔거나 막힌 것은 그 열에 넣는다", async () => {
-    const issue = (id: string, status: string) => ({ id, status, labels: ["human"] });
-    await useFakeBd({
-      [LIST_ALL_ARGS]: {
-        stdout: JSON.stringify([
-          issue("question", "open"),
-          issue("asking", "in_progress"),
-          issue("answered", "closed"),
-          issue("marked-blocked", "blocked"),
-          issue("dep-blocked", "open"),
-        ]),
-      },
-      [READY_ARGS]: { stdout: JSON.stringify([issue("question", "open")]) },
-      [BLOCKED_ARGS]: { stdout: JSON.stringify([issue("dep-blocked", "open")]) },
-    });
-
-    const result = await boardIssues(fakeBd.workDir);
-
-    expect(
-      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
-    ).toEqual({ answered: "closed", "marked-blocked": "blocked", "dep-blocked": "blocked" });
-  });
-
-  test("막힘 열의 이슈에는 bd blocked가 알려 준 막고 있는 이슈 id를 붙인다", async () => {
-    await useFakeBd({
-      [LIST_ALL_ARGS]: { stdout: JSON.stringify([{ id: "waiting", status: "open" }]) },
-      [READY_ARGS]: { stdout: "[]" },
-      [BLOCKED_ARGS]: {
-        stdout: JSON.stringify([{ id: "waiting", status: "open", blocked_by: ["first"] }]),
-      },
-    });
-
-    const result = await boardIssues(fakeBd.workDir);
-
-    expect(result.ok && result.value.map(({ issue }) => issue.blockedBy)).toEqual([["first"]]);
-  });
-
-  test("보류 이슈는 bd blocked에 나와도 막힘 열을 비롯한 어느 열에도 넣지 않는다", async () => {
-    await useFakeBd({
-      [LIST_ALL_ARGS]: {
-        stdout: JSON.stringify([
-          { id: "later", status: "deferred" },
-          { id: "waiting", status: "open" },
-        ]),
-      },
-      [READY_ARGS]: { stdout: "[]" },
-      [BLOCKED_ARGS]: {
-        stdout: JSON.stringify([
-          { id: "later", status: "deferred", blocked_by: ["first"] },
-          { id: "waiting", status: "open", blocked_by: ["first"] },
-        ]),
-      },
-    });
-
-    const result = await boardIssues(fakeBd.workDir);
-
-    expect(
-      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
-    ).toEqual({ waiting: "blocked" });
-  });
-
-  test("decision, epic, milestone은 상태와 관계없이 어느 열에도 넣지 않는다", async () => {
-    const issue = (id: string, status: string, issue_type: string) => ({ id, status, issue_type });
-    await useFakeBd({
-      [LIST_ALL_ARGS]: {
-        stdout: JSON.stringify([
-          issue("task", "open", "task"),
-          issue("open-decision", "open", "decision"),
-          issue("closed-decision", "closed", "decision"),
-          issue("open-epic", "open", "epic"),
-          issue("doing-epic", "in_progress", "epic"),
-          issue("open-milestone", "open", "milestone"),
-          issue("feature", "open", "feature"),
-        ]),
-      },
-      [READY_ARGS]: {
-        stdout: JSON.stringify([
-          issue("task", "open", "task"),
-          issue("open-decision", "open", "decision"),
-          issue("open-epic", "open", "epic"),
-          issue("open-milestone", "open", "milestone"),
-          issue("feature", "open", "feature"),
-        ]),
-      },
-      [BLOCKED_ARGS]: { stdout: "[]" },
-    });
-
-    const result = await boardIssues(fakeBd.workDir);
-
-    expect(
-      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
-    ).toEqual({ task: "ready", feature: "ready" });
-  });
-
-  test("막힌 decision과 epic도 막힘 열에 넣지 않는다", async () => {
-    const issue = (id: string, status: string, issue_type: string) => ({ id, status, issue_type });
-    await useFakeBd({
-      [LIST_ALL_ARGS]: {
-        stdout: JSON.stringify([
-          issue("task", "open", "task"),
-          issue("dep-decision", "open", "decision"),
-          issue("dep-epic", "open", "epic"),
-          issue("marked-epic", "blocked", "epic"),
-        ]),
-      },
-      [READY_ARGS]: { stdout: "[]" },
-      [BLOCKED_ARGS]: {
-        stdout: JSON.stringify([
-          { ...issue("task", "open", "task"), blocked_by: ["first"] },
-          { ...issue("dep-decision", "open", "decision"), blocked_by: ["first"] },
-          { ...issue("dep-epic", "open", "epic"), blocked_by: ["first"] },
-        ]),
-      },
-    });
-
-    const result = await boardIssues(fakeBd.workDir);
-
-    expect(
-      result.ok && Object.fromEntries(result.value.map(({ column, issue }) => [issue.id, column])),
-    ).toEqual({ task: "blocked" });
-  });
-
-  test("조회가 하나라도 실패하면 열을 잘못 나누지 않도록 오류를 돌려준다", async () => {
-    await useFakeBd({
-      [LIST_ALL_ARGS]: { stdout: "[]" },
-      [READY_ARGS]: { stdout: "[]" },
-      [BLOCKED_ARGS]: { stderr: "boom", code: 1 },
-    });
-
-    const result = await boardIssues(fakeBd.workDir);
-
-    expect(result).toEqual({ ok: false, error: { message: "boom\n", exitCode: 1 } });
   });
 });
 
@@ -1152,45 +943,6 @@ describe("dependencyGraph", () => {
         createdAt: 0,
       })),
     );
-  });
-
-  test("닫힌 상위 이슈를 거쳐 닿는 에픽까지 가까운 것부터 소속으로 담는다", async () => {
-    await useFakeBd({
-      [`${LIST_ALL_ARGS} --include-gates`]: {
-        stdout: JSON.stringify([
-          { id: "outer", status: "open", issue_type: "epic" },
-          { id: "inner", status: "open", issue_type: "epic", parent: "outer" },
-          { id: "feature", status: "closed", issue_type: "feature", parent: "inner" },
-          { id: "task", status: "open", issue_type: "task", parent: "feature" },
-          { id: "alone", status: "open", issue_type: "task" },
-        ]),
-      },
-      ...signals,
-    });
-
-    const result = await dependencyGraph(fakeBd.workDir);
-
-    expect(result.ok && result.value.ancestorEpics).toEqual({
-      inner: ["outer"],
-      feature: ["inner", "outer"],
-      task: ["inner", "outer"],
-    });
-  });
-
-  test("상위 관계가 순환해도 소속을 정하다 멈춘다", async () => {
-    await useFakeBd({
-      [`${LIST_ALL_ARGS} --include-gates`]: {
-        stdout: JSON.stringify([
-          { id: "x", status: "open", issue_type: "epic", parent: "y" },
-          { id: "y", status: "open", issue_type: "epic", parent: "x" },
-        ]),
-      },
-      ...signals,
-    });
-
-    const result = await dependencyGraph(fakeBd.workDir);
-
-    expect(result.ok && result.value.ancestorEpics).toEqual({ x: ["y"], y: ["x"] });
   });
 });
 

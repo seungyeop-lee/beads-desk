@@ -8,7 +8,6 @@ import {
   addComment,
   addDependency,
   bdVersion,
-  boardIssues,
   claimIssue,
   closeIssue,
   createIssue,
@@ -150,7 +149,7 @@ test("닫힌 기능도 그래프에 담고, 그 아래의 열린 작업이 그 �
 
   const graph = value(await dependencyGraph(cwd));
   expect(graph.issues.map(({ id }) => id)).toContain(feature);
-  expect(graph.ancestorEpics[task]).toEqual([epic]);
+  expect(graph.issues.map(({ id }) => id)).toContain(task);
 });
 
 test("그래프는 상태·await 유형과 무관하게 gate를 읽고 일반 목록·보드·ready에서는 제외한다", async () => {
@@ -203,9 +202,8 @@ test("그래프는 상태·await 유형과 무관하게 gate를 읽고 일반 �
     ),
   );
   const ordinary = value(await listIssues(cwd, []));
-  const board = value(await boardIssues(cwd)).map(({ issue }) => issue);
   const ready = value(await readyIssues(cwd));
-  for (const issues of [ordinary, board, ready]) {
+  for (const issues of [ordinary, ready]) {
     expect(issues.some(({ id }) => gates.includes(id))).toBe(false);
   }
 });

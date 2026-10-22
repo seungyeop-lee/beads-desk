@@ -1,8 +1,8 @@
 import { humanDecisionIssues } from "@beads-desk/bd";
-import { awaitingHuman } from "@beads-desk/bd/issue";
 import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
 import { respondBdOutcome } from "@/server/web/http/routeResponse";
 import type { HumanDecisionItem } from "@/shared/contract/humanDecisions";
+import { awaitingHuman } from "@/shared/domain/issues/awaitingHuman";
 
 /**
  * 판단 기다림이 새로 생겼는지 id로 비교할 수 있도록, 개수 조회와 같은 이슈를 읽어 id와 제목만 돌려줍니다.

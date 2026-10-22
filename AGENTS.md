@@ -9,7 +9,7 @@
 ## 패키지 구성
 
 - `packages/app`(`@seungyeop-lee/beads-desk`): npm으로 배포하는 Next.js 앱과 `bd-desk` 실행 명령
-- `packages/bd`(`@beads-desk/bd`): `bd` CLI 실행과 출력 해석. Next.js와 React에 의존하지 않습니다
+- `packages/bd`(`@beads-desk/bd`): `bd` CLI 실행과 출력 해석, bd가 정한 개념의 판정. Next.js와 React에 의존하지 않습니다. 화면을 위해 고르거나 모으는 규칙은 app에 둡니다
 - `packages/promo`(`@beads-desk/promo`): README 스크린샷과 소개 영상을 만드는 도구. 배포하지 않습니다
 - `packages/playground`(`@beads-desk/playground`): 테스트 데이터를 담은 workspace로 `next dev`를 띄우는 수동 테스트 환경. 배포하지 않습니다
 

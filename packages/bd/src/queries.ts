@@ -1,10 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
-  type BoardColumn,
   HUMAN_LABEL,
   humanGateReason,
-  isBoardColumn,
   isOpenHumanGate,
   isRecord,
   NON_WORK_TYPES,
@@ -24,7 +22,6 @@ import {
   type IssueDetail,
   type IssueEvent,
   type IssueStatus,
-  workState,
 } from "./issue";
 import {
   inputError,
@@ -64,11 +61,6 @@ export type HumanDecisionIssues = {
   labeled: Issue[];
 };
 
-export type BoardIssue = {
-  column: BoardColumn;
-  issue: Issue;
-};
-
 /** bd 목록 명령의 기본 개수 제한(list 50, ready 100)에 걸려 목록이 조용히 잘리지 않도록 제한을 없앱니다. 0이 제한 없음입니다. */
 const LIST_LIMIT = "0";
 
@@ -106,8 +98,6 @@ export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutc
 export type DependencyGraph = {
   issues: Issue[];
   dependencies: IssueDependency[];
-  /** issues의 이슈마다 parent를 따라 올라가며 만나는 에픽 id를 가까운 것부터 담습니다. 에픽에 속하지 않은 이슈는 담지 않습니다. */
-  ancestorEpics: Record<string, string[]>;
 };
 
 /** 모든 상태의 이슈와 그 이슈들의 의존 관계(모든 유형)를 bd list 한 번으로 읽고, 작업 상태를 정하는 값을 채웁니다. */
@@ -124,27 +114,8 @@ export async function dependencyGraph(cwd: string): Promise<BdOutcome<Dependency
     value: {
       issues: issues.value,
       dependencies: parseIssueDependencies(result.value),
-      ancestorEpics: ancestorEpicsOf(issues.value),
     },
   };
-}
-
-function ancestorEpicsOf(issues: Issue[]): Record<string, string[]> {
-  const byId = new Map(issues.map((issue) => [issue.id, issue]));
-  const ancestorEpics: Record<string, string[]> = {};
-  for (const issue of issues) {
-    const epics: string[] = [];
-    const reached = new Set([issue.id]);
-    let ancestor = issue.parent ? byId.get(issue.parent) : undefined;
-    // 상위 관계가 순환해도 같은 이슈를 다시 따라가지 않습니다.
-    while (ancestor && !reached.has(ancestor.id)) {
-      reached.add(ancestor.id);
-      if (ancestor.issueType === "epic") epics.push(ancestor.id);
-      ancestor = ancestor.parent ? byId.get(ancestor.parent) : undefined;
-    }
-    if (epics.length > 0) ancestorEpics[issue.id] = epics;
-  }
-  return ancestorEpics;
 }
 
 /** 이슈의 변경 이벤트를 읽습니다. 댓글은 이벤트로 남지 않으므로 showIssue의 comments로 읽습니다. */
@@ -224,27 +195,6 @@ export async function withWorkSignals(
       };
     }),
   };
-}
-
-/**
- * 이슈 목록에서 epic 아래의 모든 후손 이슈(하위 이슈와 그 하위 이슈들)를 parent를 따라 모읍니다.
- * bd children은 직접 하위 이슈만 돌려주므로, 모든 이슈를 한 번에 읽은 목록을 넘깁니다.
- */
-export function epicDescendants(issues: Issue[], epicId: string): Issue[] {
-  const childrenByParent = groupByParent(issues);
-  const descendants: Issue[] = [];
-  const reached = new Set([epicId]);
-  const pending = [epicId];
-  while (pending.length > 0) {
-    for (const child of childrenByParent.get(pending.shift()!) ?? []) {
-      // 상위 관계가 순환해도 같은 이슈를 두 번 담지 않습니다.
-      if (reached.has(child.id)) continue;
-      reached.add(child.id);
-      descendants.push(child);
-      pending.push(child.id);
-    }
-  }
-  return descendants;
 }
 
 export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome<IssueDetail>> {
@@ -584,23 +534,6 @@ export async function duplicateCandidates(cwd: string): Promise<BdOutcome<[Issue
 function supersedingIssue(record: unknown): string | null {
   const supersedes = parseIssueDependencies([record]).find(({ type }) => type === "supersedes");
   return supersedes?.dependsOnId || null;
-}
-
-/**
- * 모든 이슈를 한 번에 읽어 작업 상태(workState)로 열을 정합니다. 열이 없는 작업 상태(보류, 판단 기다림, other)의 이슈는 넣지 않습니다.
- * decision, epic, milestone은 작업 상태와 관계없이 보드에 넣지 않습니다.
- * 조회가 하나라도 실패하면 열을 잘못 나누게 되므로 오류를 돌려줍니다.
- */
-export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>> {
-  const result = await listIssues(cwd, []);
-  if (!result.ok) return result;
-  return {
-    ok: true,
-    value: result.value.filter(isWork).flatMap((issue): BoardIssue[] => {
-      const state = workState(issue);
-      return isBoardColumn(state) ? [{ column: state, issue }] : [];
-    }),
-  };
 }
 
 function blockersById(blocked: Issue[]): Map<string, string[]> {

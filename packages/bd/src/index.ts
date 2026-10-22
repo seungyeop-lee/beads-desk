@@ -1,11 +1,9 @@
 export {
   bdVersion,
-  boardIssues,
   decisionRecords,
   dependencyGraph,
   type DependencyGraph,
   duplicateCandidates,
-  epicDescendants,
   epicStatuses,
   exportedIssues,
   issueEvents,

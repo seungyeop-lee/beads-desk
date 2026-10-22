@@ -1,5 +1,6 @@
-import type { AwaitingHuman, Issue } from "@beads-desk/bd/issue";
+import type { Issue } from "@beads-desk/bd/issue";
 import { byId } from "@/client/modules/issues/domain/issueListView";
+import type { AwaitingHuman } from "@/shared/domain/issues/awaitingHuman";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 
 /**

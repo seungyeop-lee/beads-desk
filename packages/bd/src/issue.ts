@@ -73,40 +73,6 @@ export function workState(issue: Issue): WorkState {
   return "other";
 }
 
-/** 보드에 열이 있는 작업 상태입니다. 배열 순서는 화면에 보이는 열 순서와 관계없고, 화면 순서는 app이 정합니다. */
-const BOARD_WORK_STATES = [
-  "ready",
-  "in_progress",
-  "blocked",
-  "closed",
-] as const satisfies WorkState[];
-
-export type BoardColumn = (typeof BOARD_WORK_STATES)[number];
-
-export function isBoardColumn(state: WorkState): state is BoardColumn {
-  return BOARD_WORK_STATES.some((column) => column === state);
-}
-
-export type AwaitingHuman<G, Q> = {
-  gates: readonly G[];
-  /** 닫히지 않았고 human 라벨이 붙은 이슈입니다. 유형과 작업 상태는 따지지 않습니다. */
-  questions: Q[];
-  count: number;
-};
-
-/**
- * 사람 판단을 기다리는 일을 모읍니다. 열린 human gate와, 닫히지 않았고 human 라벨이 붙은 이슈입니다.
- * 판단 기다림 개수를 보이는 곳은 모두 이 함수로 세야 서로 개수가 어긋나지 않습니다.
- * bd list는 gate를 돌려주지 않으므로 열린 human gate는 이슈 목록과 따로 받습니다.
- */
-export function awaitingHuman<G, Q extends Pick<Issue, "status" | "labels">>(
-  openHumanGates: readonly G[],
-  issues: readonly Q[],
-): AwaitingHuman<G, Q> {
-  const questions = issues.filter(awaitsHumanDecision);
-  return { gates: openHumanGates, questions, count: openHumanGates.length + questions.length };
-}
-
 /**
  * 사람이 닫아야 풀리는 열린 gate인지 bd JSON 레코드로 확인합니다. human 라벨과 관계없습니다.
  * gate는 bd gate create가 만드는 별도 이슈로, 닫힐 때까지 막고 있는 이슈를 bd ready에서 빼고 bd close도 거부하게 합니다.
@@ -120,11 +86,18 @@ export function isOpenHumanGate(record: unknown): boolean {
   );
 }
 
+/** gate이고 사람이 닫아야 풀리는 await 유형인지 확인합니다. 닫혔는지는 따지지 않습니다. */
+export function isHumanGateAwait(link: { issueType: string; awaitType?: string }): boolean {
+  return link.issueType === "gate" && link.awaitType === "human";
+}
+
 /** 상세 화면의 의존 관계 한 건이 사람이 닫아야 풀리는 열린 gate인지 확인합니다. */
-export function isOpenHumanGateLink(
-  link: Pick<IssueLink, "issueType" | "awaitType" | "status">,
-): boolean {
-  return link.issueType === "gate" && link.awaitType === "human" && link.status !== "closed";
+export function isOpenHumanGateLink(link: {
+  issueType: string;
+  awaitType?: string;
+  status: string;
+}): boolean {
+  return isHumanGateAwait(link) && link.status !== "closed";
 }
 
 // bd 1.3.1의 bd gate create는 설명을 `Ad-hoc gate blocking <id>`와 `Reason: <사유>` 두 문단으로 만듭니다.
