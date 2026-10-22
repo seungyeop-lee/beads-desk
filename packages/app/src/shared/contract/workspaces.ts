@@ -8,15 +8,19 @@ export function workspaceHref(slug: string, screenPath = "/"): string {
   return `/w/${encodeURIComponent(slug)}${screenPath === "/" ? "" : screenPath}`;
 }
 
-/** 화면 주소에서 workspace 이름을 읽습니다. workspace 화면의 주소가 아니면 null입니다. */
-export function workspaceOfPathname(pathname: string): string | null {
-  const segment = /^\/w\/([^/]+)/.exec(pathname)?.[1];
-  if (segment === undefined) return null;
+/** 화면 주소의 workspace segment를 percent-encoding에서 풉니다. 풀 수 없는 segment면 null입니다. */
+export function decodeWorkspaceSlug(segment: string): string | null {
   try {
     return decodeURIComponent(segment);
   } catch {
     return null;
   }
+}
+
+/** 화면 주소에서 workspace 이름을 읽습니다. workspace 화면의 주소가 아니면 null입니다. */
+export function workspaceOfPathname(pathname: string): string | null {
+  const segment = /^\/w\/([^/]+)/.exec(pathname)?.[1];
+  return segment === undefined ? null : decodeWorkspaceSlug(segment);
 }
 
 /** 화면 주소에서 `/w/<workspace 이름>`을 뗀 workspace 안의 화면 경로입니다. workspace 루트면 `/`입니다. */

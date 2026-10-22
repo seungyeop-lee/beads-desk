@@ -1,7 +1,7 @@
-import { findWorkspace, onWorkspacesChanged } from "@/server/infra/runtime/serverRuntime";
+import { onWorkspacesChanged } from "@/server/infra/runtime/serverRuntime";
 import { subscribeWorkspaceChanges } from "@/server/infra/workspaceChanges/workspaceChangeFeed";
+import { requestWorkspaces } from "@/server/web/http/requestWorkspace";
 import { INVALIDATE_EVENT, type InvalidateNotice } from "@/shared/contract/workspaceEvents";
-import { WORKSPACE_QUERY } from "@/shared/contract/workspaces";
 
 /**
  * query로 받은 workspace들의 DB 변경을 구독해, 바뀐 workspace의 이름을 담은 invalidate를 보냅니다.
@@ -9,7 +9,7 @@ import { WORKSPACE_QUERY } from "@/shared/contract/workspaces";
  */
 export function handleWorkspaceEventsRequest(request: Request): Response {
   const encoder = new TextEncoder();
-  const slugs = new Set(new URL(request.url).searchParams.getAll(WORKSPACE_QUERY));
+  const workspaces = requestWorkspaces(request);
   /** 구독을 해제합니다. 이미 해제했으면 false를 돌려줍니다. */
   let stop = () => false;
 
@@ -24,12 +24,9 @@ export function handleWorkspaceEventsRequest(request: Request): Response {
       };
       const unsubscribes = [
         onWorkspacesChanged(() => send({})),
-        ...[...slugs].flatMap((slug) => {
-          const workspace = findWorkspace(slug);
-          return workspace
-            ? [subscribeWorkspaceChanges(workspace.root, () => send({ workspace: slug }))]
-            : [];
-        }),
+        ...workspaces.map((workspace) =>
+          subscribeWorkspaceChanges(workspace.root, () => send({ workspace: workspace.slug })),
+        ),
       ];
       stop = () => {
         if (stopped) return false;

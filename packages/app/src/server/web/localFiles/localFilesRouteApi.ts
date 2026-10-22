@@ -4,10 +4,9 @@ import {
   readLocalFile,
   readLocalFileRange,
 } from "@/server/infra/localFiles/readLocalFile";
-import { findWorkspace } from "@/server/infra/runtime/serverRuntime";
 import { isCrossSiteRequest } from "@/server/web/http/crossSiteRequest";
+import { requestWorkspace } from "@/server/web/http/requestWorkspace";
 import { serverMessages } from "@/server/web/locale/serverMessages";
-import { WORKSPACE_QUERY } from "@/shared/contract/workspaces";
 
 const IMAGE_TYPES: Record<string, string> = {
   ".png": "image/png",
@@ -45,8 +44,7 @@ export async function handleLocalFileRequest(request: Request): Promise<Response
 
   const path = requestedPath(request);
   if (path === null) return localFileResponse(messages.invalidRequest, 400);
-  const slug = new URL(request.url).searchParams.get(WORKSPACE_QUERY) ?? "";
-  const workspace = findWorkspace(slug);
+  const { slug, workspace } = requestWorkspace(request);
   if (!workspace) return localFileResponse(messages.unknownWorkspace(slug), 404);
 
   const extension = extname(path).toLowerCase();

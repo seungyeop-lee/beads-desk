@@ -1,6 +1,6 @@
 import { useParams, usePathname } from "next/navigation";
 import { useCallback } from "react";
-import { screenPathOf, workspaceHref } from "@/shared/contract/workspaces";
+import { decodeWorkspaceSlug, screenPathOf, workspaceHref } from "@/shared/contract/workspaces";
 
 /**
  * 이 화면이 보는 workspace의 이름입니다. 화면 주소 `/w/<이름>/...`의 params에서 읽습니다.
@@ -9,11 +9,7 @@ import { screenPathOf, workspaceHref } from "@/shared/contract/workspaces";
 export function useWorkspaceSlug(): string {
   const { workspace } = useParams<{ workspace?: string }>();
   if (!workspace) return "";
-  try {
-    return decodeURIComponent(workspace);
-  } catch {
-    return workspace;
-  }
+  return decodeWorkspaceSlug(workspace) ?? workspace;
 }
 
 /**

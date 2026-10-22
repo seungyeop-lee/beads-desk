@@ -4,6 +4,7 @@ import { GraphScreen } from "@/client/ui/screens/graph/GraphScreen";
 import { WorkspaceNotFoundScreen } from "@/client/ui/screens/workspaces/WorkspaceNotFoundScreen";
 import { AppHeader } from "@/client/ui/shell/AppHeader";
 import { findRegisteredWorkspace } from "@/server/web/workspaces/registeredWorkspaces";
+import { decodeWorkspaceSlug } from "@/shared/contract/workspaces";
 
 /** 등록하지 않은 workspace 주소는 제목을 정하지 않아 루트 layout의 기본 제목을 씁니다. */
 export async function generateMetadata({
@@ -21,7 +22,7 @@ export async function generateMetadata({
 export default async function WorkspaceLayout({ children, params }: LayoutProps<"/w/[workspace]">) {
   const { workspace: segment } = await params;
   const workspace = findRegisteredWorkspace(segment);
-  if (!workspace) return <WorkspaceNotFoundScreen name={decodedName(segment)} />;
+  if (!workspace) return <WorkspaceNotFoundScreen name={decodeWorkspaceSlug(segment) ?? segment} />;
   return <WorkspaceScreens key={workspace.slug}>{children}</WorkspaceScreens>;
 }
 
@@ -35,12 +36,4 @@ function WorkspaceScreens({ children }: { children: React.ReactNode }) {
       </Suspense>
     </>
   );
-}
-
-function decodedName(segment: string): string {
-  try {
-    return decodeURIComponent(segment);
-  } catch {
-    return segment;
-  }
 }
