@@ -24,7 +24,7 @@ test("에픽에서 새 하위 이슈를 만들거나 기존 이슈를 골라 넣
   await page.keyboard.press("Escape");
   await expect(detail).toBeHidden();
   await expect(page.getByRole("link", { name: "에픽에서 만든 하위 이슈" })).toBeVisible();
-  await expect(page.getByLabel(`${epic} 진행률`)).toHaveAttribute("max", "1");
+  await expect(page.getByLabel(`${epic} 진행률`)).toHaveAttribute("aria-valuemax", "1");
 
   await page.getByRole("combobox", { name: "기존 이슈를 하위로 넣기" }).fill("넣을 후보");
   await page

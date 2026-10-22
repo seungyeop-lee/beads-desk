@@ -15,7 +15,7 @@ import { HUMAN_DECISION_TONE, workStateTone } from "@/client/ui/issues/issueLabe
 import { WaitingOnLines } from "@/client/ui/issues/BlockerLine";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
-import { EpicProgressBar } from "@/client/ui/issues/EpicProgress";
+import { EpicInProgressCount, EpicProgressBar } from "@/client/ui/issues/EpicProgress";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
@@ -138,37 +138,46 @@ export function FocusScreen() {
               {/* 에픽은 따로 읽으므로, 다 읽기 전에 "에픽이 없다"는 안내가 잠깐 보이지 않게 합니다. */}
               {epics.data && (
                 <FocusSection title={messages.focus.epicProgress} empty={messages.focus.epicsEmpty}>
-                  {view.openEpics.map(({ epic, totalChildren, closedChildren }) => (
-                    <li key={epic.id}>
-                      <Link
-                        href={issueHref(epic.id)}
-                        scroll={false}
-                        className="flex flex-col gap-1.5 px-4 py-3 text-sm hover:bg-base-200/60"
-                      >
-                        <span className="flex items-baseline gap-2">
-                          <span className="min-w-0 grow truncate font-medium">
-                            {epic.title || messages.common.untitled}
+                  {view.openEpics.map(
+                    ({ epic, totalChildren, closedChildren, inProgressChildren }) => (
+                      <li key={epic.id}>
+                        <Link
+                          href={issueHref(epic.id)}
+                          scroll={false}
+                          className="flex flex-col gap-1.5 px-4 py-3 text-sm hover:bg-base-200/60"
+                        >
+                          <span className="flex items-baseline gap-2">
+                            <span className="min-w-0 grow truncate font-medium">
+                              {epic.title || messages.common.untitled}
+                            </span>
+                            {inProgressChildren > 0 && (
+                              <EpicInProgressCount
+                                count={inProgressChildren}
+                                className="self-center"
+                              />
+                            )}
+                            <span className="font-mono text-xs text-emphasis-60 tabular-nums">
+                              {closedChildren}/{totalChildren}
+                            </span>
                           </span>
-                          <span className="font-mono text-xs text-emphasis-60 tabular-nums">
-                            {closedChildren}/{totalChildren}
-                          </span>
-                        </span>
-                        <EpicProgressBar
-                          epicId={epic.id}
-                          className="w-full"
-                          style={
-                            {
-                              "--color-progress":
-                                "color-mix(in oklab, var(--color-sage), var(--color-progress-ink) 25%)",
-                            } as CSSProperties
-                          }
-                          closed={closedChildren}
-                          total={totalChildren}
-                          aria-label={messages.focus.epicProgressOf(epic.title)}
-                        />
-                      </Link>
-                    </li>
-                  ))}
+                          <EpicProgressBar
+                            epicId={epic.id}
+                            className="w-full"
+                            style={
+                              {
+                                "--color-progress":
+                                  "color-mix(in oklab, var(--color-sage), var(--color-progress-ink) 25%)",
+                              } as CSSProperties
+                            }
+                            closed={closedChildren}
+                            inProgress={inProgressChildren}
+                            total={totalChildren}
+                            aria-label={messages.focus.epicProgressOf(epic.title)}
+                          />
+                        </Link>
+                      </li>
+                    ),
+                  )}
                 </FocusSection>
               )}
             </div>

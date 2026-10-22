@@ -5,7 +5,12 @@ import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { durationParts, focusStats } from "./focusStats";
 
 function epic(id: string, totalChildren: number, closedChildren: number, status = "open") {
-  return { epic: issue(id, { issueType: "epic", status }), totalChildren, closedChildren };
+  return {
+    epic: issue(id, { issueType: "epic", status }),
+    totalChildren,
+    closedChildren,
+    inProgressChildren: 0,
+  };
 }
 
 // 현지 시각으로 만들어, 테스트를 실행하는 시간대와 관계없이 하루의 경계를 확인합니다.

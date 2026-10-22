@@ -3,6 +3,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
+import { expectEpicProgressSegments } from "@/client/ui/issues/EpicProgress.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
@@ -141,6 +142,44 @@ test("에픽 진행률을 다 읽기 전에도 지금 화면을 그리고, 에�
     </LocaleProvider>,
   );
   await expect.element(epicProgress).toBeVisible();
+});
+
+test("에픽 진행률 영역은 하위 이슈 4개 중 1개가 닫히고 1개가 진행 중인 에픽의 막대에 닫힌 구간 뒤로 진행 중 구간을 그리고 진행 중 1을 보이며, 진행 중 하위 이슈가 없는 에픽은 진행 중 수를 보이지 않는다", async () => {
+  reads.issues = [];
+  reads.epics = [
+    {
+      epic: issue("desk-a", { title: "움직이는 에픽", issueType: "epic" }),
+      totalChildren: 4,
+      closedChildren: 1,
+      inProgressChildren: 1,
+    },
+    {
+      epic: issue("desk-b", { title: "멈춘 에픽", issueType: "epic" }),
+      totalChildren: 4,
+      closedChildren: 1,
+      inProgressChildren: 0,
+    },
+  ];
+  const screen = await renderFocus();
+  const region = screen.getByRole("region", { name: messages.focus.epicProgress, exact: true });
+
+  const moving = region.getByRole("link", { name: /움직이는 에픽/ });
+  const bar = moving.getByRole("progressbar", {
+    name: messages.focus.epicProgressOf("움직이는 에픽"),
+  });
+  await expect.element(bar).toHaveAttribute("aria-valuenow", "1");
+  expectEpicProgressSegments(bar.element(), { closed: 1, inProgress: 1, total: 4 });
+  await expect.element(moving.getByText(messages.epics.inProgressChildren(1))).toBeVisible();
+  await expect.element(moving.getByText("1/4", { exact: true })).toBeVisible();
+
+  const idle = region.getByRole("link", { name: /멈춘 에픽/ });
+  expectEpicProgressSegments(
+    idle.getByRole("progressbar", { name: messages.focus.epicProgressOf("멈춘 에픽") }).element(),
+    { closed: 1, inProgress: 0, total: 4 },
+  );
+  await expect
+    .element(idle.getByText(messages.epics.inProgressChildren(0)))
+    .not.toBeInTheDocument();
 });
 
 test("human gate가 막는 막힘 행은 사람 확인 기다림과 gate 제목을 보인다", async () => {

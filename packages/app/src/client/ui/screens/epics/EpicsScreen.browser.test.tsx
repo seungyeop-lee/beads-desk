@@ -10,11 +10,22 @@ import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicDescendants, EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { graphHref } from "@/client/ui/address/graphAddress";
+import { expectEpicProgressSegments } from "@/client/ui/issues/EpicProgress.testkit";
 import { EpicsScreen } from "./EpicsScreen";
 
 const EPICS: EpicSummary[] = [
-  { epic: epic("desk-ten", "하위 이슈 열 개 에픽"), totalChildren: 10, closedChildren: 10 },
-  { epic: epic("desk-hundred", "하위 이슈 백 개 에픽"), totalChildren: 100, closedChildren: 100 },
+  {
+    epic: epic("desk-ten", "하위 이슈 열 개 에픽"),
+    totalChildren: 10,
+    closedChildren: 10,
+    inProgressChildren: 0,
+  },
+  {
+    epic: epic("desk-hundred", "하위 이슈 백 개 에픽"),
+    totalChildren: 100,
+    closedChildren: 100,
+    inProgressChildren: 0,
+  },
 ];
 
 /** 테스트마다 화면이 서버에서 읽을 에픽 목록과 에픽별 후손 이슈를 정합니다. 후손이 없는 에픽은 읽는 중으로 둡니다. */
@@ -86,11 +97,26 @@ for (const width of [455, 500, 1440]) {
 // 1100px과 768px은 오른쪽 조작이 둘째 줄로 내려가는 폭이고, 768px은 열 폭을 고정하기 시작하는 md 경계입니다.
 for (const width of [2000, 1280, 1100, 768]) {
   for (const locale of ["ko", "en"] as const) {
-    test(`창 폭 ${width}px에서 진행 개수의 자릿수와 닫힘 여부가 달라도 에픽 카드의 상태 칩, 막대나 닫은 날짜, 진행 개수, 순서 보기 링크의 열 위치가 같다(${locale})`, async () => {
+    test(`창 폭 ${width}px에서 진행 개수의 자릿수, 진행 중 수, 닫힘 여부가 달라도 에픽 카드의 상태 칩, 막대나 닫은 날짜, 진행 개수, 진행 중 수, 순서 보기 링크의 열 위치가 같다(${locale})`, async () => {
       reads.epics = [
-        { epic: epic("desk-a", "열린 에픽 3/8"), totalChildren: 8, closedChildren: 3 },
-        { epic: epic("desk-b", "열린 에픽 12/15"), totalChildren: 15, closedChildren: 12 },
-        { epic: epic("desk-c", "열린 에픽 0/0"), totalChildren: 0, closedChildren: 0 },
+        {
+          epic: epic("desk-a", "열린 에픽 3/8"),
+          totalChildren: 8,
+          closedChildren: 3,
+          inProgressChildren: 2,
+        },
+        {
+          epic: epic("desk-b", "열린 에픽 12/15"),
+          totalChildren: 15,
+          closedChildren: 12,
+          inProgressChildren: 0,
+        },
+        {
+          epic: epic("desk-c", "열린 에픽 0/0"),
+          totalChildren: 0,
+          closedChildren: 0,
+          inProgressChildren: 0,
+        },
         {
           epic: issue("desk-d", {
             title: "진행 중인 에픽 2/2",
@@ -99,12 +125,14 @@ for (const width of [2000, 1280, 1100, 768]) {
           }),
           totalChildren: 2,
           closedChildren: 2,
+          inProgressChildren: 0,
         },
         {
           // 제목이 길면 남는 폭이 모자라 오른쪽 조작이 줄어들 수 있습니다.
           epic: epic("desk-e", "제목이 아주 긴 열린 에픽 ".repeat(12)),
           totalChildren: 100,
           closedChildren: 1,
+          inProgressChildren: 99,
         },
         CLOSED_EPIC,
         {
@@ -116,6 +144,7 @@ for (const width of [2000, 1280, 1100, 768]) {
           }),
           totalChildren: 12,
           closedChildren: 12,
+          inProgressChildren: 0,
         },
       ];
       await page.viewport(width, 1200);
@@ -129,8 +158,19 @@ for (const width of [2000, 1280, 1100, 768]) {
       const edges = new Map<string, Set<number>>();
       const record = (column: string, value: number) =>
         edges.set(column, (edges.get(column) ?? new Set()).add(Math.round(value)));
-      for (const { epic, closedChildren, totalChildren } of reads.epics) {
+      // 진행 중 수 글자가 열 폭보다 넓어 넘친 폭입니다. 진행 중인 하위 이슈가 있는 카드만 담습니다.
+      const inProgressOverflows: number[] = [];
+      for (const { epic, closedChildren, totalChildren, inProgressChildren } of reads.epics) {
         const card = screen.getByRole("article", { name: epic.title, exact: true });
+        if (inProgressChildren > 0) {
+          const inProgress = card
+            .getByText(MESSAGES[locale].epics.inProgressChildren(inProgressChildren), {
+              exact: true,
+            })
+            .element();
+          record("진행 중 수 왼쪽", inProgress.getBoundingClientRect().left);
+          inProgressOverflows.push(Math.max(0, inProgress.scrollWidth - inProgress.clientWidth));
+        }
         const chip = card.getByText(statusLabel(MESSAGES[locale], epic.status), { exact: true });
         record("상태 칩 왼쪽", box(chip).left);
         // 닫은 날짜가 없는 닫힌 에픽은 막대·닫은 날짜 열이 비어 있습니다.
@@ -162,13 +202,19 @@ for (const width of [2000, 1280, 1100, 768]) {
         Math.round(box(screen.getByText(text, { exact: true })).right),
       );
       expect(new Set(percents).size, `${locale} ${width}px 퍼센트 오른쪽`).toBe(1);
+      expect(inProgressOverflows, `${locale} ${width}px 진행 중 수 넘침`).toEqual([0, 0]);
     });
   }
 }
 
 test("닫힌 에픽 묶음은 처음에 접혀 있고, 묶음을 펼치면 닫힌 에픽 카드가 하위 이슈 목록을 접은 채로 보이며 펼치기 단추로 펼칠 수 있다", async () => {
   reads.epics = [
-    { epic: epic("desk-open", "열린 에픽"), totalChildren: 0, closedChildren: 0 },
+    {
+      epic: epic("desk-open", "열린 에픽"),
+      totalChildren: 0,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
     CLOSED_EPIC,
   ];
   reads.descendants = {
@@ -211,7 +257,12 @@ test("닫힌 에픽 묶음은 처음에 접혀 있고, 묶음을 펼치면 닫�
 
 test("접힌 닫힌 묶음의 에픽도 검색하면 보이고, 검색하는 동안 접은 묶음은 검색어를 지우면 검색 전처럼 닫힌 묶음만 접힌 상태로 돌아간다", async () => {
   reads.epics = [
-    { epic: epic("desk-open", "열린 에픽"), totalChildren: 0, closedChildren: 0 },
+    {
+      epic: epic("desk-open", "열린 에픽"),
+      totalChildren: 0,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
     CLOSED_EPIC,
   ];
   const screen = await renderScreen();
@@ -251,10 +302,16 @@ test("하위 에픽 제목으로 검색하면 그 하위 에픽이 속한 카드
       epic: issue("desk-first", { title: "먼저 펼친 에픽", issueType: "epic", priority: 1 }),
       totalChildren: 0,
       closedChildren: 0,
+      inProgressChildren: 0,
     },
-    { epic: epic("desk-a", "상위 에픽"), totalChildren: 1, closedChildren: 0 },
-    { epic: middle, totalChildren: 1, closedChildren: 0 },
-    { epic: deep, totalChildren: 0, closedChildren: 0 },
+    {
+      epic: epic("desk-a", "상위 에픽"),
+      totalChildren: 1,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
+    { epic: middle, totalChildren: 1, closedChildren: 0, inProgressChildren: 0 },
+    { epic: deep, totalChildren: 0, closedChildren: 0, inProgressChildren: 0 },
   ];
   reads.descendants = { "desk-a": { issues: [middle, deep], waiters: {} } };
   const screen = await renderScreen();
@@ -280,7 +337,14 @@ test("하위 에픽 제목으로 검색하면 그 하위 에픽이 속한 카드
 });
 
 test("검색어에 맞는 에픽이 없으면 빈 상태 문구를 보인다", async () => {
-  reads.epics = [{ epic: epic("desk-open", "열린 에픽"), totalChildren: 0, closedChildren: 0 }];
+  reads.epics = [
+    {
+      epic: epic("desk-open", "열린 에픽"),
+      totalChildren: 0,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
+  ];
   const screen = await renderScreen();
 
   await screen.getByRole("searchbox", { name: messages.epics.search }).fill("없는 에픽");
@@ -294,6 +358,7 @@ test("펼친 에픽의 기능은 처음에 접혀 있고, 펼치면 기능 아�
       epic: issue("desk-epic", { title: "묶음 에픽", issueType: "epic" }),
       totalChildren: 1,
       closedChildren: 0,
+      inProgressChildren: 0,
     },
   ];
   reads.descendants = {
@@ -326,8 +391,18 @@ test("펼친 에픽의 기능은 처음에 접혀 있고, 펼치면 기능 아�
 
 test("에픽과 하위 이슈의 ID는 짧은 ID 복사 단추이고, 하위 이슈 표는 제목을 고치지 않고 막힌 이슈에 선행 이슈를 보인다", async () => {
   reads.epics = [
-    { epic: epic("desk-epic", "묶음 에픽"), totalChildren: 2, closedChildren: 0 },
-    { epic: epic("desk-loading", "읽는 중인 에픽"), totalChildren: 1, closedChildren: 0 },
+    {
+      epic: epic("desk-epic", "묶음 에픽"),
+      totalChildren: 2,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
+    {
+      epic: epic("desk-loading", "읽는 중인 에픽"),
+      totalChildren: 1,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
   ];
   reads.descendants = {
     "desk-epic": {
@@ -372,7 +447,12 @@ test("에픽과 하위 이슈의 ID는 짧은 ID 복사 단추이고, 하위 이
 
 test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 에픽을 펼친 하위 목록의 그 에픽 행은 의존 수 대신 순서 보기 링크를 보인다", async () => {
   reads.epics = [
-    { epic: epic("desk-parent", "상위 에픽"), totalChildren: 2, closedChildren: 0 },
+    {
+      epic: epic("desk-parent", "상위 에픽"),
+      totalChildren: 2,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
     {
       epic: issue("desk-parent.1", {
         title: "하위 에픽",
@@ -381,8 +461,14 @@ test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 �
       }),
       totalChildren: 0,
       closedChildren: 0,
+      inProgressChildren: 0,
     },
-    { epic: epic("desk-root", "상위 없는 에픽"), totalChildren: 0, closedChildren: 0 },
+    {
+      epic: epic("desk-root", "상위 없는 에픽"),
+      totalChildren: 0,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
     {
       epic: issue("desk-task.1", {
         title: "작업 아래 에픽",
@@ -391,6 +477,7 @@ test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 �
       }),
       totalChildren: 0,
       closedChildren: 0,
+      inProgressChildren: 0,
     },
   ];
   reads.descendants = {
@@ -428,14 +515,21 @@ test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 �
 });
 
 test("펼친 하위 목록의 에픽 행은 하위 수 대신 그 에픽의 직접 하위 이슈 진행률을 보이고, 작업 행은 하위 수를 그대로 보인다", async () => {
-  reads.epics = [{ epic: epic("desk-a", "상위 에픽"), totalChildren: 2, closedChildren: 0 }];
+  reads.epics = [
+    {
+      epic: epic("desk-a", "상위 에픽"),
+      totalChildren: 2,
+      closedChildren: 0,
+      inProgressChildren: 0,
+    },
+  ];
   reads.descendants = { "desk-a": { issues: NESTED_EPIC_DESCENDANTS, waiters: {} } };
   const screen = await renderScreen();
 
   const childEpicRow = screen.getByRole("row", { name: /하위 에픽 B/ });
   await expect
     .element(childEpicRow.getByRole("progressbar", { name: messages.epics.progress("desk-a.1") }))
-    .toHaveAttribute("value", "1");
+    .toHaveAttribute("aria-valuenow", "1");
   await expect.element(childEpicRow.getByText("1/3 · 33%", { exact: true })).toBeVisible();
   await expect
     .element(childEpicRow.getByText(messages.issueTable.childCount(3)))
@@ -452,6 +546,71 @@ test("펼친 하위 목록의 에픽 행은 하위 수 대신 그 에픽의 직�
   const taskRow = screen.getByRole("row", { name: /하위 작업 C/ });
   await expect.element(taskRow.getByText(messages.issueTable.childCount(1))).toBeVisible();
   await expect.element(taskRow.getByRole("progressbar")).not.toBeInTheDocument();
+});
+
+test("하위 이슈 4개 중 1개가 닫히고 1개가 진행 중인 에픽은 카드와 펼친 하위 목록의 에픽 행 모두 닫힌 구간 뒤에 진행 중 구간을 그리고 진행 중 1과 25%를 보이며, 진행 중 하위 이슈가 없는 에픽은 진행 중 수를 보이지 않는다", async () => {
+  const childEpic = issue("desk-a.1", {
+    title: "하위 에픽 B",
+    issueType: "epic",
+    parent: "desk-a",
+  });
+  reads.epics = [
+    {
+      epic: epic("desk-a", "상위 에픽"),
+      totalChildren: 4,
+      closedChildren: 1,
+      inProgressChildren: 1,
+    },
+    {
+      epic: epic("desk-idle", "멈춘 에픽"),
+      totalChildren: 4,
+      closedChildren: 1,
+      inProgressChildren: 0,
+    },
+  ];
+  reads.descendants = {
+    "desk-a": {
+      issues: [
+        childEpic,
+        issue("desk-a.1.1", { parent: "desk-a.1", status: "closed" }),
+        issue("desk-a.1.2", { parent: "desk-a.1", status: "in_progress" }),
+        issue("desk-a.1.3", { parent: "desk-a.1" }),
+        issue("desk-a.1.4", { parent: "desk-a.1" }),
+        issue("desk-a.2", { parent: "desk-a", status: "closed" }),
+        issue("desk-a.3", { parent: "desk-a", status: "in_progress" }),
+        issue("desk-a.4", { parent: "desk-a" }),
+      ],
+      waiters: {},
+    },
+  };
+  const screen = await renderScreen();
+  const progress = { closed: 1, inProgress: 1, total: 4 };
+
+  const card = screen.getByRole("article", { name: "상위 에픽", exact: true });
+  const cardBar = card.getByRole("progressbar", { name: messages.epics.progress("desk-a") });
+  await expect.element(cardBar).toHaveAttribute("aria-valuenow", "1");
+  await expect.element(cardBar).toHaveAttribute("aria-valuemax", "4");
+  expectEpicProgressSegments(cardBar.element(), progress);
+  // 처음에 펼쳐진 카드라, 카드 머리글과 하위 목록의 B 행에 진행 중 1이 하나씩 있습니다.
+  expect(card.getByText(messages.epics.inProgressChildren(1)).elements()).toHaveLength(2);
+  await expect.element(card.getByText("25%", { exact: true })).toBeVisible();
+
+  const row = screen.getByRole("row", { name: /하위 에픽 B/ });
+  const rowBar = row.getByRole("progressbar", { name: messages.epics.progress("desk-a.1") });
+  await expect.element(rowBar).toHaveAttribute("aria-valuenow", "1");
+  expectEpicProgressSegments(rowBar.element(), progress);
+  await expect.element(row.getByText(messages.epics.inProgressChildren(1))).toBeVisible();
+  await expect.element(row.getByText("1/4 · 25%", { exact: true })).toBeVisible();
+
+  const idleCard = screen.getByRole("article", { name: "멈춘 에픽", exact: true });
+  expectEpicProgressSegments(
+    idleCard.getByRole("progressbar", { name: messages.epics.progress("desk-idle") }).element(),
+    { closed: 1, inProgress: 0, total: 4 },
+  );
+  await expect.element(idleCard.getByText("25%", { exact: true })).toBeVisible();
+  await expect
+    .element(idleCard.getByText(messages.epics.inProgressChildren(0)))
+    .not.toBeInTheDocument();
 });
 
 // 455px는 Chrome 110%에서 가장 좁힌 창입니다.
@@ -489,7 +648,14 @@ for (const [locale, closedOn] of [
 // 455px는 Chrome 110%에서 가장 좁힌 창입니다.
 for (const locale of ["ko", "en"] as const) {
   test(`창 폭 455px에서 하위 에픽 행의 진행률은 제목 칸 밖으로 넘치지 않는다(${locale})`, async () => {
-    reads.epics = [{ epic: epic("desk-a", "상위 에픽"), totalChildren: 2, closedChildren: 0 }];
+    reads.epics = [
+      {
+        epic: epic("desk-a", "상위 에픽"),
+        totalChildren: 2,
+        closedChildren: 0,
+        inProgressChildren: 0,
+      },
+    ];
     reads.descendants = { "desk-a": { issues: NESTED_EPIC_DESCENDANTS, waiters: {} } };
     await page.viewport(455, 900);
     const screen = await render(
@@ -554,6 +720,7 @@ const CLOSED_EPIC: EpicSummary = {
   }),
   totalChildren: 1,
   closedChildren: 1,
+  inProgressChildren: 0,
 };
 
 /** 에픽 A 아래에 하위 이슈 3개 중 1개가 닫힌 에픽 B와, 하위 이슈가 1개인 작업 C가 있습니다. */

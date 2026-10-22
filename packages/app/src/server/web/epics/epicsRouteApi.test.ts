@@ -11,7 +11,7 @@ vi.mock("@beads-desk/bd", async (importOriginal) => ({
 
 test("workspace의 epic 진행 현황을 돌려준다", async () => {
   const epics = [
-    { epic: issue("e-1"), totalChildren: 2, closedChildren: 1 },
+    { epic: issue("e-1"), totalChildren: 2, closedChildren: 1, inProgressChildren: 0 },
   ] satisfies EpicStatus[];
   vi.mocked(epicStatuses).mockResolvedValue({ ok: true, value: epics });
 

@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 function epic(id: string, totalChildren: number, closedChildren: number) {
-  return { epic: issue(id), totalChildren, closedChildren };
+  return { epic: issue(id), totalChildren, closedChildren, inProgressChildren: 0 };
 }
 
 test("기준 일수와 관계없는 점검 결과를 모아 조립하고, 에픽은 하위 이슈가 모두 닫힌 것만 담는다", async () => {

@@ -4,7 +4,7 @@ import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers
 import { epicPercent } from "@/client/modules/epics/domain/epicsView";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
-import { EpicProgressBar } from "@/client/ui/issues/EpicProgress";
+import { EpicInProgressCount, EpicProgressBar } from "@/client/ui/issues/EpicProgress";
 import { StatusChip } from "@/client/ui/issues/IssueChip";
 import { formatDate } from "@/client/ui/issues/issueTime";
 import type { EpicSummary } from "@/shared/contract/epics";
@@ -33,7 +33,7 @@ export function EpicSection({
   issueHref,
   writes,
 }: SectionProps) {
-  const { epic, totalChildren, closedChildren } = summary;
+  const { epic, totalChildren, closedChildren, inProgressChildren } = summary;
   const graphHref = useGraphHref();
   const messages = useMessages();
   const titleId = useId();
@@ -79,6 +79,7 @@ export function EpicSection({
               <EpicProgressBar
                 epicId={epic.id}
                 closed={closedChildren}
+                inProgress={inProgressChildren}
                 total={totalChildren}
                 className="w-40 min-w-24 shrink md:shrink-0"
               />
@@ -88,6 +89,11 @@ export function EpicSection({
                 percent={epicPercent(closedChildren, totalChildren)}
               />
             </>
+          )}
+          {epic.status !== "closed" && inProgressChildren > 0 ? (
+            <EpicInProgressCount count={inProgressChildren} className={IN_PROGRESS_COLUMN} />
+          ) : (
+            <span className={`hidden md:block ${IN_PROGRESS_COLUMN}`} />
           )}
           <Link
             className="btn btn-ghost btn-xs shrink-0 rounded-full"
@@ -109,6 +115,12 @@ export function EpicSection({
     </article>
   );
 }
+
+/**
+ * md 이상에서 진행 중 수의 열 폭입니다. 진행 중인 하위 이슈가 없는 카드도 이 폭을 비워 두어, 순서 보기 링크가 카드끼리 같은 열에 놓이게 합니다.
+ * 영어 문구 `99 in progress`까지 한 줄에 들어가는 폭입니다.
+ */
+const IN_PROGRESS_COLUMN = "shrink-0 md:w-28";
 
 /**
  * 닫힌 에픽은 진행률이 거의 항상 100%라, 막대 대신 닫은 날짜와 닫힌 하위 이슈 수를 보입니다.

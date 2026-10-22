@@ -30,6 +30,7 @@ test("에픽 진행률에는 닫히지 않은 epic만 진행 중인 것부터 �
     epic: issue(id, { issueType: "epic", status }),
     totalChildren: 2,
     closedChildren: 1,
+    inProgressChildren: 0,
   });
 
   const view = focusView(

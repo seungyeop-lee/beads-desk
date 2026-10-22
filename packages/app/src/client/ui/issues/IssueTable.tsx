@@ -140,7 +140,7 @@ export const IssueTable = memo(function IssueTable({
   );
 });
 
-const NO_CHILDREN: ChildProgress = { closed: 0, total: 0 };
+const NO_CHILDREN: ChildProgress = { closed: 0, inProgress: 0, total: 0 };
 
 /** tree로 그릴 때 제목 칸의 들여쓰기와 접기 버튼을 정합니다. */
 type RowOutline = {
@@ -204,7 +204,7 @@ function IssueRow({
           <HumanDecisionChip issue={issue} className="ml-2" />
           <WaiterCount count={waiters} className="ml-2" />
           {epicProgress && issue.issueType === "epic" ? (
-            <span className="ml-2 inline-flex items-center gap-1.5 align-middle">
+            <span className="ml-2 inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 align-middle">
               <EpicProgress
                 epicId={issue.id}
                 {...(epicProgress.get(issue.id) ?? NO_CHILDREN)}

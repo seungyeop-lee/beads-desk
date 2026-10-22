@@ -18,7 +18,12 @@ import {
 } from "./epicsView";
 
 function summary(id: string, status: string, priority = 2, createdAt = 0): EpicSummary {
-  return { epic: issue(id, { status, priority, createdAt }), totalChildren: 0, closedChildren: 0 };
+  return {
+    epic: issue(id, { status, priority, createdAt }),
+    totalChildren: 0,
+    closedChildren: 0,
+    inProgressChildren: 0,
+  };
 }
 
 test("상위 이슈가 에픽인 에픽은 상위 에픽이 닫혀 있어도 카드에서 빼고, 상위가 없거나 에픽이 아닌 에픽은 남긴다", () => {
@@ -26,6 +31,7 @@ test("상위 이슈가 에픽인 에픽은 상위 에픽이 닫혀 있어도 카
     epic: issue(id, { issueType: "epic", parent, status }),
     totalChildren: 0,
     closedChildren: 0,
+    inProgressChildren: 0,
   });
 
   const cards = topLevelEpics([
@@ -71,6 +77,7 @@ describe("sortEpics", () => {
       epic: issue(id, { status: "closed", priority, createdAt, closedAt }),
       totalChildren: 0,
       closedChildren: 0,
+      inProgressChildren: 0,
     });
 
     expect(ids([closed("early", 0, 9, 1), closed("late", 4, 1, 2)])).toEqual(["late", "early"]);
@@ -154,9 +161,30 @@ test("후손 이슈마다 직접 하위 이슈만 세어 닫힌 수와 전체 �
     issue("a.1.1.1", { parent: "a.1.1", status: "closed" }),
   ]);
 
-  expect(progress.get("a.1")).toEqual({ closed: 1, total: 3 });
-  expect(progress.get("a.1.1")).toEqual({ closed: 1, total: 1 });
+  expect(progress.get("a.1")).toEqual({ closed: 1, inProgress: 1, total: 3 });
+  expect(progress.get("a.1.1")).toEqual({ closed: 1, inProgress: 0, total: 1 });
   expect(progress.has("a.1.2")).toBe(false);
+});
+
+test("하위 이슈 4개 중 1개가 닫히고 1개가 진행 중인 에픽은 진행 중 1개로 세고, 퍼센트는 닫힌 비율인 25%이다", () => {
+  const progress = childProgress([
+    issue("a.1", { parent: "a", status: "closed" }),
+    issue("a.2", { parent: "a", status: "in_progress" }),
+    issue("a.3", { parent: "a" }),
+    issue("a.4", { parent: "a" }),
+  ]);
+
+  expect(progress.get("a")).toEqual({ closed: 1, inProgress: 1, total: 4 });
+  expect(epicPercent(1, 4)).toBe(25);
+});
+
+test("진행 중으로 저장됐지만 의존 관계에 막힌 하위 이슈와 진행 중인 하위 에픽은 진행 중으로 세지 않는다", () => {
+  const progress = childProgress([
+    issue("a.1", { parent: "a", status: "in_progress", blockedBy: ["a.2"] }),
+    issue("a.2", { parent: "a", issueType: "epic", status: "in_progress" }),
+  ]);
+
+  expect(progress.get("a")).toEqual({ closed: 0, inProgress: 0, total: 2 });
 });
 
 test("닫힌 하위 이슈 비율을 반올림하고, 하위 이슈가 없는 에픽은 0%로 본다", () => {
@@ -170,6 +198,7 @@ describe("searchEpics", () => {
     epic: issue(id, { title, issueType: "epic", parent }),
     totalChildren: 0,
     closedChildren: 0,
+    inProgressChildren: 0,
   });
   const EPICS = [
     epic("desk-a", "결제 개편"),

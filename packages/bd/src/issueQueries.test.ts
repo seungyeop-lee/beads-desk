@@ -180,6 +180,8 @@ describe("epicStatuses", () => {
           { id: "e-4", issue_type: "epic", status: "open" },
         ]),
       },
+      [BLOCKED_ARGS]: { stdout: "[]" },
+      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await epicStatuses(fakeBd.workDir);
@@ -195,8 +197,46 @@ describe("epicStatuses", () => {
     ]);
   });
 
+  test("작업 상태가 진행 중인 직접 하위 이슈만 진행 중으로 세고, 의존 관계에 막힌 진행 중 이슈와 진행 중인 하위 에픽은 세지 않는다", async () => {
+    await useFakeBd({
+      [LIST_ALL_ARGS]: {
+        stdout: JSON.stringify([
+          { id: "e-1", issue_type: "epic", status: "open" },
+          { id: "e-1.1", status: "closed", parent: "e-1" },
+          { id: "e-1.2", status: "in_progress", parent: "e-1" },
+          { id: "e-1.3", status: "in_progress", parent: "e-1" },
+          { id: "e-1.4", issue_type: "epic", status: "in_progress", parent: "e-1" },
+          { id: "e-1.4.1", status: "in_progress", parent: "e-1.4" },
+        ]),
+      },
+      [BLOCKED_ARGS]: {
+        stdout: JSON.stringify([{ id: "e-1.3", status: "in_progress", blocked_by: ["e-1.2"] }]),
+      },
+      [READY_ARGS]: { stdout: "[]" },
+    });
+
+    const result = await epicStatuses(fakeBd.workDir);
+
+    expect(
+      result.ok &&
+        result.value.map(({ epic, totalChildren, closedChildren, inProgressChildren }) => [
+          epic.id,
+          totalChildren,
+          closedChildren,
+          inProgressChildren,
+        ]),
+    ).toEqual([
+      ["e-1", 4, 1, 1],
+      ["e-1.4", 1, 0, 1],
+    ]);
+  });
+
   test("bd가 실패하면 오류를 돌려준다", async () => {
-    await useFakeBd({ [LIST_ALL_ARGS]: { stderr: "boom", code: 1 } });
+    await useFakeBd({
+      [LIST_ALL_ARGS]: { stderr: "boom", code: 1 },
+      [BLOCKED_ARGS]: { stdout: "[]" },
+      [READY_ARGS]: { stdout: "[]" },
+    });
 
     const result = await epicStatuses(fakeBd.workDir);
 

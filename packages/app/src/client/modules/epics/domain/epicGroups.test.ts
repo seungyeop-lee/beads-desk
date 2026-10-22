@@ -4,7 +4,12 @@ import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { groupEpics } from "./epicGroups";
 
 function summary(id: string, status: string): EpicSummary {
-  return { epic: issue(id, { status, issueType: "epic" }), totalChildren: 0, closedChildren: 0 };
+  return {
+    epic: issue(id, { status, issueType: "epic" }),
+    totalChildren: 0,
+    closedChildren: 0,
+    inProgressChildren: 0,
+  };
 }
 
 function groupIds(epics: EpicSummary[]) {

@@ -8,6 +8,7 @@ import {
   byPriority,
   statusRank,
 } from "@/client/modules/issues/domain/issueSort";
+import { workState } from "@/client/modules/issues/domain/workState";
 import type { EpicGroupKind } from "./epicGroups";
 import type { EpicSummary } from "@/shared/contract/epics";
 
@@ -158,20 +159,21 @@ export function epicDescendantRows(descendants: readonly Issue[]): IssueTreeRow[
   return issueTree([...descendants].sort(byId));
 }
 
-/** 이슈 하나의 직접 하위 이슈 수와 그중 닫힌 수입니다. */
-export type ChildProgress = { closed: number; total: number };
+/** 이슈 하나의 직접 하위 이슈 수와 그중 닫힌 수, 작업 상태가 진행 중인 수입니다. */
+export type ChildProgress = { closed: number; inProgress: number; total: number };
 
 /**
- * 펼친 에픽의 후손 이슈마다 직접 하위 이슈 수와 닫힌 수를 셉니다. 에픽 카드의 진행률과 같은 기준입니다.
+ * 펼친 에픽의 후손 이슈마다 직접 하위 이슈 수와 그중 닫힌 수, 진행 중인 수를 셉니다. 에픽 카드의 진행률(epicStatuses)과 같은 기준입니다.
  * 하위 이슈가 없는 이슈는 담지 않습니다.
  */
 export function childProgress(descendants: readonly Issue[]): ReadonlyMap<string, ChildProgress> {
   const progress = new Map<string, ChildProgress>();
-  for (const { parent, status } of descendants) {
-    if (parent === null) continue;
-    const counted = progress.get(parent) ?? { closed: 0, total: 0 };
-    progress.set(parent, {
-      closed: counted.closed + (status === "closed" ? 1 : 0),
+  for (const issue of descendants) {
+    if (issue.parent === null) continue;
+    const counted = progress.get(issue.parent) ?? { closed: 0, inProgress: 0, total: 0 };
+    progress.set(issue.parent, {
+      closed: counted.closed + (issue.status === "closed" ? 1 : 0),
+      inProgress: counted.inProgress + (workState(issue) === "in_progress" ? 1 : 0),
       total: counted.total + 1,
     });
   }
