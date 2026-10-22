@@ -1,15 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { WorkspaceSelectScreen } from "@/client/ui/screens/workspaces/WorkspaceSelectScreen";
-import { SCREEN_TABS } from "@/client/ui/shell/screenTabs";
 import { registeredWorkspaces } from "@/server/web/workspaces/registeredWorkspaces";
 import { workspaceHref } from "@/shared/contract/workspaces";
-
-/** workspace 이름 없이 열 수 있던 예전 화면 주소입니다. */
-const SCREEN_PATHS: ReadonlySet<string> = new Set([
-  "/",
-  "/graph",
-  ...SCREEN_TABS.map((tab) => tab.href),
-]);
+import { SCREEN_PATHS } from "@/shared/domain/screenPaths";
 
 /**
  * workspace 이름이 없는 예전 주소(`/`, `/issues?view=ready`, 북마크)를 workspace 주소로 잇습니다.

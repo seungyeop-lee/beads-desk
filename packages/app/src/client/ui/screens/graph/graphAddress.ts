@@ -1,6 +1,6 @@
 import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
 import { ISSUE_DETAIL_PARAMS } from "@/client/ui/issues/issueDetailParams";
-import { SCREEN_TABS } from "@/client/ui/shell/screenTabs";
+import { SCREEN_PATHS } from "@/shared/domain/screenPaths";
 
 /**
  * 범위마다 이슈 id를 담는 query 이름입니다.
@@ -83,7 +83,7 @@ function readScreenAddress(address: string): URL | null {
     const url = new URL(address, "http://localhost");
     if (url.pathname !== address.split("?")[0]) return null;
     if (url.pathname === "/graph") return readGraphScope(url.searchParams) ? url : null;
-    return SCREEN_TABS.some((tab) => tab.href === url.pathname) ? url : null;
+    return SCREEN_PATHS.has(url.pathname) ? url : null;
   } catch {
     return null;
   }

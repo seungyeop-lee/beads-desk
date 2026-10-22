@@ -1,7 +1,7 @@
 import type { MarkType } from "@milkdown/kit/prose/model";
 import type { PluginView } from "@milkdown/kit/prose/state";
 import type { EditorView } from "@milkdown/kit/prose/view";
-import { WINDOWS_DRIVE_PATH } from "./localMarkdownUrl";
+import { WINDOWS_DRIVE_PATH } from "@/client/modules/markdown/domain/drivePath";
 
 /**
  * Milkdown 링크 도구에 Windows 드라이브 경로(`C:\a.md`, `C:/a.md`)를 넣고 확인해도 그 경로의 링크가 되게 하는 plugin view입니다.

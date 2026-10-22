@@ -1,6 +1,9 @@
+import type { ScreenPath } from "@/shared/domain/screenPaths";
+
 /**
  * 상단 탭을 묶음별로 나눈 순서입니다. 헤더는 묶음 사이에 구분선을 그립니다.
  * screen은 화면 이름을 담은 사전 항목이고, tone은 그 탭과 화면 제목에 함께 쓰는 색입니다.
+ * href는 모두 화면 경로(shared/domain/screenPaths의 SCREEN_PATHS)여야 하므로, 탭을 더하거나 뺄 때 그 목록도 함께 고칩니다.
  */
 export const SCREEN_TAB_GROUPS = [
   // 들어오자마자 확인할 일과 자리를 비운 사이 생긴 일
@@ -20,7 +23,10 @@ export const SCREEN_TAB_GROUPS = [
     { href: "/decisions", screen: "decisions", tone: "tone-sand" },
     { href: "/hygiene", screen: "hygiene", tone: "tone-sage" },
   ],
-] as const;
+] as const satisfies readonly (readonly ScreenTab[])[];
+
+/** SCREEN_TAB_GROUPS의 항목 모양입니다. href는 화면 경로 목록에 있는 경로입니다. */
+type ScreenTab = { href: ScreenPath; screen: string; tone: string };
 
 export const SCREEN_TABS = SCREEN_TAB_GROUPS.flat();
 

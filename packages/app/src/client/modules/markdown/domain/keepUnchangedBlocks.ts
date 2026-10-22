@@ -1,10 +1,5 @@
-import remarkGfm from "remark-gfm";
-import remarkInlineLinks from "remark-inline-links";
-import remarkParse from "remark-parse";
-import { unified } from "unified";
+import { applyInlineLinks, parseMarkdown } from "./markdownSource";
 
-const parser = unified().use(remarkParse).use(remarkGfm);
-const inlineLinks = remarkInlineLinks();
 const BR_HTML = /^<br\s*\/?\s*>$/i;
 
 type Block = {
@@ -66,10 +61,10 @@ export function keepUnchangedBlocks(original: string, edited: string): string {
 
 /** 편집기(Milkdown)가 문서를 읽을 때 하는 변환을 원문에도 적용해 모양을 구합니다. */
 function blocksOf(markdown: string): Block[] {
-  const tree = parser.parse(markdown);
+  const tree = parseMarkdown(markdown);
   const nodes = [...tree.children];
-  // inlineLinks는 tree에서 정의를 지우므로, 정의 블록은 먼저 복사해 둔 nodes에서 찾습니다.
-  inlineLinks(tree);
+  // applyInlineLinks는 tree에서 정의를 지우므로, 정의 블록은 먼저 복사해 둔 nodes에서 찾습니다.
+  applyInlineLinks(tree);
   return nodes.map((node) => ({
     start: node.position!.start.offset!,
     end: node.position!.end.offset!,

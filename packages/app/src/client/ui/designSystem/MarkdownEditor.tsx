@@ -13,19 +13,19 @@ import type { CrepeBuilder } from "@milkdown/crepe/builder";
 import type { CmdKey } from "@milkdown/kit/core";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { documentWorkspace } from "@/client/infra/workspaces/documentWorkspace";
-import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
-import { drivePathLinkTool } from "./linkToolDrivePath";
-import { previewAddressLinkTool } from "./linkToolPreviewAddress";
-import { localMarkdownUrl } from "./localMarkdownUrl";
-import { MermaidDiagramDialog } from "./MermaidDiagramDialog";
-import { createMermaidPreview, diagramAt } from "./mermaidPreview";
+import { localMarkdownUrl } from "@/client/modules/markdown/domain/localMarkdownUrl";
 import {
   remarkWindowsPathSource,
   sourceUrlOf,
   windowsPath,
   windowsPathHandlers,
-} from "./windowsPathSource";
+} from "@/client/modules/markdown/domain/windowsPathSource";
+import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
+import { drivePathLinkTool } from "./linkToolDrivePath";
+import { previewAddressLinkTool } from "./linkToolPreviewAddress";
+import { MermaidDiagramDialog } from "./MermaidDiagramDialog";
+import { createMermaidPreview, diagramAt } from "./mermaidPreview";
 
 type Controls = {
   crepe: CrepeBuilder;
