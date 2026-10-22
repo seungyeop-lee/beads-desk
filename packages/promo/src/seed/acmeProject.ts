@@ -1,6 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  CHECKOUT_DIFF,
+  CHECKOUT_NOTES,
   CHECKOUT_RECORDING,
   CHECKOUT_SCREENSHOT,
   writeCheckoutAttachments,
@@ -124,6 +126,10 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
         `![Checkout page on staging](<${qaFile(CHECKOUT_SCREENSHOT)}>)`,
         "",
         `[Recording of the test payment](<${qaFile(CHECKOUT_RECORDING)}>)`,
+        "",
+        `Notes from the check: [${CHECKOUT_NOTES}](<${qaFile(CHECKOUT_NOTES)}>)`,
+        "",
+        `Stripe errors now show next to the card field: [${CHECKOUT_DIFF}](<${qaFile(CHECKOUT_DIFF)}>)`,
       ].join("\n"),
       acceptance:
         "- Card and Apple Pay both complete a test payment on staging\n- Errors from Stripe are shown inline next to the form",

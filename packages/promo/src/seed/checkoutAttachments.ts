@@ -1,16 +1,18 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 /**
- * 데모 이슈 본문이 로컬 파일 링크로 거는, 에이전트가 staging에서 결제 화면을 확인하고 남긴 스크린샷과 녹화입니다.
- * 이 파일을 직접 실행하면 `<디렉터리>`에 두 파일을 만듭니다.
+ * 데모 이슈 본문이 로컬 파일 링크로 거는, 에이전트가 staging에서 결제 화면을 확인하고 남긴 스크린샷, 녹화, 확인 메모, 고친 코드의 diff입니다.
+ * 이 파일을 직접 실행하면 `<디렉터리>`에 네 파일을 만듭니다.
  */
 export const CHECKOUT_SCREENSHOT = "checkout-staging.png";
 export const CHECKOUT_RECORDING = "checkout-test-payment.webm";
+export const CHECKOUT_NOTES = "staging-check-notes.md";
+export const CHECKOUT_DIFF = "inline-card-errors.diff";
 
 const SCREENSHOT_SIZE = { width: 1200, height: 600 };
 const RECORDING_SIZE = { width: 960, height: 576 };
@@ -25,6 +27,8 @@ export function writeCheckoutAttachments(dir: string): void {
 
 async function render(dir: string): Promise<void> {
   mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, CHECKOUT_NOTES), STAGING_CHECK_NOTES);
+  writeFileSync(join(dir, CHECKOUT_DIFF), INLINE_CARD_ERRORS_DIFF);
   const browser = await chromium.launch();
   try {
     const shotPage = await browser.newPage({ viewport: SCREENSHOT_SIZE });
@@ -60,6 +64,37 @@ async function render(dir: string): Promise<void> {
     await browser.close();
   }
 }
+
+/** 에이전트가 staging 결제를 확인하며 남긴 메모입니다. 미리보기가 제목, 강조, 목록, 코드 블록의 구문 강조를 보이도록 각각 하나씩 넣습니다. */
+const STAGING_CHECK_NOTES = `# Staging check
+
+- **Card:** test payment with \`4242 4242 4242 4242\` succeeded
+- **Apple Pay:** the payment sheet opens in Safari
+- **Declined card:** the error showed as a toast, away from the form
+
+\`\`\`ts
+const { error } = await stripe.confirmPayment({ elements });
+// error.code === "card_declined"
+\`\`\`
+`;
+
+/** Stripe 오류를 toast 대신 결제 form 옆에 보이도록 고친 diff입니다. 미리보기가 줄 안 단어 강조를 보이도록, 바뀐 줄 하나는 비슷한 줄로 바꿉니다. */
+const INLINE_CARD_ERRORS_DIFF = `diff --git a/src/checkout/PaymentForm.tsx b/src/checkout/PaymentForm.tsx
+--- a/src/checkout/PaymentForm.tsx
++++ b/src/checkout/PaymentForm.tsx
+@@ -38,9 +38,10 @@ export function PaymentForm({ plan }: PaymentFormProps) {
+   async function pay() {
+     setStatus("processing");
+     const { error } = await stripe.confirmPayment({ elements });
+     if (error) {
+-      toast.error("Payment failed. Try again.");
++      setCardError(error.message ?? "Payment failed. Try again.");
+       setStatus("idle");
++      cardField.current?.focus();
+       return;
+     }
+     setStatus("paid");
+`;
 
 /** staging의 결제 화면을 흉내 낸 page입니다. Pay를 누르면 잠시 처리 중을 보인 뒤 결제 완료 안내로 바뀝니다. */
 const CHECKOUT_PAGE = `<!doctype html>

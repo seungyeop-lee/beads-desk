@@ -1,4 +1,5 @@
 import type { Locator, Page } from "playwright";
+import { CHECKOUT_DIFF, CHECKOUT_NOTES } from "../seed/checkoutAttachments.ts";
 
 /**
  * 녹화하는 동안 장면이 쓰는 동작입니다. `pause`와 `mark` 말고는 모두 포인터가 대상으로 옮겨 가는 모습을 녹화에 남깁니다.
@@ -150,14 +151,28 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
     screenshot: {
       path: `/issues?issue=${CHECKOUT_ISSUE}`,
       shows: ["Staging check", "Test payment with a Stripe test card on staging."],
+      // 그림, 결제 화면 스크린샷, 펼친 메모와 diff가 한 장에 들어가는 높이입니다.
+      height: 1800,
       async frame(page) {
-        // 그림 전체와 그 아래 결제 화면 스크린샷이 함께 보이도록, 그림을 상세의 맨 위로 올립니다.
-        await issueDetail(page, CHECKOUT_ISSUE)
-          .getByRole("button", { name: "Enlarge diagram", exact: true })
-          .evaluate((element) => element.scrollIntoView({ block: "start" }));
-        await issueDetail(page, CHECKOUT_ISSUE)
+        const detail = issueDetail(page, CHECKOUT_ISSUE);
+        for (const [file, shows] of [
+          [CHECKOUT_NOTES, "Staging check"],
+          [CHECKOUT_DIFF, "PaymentForm.tsx"],
+        ]) {
+          await detail.getByRole("button", { name: `Preview ${file}` }).click();
+          await detail
+            .getByRole("region", { name: `Contents of ${file}` })
+            .getByText(shows, { exact: false })
+            .first()
+            .waitFor();
+        }
+        await detail
           .getByRole("img", { name: "Checkout page on staging" })
           .evaluate((image: HTMLImageElement) => image.decode());
+        // 그림이 상세의 맨 위에 오도록 올립니다.
+        await detail
+          .getByRole("button", { name: "Enlarge diagram", exact: true })
+          .evaluate((element) => element.scrollIntoView({ block: "start" }));
       },
     },
   },
