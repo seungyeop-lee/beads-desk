@@ -1,32 +1,34 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
-import { createIssueAction } from "@/server/web/issues/issueActions";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { PRIORITIES } from "@/shared/contract/issueActions";
+import { PRIORITIES, type NewIssueInput } from "@/shared/contract/issueActions";
 import { IssuePicker } from "./IssuePicker";
 import { ISSUE_TYPES, priorityLabel, typeLabel, typeTone } from "./issueLabels";
 import { CopyIssueIdButton } from "./CopyIssueIdButton";
 
 type Props = {
-  onCreated: (issueId: string) => void;
+  /** 폼을 채운 입력으로 새 이슈 만들기를 실행합니다. 성공하면 부르는 쪽이 대화상자를 닫고 만든 이슈로 이동합니다. */
+  create: (input: NewIssueInput) => Promise<boolean>;
+  /** 만들기가 진행 중이면 제출을 막습니다. */
+  pending: boolean;
+  /** 만들기가 실패한 오류 문구입니다. */
+  error: string | null;
   onClose: () => void;
   /** 에픽 화면처럼 상위 이슈를 정해 두고 열 때 넘깁니다. 이렇게 연 대화상자에서는 상위 이슈를 바꾸거나 지울 수 없습니다. */
   fixedParent?: Issue;
 };
 
 /** Ctrl/Cmd+Enter로도 만듭니다. */
-export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
+export function NewIssueDialog({ create, pending, error, onClose, fixedParent }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   // dialog 안의 요소 순서와 관계없이 제목 입력이 먼저 focus를 받습니다.
   const titleRef = useRef<HTMLInputElement>(null);
-  const { run, pending, error } = useIssueWrites();
   const [title, setTitle] = useState("");
   const [issueType, setIssueType] = useState("");
   const [priority, setPriority] = useState(2);
@@ -41,17 +43,14 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
   const submit = async (event?: FormEvent | KeyboardEvent) => {
     event?.preventDefault();
     if (pending || title.trim().length === 0) return;
-    const result = await run((workspace) =>
-      createIssueAction(workspace, {
-        title,
-        issueType: issueType || null,
-        priority,
-        description,
-        labels: labels.split(","),
-        parent: parent?.id ?? null,
-      }),
-    );
-    if (result.ok) onCreated(result.data);
+    await create({
+      title,
+      issueType: issueType || null,
+      priority,
+      description,
+      labels: labels.split(","),
+      parent: parent?.id ?? null,
+    });
   };
 
   const submitOnModEnter = (event: KeyboardEvent) => {

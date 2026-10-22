@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useEpicDescendants } from "@/client/modules/epics/application/useEpics";
 import {
   childProgress,
@@ -8,8 +8,9 @@ import {
   notChildCandidate,
 } from "@/client/modules/epics/domain/epicsView";
 import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
+import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { addDependencyAction } from "@/server/web/issues/issueActions";
+import { useIssueCreation } from "@/client/modules/issues/application/useIssueCreation";
 import { IssueConfirmPicker } from "@/client/ui/issues/IssueConfirmPicker";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
@@ -39,17 +40,19 @@ export function EpicDescendants({
   const revealedRows = new Set(
     descendants?.filter(({ id }) => revealed.has(id)).map(({ id }) => id),
   );
-  const [creating, setCreating] = useState(false);
   const router = useRouter();
   const graphHref = useGraphHref();
   const messages = useMessages();
+  const newIssue = useIssueCreation((issueId) =>
+    router.push(issueHref(issueId), { scroll: false }),
+  );
   return (
     <div className="flex flex-col gap-3 border-t border-base-300 bg-base-200/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           className="btn btn-sm btn-ghost gap-1.5 rounded-full"
-          onClick={() => setCreating(true)}
+          onClick={newIssue.start}
         >
           <PlusIcon width={14} height={14} />
           {messages.epics.newChild}
@@ -61,24 +64,21 @@ export function EpicDescendants({
             confirmLabel={messages.epics.addChildConfirm}
             disabled={writes.pending || !descendants}
             exclude={notChildCandidate(epic.id, descendants ?? [])}
-            onConfirm={async (issue) => {
-              const result = await writes.run((workspace) =>
-                addDependencyAction(workspace, issue.id, epic.id, "parent-child"),
-              );
-              if (result.ok) showToast(messages.epics.childAdded(issue.id, epic.id));
-              return result.ok;
-            }}
+            onConfirm={(issue) =>
+              issueEdits(writes, epic.id).addRelation("child", issue.id, () =>
+                showToast(messages.epics.childAdded(issue.id, epic.id)),
+              )
+            }
           />
         </div>
       </div>
-      {creating && (
+      {newIssue.creating && (
         <NewIssueDialog
           fixedParent={epic}
-          onCreated={(issueId) => {
-            setCreating(false);
-            router.push(issueHref(issueId), { scroll: false });
-          }}
-          onClose={() => setCreating(false)}
+          create={newIssue.create}
+          pending={newIssue.pending}
+          error={newIssue.error}
+          onClose={newIssue.close}
         />
       )}
       {error && <ErrorAlert>{messages.epics.childrenLoadFailed(error)}</ErrorAlert>}

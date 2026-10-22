@@ -2,16 +2,16 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { useHygiene, useStaleIssues } from "@/client/modules/hygiene/application/useHygiene";
+import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
-import { showToast } from "@/client/ui/designSystem/Toast";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
+import { useCloseAsReplacedPrompts } from "@/client/ui/issues/useCloseAsReplacedPrompts";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { screenTone } from "@/client/ui/shell/screenTabs";
-import { closeAsReplacedAction } from "@/server/web/issues/issueActions";
 import {
   DEFAULT_STALE_DAYS,
   STALE_DAYS,
@@ -30,18 +30,8 @@ export function HygieneScreen() {
   const stale = useStaleIssues(staleDays);
   const writes = useIssueWrites();
   const issueHref = useIssueHref();
-  const messages = useMessages();
-  const text = messages.hygiene;
-
-  const closeAsDuplicate = async (duplicate: IssueRef, canonical: IssueRef) => {
-    if (!window.confirm(messages.closeAsReplaced.confirm.duplicate(duplicate.id, canonical.id))) {
-      return;
-    }
-    const result = await writes.run((workspace) =>
-      closeAsReplacedAction(workspace, duplicate.id, "duplicate", canonical.id),
-    );
-    if (result.ok) showToast(messages.closeAsReplaced.closed.duplicate(duplicate.id, canonical.id));
-  };
+  const closeAsReplacedPrompts = useCloseAsReplacedPrompts();
+  const text = useMessages().hygiene;
 
   const issueRow = (issue: IssueRef, detail?: ReactNode) => (
     <li key={issue.id}>
@@ -131,7 +121,13 @@ export function HygieneScreen() {
                       type="button"
                       className="btn btn-xs h-auto min-h-6 py-1 text-left whitespace-normal"
                       disabled={writes.pending}
-                      onClick={() => void closeAsDuplicate(duplicate, canonical)}
+                      onClick={() =>
+                        void issueEdits(writes, duplicate.id).closeAsReplaced(
+                          "duplicate",
+                          canonical.id,
+                          closeAsReplacedPrompts,
+                        )
+                      }
                     >
                       {text.duplicates.closeAs(duplicate.id, canonical.id)}
                     </button>

@@ -19,7 +19,13 @@ async function renderDialog(fixedParent?: Issue) {
   const onClose = vi.fn<() => void>();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <NewIssueDialog onCreated={() => {}} onClose={onClose} fixedParent={fixedParent} />
+      <NewIssueDialog
+        create={vi.fn<() => Promise<boolean>>(async () => true)}
+        pending={false}
+        error={null}
+        onClose={onClose}
+        fixedParent={fixedParent}
+      />
     </LocaleProvider>,
   );
   const dialog = screen.getByRole("dialog", { name: messages.newIssue.title });

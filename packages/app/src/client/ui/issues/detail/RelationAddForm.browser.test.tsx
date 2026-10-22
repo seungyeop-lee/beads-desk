@@ -24,7 +24,9 @@ vi.mock("@/client/modules/issues/application/useIssueList", () => ({
     loading: false,
   }),
 }));
-vi.mock("@/server/web/issues/issueActions", () => ({
+vi.mock("@/server/web/issues/issueActions", async (importOriginal) => ({
+  // 화면이 함께 쓰는 issueEdits가 이 module의 다른 Server Action도 import하므로, 원본을 그대로 둔 채 바꿉니다.
+  ...(await importOriginal<object>()),
   addDependencyAction: vi.fn<typeof addDependencyAction>(async () => ({ ok: true, data: null })),
 }));
 

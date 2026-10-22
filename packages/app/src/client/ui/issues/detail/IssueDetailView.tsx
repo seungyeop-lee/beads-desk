@@ -3,18 +3,7 @@ import Link from "next/link";
 import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import {
-  hasGraphLink,
-  linkedIssues,
-  type LinkedIssue,
-} from "@/client/modules/issues/domain/issueRelations";
-import {
-  addCommentAction,
-  addLabelAction,
-  deleteIssueAction,
-  removeDependencyAction,
-  removeLabelAction,
-} from "@/server/web/issues/issueActions";
+import { hasGraphLink, linkedIssues } from "@/client/modules/issues/domain/issueRelations";
 import { statusPrompts } from "../fields/statusPrompts";
 import { EditableText } from "../fields/EditableText";
 import { PrioritySelect } from "../fields/PrioritySelect";
@@ -55,28 +44,15 @@ export function IssueDetailView({
   onDeleted,
 }: Props) {
   const { id } = issue;
-  const { run, pending } = writes;
-  const { update, changeStatus } = issueEdits(writes, id);
+  const { pending } = writes;
+  const edits = issueEdits(writes, id);
+  const { update, changeStatus } = edits;
   const locale = useLocale();
   const messages = useMessages();
 
-  const removeDependency = ({ side, link }: LinkedIssue) => {
-    if (!window.confirm(messages.issueDetail.confirmRemoveDependency(link.id))) return;
-    void run((workspace) =>
-      side === "dependencies"
-        ? removeDependencyAction(workspace, id, link.id)
-        : removeDependencyAction(workspace, link.id, id),
-    );
-  };
-
-  const remove = async () => {
-    if (!window.confirm(messages.issueDetail.confirmDelete(id))) return;
-    if ((await run((workspace) => deleteIssueAction(workspace, id))).ok) onDeleted();
-  };
-
   /*
    * 주 상세가 넓으면 본문 열과 속성 열을 나란히 둡니다. 옆 패널을 열어 좁아지면 두 열을 display: contents로 풀고,
-   * order로 제목 → 핵심 속성 → 본문 → 나머지 속성 순서의 한 열로 바꿔 본문이 주 상세 너비를 모두 쓰게 합니다.
+   * order로 제목 → 핵심 속성 → 본문 → 나머지 속성 순서의 한 열로 바꿔 본문이 주 상세 너비를 모두 씁니다.
    */
   return (
     <div className="@container flex grow flex-col">
@@ -114,9 +90,7 @@ export function IssueDetailView({
             <DiscussionTabs
               issue={issue}
               disabled={pending}
-              onAddComment={async (text) =>
-                (await run((workspace) => addCommentAction(workspace, id, text))).ok
-              }
+              onAddComment={(text) => edits.addComment(text)}
             />
           </div>
         </div>
@@ -197,19 +171,21 @@ export function IssueDetailView({
               <LabelEditor
                 labels={issue.labels}
                 disabled={pending}
-                onAdd={async (label) =>
-                  (await run((workspace) => addLabelAction(workspace, id, label))).ok
-                }
-                onRemove={(label) =>
-                  void run((workspace) => removeLabelAction(workspace, id, label))
-                }
+                onAdd={(label) => edits.addLabel(label)}
+                onRemove={(label) => void edits.removeLabel(label)}
               />
             </section>
 
             <DependencyList
               links={linkedIssues(issue)}
               issueHref={issueHref}
-              edit={{ disabled: pending, onRemove: removeDependency }}
+              edit={{
+                disabled: pending,
+                onRemove: (linked) =>
+                  void edits.removeDependency(linked, () =>
+                    window.confirm(messages.issueDetail.confirmRemoveDependency(linked.link.id)),
+                  ),
+              }}
               actions={
                 <span className="flex items-center gap-3">
                   {issue.issueType === "epic" && (
@@ -244,7 +220,12 @@ export function IssueDetailView({
               type="button"
               className="btn btn-ghost btn-sm -ml-3 gap-1.5 self-start font-medium text-error"
               disabled={pending}
-              onClick={() => void remove()}
+              onClick={() =>
+                void edits.remove(
+                  () => window.confirm(messages.issueDetail.confirmDelete(id)),
+                  onDeleted,
+                )
+              }
             >
               <TrashIcon width={15} height={15} />
               {messages.issueDetail.delete}

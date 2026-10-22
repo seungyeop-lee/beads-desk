@@ -1,10 +1,10 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import { useId, useState } from "react";
+import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { notReplacementTarget } from "@/client/modules/issues/domain/issueRelations";
-import { showToast } from "@/client/ui/designSystem/Toast";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { closeAsReplacedAction } from "@/server/web/issues/issueActions";
+import { useCloseAsReplacedPrompts } from "@/client/ui/issues/useCloseAsReplacedPrompts";
 import { REPLACEMENTS, type Replacement } from "@/shared/contract/issueActions";
 import { IssuePicker } from "../IssuePicker";
 
@@ -17,6 +17,7 @@ export function CloseAsReplacedForm({
   writes: IssueWrites;
 }) {
   const messages = useMessages();
+  const closeAsReplacedPrompts = useCloseAsReplacedPrompts();
   const headingId = useId();
   const [replacement, setReplacement] = useState<Replacement>("supersede");
 
@@ -41,17 +42,13 @@ export function CloseAsReplacedForm({
         label={messages.closeAsReplaced.search}
         disabled={writes.pending}
         exclude={notReplacementTarget(issue)}
-        onPick={async (target) => {
-          if (!window.confirm(messages.closeAsReplaced.confirm[replacement](issue.id, target.id))) {
-            return false;
-          }
-          const result = await writes.run((workspace) =>
-            closeAsReplacedAction(workspace, issue.id, replacement, target.id),
-          );
-          if (result.ok)
-            showToast(messages.closeAsReplaced.closed[replacement](issue.id, target.id));
-          return result.ok;
-        }}
+        onPick={(target) =>
+          issueEdits(writes, issue.id).closeAsReplaced(
+            replacement,
+            target.id,
+            closeAsReplacedPrompts,
+          )
+        }
       />
     </section>
   );

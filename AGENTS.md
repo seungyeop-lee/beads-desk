@@ -63,7 +63,7 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 - `shared/domain`: client와 server가 함께 쓰는 업무 규칙
 
 - 읽기는 client infra → `/api/...` Route Handler → `server/web/*RouteApi.ts` → `@beads-desk/bd` 순서로 연결합니다. bd 호출을 넘어서는 조립이 필요한 읽기는 그 사이에서 `server/modules/<기능>/application`이 조립합니다.
-- 쓰기는 `server/web`의 Server Action(`*Action.ts`, `*Actions.ts`)으로 처리합니다. client는 server에서 이 파일만 import합니다. Server Action은 쓰기가 성공하면 `checkWorkspaceChangesNow`를 호출해, 다음 polling 주기를 기다리지 않고 변경을 알립니다. client는 쓰기 결과로 화면 데이터를 직접 고치지 않고 이 알림으로 다시 조회합니다.
+- 쓰기는 `server/web`의 Server Action(`*Action.ts`, `*Actions.ts`)으로 처리합니다. client는 server에서 이 파일만 import합니다. Server Action은 쓰기가 성공하면 `checkWorkspaceChangesNow`를 호출해, 다음 polling 주기를 기다리지 않고 변경을 알립니다. client는 쓰기 결과로 화면 데이터를 직접 고치지 않고 이 알림으로 다시 조회합니다. 한 번 부르고 끝나는 쓰기는 ui가 Server Action을 직접 불러도 되지만, 확인·안내·이동처럼 여러 단계로 이어지는 쓰기 흐름은 `client/modules/<기능>/application`의 함수나 hook이 순서를 정합니다. 화면은 window.confirm이나 Toast처럼 browser에서만 쓸 수 있는 확인과 안내 수단을 그 흐름에 인자로 넘깁니다.
 - Host 검사는 `src/proxy.ts`가 모든 요청에 대해 맡습니다. Route API와 Server Action에서 Host를 다시 검사하지 않고, proxy에 matcher를 두어 경로를 좁히지 않습니다.
 - 변경 알림은 `/api/events` SSE 하나로 보냅니다. workspace DB가 바뀌면 바뀐 workspace의 이름만 담아 `invalidate` 이벤트를 보내고, 등록한 workspace 목록이 바뀌면 이름 없이 보냅니다. 알림을 받은 탭은 보고 있는 데이터를 다시 조회합니다. 서버는 SSE 연결이 있는 동안 DB 상태를 주기적으로 확인하므로 bd CLI로 바꾼 내용도 알림이 갑니다.
 - 서버 이벤트는 `client/infra/workspaceEvents`로만 구독합니다. 이 module이 탭 하나만 SSE를 열고 다른 탭에 알림을 전달합니다.

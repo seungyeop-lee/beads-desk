@@ -1,16 +1,15 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import { useId, useState } from "react";
+import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
 import {
-  dependencyToAdd,
   notLinkTarget,
   RELATION_KINDS,
   type RelationKind,
 } from "@/client/modules/issues/domain/issueRelations";
 import { showToast } from "@/client/ui/designSystem/Toast";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { addDependencyAction } from "@/server/web/issues/issueActions";
 import { IssueConfirmPicker } from "../IssueConfirmPicker";
 
 /** 지금 이슈를 기준으로 관계를 고르고, 제목이나 id로 찾은 이슈와 그 관계를 맺습니다. */
@@ -47,15 +46,11 @@ export function RelationAddForm({ issue, writes }: { issue: IssueDetail; writes:
         disabled={writes.pending}
         exclude={exclude}
         rank={kind === "parent" ? epicsFirst : undefined}
-        onConfirm={async (other) => {
-          const { issueId, dependsOnId, type } = dependencyToAdd(kind, issue.id, other.id);
-          const result = await writes.run((workspace) =>
-            addDependencyAction(workspace, issueId, dependsOnId, type),
-          );
-          if (result.ok)
-            showToast(messages.relations.linked(other.id, messages.relations.kinds[kind]));
-          return result.ok;
-        }}
+        onConfirm={(other) =>
+          issueEdits(writes, issue.id).addRelation(kind, other.id, () =>
+            showToast(messages.relations.linked(other.id, messages.relations.kinds[kind])),
+          )
+        }
       />
     </section>
   );
