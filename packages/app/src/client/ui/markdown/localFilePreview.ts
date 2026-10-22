@@ -7,7 +7,7 @@ import {
   type MarkType,
   type Node as ProseNode,
 } from "@milkdown/kit/prose/model";
-import { Plugin, PluginKey } from "@milkdown/kit/prose/state";
+import { Plugin, PluginKey, type Transaction } from "@milkdown/kit/prose/state";
 import {
   Decoration,
   DecorationSet,
@@ -31,7 +31,7 @@ type Labels = Messages["markdownEditor"];
 
 /** 본문에서 펼쳐 볼 수 있는 로컬 파일 링크입니다. */
 type PreviewLink = {
-  /** 링크가 시작하는 위치입니다. 읽기 전용 문서에서는 바뀌지 않으므로, 펼친 상태와 widget key에서 링크를 가리킵니다. */
+  /** 링크가 시작하는 위치입니다. 펼친 상태와 widget key에서 링크를 가리킵니다. */
   from: number;
   to: number;
   /** 링크가 든 블록(문단, 제목, 목록 항목의 글)이 끝나는 위치입니다. 펼친 내용은 이 위치에 놓습니다. */
@@ -162,7 +162,8 @@ export function localFilePreview(
       }),
       apply: (tr, previous) => {
         if (tr.docChanged) {
-          return { links: previewLinks(tr.doc, linkType, address), expanded: new Set<number>() };
+          const links = previewLinks(tr.doc, linkType, address);
+          return { links, expanded: keptExpanded(tr, previous, links) };
         }
         const toggled: number | undefined = tr.getMeta(previewKey);
         if (toggled === undefined) return previous;
@@ -207,6 +208,24 @@ export function localFilePreview(
       },
     },
   });
+}
+
+/**
+ * 문서가 바뀐 뒤에도 펼친 채로 둘 링크의 시작 위치입니다. 펼친 링크의 시작 위치를 변경에 맞춰 옮기고, 옮긴 위치에서 같은 주소의
+ * 링크가 시작할 때만 남겨, 지우거나 주소를 바꾼 링크는 접습니다.
+ *
+ * 읽기 전용 본문에서도 문서는 바뀝니다. Crepe가 붙이는 trailing plugin은 코드 블록이나 표로 끝나는 문서에 첫 transaction 뒤
+ * 빈 문단을 덧붙이므로, 처음 칩을 눌러 펼친 transaction 바로 뒤에도 문서가 바뀝니다.
+ */
+function keptExpanded(tr: Transaction, previous: PreviewState, links: PreviewLink[]): Set<number> {
+  const kept = new Set<number>();
+  for (const link of previous.links) {
+    if (!previous.expanded.has(link.from)) continue;
+    const { pos, deleted } = tr.mapping.mapResult(link.from);
+    if (deleted) continue;
+    if (links.some((next) => next.from === pos && next.address === link.address)) kept.add(pos);
+  }
+  return kept;
 }
 
 function previewLinks(

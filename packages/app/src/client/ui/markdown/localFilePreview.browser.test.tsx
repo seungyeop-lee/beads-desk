@@ -1,11 +1,15 @@
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { type Locator, userEvent } from "vitest/browser";
+import { Schema } from "@milkdown/kit/prose/model";
+import { EditorState } from "@milkdown/kit/prose/state";
+import { EditorView } from "@milkdown/kit/prose/view";
+import { afterEach, beforeEach, expect, onTestFinished, test, vi } from "vitest";
+import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { koMessages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { codeMirrorDom } from "./codeMirrorDom.testkit";
+import { localFilePreview } from "./localFilePreview";
 import { MarkdownEditor } from "./MarkdownEditor";
 
 const labels = koMessages.markdownEditor;
@@ -180,6 +184,66 @@ test("칩에 focus를 두고 Enter나 Space를 누르면 펼치고 접는다", a
   await expect.element(contents).not.toBeInTheDocument();
   await expect.element(chip).toHaveAttribute("aria-expanded", "false");
   await expect.element(chip).toHaveFocus();
+});
+
+test("본문이 코드 블록으로 끝나도 칩을 한 번 누르면 펼친다", async () => {
+  files = { "/tmp/r/a.diff": () => new Response(DIFF) };
+  const screen = await renderReadOnly(
+    ["[변경 diff](/tmp/r/a.diff)", "", "```ts", "const answer = 42;", "```"].join("\n"),
+  );
+  const chip = screen.getByRole("button", { name: labels.filePreview("변경 diff") });
+
+  await userEvent.click(chip);
+
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("변경 diff") });
+  await expect.element(contents.getByText("const after = 2;")).toBeVisible();
+  await expect.element(chip).toHaveAttribute("aria-expanded", "true");
+});
+
+test("펼친 링크 앞에 글자를 넣어도 그 링크는 펼친 채로 남는다", async () => {
+  files = { "/tmp/r/a.diff": () => new Response(DIFF) };
+  const view = mountPreview(["변경은 ", ["변경 diff", "/tmp/r/a.diff"], "에 있습니다."]);
+  const chip = page.getByRole("button", { name: labels.filePreview("변경 diff") });
+  const contents = page.getByRole("region", { name: labels.filePreviewContents("변경 diff") });
+  await userEvent.click(chip);
+  await expect.element(contents.getByText("const after = 2;")).toBeVisible();
+
+  view.dispatch(view.state.tr.insertText("오늘 ", 1));
+
+  await expect.element(chip).toHaveAttribute("aria-expanded", "true");
+  await expect.element(contents.getByText("const after = 2;")).toBeVisible();
+});
+
+test("펼친 링크를 지우거나 미리보기가 없는 주소로 바꾸면 펼친 상태가 남지 않는다", async () => {
+  files = {
+    "/tmp/r/a.diff": () => new Response(DIFF),
+    "/tmp/r/run.log": () => new Response(LOG),
+  };
+  // 두 링크를 붙여 두어, 지운 링크의 위치에 다음 링크가 오게 합니다.
+  const view = mountPreview([
+    ["변경 diff", "/tmp/r/a.diff"],
+    ["실행 로그", "/tmp/r/run.log"],
+  ]);
+  const logChip = page.getByRole("button", { name: labels.filePreview("실행 로그") });
+  await userEvent.click(page.getByRole("button", { name: labels.filePreview("변경 diff") }));
+  await expect.element(page.getByRole("region")).toBeVisible();
+
+  const diff = linkRange(view, "변경 diff");
+  view.dispatch(view.state.tr.delete(diff.from, diff.to));
+
+  await expect.element(page.getByRole("region")).not.toBeInTheDocument();
+  await expect.element(logChip).toHaveAttribute("aria-expanded", "false");
+
+  await userEvent.click(logChip);
+  await expect.element(page.getByRole("region")).toBeVisible();
+  const linkMark = (href: string) => view.state.schema.marks.link!.create({ href });
+  const log = linkRange(view, "실행 로그");
+  view.dispatch(view.state.tr.addMark(log.from, log.to, linkMark("/tmp/r/run.png")));
+
+  await expect.element(page.getByRole("region")).not.toBeInTheDocument();
+  await expect.element(logChip).not.toBeInTheDocument();
+  view.dispatch(view.state.tr.addMark(log.from, log.to, linkMark("/tmp/r/run.log")));
+  await expect.element(logChip).toHaveAttribute("aria-expanded", "false");
 });
 
 test("Cmd/Ctrl을 누른 채 칩을 누르면 펼치지 않고 브라우저 기본 동작에 맡긴다", async () => {
@@ -502,8 +566,6 @@ test("md는 렌더링하지 않은 원문을 펼쳐 markdown 구문과 코드 �
 
 test("펼친 md 미리보기와 본문 코드 블록은 같은 토큰을 라이트·다크 테마에서 같은 색과 모양으로 칠한다", async () => {
   files = { "/tmp/r/report.md": () => new Response(MARKDOWN) };
-  // 본문이 코드 블록으로 끝나면 편집기가 첫 transaction에 빈 문단을 덧붙이고, 문서가 바뀌어 펼친 칩이 다시 접힙니다.
-  // 그래서 본문을 문단으로 끝냅니다.
   const tokenTexts = ["const", '"개"', "조사 결과"];
   const screen = await renderReadOnly(
     [
@@ -516,8 +578,6 @@ test("펼친 md 미리보기와 본문 코드 블록은 같은 토큰을 라이�
       "```ts",
       'const unit = "개";',
       "```",
-      "",
-      "끝",
     ].join("\n"),
   );
   const codeTokens = () => screen.container.querySelectorAll(codeMirrorDom.token);
@@ -645,6 +705,60 @@ test("편집 중에는 칩과 새 탭 아이콘 링크를 두지 않고 원문�
   ).toHaveLength(0);
   expect(changed).not.toHaveBeenCalled();
 });
+
+/**
+ * 문단 하나에 글자와 링크를 차례로 넣은 문서에 plugin만 붙여 ProseMirror 편집기를 올립니다. 읽기 전용 본문에는 글자를 넣을 수
+ * 없으므로, 펼친 상태가 문서 편집을 따라가는지는 이 편집기에 test가 transaction을 직접 보내 확인합니다.
+ * 링크는 `[글자, 주소]`로 적고, 본문 편집기처럼 로컬 파일 API 주소로 그립니다.
+ */
+function mountPreview(parts: (string | [name: string, href: string])[]) {
+  const schema = new Schema({
+    nodes: {
+      doc: { content: "paragraph+" },
+      paragraph: { content: "text*", toDOM: () => ["p", 0] },
+      text: {},
+    },
+    marks: {
+      link: {
+        attrs: { href: {} },
+        inclusive: false,
+        toDOM: (mark) => ["a", { href: tabMarkdownUrl(String(mark.attrs.href)) }, 0],
+      },
+    },
+  });
+  const link = schema.marks.link;
+  const paragraph = schema.node(
+    "paragraph",
+    null,
+    parts.map((part) =>
+      typeof part === "string"
+        ? schema.text(part)
+        : schema.text(part[0], [link.create({ href: part[1] })]),
+    ),
+  );
+  const place = document.body.appendChild(document.createElement("div"));
+  const view = new EditorView(place, {
+    state: EditorState.create({
+      doc: schema.node("doc", null, [paragraph]),
+      plugins: [localFilePreview(link, tabMarkdownUrl, labels)],
+    }),
+    editable: () => false,
+  });
+  onTestFinished(() => {
+    view.destroy();
+    place.remove();
+  });
+  return view;
+}
+
+/** 글자가 name인 링크의 문서 위치입니다. */
+function linkRange(view: EditorView, name: string) {
+  let range = { from: -1, to: -1 };
+  view.state.doc.descendants((node, pos) => {
+    if (node.text === name) range = { from: pos, to: pos + node.nodeSize };
+  });
+  return range;
+}
 
 /** 내용에 text가 든 diff 줄에서 단어 강조한 글자들입니다. */
 function marks(file: Locator, text: string) {
