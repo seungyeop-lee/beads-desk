@@ -35,12 +35,7 @@ export function IssuesScreen() {
 
   return (
     <ScreenFrame>
-      <ScreenHeader
-        title={messages.issues.title}
-        tone={screenTone("/issues")}
-        count={issues ? viewIssues.length : undefined}
-        loading={loading}
-      />
+      <ScreenHeader title={messages.issues.title} tone={screenTone("/issues")} loading={loading} />
 
       <IssueViewTabs view={view} filters={{ dates, types, labels }} groups={groups} />
 
