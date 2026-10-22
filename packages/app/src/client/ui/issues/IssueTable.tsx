@@ -1,10 +1,11 @@
-import { HUMAN_LABEL, type Issue } from "@beads-desk/bd/issue";
+import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { memo, useMemo, useState, type ReactNode } from "react";
 import type { ChildProgress } from "@/client/modules/epics/domain/epicsView";
 import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { visibleLabels } from "@/client/modules/issues/domain/issueLabelFilter";
 import {
   visibleTreeRows,
   type IssueTextHits,
@@ -292,11 +293,10 @@ function IssueRow({
 
 /**
  * 첫 라벨만 칩으로 보이고 나머지는 +N으로 줄이며, 칸에 마우스를 올리면 모든 라벨 이름을 보입니다.
- * human 라벨은 제목 옆의 판단 기다림 표시와 겹쳐 보이므로 칸에도 +N 수에도 넣지 않습니다.
  */
 function LabelCell({ labels }: { labels: readonly string[] }) {
   const messages = useMessages();
-  const shown = labels.filter((label) => label !== HUMAN_LABEL);
+  const shown = visibleLabels(labels);
   const [first] = shown;
   if (first === undefined) {
     return (

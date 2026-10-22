@@ -1,4 +1,5 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
+import type { IssueType } from "@/client/modules/issues/domain/issueTypes";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { Messages } from "@/client/modules/locale/domain/messages";
 
@@ -42,7 +43,8 @@ export function workStateTone(state: WorkState): string {
   return WORK_STATE_TONES[state];
 }
 
-const TYPE_TONES: Record<string, string> = {
+/** 유형마다의 색입니다. bd의 기본 유형이 색 표에 빠지면 typecheck가 실패합니다. */
+const TYPE_TONES: Record<IssueType, string> = {
   bug: "tone-coral",
   feature: "tone-lavender",
   task: "tone-sky",
@@ -54,15 +56,12 @@ const TYPE_TONES: Record<string, string> = {
   milestone: "tone-pear",
 };
 
-/** bd의 기본 이슈 유형입니다. 설정으로 추가한 유형은 원래 이름 그대로 보입니다. */
-export const ISSUE_TYPES = Object.keys(TYPE_TONES);
-
 export function typeLabel(messages: Messages, issueType: string): string {
   return labelOf(messages.issue.types, issueType);
 }
 
 export function typeTone(issueType: string): string {
-  return TYPE_TONES[issueType] ?? "tone-none";
+  return TYPE_TONES[issueType as IssueType] ?? "tone-none";
 }
 
 /** 의존 관계 유형을 보는 쪽에 맞춰 부릅니다. 목록에 없는 유형은 원래 이름 그대로 보입니다. */

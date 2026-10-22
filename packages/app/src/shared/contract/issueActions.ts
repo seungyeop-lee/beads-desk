@@ -1,6 +1,6 @@
 import type { DeferPeriod, IssueFieldChanges, Replacement } from "@beads-desk/bd/types";
 import type { ApiFailure, ApiResponse } from "./apiResponse";
-import type { EveryOrder } from "./everyOrder";
+import type { EveryOrder } from "@/shared/domain/everyOrder";
 
 export type { DeferPeriod, DeferUntil, Replacement } from "@beads-desk/bd/types";
 

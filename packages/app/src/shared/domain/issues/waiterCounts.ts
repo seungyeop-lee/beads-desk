@@ -1,3 +1,5 @@
+import { reachableIssueIds } from "./dependencyReach";
+
 export type WaitingIssue = {
   id: string;
   status: string;
@@ -20,17 +22,7 @@ export function waiterCounts(issues: readonly WaitingIssue[]): ReadonlyMap<strin
 
   const counts = new Map<string, number>();
   for (const id of waitersOf.keys()) {
-    const reached = new Set<string>();
-    const pending = [id];
-    while (pending.length > 0) {
-      for (const waiter of waitersOf.get(pending.pop()!) ?? []) {
-        // 순환이 있어도 이미 센 이슈는 다시 따라가지 않습니다.
-        if (reached.has(waiter)) continue;
-        reached.add(waiter);
-        pending.push(waiter);
-      }
-    }
-    reached.delete(id);
+    const reached = reachableIssueIds(id, waitersOf);
     if (reached.size > 0) counts.set(id, reached.size);
   }
   return counts;

@@ -1,4 +1,4 @@
-import type { Issue } from "@beads-desk/bd/issue";
+import { HUMAN_LABEL, type Issue } from "@beads-desk/bd/issue";
 
 /** 라벨이 하나도 없는 이슈를 고르는 선택 값입니다. bd는 빈 라벨을 저장하지 않아 실제 라벨 이름과 겹치지 않습니다. */
 export const NO_LABEL = "";
@@ -8,6 +8,14 @@ export function matchesLabels(issue: Issue, labels: readonly string[]): boolean 
   if (labels.length === 0) return true;
   if (issue.labels.length === 0) return labels.includes(NO_LABEL);
   return issue.labels.some((label) => labels.includes(label));
+}
+
+/**
+ * 화면에 라벨로 보일 목록에서 human 라벨을 뺍니다.
+ * human 라벨은 제목 옆의 판단 기다림 표시와 겹쳐 보이므로 라벨 칸과 남은 개수에 넣지 않습니다.
+ */
+export function visibleLabels(labels: readonly string[]): string[] {
+  return labels.filter((label) => label !== HUMAN_LABEL);
 }
 
 /**

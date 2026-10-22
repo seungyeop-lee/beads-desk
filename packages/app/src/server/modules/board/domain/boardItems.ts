@@ -1,5 +1,6 @@
 import { NON_WORK_TYPES, workState, type Issue, type WorkState } from "@beads-desk/bd/issue";
-import { BOARD_COLUMNS, type BoardColumn, type BoardItem } from "@/shared/contract/board";
+import { BOARD_COLUMNS, type BoardColumn } from "@/shared/domain/board/boardColumns";
+import type { BoardItem } from "@/shared/contract/board";
 
 /** 보드에 열이 있는 작업 상태인지 확인합니다. BOARD_COLUMNS가 모든 열을 한 번씩 담고 있으므로 이것으로 판정합니다. */
 function isBoardColumn(state: WorkState): state is BoardColumn {

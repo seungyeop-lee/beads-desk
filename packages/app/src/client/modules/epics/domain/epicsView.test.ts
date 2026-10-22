@@ -7,6 +7,7 @@ import {
   childProgress,
   epicDescendantRows,
   epicExpanded,
+  epicPercent,
   groupExpanded,
   noSearchToggles,
   notChildCandidate,
@@ -157,6 +158,12 @@ test("후손 이슈마다 직접 하위 이슈만 세어 닫힌 수와 전체 �
   expect(progress.get("a.1")).toEqual({ closed: 1, total: 3 });
   expect(progress.get("a.1.1")).toEqual({ closed: 1, total: 1 });
   expect(progress.has("a.1.2")).toBe(false);
+});
+
+test("닫힌 하위 이슈 비율을 반올림하고, 하위 이슈가 없는 에픽은 0%로 본다", () => {
+  expect(epicPercent(1, 3)).toBe(33);
+  expect(epicPercent(2, 4)).toBe(50);
+  expect(epicPercent(0, 0)).toBe(0);
 });
 
 describe("searchEpics", () => {

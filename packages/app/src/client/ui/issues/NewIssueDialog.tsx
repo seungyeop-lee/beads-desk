@@ -1,6 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
+import { ISSUE_TYPES } from "@/client/modules/issues/domain/issueTypes";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
@@ -9,7 +10,7 @@ import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { PRIORITIES, type NewIssueInput } from "@/shared/contract/issueActions";
 import { IssuePicker } from "./IssuePicker";
-import { ISSUE_TYPES, priorityLabel, typeLabel, typeTone } from "./issueLabels";
+import { priorityLabel, typeLabel, typeTone } from "./issueLabels";
 import { CopyIssueIdButton } from "./CopyIssueIdButton";
 
 type Props = {

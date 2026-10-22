@@ -2,6 +2,7 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { useHygiene, useStaleIssues } from "@/client/modules/hygiene/application/useHygiene";
+import { plainSectionTitle } from "@/client/modules/hygiene/domain/lintSections";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
@@ -91,9 +92,7 @@ export function HygieneScreen() {
             {data?.lint.map((finding) =>
               issueRow(
                 finding,
-                text.lint.missing(
-                  finding.missing.map((section) => section.replace(/^#+\s*/, "")).join(", "),
-                ),
+                text.lint.missing(finding.missing.map(plainSectionTitle).join(", ")),
               ),
             )}
           </HygieneCard>

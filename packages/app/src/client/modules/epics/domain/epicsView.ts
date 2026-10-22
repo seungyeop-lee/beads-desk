@@ -184,3 +184,8 @@ export function childProgress(descendants: readonly Issue[]): ReadonlyMap<string
   }
   return progress;
 }
+
+/** 닫힌 하위 이슈 비율을 정수로 반올림합니다. 하위 이슈가 없는 에픽은 0%로 봅니다. */
+export function epicPercent(closed: number, total: number): number {
+  return total === 0 ? 0 : Math.round((closed / total) * 100);
+}

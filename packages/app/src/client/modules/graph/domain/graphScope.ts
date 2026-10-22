@@ -1,4 +1,5 @@
 import type { Issue, IssueDependency } from "@beads-desk/bd/issue";
+import { reachableIssueIds } from "@/shared/domain/issues/dependencyReach";
 import type { GraphData } from "@/shared/contract/graph";
 
 /**
@@ -35,6 +36,10 @@ export function scopedIssues(
   return issues.filter(({ id }) => selected.has(id));
 }
 
+/**
+ * 중심 이슈에서 blocks를 따라 앞뒤로 끝까지 이어진 이슈를 모읍니다.
+ * 선행·후속 한 방향씩만 따라가므로, 선행 이슈의 다른 후속 이슈처럼 사슬 옆으로 갈라진 이슈는 담지 않습니다.
+ */
 export function blockingChainIssues(
   issues: Issue[],
   dependencies: IssueDependency[],
@@ -50,23 +55,8 @@ export function blockingChainIssues(
   }
   const chain = new Set([
     centerId,
-    ...reachable(centerId, blockersOf),
-    ...reachable(centerId, waitersOf),
+    ...reachableIssueIds(centerId, blockersOf),
+    ...reachableIssueIds(centerId, waitersOf),
   ]);
   return issues.filter((issue) => chain.has(issue.id));
-}
-
-/** 한 방향으로만 따라가므로, 선행 이슈의 다른 후속 이슈처럼 사슬 옆으로 갈라진 이슈는 담지 않습니다. */
-function reachable(start: string, next: ReadonlyMap<string, string[]>): Set<string> {
-  const reached = new Set<string>();
-  const pending = [start];
-  while (pending.length > 0) {
-    for (const id of next.get(pending.pop()!) ?? []) {
-      // 순환이 있어도 이미 만난 이슈는 다시 따라가지 않습니다.
-      if (reached.has(id)) continue;
-      reached.add(id);
-      pending.push(id);
-    }
-  }
-  return reached;
 }

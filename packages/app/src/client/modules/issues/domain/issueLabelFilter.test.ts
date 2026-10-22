@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
-import { labelChoices, NO_LABEL } from "./issueLabelFilter";
+import { labelChoices, NO_LABEL, visibleLabels } from "./issueLabelFilter";
 
 describe("labelChoices", () => {
   test("라벨 없음을 맨 앞에 두고, 이슈들에 붙은 라벨을 한 번씩 이름순으로 보인다", () => {
@@ -17,5 +17,15 @@ describe("labelChoices", () => {
     const issues = [issue("demo-1", { labels: ["ui"] })];
 
     expect(labelChoices(issues, ["gone", NO_LABEL])).toEqual([NO_LABEL, "gone", "ui"]);
+  });
+});
+
+describe("visibleLabels", () => {
+  test("human 라벨을 빼고 나머지 순서를 지킨다", () => {
+    expect(visibleLabels(["ui", "human", "api"])).toEqual(["ui", "api"]);
+  });
+
+  test("human 라벨뿐이면 빈 목록을 돌려준다", () => {
+    expect(visibleLabels(["human"])).toEqual([]);
   });
 });

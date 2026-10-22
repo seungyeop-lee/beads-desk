@@ -1,7 +1,8 @@
 import type { Issue, IssueStatus } from "@beads-desk/bd/issue";
 import { localDayOf, localDayStart } from "@/client/modules/issues/domain/issueDateFilter";
 import { byClosedDesc, byPriorityThenCreated } from "@/client/modules/issues/domain/issueSort";
-import type { BoardColumn, BoardItem } from "@/shared/contract/board";
+import type { BoardItem } from "@/shared/contract/board";
+import type { BoardColumn } from "@/shared/domain/board/boardColumns";
 
 /** 닫힌 열에 보일 기간입니다. today는 오늘 0시부터입니다. */
 export type ClosedWindow = "today" | "3d" | "7d" | "30d";

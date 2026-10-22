@@ -1,3 +1,4 @@
+import { epicPercent } from "@/client/modules/epics/domain/epicsView";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /**
@@ -45,9 +46,4 @@ export function EpicProgressBar({
       aria-label={messages.epics.progress(epicId)}
     />
   );
-}
-
-/** 하위 이슈가 없는 에픽은 0%로 봅니다. */
-export function epicPercent(closed: number, total: number): number {
-  return total === 0 ? 0 : Math.round((closed / total) * 100);
 }

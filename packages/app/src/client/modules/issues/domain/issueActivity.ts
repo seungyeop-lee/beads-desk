@@ -11,7 +11,8 @@ export type ActivityLine =
   | { kind: "labelRemoved"; label: string }
   | { kind: "other"; eventType: string; text: string | null };
 
-export type ActivityEntry =
+/** 이슈 상세의 활동 기록 한 줄입니다. 활동 피드의 기록(contract/activityFeed의 ActivityEntry)과 다릅니다. */
+export type IssueActivityEntry =
   | { kind: "event"; key: string; actor: string; at: number; lines: ActivityLine[] }
   | { kind: "comment"; key: string; at: number; comment: IssueComment };
 
@@ -21,13 +22,16 @@ export type ActivityEntry =
  * 다만 이슈를 만든 기록은 다른 기록보다 늦을 수 없으므로 같은 초에서도 맨 앞에 둡니다.
  * 댓글은 이슈 상세의 댓글로 보이므로 commented 이벤트는 뺍니다.
  */
-export function issueActivity(events: IssueEvent[], comments: IssueComment[]): ActivityEntry[] {
+export function issueActivity(
+  events: IssueEvent[],
+  comments: IssueComment[],
+): IssueActivityEntry[] {
   const createdIds = new Set(
     events.filter((event) => event.type === "created").map((event) => event.id),
   );
-  const opening = (entry: ActivityEntry) =>
+  const opening = (entry: IssueActivityEntry) =>
     entry.kind === "event" && createdIds.has(entry.key) ? 0 : 1;
-  const entries: ActivityEntry[] = [
+  const entries: IssueActivityEntry[] = [
     ...events
       .filter((event) => event.type !== "commented")
       .map((event) => ({

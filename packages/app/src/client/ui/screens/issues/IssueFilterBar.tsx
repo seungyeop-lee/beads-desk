@@ -3,9 +3,10 @@ import type {
   IssueDateFilter,
 } from "@/client/modules/issues/domain/issueDateFilter";
 import { NO_LABEL } from "@/client/modules/issues/domain/issueLabelFilter";
+import { ISSUE_TYPES } from "@/client/modules/issues/domain/issueTypes";
 import { CheckboxMenu } from "@/client/ui/designSystem/CheckboxMenu";
 import { SearchField } from "@/client/ui/designSystem/SearchField";
-import { ISSUE_TYPES, nameTone, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
+import { nameTone, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 type Props = {

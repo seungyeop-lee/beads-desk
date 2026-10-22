@@ -21,7 +21,7 @@ import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/Covere
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
-import { BOARD_COLUMNS, type BoardColumn } from "@/shared/contract/board";
+import { BOARD_COLUMNS, type BoardColumn } from "@/shared/domain/board/boardColumns";
 import { useMinuteClock } from "./useMinuteClock";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";

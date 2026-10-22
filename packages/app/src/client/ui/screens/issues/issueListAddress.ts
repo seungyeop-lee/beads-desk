@@ -2,8 +2,8 @@ import {
   parseIssueDateFilter,
   type IssueDateFilter,
 } from "@/client/modules/issues/domain/issueDateFilter";
+import { ISSUE_TYPES } from "@/client/modules/issues/domain/issueTypes";
 import { parseViewState, type WorkState } from "@/client/modules/issues/domain/workState";
-import { ISSUE_TYPES } from "@/client/ui/issues/issueLabels";
 
 const VIEW_PARAM = "view";
 const DATE_FIELD_PARAM = "date";
