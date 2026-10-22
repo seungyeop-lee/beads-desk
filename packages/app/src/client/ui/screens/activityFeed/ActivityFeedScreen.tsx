@@ -8,6 +8,7 @@ import {
   type ActivityDateRange,
   type ActivityFeedRow,
 } from "@/client/modules/activityFeed/domain/activityFeedView";
+import { localDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { useAddressState } from "@/client/ui/address/useAddressState";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
@@ -97,10 +98,9 @@ function FeedRow({ row }: { row: ActivityFeedRow }) {
       </li>
     );
   }
-  const [year, month, date] = row.day.split("-").map(Number);
   return (
     <li className="caption bg-base-200/40 px-4 py-1.5">
-      <h2>{new Date(year!, month! - 1, date).toLocaleDateString(locale, { dateStyle: "full" })}</h2>
+      <h2>{localDate(row.day).toLocaleDateString(locale, { dateStyle: "full" })}</h2>
     </li>
   );
 }

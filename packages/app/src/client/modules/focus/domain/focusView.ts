@@ -2,6 +2,7 @@ import type { Issue } from "@beads-desk/bd/issue";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { sortEpics } from "@/client/modules/epics/domain/epicsView";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
+import { isNotDecision } from "@/client/modules/issues/domain/issueListView";
 import { groupByWorkState, type WorkState } from "@/client/modules/issues/domain/workState";
 
 /** 다음에 할 일에 보이는 바로 작업 가능 이슈의 개수입니다. 나머지는 이슈 목록의 바로 작업 가능 탭에서 봅니다. */
@@ -24,10 +25,7 @@ export type FocusView = {
  */
 export function focusView(issues: Issue[], epics: EpicSummary[]): FocusView {
   const waiters = waiterCounts(issues);
-  const groups = groupByWorkState(
-    issues.filter((issue) => issue.issueType !== "decision"),
-    waiters,
-  );
+  const groups = groupByWorkState(issues.filter(isNotDecision), waiters);
   const of = (state: WorkState) => groups.find((group) => group.state === state)?.issues ?? [];
   return {
     inProgress: of("in_progress"),

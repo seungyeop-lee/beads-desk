@@ -1,5 +1,6 @@
 import type { Issue, IssueStatus } from "@beads-desk/bd/issue";
-import { byClosedDesc, byPriorityThenCreated } from "@/client/modules/issues/domain/issueListView";
+import { localDayOf, localDayStart } from "@/client/modules/issues/domain/issueDateFilter";
+import { byClosedDesc, byPriorityThenCreated } from "@/client/modules/issues/domain/issueSort";
 import type { BoardColumn, BoardItem } from "@/shared/contract/board";
 
 /** 닫힌 열에 보일 기간입니다. today는 오늘 0시부터입니다. */
@@ -68,9 +69,6 @@ export function boardColumns(
  * 나머지 기간은 "지금으로부터 N일 안에 닫힌 이슈"를 보여 주는 것이 의도이므로, 날짜 필터의 자정 경계(localDayRange)에 맞추지 않습니다.
  */
 function closedSince(closedWindow: ClosedWindow, now: number): number {
-  if (closedWindow === "today") {
-    const today = new Date(now);
-    return new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  }
+  if (closedWindow === "today") return localDayStart(localDayOf(now));
   return now - CLOSED_WINDOW_DAYS[closedWindow] * DAY_MS;
 }

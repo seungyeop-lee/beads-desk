@@ -1,5 +1,5 @@
 import { NON_WORK_TYPES, type Issue } from "@beads-desk/bd/issue";
-import { byPriorityThenCreated } from "@/client/modules/issues/domain/issueListView";
+import { byPriorityThenCreated } from "@/client/modules/issues/domain/issueSort";
 import type { GraphData } from "@/shared/contract/graph";
 import { type ExecutionOrder, executionOrder, workLayers } from "./executionOrder";
 import { scopedIssues } from "./graphScope";

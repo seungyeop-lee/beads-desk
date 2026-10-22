@@ -1,5 +1,6 @@
 import { workState, type Issue, type WorkState } from "@beads-desk/bd/issue";
-import { byClosedDesc, byPriority, byPriorityThenCreated, nestUnderParents } from "./issueListView";
+import { nestUnderParents } from "./issueListView";
+import { byClosedDesc, byPriority, byPriorityThenCreated } from "./issueSort";
 
 // 작업 상태 판정은 보드와 함께 쓰도록 @beads-desk/bd/issue에 두고, 이 모듈은 판정 결과로 화면에 보일 묶음과 순서를 정합니다.
 export { workState, type WorkState };

@@ -18,6 +18,7 @@ import {
   type FocusStats,
   type ValueCount,
 } from "@/client/modules/focus/domain/focusStats";
+import { localDate } from "@/client/modules/issues/domain/issueDateFilter";
 import type { Messages } from "@/client/modules/locale/domain/messages";
 import {
   nameTone,
@@ -296,6 +297,6 @@ function OpenDistribution({ openBy }: { openBy: FocusStats["openBy"] }) {
 }
 
 function monthAndDate(day: string): [number, number] {
-  const [, month, date] = day.split("-").map(Number);
-  return [month, date];
+  const date = localDate(day);
+  return [date.getMonth() + 1, date.getDate()];
 }

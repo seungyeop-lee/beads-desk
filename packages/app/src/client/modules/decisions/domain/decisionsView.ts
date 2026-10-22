@@ -1,4 +1,4 @@
-import { byClosedDesc } from "@/client/modules/issues/domain/issueListView";
+import { byClosedDesc } from "@/client/modules/issues/domain/issueSort";
 import type { DecisionSummary } from "@/shared/contract/decisions";
 
 export type DecisionRow = DecisionSummary & {

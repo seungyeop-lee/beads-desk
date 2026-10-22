@@ -1,7 +1,7 @@
-import { ISSUE_STATUSES, type Issue } from "@beads-desk/bd/issue";
+import type { Issue } from "@beads-desk/bd/issue";
 import type { IssueTextHit } from "@/shared/contract/issueList";
 import { matchesLabels } from "./issueLabelFilter";
-import { matchesQuery } from "./issueSearch";
+import { matchesQuery, normalizeQuery } from "./issueSearch";
 
 /** 본문 필드나 댓글에 검색어가 든 이슈의 id마다 맞은 곳입니다. 목록 데이터에 본문과 댓글이 없어 서버가 따로 찾아 줍니다. */
 export type IssueTextHits = ReadonlyMap<string, readonly IssueTextHit[]>;
@@ -19,7 +19,7 @@ export type IssueListRefinement = {
 
 /** 유형, 라벨, 검색어(id나 제목, 대소문자 무시) 또는 본문·댓글 검색 결과로 거릅니다. 순서는 바꾸지 않습니다. */
 export function refineIssues(issues: Issue[], refinement: IssueListRefinement): Issue[] {
-  const search = refinement.search.trim().toLowerCase();
+  const search = normalizeQuery(refinement.search);
   return issues.filter(
     (issue) =>
       (refinement.types.length === 0 || refinement.types.includes(issue.issueType)) &&
@@ -30,36 +30,12 @@ export function refineIssues(issues: Issue[], refinement: IssueListRefinement): 
   );
 }
 
-/** 상태별로 묶어 open → in_progress → blocked → deferred → closed 순으로 보이고, closed는 최근에 닫은 것부터 보입니다. */
-export function byStatusGroup(a: Issue, b: Issue): number {
-  const rank = statusRank(a.status) - statusRank(b.status);
-  if (rank !== 0) return rank;
-  return a.status === "closed" ? byClosedDesc(a, b) : byPriorityThenCreated(a, b);
-}
-
-function statusRank(status: string): number {
-  const index = (ISSUE_STATUSES as readonly string[]).indexOf(status);
-  return index === -1 ? ISSUE_STATUSES.length : index;
-}
-
-// bd에서 우선순위를 지정하지 않은 이슈는 기본값인 2(보통)로 취급합니다.
-export function byPriority(a: Issue, b: Issue): number {
-  return (a.priority ?? 2) - (b.priority ?? 2);
-}
-
-export function byPriorityThenCreated(a: Issue, b: Issue): number {
-  return byPriority(a, b) || a.createdAt - b.createdAt || byId(a, b);
-}
-
-export function byClosedDesc(a: Issue, b: Issue): number {
-  return (b.closedAt ?? 0) - (a.closedAt ?? 0) || byId(a, b);
-}
-
-// id의 숫자 부분은 숫자로 비교해 x.2가 x.10보다 앞에 오게 합니다.
-const ID_COLLATOR = new Intl.Collator("en", { numeric: true });
-
-export function byId(a: Issue, b: Issue): number {
-  return ID_COLLATOR.compare(a.id, b.id);
+/**
+ * 결정은 결정 탭에서 따로 보므로 이슈 목록의 기본 대상에서 뺍니다.
+ * 기본 유형 선택(issueListAddress의 DEFAULT_TYPES)에서 결정을 뺀 것과 같은 규칙이라, 화면마다 이 규칙으로 걸러야 개수가 같습니다.
+ */
+export function isNotDecision(issue: Issue): boolean {
+  return issue.issueType !== "decision";
 }
 
 /**

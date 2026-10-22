@@ -1,5 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { byId } from "@/client/modules/issues/domain/issueListView";
+import { byNewestThenId } from "@/client/modules/issues/domain/issueSort";
 import type { AwaitingHuman } from "@/shared/domain/issues/awaitingHuman";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 
@@ -19,14 +19,9 @@ export function sortByRequestedAt(
 ): AwaitingHuman<HumanGateSummary, Issue> {
   return {
     ...awaiting,
-    gates: [...awaiting.gates].sort((a, b) => byRequestedAt(a.gate, b.gate)),
-    questions: [...awaiting.questions].sort(byRequestedAt),
+    gates: [...awaiting.gates].sort((a, b) => byNewestThenId(a.gate, b.gate)),
+    questions: [...awaiting.questions].sort(byNewestThenId),
   };
-}
-
-/** 확인 요청과 질문이 같은 규칙으로 정렬되게 하는 판단 요청 시각순 비교자입니다. */
-export function byRequestedAt(a: Issue, b: Issue): number {
-  return b.createdAt - a.createdAt || byId(a, b);
 }
 
 /** 정렬된 확인 요청과 질문을 화면 목록의 항목으로 늘어놓습니다. 확인 요청 묶음을 먼저 둡니다. */

@@ -1,6 +1,7 @@
 import { NON_WORK_TYPES, type Issue } from "@beads-desk/bd/issue";
 import type { EpicSummary } from "@/shared/contract/epics";
-import { localDayOf } from "@/client/modules/issues/domain/issueDateFilter";
+import { localDayOf, localDayPlus } from "@/client/modules/issues/domain/issueDateFilter";
+import { isNotDecision } from "@/client/modules/issues/domain/issueListView";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { isClosableEpic } from "@/shared/domain/epics/closableEpic";
 
@@ -46,7 +47,7 @@ export type FocusStats = {
  * 결정은 지금 화면의 다른 수치처럼 빼고, 처리량과 처리 시간은 직접 작업하지 않는 epic과 milestone도 뺍니다.
  */
 export function focusStats(issues: Issue[], epics: EpicSummary[], now: number): FocusStats {
-  const tracked = issues.filter((issue) => issue.issueType !== "decision");
+  const tracked = issues.filter(isNotDecision);
   const workItems = tracked.filter((issue) => !NON_WORK_TYPES.has(issue.issueType));
   const days = recentDays(now);
   const inWindow = (time: number | null) => time !== null && days.includes(localDayOf(time));
@@ -78,15 +79,9 @@ export function focusStats(issues: Issue[], epics: EpicSummary[], now: number): 
 }
 
 function recentDays(now: number): string[] {
-  const today = new Date(now);
+  const today = localDayOf(now);
   return Array.from({ length: STATS_DAYS }, (_, index) =>
-    localDayOf(
-      new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate() - (STATS_DAYS - 1 - index),
-      ).getTime(),
-    ),
+    localDayPlus(today, index - (STATS_DAYS - 1)),
   );
 }
 

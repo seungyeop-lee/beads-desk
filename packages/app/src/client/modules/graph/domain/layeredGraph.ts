@@ -1,5 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { byPriorityThenCreated } from "@/client/modules/issues/domain/issueListView";
+import { byPriorityThenCreated } from "@/client/modules/issues/domain/issueSort";
 
 /** from을 to보다 왼쪽 layer에 두는 간선입니다. */
 export type LayerEdge = { from: string; to: string };

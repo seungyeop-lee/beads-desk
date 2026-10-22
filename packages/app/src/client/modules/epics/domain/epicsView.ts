@@ -1,12 +1,13 @@
 import type { Issue } from "@beads-desk/bd/issue";
+import { issueTree, type IssueTreeRow } from "@/client/modules/issues/domain/issueListView";
+import { matchesQuery, normalizeQuery } from "@/client/modules/issues/domain/issueSearch";
 import {
   byClosedDesc,
   byId,
+  byNewestThenId,
   byPriority,
-  issueTree,
-  type IssueTreeRow,
-} from "@/client/modules/issues/domain/issueListView";
-import { matchesQuery } from "@/client/modules/issues/domain/issueSearch";
+  statusRank,
+} from "@/client/modules/issues/domain/issueSort";
 import type { EpicGroupKind } from "./epicGroups";
 import type { EpicSummary } from "@/shared/contract/epics";
 
@@ -39,7 +40,7 @@ export type EpicSearch = {
  * @param epics 워크스페이스의 모든 에픽입니다. topLevelEpics에 넘기는 목록과 같아야 카드 에픽이 같게 정해집니다.
  */
 export function searchEpics(epics: EpicSummary[], query: string): EpicSearch | null {
-  const search = query.trim().toLowerCase();
+  const search = normalizeQuery(query);
   if (search === "") return null;
   const epicsById = new Map(epics.map(({ epic }) => [epic.id, epic]));
   const parentEpic = (epic: Issue) =>
@@ -73,18 +74,13 @@ export function searchEpics(epics: EpicSummary[], query: string): EpicSearch | n
 export function sortEpics(epics: EpicSummary[]): EpicSummary[] {
   return [...epics].sort(
     ({ epic: a }, { epic: b }) =>
-      statusRank(a.status) - statusRank(b.status) ||
+      statusRank(a.status, STATUS_ORDER) - statusRank(b.status, STATUS_ORDER) ||
       (a.status === "closed" ? byClosedDesc(a, b) : byPriorityThenNewest(a, b)),
   );
 }
 
 function byPriorityThenNewest(a: Issue, b: Issue): number {
-  return byPriority(a, b) || b.createdAt - a.createdAt || byId(a, b);
-}
-
-function statusRank(status: string): number {
-  const index = STATUS_ORDER.indexOf(status);
-  return index === -1 ? STATUS_ORDER.length : index;
+  return byPriority(a, b) || byNewestThenId(a, b);
 }
 
 /**
