@@ -1,6 +1,7 @@
 import { isOpenHumanGateLink, type IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useId } from "react";
+import { openBlockers } from "@/client/modules/issues/domain/issueRelations";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateChip } from "../HumanGateChip";
 import { StatusChip } from "../IssueChip";
@@ -18,9 +19,7 @@ type Props = {
 export function BlockerBanner({ issue, issueHref }: Props) {
   const messages = useMessages();
   const headingId = useId();
-  const blockers = issue.dependencies.filter(
-    (link) => link.dependencyType === "blocks" && link.status !== "closed",
-  );
+  const blockers = openBlockers(issue);
   if (blockers.length === 0 || issue.status === "closed") return null;
   return (
     <section

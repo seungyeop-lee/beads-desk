@@ -1,4 +1,9 @@
-import type { Issue, IssueDetail, IssueLink } from "@beads-desk/bd/issue";
+import {
+  isOpenHumanGateLink,
+  type Issue,
+  type IssueDetail,
+  type IssueLink,
+} from "@beads-desk/bd/issue";
 import type { LinkableDependencyType } from "@/shared/contract/issueActions";
 
 /** 상세에서 지금 이슈를 기준으로 고르는 관계입니다. */
@@ -18,6 +23,45 @@ export function notReplacementTarget(
 ): (candidate: Issue) => boolean {
   const unavailable = new Set([issue.id, ...issue.dependencies.map((link) => link.id)]);
   return (candidate) => unavailable.has(candidate.id);
+}
+
+/** 관계를 맺을 후보로 쓸 수 없는 이슈를 고릅니다. 자기 자신과 이미 연결된 이슈는 어느 방향이든 다시 관계를 맺을 수 없습니다. */
+export function notLinkTarget(
+  issue: Pick<IssueDetail, "id" | "dependencies" | "dependents">,
+): (candidate: Issue) => boolean {
+  const unavailable = new Set([
+    issue.id,
+    ...issue.dependencies.map((link) => link.id),
+    ...issue.dependents.map((link) => link.id),
+  ]);
+  return (candidate) => unavailable.has(candidate.id);
+}
+
+/** 상세 맨 위에 막힘으로 보일, 아직 닫히지 않은 선행 이슈(blocks) 링크를 고릅니다. */
+export function openBlockers(issue: Pick<IssueDetail, "dependencies">): IssueLink[] {
+  return issue.dependencies.filter(
+    (link) => link.dependencyType === "blocks" && link.status !== "closed",
+  );
+}
+
+/**
+ * 이 이슈를 막고 있는, 아직 닫히지 않은 human gate 링크를 고릅니다.
+ * 상세 조회가 목록 조회보다 먼저 끝나 닫힌 상태를 받았을 수 있으므로, 목록에 있는 이슈면 목록의 상태로 판정합니다.
+ *
+ * @param listedIssues 상세 dialog 뒤 화면의 목록에 보이는 이슈입니다.
+ */
+export function openHumanGateBlockers(
+  issue: Pick<IssueDetail, "dependencies">,
+  listedIssues?: ReadonlyMap<string, Pick<Issue, "status">>,
+): IssueLink[] {
+  return issue.dependencies.filter(
+    (link) =>
+      link.dependencyType === "blocks" &&
+      isOpenHumanGateLink({
+        ...link,
+        status: listedIssues?.get(link.id)?.status ?? link.status,
+      }),
+  );
 }
 
 /** 고른 관계를 bd dep add의 (의존하는 이슈, 의존받는 이슈, 유형)으로 바꿉니다. parent-child는 하위 이슈가 상위 이슈에 의존합니다. */

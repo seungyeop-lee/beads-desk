@@ -5,7 +5,10 @@ import {
   dependencyToAdd,
   hasGraphLink,
   linkedIssues,
+  notLinkTarget,
   notReplacementTarget,
+  openBlockers,
+  openHumanGateBlockers,
 } from "./issueRelations";
 
 test("고른 관계를 bd dep add의 방향과 유형으로 바꾼다", () => {
@@ -99,17 +102,76 @@ test("모르는 의존 유형은 연결된 이슈의 맨 뒤에 둔다", () => {
   expect(rows.map(({ link }) => link.id)).toEqual(["parent", "unknown"]);
 });
 
-function link(id: string, dependencyType: string): IssueLink {
+function link(id: string, dependencyType: string, status = "open"): IssueLink {
   return {
     id,
     title: id,
-    status: "open",
+    status,
     priority: 2,
     issueType: "task",
     dependencyType,
     awaitType: "",
   };
 }
+
+test("상세 맨 위에 보일 선행 이슈는 닫히지 않은 blocks 링크뿐이다", () => {
+  const blockers = openBlockers({
+    dependencies: [
+      link("open-blocker", "blocks"),
+      link("closed-blocker", "blocks", "closed"),
+      link("open-parent", "parent-child"),
+      link("open-related", "related"),
+    ],
+  });
+
+  expect(blockers.map(({ id }) => id)).toEqual(["open-blocker"]);
+});
+
+test("human gate 패널은 blocks인 열린 human gate 링크만 고르고, 목록에 있는 이슈는 목록의 상태로 판정한다", () => {
+  const gate = (id: string, status: string): IssueLink => ({
+    id,
+    title: id,
+    status,
+    priority: 2,
+    issueType: "gate",
+    dependencyType: "blocks",
+    awaitType: "human",
+  });
+  const issue = {
+    dependencies: [
+      gate("open-gate", "open"),
+      gate("closed-gate", "closed"),
+      gate("stale-gate", "open"),
+      { ...gate("timer-gate", "open"), awaitType: "timer" },
+      link("task-blocker", "blocks"),
+      { ...gate("gate-parent", "open"), dependencyType: "parent-child" },
+    ],
+  };
+  const listedIssues = new Map([
+    ["stale-gate", { status: "closed" }],
+    ["closed-gate", { status: "open" }],
+  ]);
+
+  expect(openHumanGateBlockers(issue).map(({ id }) => id)).toEqual(["open-gate", "stale-gate"]);
+  expect(openHumanGateBlockers(issue, listedIssues).map(({ id }) => id)).toEqual([
+    "open-gate",
+    "closed-gate",
+  ]);
+});
+
+test("관계 추가 후보에서 자기 자신과 이미 양방향으로 연결된 이슈를 뺀다", () => {
+  const excluded = notLinkTarget({
+    id: "self",
+    dependencies: [link("blocker", "blocks")],
+    dependents: [link("dependent", "blocks")],
+  });
+  const candidate = (id: string) => issue(id);
+
+  expect(excluded(candidate("self"))).toBe(true);
+  expect(excluded(candidate("blocker"))).toBe(true);
+  expect(excluded(candidate("dependent"))).toBe(true);
+  expect(excluded(candidate("other"))).toBe(false);
+});
 
 test("대체·중복 닫기 후보에서 자기 자신과 이미 의존하는 이슈는 빼고, 이 이슈에 의존하는 이슈는 남긴다", () => {
   const excluded = notReplacementTarget({ id: "self", dependencies: [link("blocker", "blocks")] });

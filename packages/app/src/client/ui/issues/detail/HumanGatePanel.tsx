@@ -1,12 +1,8 @@
-import {
-  humanGateReason,
-  isOpenHumanGateLink,
-  type IssueDetail,
-  type IssueLink,
-} from "@beads-desk/bd/issue";
+import { humanGateReason, type IssueDetail, type IssueLink } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useEffect, useId, useRef, type RefObject } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
+import { openHumanGateBlockers } from "@/client/modules/issues/domain/issueRelations";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
@@ -30,11 +26,7 @@ export function HumanGatePanel({ issue, listedIssues, issueHref, scrollIntoView 
   const headingId = useId();
   const sectionRef = useRef<HTMLElement>(null);
   useKeepScrolledIntoView(sectionRef, scrollIntoView);
-  const gates = issue.dependencies.filter(
-    (link) =>
-      link.dependencyType === "blocks" &&
-      isOpenHumanGateLink({ ...link, status: listedIssues?.get(link.id)?.status ?? link.status }),
-  );
+  const gates = openHumanGateBlockers(issue, listedIssues);
   if (gates.length === 0 || issue.status === "closed") return null;
   return (
     <section

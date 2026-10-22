@@ -4,6 +4,7 @@ import type { IssueWrites } from "@/client/modules/issues/application/useIssueWr
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
 import {
   dependencyToAdd,
+  notLinkTarget,
   RELATION_KINDS,
   type RelationKind,
 } from "@/client/modules/issues/domain/issueRelations";
@@ -17,11 +18,7 @@ export function RelationAddForm({ issue, writes }: { issue: IssueDetail; writes:
   const messages = useMessages();
   const headingId = useId();
   const [kind, setKind] = useState<RelationKind>("blockedBy");
-  const linked = new Set([
-    issue.id,
-    ...issue.dependencies.map((link) => link.id),
-    ...issue.dependents.map((link) => link.id),
-  ]);
+  const exclude = notLinkTarget(issue);
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-2">
@@ -48,7 +45,7 @@ export function RelationAddForm({ issue, writes }: { issue: IssueDetail; writes:
         label={messages.relations.search}
         confirmLabel={messages.relations.linkConfirm}
         disabled={writes.pending}
-        exclude={(candidate) => linked.has(candidate.id)}
+        exclude={exclude}
         rank={kind === "parent" ? epicsFirst : undefined}
         onConfirm={async (other) => {
           const { issueId, dependsOnId, type } = dependencyToAdd(kind, issue.id, other.id);

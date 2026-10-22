@@ -7,6 +7,7 @@ import {
   type IssueTreeRow,
 } from "@/client/modules/issues/domain/issueListView";
 import { matchesQuery } from "@/client/modules/issues/domain/issueSearch";
+import type { EpicGroupKind } from "./epicGroups";
 import type { EpicSummary } from "@/shared/contract/epics";
 
 /** 지금 진행 중인 epic을 먼저 보입니다. */
@@ -102,6 +103,50 @@ export function settleExpandedEpics(
   const first = sorted.find(({ epic }) => epic.status !== "closed");
   if (!stale || !first) return expanded;
   return new Set([first.epic.id]);
+}
+
+/** 검색하는 동안 사용자가 접거나 편 에픽 카드와 묶음입니다. query가 지금 검색어와 다르면 무시합니다. */
+export type SearchToggles = {
+  query: string;
+  epics: ReadonlySet<string>;
+  groups: ReadonlySet<EpicGroupKind>;
+};
+
+/** 검색어를 바꾸면 접고 편 것을 초기화합니다. 검색어마다 토글을 따로 두면, 검색어를 지웠을 때 검색 전의 펼침으로 돌아갑니다. */
+export function noSearchToggles(query: string): SearchToggles {
+  return { query, epics: new Set(), groups: new Set() };
+}
+
+/** 모음에서 값을 빼거나, 없으면 넣습니다. */
+export function toggled<T>(values: ReadonlySet<T>, value: T): ReadonlySet<T> {
+  const next = new Set(values);
+  if (!next.delete(value)) next.add(value);
+  return next;
+}
+
+/**
+ * 에픽 카드가 펼쳐 보이는지 정합니다.
+ * 검색하는 동안에는 검색어가 펼칼 카드와 사용자가 접은 카드를 반전(XOR)해 정하고, 그렇지 않으면 사용자가 펼쳐 둔 카드를 그대로 둡니다.
+ */
+export function epicExpanded(
+  found: EpicSearch | null,
+  open: ReadonlySet<string>,
+  toggles: SearchToggles,
+  epicId: string,
+): boolean {
+  return found
+    ? (open.has(epicId) || found.expand.has(epicId)) !== toggles.epics.has(epicId)
+    : open.has(epicId);
+}
+
+/** 묶음이 펼쳐 보이는지 정합니다. 검색하는 동안에는 맞은 카드가 있는 묶음을 모두 펼치고 사용자가 접은 묶음만 접습니다. */
+export function groupExpanded(
+  found: EpicSearch | null,
+  toggles: SearchToggles,
+  collapsedGroups: ReadonlySet<EpicGroupKind>,
+  kind: EpicGroupKind,
+): boolean {
+  return found ? !toggles.groups.has(kind) : !collapsedGroups.has(kind);
 }
 
 /**

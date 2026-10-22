@@ -1,15 +1,9 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
-import { useIssueList } from "@/client/modules/issues/application/useIssueList";
-import { useIssueTextMatches } from "@/client/modules/issues/application/useIssueTextMatches";
+import { useIssueListView } from "@/client/modules/issues/application/useIssueListView";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
-import { filterByDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { labelChoices } from "@/client/modules/issues/domain/issueLabelFilter";
-import { refineIssues } from "@/client/modules/issues/domain/issueListView";
-import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
-import { issueListGroups } from "@/client/modules/issues/domain/workState";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { IssueFilterBar } from "./IssueFilterBar";
@@ -28,34 +22,11 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
  * 보기 탭과 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function IssuesScreen() {
-  const [search, setSearch] = useState("");
-  const { data: issues, error, loading } = useIssueList();
   const { address, changeFilters } = useIssueListAddress();
   const { view, dates, types, labels } = address;
-  // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
-  const deferredSearch = useDeferredValue(search);
-  const textSearch = useIssueTextMatches(search);
+  const { search, setSearch, issues, error, loading, textSearch, waiters, groups, viewIssues } =
+    useIssueListView(address);
   const textMatches = textSearch.matches;
-  // 대기 수는 거르기 전의 전체 목록으로 세야, 걸러진 이슈를 거쳐 이어지는 사슬도 셉니다.
-  const waiters = useMemo(() => waiterCounts(issues ?? []), [issues]);
-  const groups = useMemo(
-    () =>
-      issueListGroups(
-        issues
-          ? refineIssues(filterByDate(issues, dates), {
-              types,
-              labels,
-              search: deferredSearch,
-              textMatches,
-            })
-          : [],
-        waiters,
-      ),
-    [issues, waiters, types, labels, deferredSearch, textMatches, dates],
-  );
-  const viewIssues = view
-    ? (groups.find((group) => group.state === view)?.issues ?? [])
-    : groups.flatMap((group) => group.issues);
   const gateTitles = useGateTitles();
   const writes = useIssueWrites();
   const issueHref = useIssueHref();

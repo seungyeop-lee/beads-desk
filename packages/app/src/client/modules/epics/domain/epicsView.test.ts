@@ -1,14 +1,19 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { describe, expect, test } from "vitest";
+import type { EpicGroupKind } from "./epicGroups";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import {
   childProgress,
   epicDescendantRows,
+  epicExpanded,
+  groupExpanded,
+  noSearchToggles,
   notChildCandidate,
   searchEpics,
   settleExpandedEpics,
   sortEpics,
+  toggled,
   topLevelEpics,
 } from "./epicsView";
 
@@ -198,5 +203,47 @@ describe("searchEpics", () => {
   test("상위 관계가 순환해도 멈춘다", () => {
     const cycle = [epic("desk-x", "순환 X", "desk-y"), epic("desk-y", "순환 Y", "desk-x")];
     expect(searchEpics(cycle, "순환 X")?.expand).toEqual(new Set(["desk-y"]));
+  });
+});
+
+describe("에픽 카드 펼침", () => {
+  const search = { cards: new Set<string>(), expand: new Set(["hit-card"]) };
+  const open = new Set(["user-open"]);
+  const toggles = (epics: string[] = []) => ({ ...noSearchToggles("q"), epics: new Set(epics) });
+
+  test("검색하지 않을 때는 사용자가 펼쳐 둔 카드만 펼친다", () => {
+    expect(epicExpanded(null, open, noSearchToggles(""), "user-open")).toBe(true);
+    expect(epicExpanded(null, open, noSearchToggles(""), "folded")).toBe(false);
+  });
+
+  test("검색하는 동안에는 검색어가 펼칠 카드를 펼치고, 사용자가 접거나 편 카드는 반전한다", () => {
+    expect(epicExpanded(search, open, toggles(), "hit-card")).toBe(true);
+    expect(epicExpanded(search, open, toggles(), "folded")).toBe(false);
+    // 사용자가 접은 카드는 검색어가 펼치려 해도 접아 둔다.
+    expect(epicExpanded(search, open, toggles(["hit-card"]), "hit-card")).toBe(false);
+    // 검색어와 무관한 카드도 사용자가 검색 중에 펼치면 펼친다.
+    expect(epicExpanded(search, open, toggles(["folded"]), "folded")).toBe(true);
+    // 검색 전에 펼쳐 둔 카드도 검색 중에 접으면 접는다.
+    expect(epicExpanded(search, open, toggles(["user-open"]), "user-open")).toBe(false);
+  });
+
+  test("묶음은 검색하는 동안 모두 펼치고 접은 것만 접으며, 검색하지 않을 때는 사용자가 접은 묶음만 접는다", () => {
+    const collapsed: ReadonlySet<EpicGroupKind> = new Set(["closed"]);
+    const toggleGroups = { ...noSearchToggles("q"), groups: new Set<EpicGroupKind>(["open"]) };
+
+    expect(groupExpanded(null, noSearchToggles(""), collapsed, "open")).toBe(true);
+    expect(groupExpanded(null, noSearchToggles(""), collapsed, "closed")).toBe(false);
+    expect(groupExpanded(search, toggles(), collapsed, "closed")).toBe(true);
+    expect(groupExpanded(search, toggleGroups, collapsed, "open")).toBe(false);
+  });
+
+  test("toggled는 모음에서 값을 빼거나 넣고, noSearchToggles는 검색어에 빈 토글을 만든다", () => {
+    expect(toggled(new Set(["a"]), "a")).toEqual(new Set());
+    expect(toggled(new Set(["a"]), "b")).toEqual(new Set(["a", "b"]));
+
+    const toggles = noSearchToggles("결제");
+    expect(toggles.query).toBe("결제");
+    expect(toggles.epics).toEqual(new Set());
+    expect(toggles.groups).toEqual(new Set());
   });
 });
