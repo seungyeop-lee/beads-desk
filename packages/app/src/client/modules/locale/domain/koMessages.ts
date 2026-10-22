@@ -182,6 +182,12 @@ export const koMessages = {
     hideCode: "코드 숨기기",
     enlargeDiagram: "그림 크게 보기",
     enlargedDiagram: "크게 본 그림",
+    filePreview: (name: string) => `${name} 미리보기`,
+    filePreviewContents: (name: string) => `${name} 내용`,
+    filePreviewLoading: "파일을 불러오는 중",
+    filePreviewTooLarge: (megabytes: number) =>
+      `파일이 ${megabytes} MB보다 커서 미리보기를 생략했습니다.`,
+    openFile: "파일 열기",
 
     toolbar: (label: string) => `${label} 서식 도구`,
     blockType: "문단 형식",

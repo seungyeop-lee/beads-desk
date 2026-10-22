@@ -224,3 +224,63 @@
   width: 100%;
   height: 100%;
 }
+
+/*
+ * 로컬 파일 링크 옆의 펼치기 버튼과, 링크가 든 블록 아래에 펼친 파일 내용입니다(localFilePreview.ts).
+ * 내용은 최대 높이 안에서 스크롤해, 긴 파일도 아래 본문을 멀리 밀어내지 않습니다.
+ */
+.markdown-editor .milkdown .file-preview-toggle {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-inline: 2px;
+  padding: 1px;
+  border-radius: var(--radius-selector);
+  color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+  cursor: pointer;
+}
+.markdown-editor .milkdown .file-preview-toggle:hover {
+  color: var(--color-base-content);
+  background: var(--color-base-200);
+}
+.markdown-editor .milkdown .file-preview-toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: rotate 120ms;
+}
+.markdown-editor .milkdown .file-preview-toggle[aria-expanded="true"] svg {
+  rotate: 90deg;
+}
+.markdown-editor .milkdown .file-preview {
+  margin-block: 4px 8px;
+  border-radius: var(--radius-field);
+  background: var(--color-base-200);
+}
+.markdown-editor .milkdown .file-preview pre {
+  max-height: 20rem;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+}
+.markdown-editor .milkdown .file-preview-message {
+  margin: 0;
+  padding: 8px 12px;
+  color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+}
+.markdown-editor .milkdown .file-preview-message a {
+  text-decoration: underline;
+}
+
+/* diff 강조는 코드 블록 강조(codeHighlighting.ts)가 같은 토큰에 쓰는 색 그대로입니다. */
+.markdown-editor .file-preview .tok-inserted {
+  color: var(--code-literal);
+}
+.markdown-editor .file-preview .tok-deleted {
+  color: var(--code-string);
+}
+.markdown-editor .file-preview .tok-meta {
+  color: var(--code-meta);
+}

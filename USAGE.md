@@ -82,6 +82,8 @@ An opened file is shown according to its extension:
 - `.webm`, `.mp4`: played as a video.
 - Any other extension, including HTML, SVG, and script files: shown as plain text so that the file does not run in the app's origin.
 
+Links to `.diff`, `.patch`, `.log`, and `.txt` files also have an expand button next to them. Pressing it shows the file contents right below the paragraph or list item that holds the link, without leaving the issue; pressing it again collapses them. `.diff` and `.patch` files are shown with added and removed lines highlighted, and `.log` and `.txt` files as they are. Long contents scroll inside the expanded box. Files larger than 1 MB are not loaded; a message and a link that opens the file are shown instead. The button appears only while the body is not being edited.
+
 ## Updating and uninstalling
 
 To update, run the install command again, then run `bd-desk restart` so that a running server switches to the new version.

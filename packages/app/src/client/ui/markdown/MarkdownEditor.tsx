@@ -98,6 +98,7 @@ export function MarkdownEditor({
         { toolbar },
         { languages },
         { codeHighlighting, codeEditorTheme },
+        { localFilePreview },
         core,
         { $prose, $remark, callCommand },
         { Plugin },
@@ -114,6 +115,7 @@ export function MarkdownEditor({
         import("@milkdown/crepe/feature/toolbar"),
         import("@codemirror/language-data"),
         import("./codeHighlighting"),
+        import("./localFilePreview"),
         import("@milkdown/kit/core"),
         import("@milkdown/kit/utils"),
         import("@milkdown/kit/prose/state"),
@@ -153,6 +155,11 @@ export function MarkdownEditor({
           ),
           $prose(() => new Plugin({ view: (view) => previewAddressLinkTool(view, address) })),
         ]);
+      } else {
+        // 편집 중에는 원문 보존(keepUnchangedBlocks)에 영향을 주지 않도록 읽기 전용에서만 붙입니다.
+        crepe.editor.use(
+          $prose((ctx) => localFilePreview(commonmark.linkSchema.type(ctx), address, labels)),
+        );
       }
       crepe.editor.config(windowsPathAddressConfig(commonmark, core, address));
       crepe.editor.config((ctx) => {

@@ -1,5 +1,5 @@
-import { expect, test, vi } from "vitest";
-import { page } from "vitest/browser";
+import { afterEach, expect, test, vi } from "vitest";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
@@ -26,6 +26,10 @@ vi.mock("@/client/modules/issues/application/useIssueDetail", () => ({
 vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
   (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/human"),
 );
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 for (const { previousGateCount, sections } of [
   {
@@ -97,6 +101,34 @@ test("gate 상세는 머리글에 gate의 ID를, 막고 있는 작업 목록에 
         .getByRole("button", { name: messages.copyId.labelOf(WORK.id) }),
     )
     .toBeVisible();
+});
+
+test("gate 사유의 로그 파일 링크는 펼치기 버튼으로 사유 안에서 파일 내용을 펼친다", async () => {
+  vi.stubGlobal("fetch", async () => new Response("리뷰 로그 첫 줄"));
+  const summary: HumanGateSummary = {
+    gate: issue("desk-g2", { title: "Review: desk-work", issueType: "gate" }),
+    reason: "검증 결과는 [실행 로그](/tmp/review/run.log)에 있습니다.",
+    blocks: [WORK],
+    previousGateCount: 0,
+  };
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <HumanGateDecision summary={summary} />
+    </LocaleProvider>,
+  );
+  const reason = screen.getByRole("region", { name: messages.humanGate.reason });
+
+  await userEvent.click(
+    reason.getByRole("button", { name: messages.markdownEditor.filePreview("실행 로그") }),
+  );
+
+  await expect
+    .element(
+      reason.getByRole("region", {
+        name: messages.markdownEditor.filePreviewContents("실행 로그"),
+      }),
+    )
+    .toHaveTextContent("리뷰 로그 첫 줄");
 });
 
 /** 상세 카드 직속 섹션의 접근 가능한 이름을 DOM 순서대로 모읍니다. 응답 섹션은 aria-labelledby로 제목을 가리킵니다. */

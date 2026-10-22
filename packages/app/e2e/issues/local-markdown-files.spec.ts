@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 재생되는 영상, 앱 화면, 외부 주소를 열며, 편집 후 원문 경로를 유지한다", async ({
+test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 재생되는 영상, 앱 화면, 외부 주소를 열고, diff와 큰 로그 파일을 본문에 펼치며, 편집 후 원문 경로를 유지한다", async ({
   page,
   workspace,
 }) => {
@@ -24,6 +24,8 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     png: join(root, "화면 증거.png"),
   }));
   const video = join(workspace.path, "화면 녹화.webm");
+  const diff = join(workspace.path, "리뷰 변경.diff");
+  const largeLog = join(workspace.path, "큰 실행 로그.log");
   try {
     for (const [index, path] of paths.entries()) {
       await writeFile(path.md, `# 로컬 파일 ${index}\n\n브라우저에서 확인한 내용입니다.`);
@@ -33,12 +35,16 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     // recordVideo 기본 설정으로 연 context에 `<h1>녹화할 화면</h1>`을 띄우고 3초 동안 녹화해 만들었습니다.
     // 재생 위치를 옮겨 보려면 영상이 2초보다 길어야 하므로, 다시 녹화할 때도 3초 안팎으로 녹화합니다.
     await copyFile(join(import.meta.dirname, "playwright-recording.webm"), video);
+    await writeFile(diff, "@@ -1 +1 @@\n-이전 줄\n+바뀐 줄\n");
+    await writeFile(largeLog, "a".repeat(1024 * 1024 + 1));
     const markdown = [
       `![workspace PNG](<${paths[0]!.png}>) ![worktree PNG](<${paths[1]!.png}>)`,
       "",
       `[에픽 화면](/epics) [외부 문서](https://example.com/doc) [화면 녹화](<${video}>)`,
       "",
       `[workspace 문서](<${paths[0]!.md}>) [worktree 문서](<${paths[1]!.md}>) 편집할 문단`,
+      "",
+      `[리뷰 변경](<${diff}>) [큰 실행 로그](<${largeLog}>)`,
     ].join("\n");
     const id = await workspace.createIssue("로컬 파일 표시", "--description", markdown);
     await page.goto(`issues?issue=${id}`);
@@ -56,6 +62,16 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
       await page.goBack();
       await expect(dialog).toBeVisible();
     }
+
+    // 펼친 내용은 서버의 파일 API 응답으로 채웁니다. 배치와 강조, 오류 문구는 localFilePreview.browser.test.tsx가 확인합니다.
+    await description.getByRole("button", { name: "리뷰 변경 미리보기" }).click();
+    await expect(
+      description.getByRole("region", { name: "리뷰 변경 내용" }).getByText("+바뀐 줄"),
+    ).toBeVisible();
+    await description.getByRole("button", { name: "큰 실행 로그 미리보기" }).click();
+    const largeContents = description.getByRole("region", { name: "큰 실행 로그 내용" });
+    await expect(largeContents).toContainText("파일이 1 MB보다 커서 미리보기를 생략했습니다.");
+    await expect(largeContents.getByRole("link", { name: "파일 열기" })).toBeVisible();
 
     await description.getByRole("link", { name: "화면 녹화" }).click();
     await expectPlayable(page.locator("video"));

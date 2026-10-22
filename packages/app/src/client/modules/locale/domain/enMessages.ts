@@ -166,6 +166,12 @@ export const enMessages: Messages = {
     hideCode: "Hide code",
     enlargeDiagram: "Enlarge diagram",
     enlargedDiagram: "Enlarged diagram",
+    filePreview: (name) => `Preview ${name}`,
+    filePreviewContents: (name) => `Contents of ${name}`,
+    filePreviewLoading: "Loading file",
+    filePreviewTooLarge: (megabytes) =>
+      `Preview skipped because the file is larger than ${megabytes} MB.`,
+    openFile: "Open file",
 
     toolbar: (label) => `${label} formatting`,
     blockType: "Text style",
