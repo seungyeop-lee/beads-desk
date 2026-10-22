@@ -46,7 +46,7 @@ export function FocusStatsSection({ stats }: { stats: FocusStats }) {
 
   return (
     <section aria-label={text.title} className="flex flex-col gap-2">
-      <h2 className="flex items-center gap-2 px-1 text-[15px] font-bold">
+      <h2 className="flex items-center gap-2 px-1 text-body font-bold">
         {text.title}
         <span className="ml-auto flex gap-2">
           <SignalLink
@@ -142,7 +142,7 @@ function ThroughputChart({ daily }: { daily: DailyFlow[] }) {
     <div className="surface col-span-2 flex min-h-44 flex-col gap-1 px-4 pt-3 pb-1">
       <h3 className="flex items-center gap-3 text-sm font-semibold">
         {text.throughput}
-        <span className="ml-auto flex gap-3 text-xs font-normal text-base-content/60">
+        <span className="ml-auto flex gap-3 text-xs font-normal text-emphasis-60">
           {FLOW_SERIES.map((series) => (
             <span key={series} className="flex items-center gap-1.5">
               <span className={`flow-swatch flow-${series}`} />
@@ -218,15 +218,15 @@ function Duration({ label, stat }: { label: string; stat: DurationStat }) {
   const text = useMessages().focus.stats;
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-base-content/60">{label}</span>
+      <span className="text-xs text-emphasis-60">{label}</span>
       {stat.median === null ? (
-        <span className="text-xs text-base-content/45">{text.noDuration}</span>
+        <span className="text-xs text-emphasis-50">{text.noDuration}</span>
       ) : (
         <span className="flex items-baseline gap-2">
           <span className="font-mono text-xl font-bold tabular-nums">
             {formatDuration(text, stat.median)}
           </span>
-          <span className="text-xs text-base-content/45">{text.durationBasis(stat.count)}</span>
+          <span className="text-xs text-emphasis-50">{text.durationBasis(stat.count)}</span>
         </span>
       )}
     </div>
@@ -278,7 +278,7 @@ function OpenDistribution({ openBy }: { openBy: FocusStats["openBy"] }) {
       {rows.map(({ label, segments }) => (
         <div key={label} className="flex flex-col gap-1">
           <span className="flex gap-2 text-xs">
-            <span className="shrink-0 text-base-content/60">{label}</span>
+            <span className="shrink-0 text-emphasis-60">{label}</span>
             <span className="truncate">
               {segments.length === 0
                 ? messages.common.none

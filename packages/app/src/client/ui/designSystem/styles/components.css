@@ -52,10 +52,10 @@
   .chip,
   .tone-fill {
     background-color: light-dark(
-      var(--tone, #e7e5e4),
-      color-mix(in oklab, var(--tone, #d6d3d1) 16%, #0000)
+      var(--tone, var(--color-tone-none-soft)),
+      color-mix(in oklab, var(--tone, var(--color-tone-none)) 16%, #0000)
     );
-    color: light-dark(var(--color-ink), var(--tone, #d6d3d1));
+    color: light-dark(var(--color-ink), var(--tone, var(--color-tone-none)));
   }
 
   /* 보드 열처럼 넓은 면을 옅게 물들입니다. */
@@ -105,7 +105,7 @@
 
   /* 글자 없이 색만으로 비율을 보이는 막대 칸입니다. tone-dot처럼 두 모드 모두 파스텔을 그대로 칠해 칸끼리 구분되게 합니다. */
   .tone-bar {
-    background-color: var(--tone, #d6d3d1);
+    background-color: var(--tone, var(--color-tone-none));
   }
 
   .tone-dot {
@@ -114,8 +114,8 @@
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 999px;
-    background-color: var(--tone, #d6d3d1);
-    box-shadow: inset 0 0 0 1px light-dark(rgb(28 25 23 / 0.12), #0000);
+    background-color: var(--tone, var(--color-tone-none));
+    box-shadow: var(--shadow-ink-hairline);
   }
 
   /* 화살표를 글자색으로 그리는 select입니다. chip이나 ghost-select와 함께 씁니다. */
@@ -161,7 +161,7 @@
 
   .ghost-select:hover,
   .ghost-select:focus {
-    background-color: color-mix(in oklab, var(--color-base-content) 6%, #0000);
+    background-color: var(--color-content-wash);
   }
 
   /* 목록과 표를 담는 판입니다. */
@@ -188,7 +188,7 @@
   }
 
   .nav-tab:hover {
-    background-color: color-mix(in oklab, var(--color-base-content) 6%, #0000);
+    background-color: var(--color-content-wash);
     color: var(--color-base-content);
   }
 
@@ -235,7 +235,7 @@
     gap: 0.125rem;
     padding: 0.1875rem;
     border-radius: 999px;
-    background-color: color-mix(in oklab, var(--color-base-content) 6%, #0000);
+    background-color: var(--color-content-wash);
   }
 
   .segmented > button {
@@ -259,7 +259,7 @@
     background-color: var(--color-base-100);
     color: var(--color-base-content);
     font-weight: 700;
-    box-shadow: 0 1px 2px rgb(28 25 23 / 0.08);
+    box-shadow: var(--shadow-ink-press);
   }
 
   /* 표 머리글과 속성 이름처럼 값 위나 옆에 붙는 작은 이름입니다. */
@@ -267,7 +267,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    color: color-mix(in oklab, var(--color-base-content) 50%, #0000);
+    color: var(--color-emphasis-50);
   }
 
   /*
@@ -319,7 +319,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: color-mix(in oklab, var(--color-base-content) 50%, #0000);
+  color: var(--color-emphasis-50);
 }
 
 .table :where(tbody tr:not(:last-child)) {
@@ -329,7 +329,7 @@
 /* 덮개 색은 .modal-backdrop이 아니라 열린 .modal에 칠합니다. .modal-backdrop에 칠하면 .modal의 0.1초 opacity 전환과 함께 먼저 어두워지고,
    daisyUI가 .modal에 칠하는 0.3초 background-color 전환이 뒤이어 한 번 더 어둡게 해서 배경이 두 단계로 깜빡입니다. */
 .modal[open] {
-  background-color: rgb(28 25 23 / 0.4);
+  background-color: var(--color-ink-scrim);
 }
 /* 그려지는 순간 열리는 dialog는 전환을 시작할 이전 스타일이 없어서 배경색이 처음부터 최종값으로 칠해지고, daisyUI가 @starting-style에 둔 0.1초 opacity 전환으로만 나타납니다.
    배경색의 시작값을 투명으로 두어, 미리 그려 둔 dialog처럼 0.3초 background-color 전환으로 어두워지게 합니다.
@@ -342,7 +342,7 @@
 
 .modal-box {
   border: 1px solid var(--color-base-300);
-  box-shadow: 0 24px 48px -12px rgb(28 25 23 / 0.25);
+  box-shadow: var(--shadow-ink-modal);
 }
 
 .btn {
@@ -366,11 +366,11 @@
   overflow: hidden;
   border: 1px solid var(--color-base-300);
   border-radius: var(--radius-field);
-  box-shadow: 0 4px 12px -4px rgb(28 25 23 / 0.18);
+  box-shadow: var(--shadow-ink-pop);
 }
 /* 미니맵 노드에 붙인 tone class의 색으로 칠합니다. React Flow는 이 변수를 노드 자신에서 읽습니다. */
 .react-flow__minimap-node {
-  --xy-minimap-node-background-color: var(--tone, #d6d3d1);
+  --xy-minimap-node-background-color: var(--tone, var(--color-tone-none));
 }
 
 .react-flow__minimap-node.minimap-center {

@@ -16,7 +16,7 @@ export function SearchField({
 }) {
   return (
     <label className={`input input-sm rounded-full ${className}`}>
-      <SearchIcon width={15} height={15} className="text-base-content/40" />
+      <SearchIcon width={15} height={15} className="text-emphasis-40" />
       <input
         type="search"
         className="grow"

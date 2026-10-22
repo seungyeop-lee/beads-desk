@@ -41,7 +41,7 @@ export function HygieneScreen() {
   );
 
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
+    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
       <ScreenHeader
         title={text.title}
         tone={screenTone("/hygiene")}
@@ -190,15 +190,15 @@ function HygieneCard({ className, title, hint, empty, action, children }: CardPr
     <section aria-labelledby={titleId} className={`flex min-w-0 flex-col gap-2 ${className}`}>
       <div className="flex items-end gap-3 px-1">
         <div className="flex min-w-0 grow flex-col gap-0.5">
-          <h2 className="flex items-baseline gap-2 text-[15px] font-bold">
+          <h2 className="flex items-baseline gap-2 text-body font-bold">
             <span id={titleId}>{title}</span>
             {children && (
-              <span className="font-mono text-xs font-normal text-base-content/45">
+              <span className="font-mono text-xs font-normal text-emphasis-50">
                 {children.length}
               </span>
             )}
           </h2>
-          <p className="text-xs text-base-content/55">{hint}</p>
+          <p className="text-xs text-emphasis-60">{hint}</p>
         </div>
         {action}
       </div>
@@ -226,10 +226,10 @@ function IssueRow({ issue, href, detail }: { issue: IssueRef; href: string; deta
         <span className="w-full font-medium wrap-anywhere">{title}</span>
         <CoveredIssueIdButton
           issueId={issue.id}
-          className="shrink-0 rounded text-xs text-base-content/45"
+          className="shrink-0 rounded text-xs text-emphasis-50"
         />
       </span>
-      {detail && <span className="text-xs wrap-anywhere text-base-content/60">{detail}</span>}
+      {detail && <span className="text-xs wrap-anywhere text-emphasis-60">{detail}</span>}
     </CoveredIssueRow>
   );
 }

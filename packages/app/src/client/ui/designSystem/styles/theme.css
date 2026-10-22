@@ -96,7 +96,20 @@
     "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-mono:
     "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+  /* 본문 글자 크기입니다. 화면의 작은 제목(h2)과 에픽 제목도 본문과 같은 크기를 씁니다. */
+  --text-body: 15px;
+  /* 화면 내용이 좌우로 늘어날 수 있는 최대 폭입니다. */
+  --container-content: 96rem;
   --color-ink: #1c1917;
+  /*
+   * 글자 강조 단계입니다. 본문색(base-content)에 투명도를 섞어 보조 글자가 얼마나 약하게 보일지를 정합니다.
+   */
+  --color-emphasis-30: color-mix(in oklab, var(--color-base-content) 30%, #0000);
+  --color-emphasis-40: color-mix(in oklab, var(--color-base-content) 40%, #0000);
+  --color-emphasis-50: color-mix(in oklab, var(--color-base-content) 50%, #0000);
+  --color-emphasis-60: color-mix(in oklab, var(--color-base-content) 60%, #0000);
+  --color-emphasis-70: color-mix(in oklab, var(--color-base-content) 70%, #0000);
+  --color-emphasis-80: color-mix(in oklab, var(--color-base-content) 80%, #0000);
   /*
    * myday의 파스텔 휠입니다. OKLCH 색상을 30°씩 돌린 12색이고, 배경에 칠하는 색이라 위에 쓰는 글자는 잉크 색입니다.
    * 선으로 그릴 때는 이름 끝에 -line이 붙은 변형을 씁니다. 파스텔을 밝은 바탕에 그대로 선으로 그리면 대비가 약 1.4:1이라 보이지 않습니다.
@@ -122,4 +135,25 @@
     color-mix(in oklab, var(--color-lavender) 20%, #5b21b6),
     color-mix(in oklab, var(--color-lavender) 50%, #8b5cf6)
   );
+  /* tone 색이 없는 값(.tone-none)이 대신 칠하는 회색입니다. dot·bar는 짙은 회색, 칩 바탕은 더 옅은 회색입니다. */
+  --color-tone-none: #d6d3d1;
+  --color-tone-none-soft: #e7e5e4;
+
+  /*
+   * 진행 막대 색입니다. 파스텔 sage는 밝은 바탕에 묻히므로 짙은 초록을 섞습니다.
+   * 쓰임에 따라 섞는 비율이 다르면 --color-progress를 국소적으로 덮어씁니다.
+   */
+  --color-progress-ink: #3f6212;
+  --color-progress: color-mix(in oklab, var(--color-sage), var(--color-progress-ink) 40%);
+
+  /* 본문색을 6% 섞은 옅은 배경입니다. hover 배경과 segmented 바탕이 함께 씁니다. */
+  --color-content-wash: color-mix(in oklab, var(--color-base-content) 6%, #0000);
+
+  /* 잉크 색(--color-ink)에 알파를 섞은 덮개 색과 그림자입니다. 표면 위에 떠 있는 요소를 구분합니다. */
+  --color-ink-scrim: color-mix(in oklab, var(--color-ink) 40%, #0000);
+  --shadow-ink-hairline: inset 0 0 0 1px
+    light-dark(color-mix(in oklab, var(--color-ink) 12%, #0000), #0000);
+  --shadow-ink-press: 0 1px 2px color-mix(in oklab, var(--color-ink) 8%, #0000);
+  --shadow-ink-pop: 0 4px 12px -4px color-mix(in oklab, var(--color-ink) 18%, #0000);
+  --shadow-ink-modal: 0 24px 48px -12px color-mix(in oklab, var(--color-ink) 25%, #0000);
 }

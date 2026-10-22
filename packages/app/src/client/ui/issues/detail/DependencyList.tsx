@@ -45,19 +45,19 @@ export function DependencyList({ links, issueHref, edit, actions }: Props) {
               cover={{ href: issueHref(link.id) }}
             >
               <div className="flex h-6 items-center gap-2">
-                <span className="shrink-0 text-xs text-base-content/50">
+                <span className="shrink-0 text-xs text-emphasis-50">
                   {dependencyLabel(messages, side, link.dependencyType)}
                 </span>
                 <CoveredIssueIdButton
                   issueId={link.id}
-                  className="min-w-0 truncate rounded text-xs text-base-content/55"
+                  className="min-w-0 truncate rounded text-xs text-emphasis-60"
                 />
                 <span className="grow" />
                 <StatusChip status={link.status} />
                 {edit && (
                   <button
                     type="button"
-                    className="btn btn-ghost btn-xs btn-square relative text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    className="btn btn-ghost btn-xs btn-square relative text-emphasis-50 opacity-0 group-hover:opacity-100 focus:opacity-100"
                     aria-label={messages.dependencyList.remove(link.id)}
                     disabled={edit.disabled}
                     onClick={() => edit.onRemove({ side, link })}

@@ -217,10 +217,10 @@ function StageLabels({
         const name = messages.graph.stage(stage + 1);
         const [tone, label] =
           current === null || stage < current
-            ? ["text-base-content/40", `${name} · ${messages.graph.stageDone}`]
+            ? ["text-emphasis-40", `${name} · ${messages.graph.stageDone}`]
             : stage === current
               ? ["text-primary", `${name} · ${messages.graph.stageCurrent}`]
-              : ["text-base-content/65", name];
+              : ["text-emphasis-70", name];
         return (
           <div
             key={stage}

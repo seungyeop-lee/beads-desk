@@ -21,7 +21,7 @@ export function WorkspacePicker() {
   if (data.workspaces.length <= 1) {
     return (
       <span
-        className="flex min-w-0 max-w-48 items-center gap-1.5 text-sm text-base-content/60"
+        className="flex min-w-0 max-w-48 items-center gap-1.5 text-sm text-emphasis-60"
         title={currentRoot}
       >
         <FolderIcon width={15} height={15} className="shrink-0" />
@@ -30,7 +30,7 @@ export function WorkspacePicker() {
     );
   }
   return (
-    <label className="relative flex min-w-0 max-w-48 items-center text-base-content/70">
+    <label className="relative flex min-w-0 max-w-48 items-center text-emphasis-70">
       <FolderIcon width={15} height={15} className="pointer-events-none absolute left-2.5" />
       <select
         className="ghost-select min-w-0 max-w-full pl-8"

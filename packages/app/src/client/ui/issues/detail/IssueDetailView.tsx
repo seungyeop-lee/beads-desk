@@ -203,7 +203,7 @@ export function IssueDetailView({
             <RelationAddForm issue={issue} writes={writes} />
             <CloseAsReplacedForm issue={issue} writes={writes} />
 
-            <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-base-300 pt-5 text-xs text-base-content/60 tabular-nums">
+            <dl className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 border-t border-base-300 pt-5 text-xs text-emphasis-60 tabular-nums">
               <dt className="caption">{messages.issueDetail.createdAt}</dt>
               <dd>{formatTime(locale, issue.createdAt)}</dd>
               <dt className="caption">{messages.issueDetail.updatedAt}</dt>

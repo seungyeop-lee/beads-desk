@@ -30,13 +30,13 @@ export function BlockerBanner({ issue, issueHref }: Props) {
         <span className="tone-dot tone-coral" />
         {messages.blocking.bannerTitle}
       </h3>
-      <p className="text-xs text-base-content/65">{messages.blocking.bannerBody}</p>
+      <p className="text-xs text-emphasis-70">{messages.blocking.bannerBody}</p>
       <ul className="flex flex-col gap-1">
         {blockers.map((link) => (
           <li key={link.id} className="flex items-center gap-2 text-sm">
             <CopyIssueIdButton
               issueId={link.id}
-              className="shrink-0 rounded text-xs text-base-content/55"
+              className="shrink-0 rounded text-xs text-emphasis-60"
             />
             <Link
               href={issueHref(link.id)}

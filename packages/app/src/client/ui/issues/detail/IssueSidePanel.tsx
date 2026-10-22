@@ -36,16 +36,16 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
       <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-base-300 px-5 py-3">
         <CopyIssueIdButton
           issueId={issueId}
-          className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 text-xs text-base-content/70"
+          className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 text-xs text-emphasis-70"
         />
         {data && (
-          <span className="text-sm text-base-content/70">
+          <span className="text-sm text-emphasis-70">
             <IssueTypeTag issueType={data.issueType} />
           </span>
         )}
         {loading && (
           <span
-            className="loading loading-spinner loading-xs text-base-content/40"
+            className="loading loading-spinner loading-xs text-emphasis-40"
             aria-label={messages.common.loading}
           />
         )}
@@ -53,7 +53,7 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
           {messages.issueDetail.openInMain}
         </Link>
         <Link
-          className="btn btn-ghost btn-sm btn-square text-base-content/60"
+          className="btn btn-ghost btn-sm btn-square text-emphasis-60"
           href={closeHref}
           scroll={false}
           aria-label={messages.issueDetail.closeSidePanel}

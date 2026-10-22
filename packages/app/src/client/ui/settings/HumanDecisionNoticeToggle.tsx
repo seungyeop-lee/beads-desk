@@ -47,7 +47,7 @@ export function HumanDecisionNoticeToggle() {
           }}
         />
       </label>
-      <p id={hintId} className="text-sm text-base-content/60">
+      <p id={hintId} className="text-sm text-emphasis-60">
         {hint}
       </p>
     </div>

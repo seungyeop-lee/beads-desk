@@ -54,11 +54,11 @@ export function IssueViewTabs({ view, filters, groups }: Props) {
               href={tab.href}
               scroll={false}
               aria-current={current ? "page" : undefined}
-              className={`flex shrink-0 items-center whitespace-nowrap gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-base-content/55 hover:text-base-content"}`}
+              className={`flex shrink-0 items-center whitespace-nowrap gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-emphasis-60 hover:text-base-content"}`}
             >
               {tab.state && <span className={`tone-dot ${workStateTone(tab.state)}`} />}
               {tab.label}
-              <span className="font-mono text-xs font-normal text-base-content/45 tabular-nums">
+              <span className="font-mono text-xs font-normal text-emphasis-50 tabular-nums">
                 {tab.count}
               </span>
             </Link>

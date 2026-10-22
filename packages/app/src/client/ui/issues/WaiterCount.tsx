@@ -9,7 +9,7 @@ export function WaiterCount({ count, className = "" }: { count: number; classNam
   if (count === 0) return null;
   return (
     <span
-      className={`shrink-0 font-mono text-xs text-base-content/55 tabular-nums ${className}`}
+      className={`shrink-0 font-mono text-xs text-emphasis-60 tabular-nums ${className}`}
       title={messages.issue.waitersHint(count)}
     >
       {messages.issue.waiters(count)}

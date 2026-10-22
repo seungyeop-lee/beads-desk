@@ -25,7 +25,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
     return (
       <button
         type="button"
-        className="btn btn-sm gap-1.5 rounded-full border-dashed border-base-300 bg-transparent font-medium text-base-content/55 shadow-none hover:border-base-content/30 hover:text-base-content"
+        className="btn btn-sm gap-1.5 rounded-full border-dashed border-base-300 bg-transparent font-medium text-emphasis-60 shadow-none hover:border-base-content/30 hover:text-base-content"
         aria-label={messages.editable.addField(label)}
         onClick={edit}
       >
@@ -42,7 +42,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
         {draft === null && (
           <button
             type="button"
-            className="btn btn-ghost btn-xs gap-1 text-base-content/50 opacity-0 group-hover:opacity-100 focus:opacity-100"
+            className="btn btn-ghost btn-xs gap-1 text-emphasis-50 opacity-0 group-hover:opacity-100 focus:opacity-100"
             onClick={edit}
           >
             <PencilIcon width={12} height={12} />

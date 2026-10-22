@@ -41,7 +41,7 @@ export function EpicSection({
       <header className="grid grid-cols-[2rem_3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-3 py-2 xl:flex xl:gap-4 pr-5 pl-3">
         <button
           type="button"
-          className="btn btn-ghost btn-sm btn-square text-base-content/50"
+          className="btn btn-ghost btn-sm btn-square text-emphasis-50"
           aria-expanded={expanded}
           aria-label={messages.epics.toggleChildren(epic.id, expanded)}
           onClick={onToggle}
@@ -51,11 +51,11 @@ export function EpicSection({
         <CopyIssueIdButton
           issueId={epic.id}
           short
-          className="w-12 shrink-0 rounded text-left text-xs text-base-content/55"
+          className="w-12 shrink-0 rounded text-left text-xs text-emphasis-60"
         />
         <Link
           id={titleId}
-          className="min-w-0 grow text-[15px] wrap-anywhere font-semibold decoration-base-content/30 underline-offset-4 hover:underline"
+          className="min-w-0 grow text-body wrap-anywhere font-semibold decoration-base-content/30 underline-offset-4 hover:underline"
           href={issueHref(epic.id)}
           scroll={false}
         >
@@ -132,7 +132,7 @@ function ClosedEpicProgress({
         <span className="hidden w-40 shrink-0 md:block" />
       ) : (
         <time
-          className="shrink-0 whitespace-nowrap text-xs text-base-content/55 md:w-40"
+          className="shrink-0 whitespace-nowrap text-xs text-emphasis-60 md:w-40"
           dateTime={new Date(closedAt).toISOString()}
         >
           {messages.epics.closedOn(
@@ -162,7 +162,7 @@ function EpicCount({
   return (
     <span
       title={messages.epics.closedChildCount}
-      className="flex shrink-0 gap-1.5 whitespace-nowrap font-mono text-xs text-base-content/55 tabular-nums"
+      className="flex shrink-0 gap-1.5 whitespace-nowrap font-mono text-xs text-emphasis-60 tabular-nums"
     >
       <span className="w-14 text-right">
         {closed}/{total}

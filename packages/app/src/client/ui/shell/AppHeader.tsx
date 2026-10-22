@@ -38,10 +38,10 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-20 shrink-0 border-b border-base-300 bg-base-100/85 backdrop-blur">
-      <div className="mx-auto flex max-w-[96rem] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-8 xl:h-14 xl:flex-nowrap xl:gap-6 xl:py-0">
+      <div className="mx-auto flex max-w-content flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-8 xl:h-14 xl:flex-nowrap xl:gap-6 xl:py-0">
         <Link href={workspaceHref()} className="flex shrink-0 items-center gap-2.5">
           <BeadsMark />
-          <span className="text-[15px] font-bold tracking-tight">beads-desk</span>
+          <span className="text-body font-bold tracking-tight">beads-desk</span>
         </Link>
         <nav
           className="order-last flex w-full min-w-0 items-center gap-1 overflow-x-auto xl:order-none xl:w-auto"
@@ -76,7 +76,7 @@ export function AppHeader() {
           <WorkspacePicker />
           <button
             type="button"
-            className="btn btn-ghost btn-sm btn-square shrink-0 text-base-content/70"
+            className="btn btn-ghost btn-sm btn-square shrink-0 text-emphasis-70"
             aria-label={messages.settings.title}
             onClick={() => setSettingsOpen(true)}
           >

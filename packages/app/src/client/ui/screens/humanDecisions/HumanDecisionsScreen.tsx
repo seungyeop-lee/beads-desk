@@ -91,7 +91,7 @@ export function HumanDecisionsScreen() {
   ].filter((group) => group.items.length > 0);
 
   return (
-    <main ref={mainRef} className="mx-auto flex max-w-[96rem] flex-col gap-6 px-8 pb-16">
+    <main ref={mainRef} className="mx-auto flex max-w-content flex-col gap-6 px-8 pb-16">
       <ScreenHeader
         title={messages.humanDecisions.title}
         tone={screenTone("/human")}
@@ -110,9 +110,9 @@ export function HumanDecisionsScreen() {
             <div ref={listRef} className="flex flex-col gap-5">
               {groups.map((group) => (
                 <section key={group.label} aria-label={group.label} className="flex flex-col gap-2">
-                  <h2 className="flex items-baseline gap-2 px-1 text-[15px] font-bold">
+                  <h2 className="flex items-baseline gap-2 px-1 text-body font-bold">
                     {group.label}
-                    <span className="font-mono text-xs font-normal text-base-content/50">
+                    <span className="font-mono text-xs font-normal text-emphasis-50">
                       {group.items.length}
                     </span>
                   </h2>
@@ -215,7 +215,7 @@ function PendingRow({
         )}
         <CoveredIssueIdButton
           issueId={issue.id}
-          className="ml-auto shrink-0 rounded text-right text-xs text-base-content/45"
+          className="ml-auto shrink-0 rounded text-right text-xs text-emphasis-50"
         />
       </span>
       {item.kind === "gate" && <FirstBlockedLine blocks={item.summary.blocks} />}
@@ -234,7 +234,7 @@ function SelectedDecision({ question }: { question: Issue }) {
       loadFailed={(failed) => messages.issueDetail.loadFailed(failed)}
       waiting={
         <span
-          className="loading loading-spinner loading-sm text-base-content/40"
+          className="loading loading-spinner loading-sm text-emphasis-40"
           aria-label={messages.issueDetail.loading}
         />
       }
@@ -244,7 +244,7 @@ function SelectedDecision({ question }: { question: Issue }) {
           <header className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <IssueTypeTag issueType={issue.issueType} />
-              <CopyIssueIdButton issueId={issue.id} className="rounded text-base-content/55" />
+              <CopyIssueIdButton issueId={issue.id} className="rounded text-emphasis-60" />
               <Link
                 href={issueHref(issue.id)}
                 scroll={false}
@@ -262,7 +262,7 @@ function SelectedDecision({ question }: { question: Issue }) {
               <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={issue.description} />
             </div>
           ) : (
-            <p className="text-sm text-base-content/50">{messages.humanDecisions.noDescription}</p>
+            <p className="text-sm text-emphasis-50">{messages.humanDecisions.noDescription}</p>
           )}
           <WriteErrorAlert writes={writes} />
           {/* 응답 패널은 상세가 아니라 목록의 이슈로 보일지 정합니다. 패널이 사라질 때 응답·닫기 알림이 뜨므로, 상세 조회가 먼저 끝나 닫힌 상태를 받아도 목록에서 행이 빠질 때까지 패널을 남겨 둡니다. */}

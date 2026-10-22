@@ -43,8 +43,8 @@ export function CheckboxMenu<T extends string>({
     <details ref={menuRef} className="dropdown">
       <summary className="btn btn-sm btn-ghost gap-1.5 rounded-full font-medium">
         {label}
-        <span className="text-base-content/50">{summary}</span>
-        <ChevronDownIcon width={14} height={14} className="text-base-content/50" />
+        <span className="text-emphasis-50">{summary}</span>
+        <ChevronDownIcon width={14} height={14} className="text-emphasis-50" />
       </summary>
       <ul className="dropdown-content menu z-10 mt-1 max-h-80 w-44 flex-nowrap overflow-y-auto rounded-box border border-base-300 bg-base-100 p-1.5 shadow-lg">
         {options.map((option) => (

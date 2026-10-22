@@ -31,7 +31,7 @@ export function DecisionsScreen() {
   const messages = useMessages();
 
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
+    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
       <ScreenHeader
         title={messages.decisions.title}
         tone={screenTone("/decisions")}
@@ -80,7 +80,7 @@ function DecisionTable({ title, rows, emptyMessage, issueHref, writes }: TablePr
     <section className="flex flex-col gap-3">
       <h2 className="flex items-baseline gap-2 text-lg font-bold tracking-tight">
         {title}
-        <span className="font-mono text-xs font-normal text-base-content/45">{rows.length}</span>
+        <span className="font-mono text-xs font-normal text-emphasis-50">{rows.length}</span>
       </h2>
       {rows.length === 0 ? (
         <EmptyState message={emptyMessage} />
@@ -141,7 +141,7 @@ function DecisionRowView({
         <CopyIssueIdButton
           issueId={decision.id}
           short
-          className="rounded text-xs text-base-content/55"
+          className="rounded text-xs text-emphasis-60"
         />
       </td>
       <td>
@@ -165,19 +165,19 @@ function DecisionRowView({
         <div className="flex flex-col gap-1">
           {supersededBy && (
             <span className="flex items-center gap-2">
-              <span className="text-base-content/50">{messages.decisions.supersededBy}</span>
+              <span className="text-emphasis-50">{messages.decisions.supersededBy}</span>
               <IssueLinks ids={[supersededBy]} issueHref={issueHref} />
             </span>
           )}
           {supersedes.length > 0 && (
             <span className="flex items-center gap-2">
-              <span className="text-base-content/50">{messages.decisions.supersedes}</span>
+              <span className="text-emphasis-50">{messages.decisions.supersedes}</span>
               <IssueLinks ids={supersedes} issueHref={issueHref} />
             </span>
           )}
         </div>
       </td>
-      <td className="text-sm text-base-content/70 tabular-nums">
+      <td className="text-sm text-emphasis-70 tabular-nums">
         {new Date(decision.createdAt).toLocaleDateString(locale, { dateStyle: "medium" })}
       </td>
     </tr>

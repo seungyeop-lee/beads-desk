@@ -53,7 +53,7 @@ export function MermaidDiagramDialog({ diagram, onClose }: Props) {
         <header className="flex shrink-0 justify-end border-b border-base-300 px-3 py-2">
           <button
             type="button"
-            className="btn btn-ghost btn-sm btn-square text-base-content/60"
+            className="btn btn-ghost btn-sm btn-square text-emphasis-60"
             aria-label={messages.common.close}
             onClick={() => dialogRef.current?.close()}
           >

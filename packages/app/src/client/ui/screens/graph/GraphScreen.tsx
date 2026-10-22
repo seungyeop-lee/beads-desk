@@ -82,7 +82,7 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
             >
               {scopeTitle}
             </Link>
-            <span className="text-base-content/50"> · {messages.graph.scopes[scope.kind]}</span>
+            <span className="text-emphasis-50"> · {messages.graph.scopes[scope.kind]}</span>
           </h1>
           {loading && (
             <span
@@ -169,7 +169,7 @@ function BlockingChainGraph({
           />
         </>
       ) : (
-        <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
+        <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-emphasis-60">
           {messages.graph.empty.center}
         </p>
       )}

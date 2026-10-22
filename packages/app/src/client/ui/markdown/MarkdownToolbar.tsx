@@ -86,7 +86,7 @@ export function MarkdownToolbar({ label, headingLevel, disabled, onHeading, onFo
             <button
               key={action}
               type="button"
-              className="btn btn-ghost btn-xs btn-square text-base-content/75 hover:text-base-content"
+              className="btn btn-ghost btn-xs btn-square text-emphasis-80 hover:text-base-content"
               title={labels[action]}
               aria-label={labels[action]}
               disabled={disabled}

@@ -10,7 +10,7 @@ export function WorkspaceNotFoundScreen({ name }: { name: string }) {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-8 pt-8 pb-16">
       <ScreenHeader title={messages.workspaces.notFoundTitle} />
-      <p className="text-sm text-base-content/70">{messages.workspaces.notFound(name)}</p>
+      <p className="text-sm text-emphasis-70">{messages.workspaces.notFound(name)}</p>
       <Link href="/" className="btn btn-sm self-start">
         {messages.workspaces.showAll}
       </Link>

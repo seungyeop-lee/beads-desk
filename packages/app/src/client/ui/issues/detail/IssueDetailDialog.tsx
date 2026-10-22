@@ -187,7 +187,7 @@ function IssueDetailPanel({
       <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-base-300 px-6 py-3">
         {previous && (
           <Link
-            className="btn btn-ghost btn-sm -ml-3 gap-1 px-2 font-mono text-xs font-normal text-base-content/60"
+            className="btn btn-ghost btn-sm -ml-3 gap-1 px-2 font-mono text-xs font-normal text-emphasis-60"
             href={detailHref(previous)}
             scroll={false}
             aria-label={messages.issueDetail.backTo(previous.issue)}
@@ -198,16 +198,16 @@ function IssueDetailPanel({
         )}
         <CopyIssueIdButton
           issueId={issueId}
-          className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 text-xs text-base-content/70"
+          className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 text-xs text-emphasis-70"
         />
         {issue && (
-          <span className="text-sm text-base-content/70">
+          <span className="text-sm text-emphasis-70">
             <IssueTypeTag issueType={issue.issueType} />
           </span>
         )}
         {(loading || writes.pending) && (
           <span
-            className="loading loading-spinner loading-xs text-base-content/40"
+            className="loading loading-spinner loading-xs text-emphasis-40"
             aria-label={messages.issueDetail.working}
           />
         )}
@@ -216,7 +216,7 @@ function IssueDetailPanel({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="btn btn-ghost btn-sm btn-square text-base-content/60"
+            className="btn btn-ghost btn-sm btn-square text-emphasis-60"
             aria-label={messages.common.close}
           >
             <CloseIcon />

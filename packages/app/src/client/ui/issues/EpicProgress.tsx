@@ -19,7 +19,7 @@ export function EpicProgress({
   return (
     <>
       <EpicProgressBar epicId={epicId} closed={closed} total={total} className={barClassName} />
-      <span className="whitespace-nowrap font-mono text-xs text-base-content/55 tabular-nums">
+      <span className="whitespace-nowrap font-mono text-xs text-emphasis-60 tabular-nums">
         {closed}/{total} · {epicPercent(closed, total)}%
       </span>
     </>
@@ -40,7 +40,7 @@ export function EpicProgressBar({
   const messages = useMessages();
   return (
     <progress
-      className={`progress h-1.5 text-[color-mix(in_oklab,var(--color-sage),#3f6212_40%)] ${className}`}
+      className={`progress h-1.5 text-progress ${className}`}
       value={closed}
       max={Math.max(total, 1)}
       aria-label={messages.epics.progress(epicId)}

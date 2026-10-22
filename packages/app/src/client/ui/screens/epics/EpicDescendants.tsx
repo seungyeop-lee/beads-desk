@@ -83,7 +83,7 @@ export function EpicDescendants({
       )}
       {error && <ErrorAlert>{messages.epics.childrenLoadFailed(error)}</ErrorAlert>}
       {!descendants && !error && (
-        <span className="flex items-center gap-2 text-sm text-base-content/60">
+        <span className="flex items-center gap-2 text-sm text-emphasis-60">
           <span className="loading loading-spinner loading-sm" />
           {messages.epics.childrenLoading}
         </span>

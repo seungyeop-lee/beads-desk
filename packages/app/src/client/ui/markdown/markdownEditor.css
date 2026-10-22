@@ -102,23 +102,26 @@
  * 같은 낱말 강조, 검색 결과 강조, snippet 입력 칸은 고른 글자를 덮어 칠하므로, 고른 글자가 비쳐 보이게 반투명으로 둡니다.
  */
 .markdown-editor {
-  --code-active-line: light-dark(#cceeff44, #ede9e30d);
+  --code-active-line: light-dark(
+    #cceeff44,
+    rgb(from var(--color-base-content) r g b / calc(13 / 255))
+  );
   --code-selection: light-dark(#d7d4f0, #2d2b44);
-  --code-selection-unfocused: light-dark(#d9d9d9, #34312d);
-  --code-cursor: light-dark(#000, #ede9e3);
+  --code-selection-unfocused: light-dark(#d9d9d9, var(--color-base-300));
+  --code-cursor: light-dark(#000, var(--color-base-content));
   --code-selection-match: light-dark(#99ff7780, #99ff771f);
   --code-search-match: light-dark(#ffff0054, #ffff0018);
   --code-search-match-current: light-dark(#ff6a0054, #ff6a003a);
   --code-snippet-field: light-dark(#00000022, #ffffff1c);
-  --code-tooltip: light-dark(#f5f5f5, #1f1d1b);
+  --code-tooltip: light-dark(#f5f5f5, var(--color-base-100));
   --code-tooltip-border: light-dark(#bbb, #716b63);
-  --code-fold-placeholder: light-dark(#eee, #34312d);
+  --code-fold-placeholder: light-dark(#eee, var(--color-base-300));
   --code-fold-placeholder-border: light-dark(#ddd, #716b63);
   --code-fold-placeholder-text: light-dark(#888, #a8a29a);
-  --code-button-top: light-dark(#eff1f5, #34312d);
-  --code-button-bottom: light-dark(#d9d9df, #1f1d1b);
-  --code-button-pressed-top: light-dark(#b4b4b4, #1f1d1b);
-  --code-button-pressed-bottom: light-dark(#d0d3d6, #34312d);
+  --code-button-top: light-dark(#eff1f5, var(--color-base-300));
+  --code-button-bottom: light-dark(#d9d9df, var(--color-base-100));
+  --code-button-pressed-top: light-dark(#b4b4b4, var(--color-base-100));
+  --code-button-pressed-bottom: light-dark(#d0d3d6, var(--color-base-300));
 }
 
 .markdown-editor .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {

@@ -59,7 +59,7 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
     <>
       {measurement}
       {total > 0 && (
-        <p className="text-sm text-base-content/70">
+        <p className="text-sm text-emphasis-70">
           {current === null
             ? messages.graph.allStagesDone(total)
             : messages.graph.progress(current + 1, total)}
@@ -101,7 +101,7 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
               plan={graphPlan}
             />
           ) : (
-            <p className="flex-1 self-start rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-base-content/55">
+            <p className="flex-1 self-start rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-emphasis-60">
               {messages.graph.empty.epic}
             </p>
           )}
@@ -144,7 +144,7 @@ function UnorderedIssues({
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold">
             {messages.graph.unordered}{" "}
-            <span className="font-normal text-base-content/45 tabular-nums">{issues.length}</span>
+            <span className="font-normal text-emphasis-50 tabular-nums">{issues.length}</span>
           </h2>
           <button
             type="button"
@@ -158,7 +158,7 @@ function UnorderedIssues({
             {expanded ? messages.graph.collapse : messages.graph.expand}
           </button>
         </div>
-        {expanded && <p className="text-xs text-base-content/55">{messages.graph.unorderedHint}</p>}
+        {expanded && <p className="text-xs text-emphasis-60">{messages.graph.unorderedHint}</p>}
       </header>
       {expanded && (
         <ul className="flex flex-col divide-y divide-base-300 overflow-y-auto px-3 pb-3">
@@ -197,7 +197,7 @@ function UnorderedIssueRow({
       title={issue.title}
       cover={{ href }}
     >
-      <span className="flex items-center gap-1.5 text-base-content/55">
+      <span className="flex items-center gap-1.5 text-emphasis-60">
         <IssueTypeTag issueType={issue.issueType} />
         <span aria-hidden>·</span>
         <span className={`tone-dot ${workStateTone(state)}`} />

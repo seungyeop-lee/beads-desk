@@ -46,7 +46,7 @@ function CloseReasonDialog({ request }: { request: DialogRequest<string> }) {
           <h2 className="text-lg font-bold tracking-tight">{messages.closeIssue.title}</h2>
           <CopyIssueIdButton
             issueId={request.issueId}
-            className="self-start rounded text-xs text-base-content/55"
+            className="self-start rounded text-xs text-emphasis-60"
           />
         </div>
         <label className="flex flex-col gap-1.5">

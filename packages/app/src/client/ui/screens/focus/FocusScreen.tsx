@@ -2,7 +2,7 @@
 
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { type ReactNode } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import { useFocusView } from "@/client/modules/focus/application/useFocusView";
 import { NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
 import { blockersOf, type Blocker } from "@/client/modules/gates/domain/humanGateBlockers";
@@ -43,7 +43,7 @@ export function FocusScreen() {
   const countOf = { in_progress: view?.inProgress, ready: view?.ready, blocked: view?.blocked };
 
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-6 px-8 pb-16">
+    <main className="mx-auto flex max-w-content flex-col gap-6 px-8 pb-16">
       <ScreenHeader title={messages.focus.title} tone={screenTone("/focus")} loading={loading} />
 
       {error && <ErrorAlert>{messages.issues.loadFailed(error)}</ErrorAlert>}
@@ -145,12 +145,18 @@ export function FocusScreen() {
                           <span className="min-w-0 grow truncate font-medium">
                             {epic.title || messages.common.untitled}
                           </span>
-                          <span className="font-mono text-xs text-base-content/55 tabular-nums">
+                          <span className="font-mono text-xs text-emphasis-60 tabular-nums">
                             {closedChildren}/{totalChildren}
                           </span>
                         </span>
                         <progress
-                          className="progress h-1.5 w-full text-[color-mix(in_oklab,var(--color-sage),#3f6212_25%)]"
+                          className="progress h-1.5 w-full text-progress"
+                          style={
+                            {
+                              "--color-progress":
+                                "color-mix(in oklab, var(--color-sage), var(--color-progress-ink) 25%)",
+                            } as CSSProperties
+                          }
                           value={closedChildren}
                           max={Math.max(totalChildren, 1)}
                           aria-label={messages.focus.epicProgressOf(epic.title)}
@@ -208,13 +214,13 @@ type SectionProps = {
 function FocusSection({ title, tone, empty, action, children }: SectionProps) {
   return (
     <section aria-label={title} className="flex flex-col gap-2">
-      <h2 className="flex items-center gap-2 px-1 text-[15px] font-bold">
+      <h2 className="flex items-center gap-2 px-1 text-body font-bold">
         {tone && <span className={`tone-dot ${tone}`} />}
         {title}
         <span className="ml-auto font-normal">{action}</span>
       </h2>
       {children.length === 0 ? (
-        <p className="rounded-box border border-dashed border-base-300 py-6 text-center text-sm text-base-content/50">
+        <p className="rounded-box border border-dashed border-base-300 py-6 text-center text-sm text-emphasis-50">
           {empty}
         </p>
       ) : (
@@ -258,7 +264,7 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
             칸 폭을 고정하면 우선순위와 멀어지고 제목이 쓸 폭이 줄어들므로, 글자와 아이콘만큼만 차지하게 둡니다. */}
         {showAssignee && (
           <span
-            className="relative flex max-w-36 shrink-0 items-center gap-0.5 text-xs text-base-content/60"
+            className="relative flex max-w-36 shrink-0 items-center gap-0.5 text-xs text-emphasis-60"
             title={`${messages.issue.assignee}: ${issue.assignee ?? messages.common.none}`}
           >
             <UserIcon className="size-3 shrink-0" />
@@ -270,7 +276,7 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
         <CoveredIssueIdButton
           issueId={issue.id}
           short
-          className="ml-auto min-w-8 shrink-0 rounded text-right text-xs whitespace-nowrap text-base-content/45"
+          className="ml-auto min-w-8 shrink-0 rounded text-right text-xs whitespace-nowrap text-emphasis-50"
         />
       </span>
       {waitingOn && waitingOn.length > 0 && <WaitingOnLines blockers={waitingOn} />}

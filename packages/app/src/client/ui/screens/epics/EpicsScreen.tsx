@@ -29,7 +29,7 @@ export function EpicsScreen() {
   const messages = useMessages();
 
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
+    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
       <ScreenHeader
         title={messages.epics.title}
         tone={screenTone("/epics")}

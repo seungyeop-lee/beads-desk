@@ -35,7 +35,7 @@ export function BlockerLine({ issueId, blockedBy, titleOf, gateTitles, issueHref
   if (!first) return null;
   const title = first.title || messages.common.untitled;
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-xs text-base-content/60">
+    <span className="flex min-w-0 items-center gap-1.5 text-xs text-emphasis-60">
       {first.humanGate ? (
         <>
           <HumanGateChip />
@@ -74,14 +74,14 @@ export function BoardBlockerLine({ blockers }: { blockers: Blocker[] }) {
   return (
     <>
       {blocker.humanGate && (
-        <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-base-content/60">
+        <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-emphasis-60">
           ← <HumanGateChip />
           <span className="min-w-0 break-words">{blocker.title || messages.common.untitled}</span>
           {rest.length > 0 && messages.blocking.more(rest.length)}
         </span>
       )}
       {!blocker.humanGate && (
-        <span className="text-xs text-base-content/60">
+        <span className="text-xs text-emphasis-60">
           ← {messages.blocking.waitingOn(blocker.id)}
           {rest.length > 0 && ` ${messages.blocking.more(rest.length)}`}
         </span>
@@ -99,14 +99,14 @@ export function WaitingOnLines({ blockers }: { blockers: Blocker[] }) {
         blocker.humanGate ? (
           <span
             key={blocker.id}
-            className="flex min-w-0 items-center gap-1.5 pl-19 text-xs text-base-content/60"
+            className="flex min-w-0 items-center gap-1.5 pl-19 text-xs text-emphasis-60"
           >
             ←
             <HumanGateChip />
             <span className="truncate">{blocker.title || messages.common.untitled}</span>
           </span>
         ) : (
-          <span key={blocker.id} className="truncate pl-19 text-xs text-base-content/60">
+          <span key={blocker.id} className="truncate pl-19 text-xs text-emphasis-60">
             ← {blocker.id} {blocker.title}
           </span>
         ),
@@ -121,7 +121,7 @@ export function FirstBlockedLine({ blocks }: { blocks: Issue[] }) {
   const [first, ...rest] = blocks;
   if (!first) return null;
   return (
-    <span className="wrap-anywhere text-xs text-base-content/60">
+    <span className="wrap-anywhere text-xs text-emphasis-60">
       ← {first.title || messages.common.untitled}
       {rest.length > 0 && ` ${messages.blocking.more(rest.length)}`}
     </span>

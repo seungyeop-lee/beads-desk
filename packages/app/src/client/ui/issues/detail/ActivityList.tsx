@@ -18,7 +18,7 @@ export function ActivityList({ issue }: { issue: Pick<IssueDetail, "id" | "comme
     <LoadResult
       state={{ data: events, error }}
       loadFailed={(failed) => messages.activity.loadFailed(failed)}
-      waiting={<p className="text-sm text-base-content/50">{messages.activity.loading}</p>}
+      waiting={<p className="text-sm text-emphasis-50">{messages.activity.loading}</p>}
     >
       {(events) => (
         <ol className="flex flex-col gap-3">
@@ -34,7 +34,7 @@ export function ActivityList({ issue }: { issue: Pick<IssueDetail, "id" | "comme
                 </TimelineItem>
               ) : (
                 <TimelineItem author={entry.actor} at={entry.at}>
-                  <ul className="flex flex-col gap-0.5 break-words text-base-content/80">
+                  <ul className="flex flex-col gap-0.5 break-words text-emphasis-80">
                     {entry.lines.map((line, index) => (
                       <li key={index}>{activityLineText(messages, locale, line)}</li>
                     ))}

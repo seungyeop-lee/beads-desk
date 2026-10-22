@@ -18,7 +18,7 @@ export function WorkspaceSelectScreen({ choices }: { choices: WorkspaceChoice[] 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-8 pt-8 pb-16">
       <ScreenHeader title={messages.workspaces.selectTitle} />
-      <p className="text-sm text-base-content/70">{messages.workspaces.selectDescription}</p>
+      <p className="text-sm text-emphasis-70">{messages.workspaces.selectDescription}</p>
       <ul className="flex flex-col gap-2" aria-label={messages.workspaces.selectTitle}>
         {choices.map(({ slug, root, href }) => (
           <li key={slug}>
@@ -26,9 +26,9 @@ export function WorkspaceSelectScreen({ choices }: { choices: WorkspaceChoice[] 
               href={href}
               className="surface flex min-w-0 items-center gap-3 px-4 py-3 transition hover:shadow-sm"
             >
-              <FolderIcon width={17} height={17} className="shrink-0 text-base-content/60" />
+              <FolderIcon width={17} height={17} className="shrink-0 text-emphasis-60" />
               <span className="font-semibold">{slug}</span>
-              <span className="min-w-0 truncate text-sm text-base-content/55" title={root}>
+              <span className="min-w-0 truncate text-sm text-emphasis-60" title={root}>
                 {root}
               </span>
             </Link>

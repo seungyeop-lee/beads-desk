@@ -50,7 +50,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
           />
         </div>
         <div className="flex items-center justify-end gap-3">
-          <span className="text-xs text-base-content/40">{messages.comments.submitHint}</span>
+          <span className="text-xs text-emphasis-40">{messages.comments.submitHint}</span>
           <button
             type="submit"
             className="btn btn-sm btn-primary"
@@ -95,7 +95,7 @@ export function TimelineItem({
       <div className="flex min-w-0 grow flex-col gap-1">
         <header className="flex items-baseline gap-2 text-xs">
           <span className="font-semibold">{author}</span>
-          <time className="text-base-content/50" dateTime={new Date(at).toISOString()}>
+          <time className="text-emphasis-50" dateTime={new Date(at).toISOString()}>
             {formatTime(locale, at)}
           </time>
         </header>

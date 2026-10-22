@@ -202,11 +202,7 @@ function IssueRow({
   return (
     <tr className="group hover:bg-base-200/60">
       <td>
-        <CopyIssueIdButton
-          issueId={issue.id}
-          short
-          className="rounded text-xs text-base-content/55"
-        />
+        <CopyIssueIdButton issueId={issue.id} short className="rounded text-xs text-emphasis-60" />
       </td>
       <td className="text-sm @max-[34rem]:hidden">
         <IssueTypeTag issueType={issue.issueType} />
@@ -236,7 +232,7 @@ function IssueRow({
           ) : (
             outline &&
             outline.childCount > 0 && (
-              <span className="ml-2 font-mono text-xs text-base-content/45 tabular-nums">
+              <span className="ml-2 font-mono text-xs text-emphasis-50 tabular-nums">
                 {messages.issueTable.childCount(outline.childCount)}
               </span>
             )
@@ -281,7 +277,7 @@ function IssueRow({
         </td>
       ) : (
         <td
-          className={`text-right font-mono text-xs tabular-nums ${issue.dependencyCount + issue.dependentCount === 0 ? "text-base-content/30" : ""}`}
+          className={`text-right font-mono text-xs tabular-nums ${issue.dependencyCount + issue.dependentCount === 0 ? "text-emphasis-30" : ""}`}
           title={messages.issueTable.dependencyCounts(issue.dependencyCount, issue.dependentCount)}
         >
           {issue.dependencyCount} / {issue.dependentCount}
@@ -301,7 +297,7 @@ function LabelCell({ labels }: { labels: readonly string[] }) {
   if (first === undefined) {
     return (
       <td>
-        <span className="text-sm text-base-content/50">{messages.common.none}</span>
+        <span className="text-sm text-emphasis-50">{messages.common.none}</span>
       </td>
     );
   }
@@ -311,7 +307,7 @@ function LabelCell({ labels }: { labels: readonly string[] }) {
         {/* 칩은 기본으로 줄어들지 않으므로, 긴 라벨 이름이 +N을 칸 밖으로 밀지 않게 칩만 줄여 말줄임으로 보입니다. */}
         <LabelChip label={first} className="block min-w-0 shrink truncate leading-5" />
         {shown.length > 1 && (
-          <span className="shrink-0 text-xs text-base-content/55 tabular-nums">
+          <span className="shrink-0 text-xs text-emphasis-60 tabular-nums">
             +{shown.length - 1}
           </span>
         )}
@@ -349,7 +345,7 @@ function TitleOutline({
       {outline.childCount > 0 ? (
         <button
           type="button"
-          className="btn btn-ghost btn-xs btn-square -my-0.5 shrink-0 text-base-content/50"
+          className="btn btn-ghost btn-xs btn-square -my-0.5 shrink-0 text-emphasis-50"
           aria-expanded={outline.expanded}
           aria-label={messages.issueTable.toggleChildren(issueId, outline.expanded)}
           onClick={outline.onToggle}

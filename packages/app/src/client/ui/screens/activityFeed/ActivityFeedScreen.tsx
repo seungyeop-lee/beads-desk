@@ -41,7 +41,7 @@ export function ActivityFeedScreen() {
   const rows = page ? activityFeedRows(page.entries, seenAt) : null;
 
   return (
-    <main className="mx-auto flex max-w-[96rem] flex-col gap-4 px-8 pb-16">
+    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
       <ScreenHeader
         title={text.title}
         tone={screenTone("/activity")}
@@ -121,7 +121,7 @@ function EntryRow({ entry }: { entry: ActivityEntry }) {
       <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <time
           dateTime={new Date(entry.at).toISOString()}
-          className="w-12 shrink-0 font-mono text-xs text-base-content/50 tabular-nums"
+          className="w-12 shrink-0 font-mono text-xs text-emphasis-50 tabular-nums"
         >
           {new Date(entry.at).toLocaleTimeString(locale, {
             hour: "2-digit",
@@ -134,17 +134,13 @@ function EntryRow({ entry }: { entry: ActivityEntry }) {
         </span>
         <CoveredIssueIdButton
           issueId={entry.issueId}
-          className="shrink-0 rounded text-xs text-base-content/45"
+          className="shrink-0 rounded text-xs text-emphasis-50"
         />
         <span className="min-w-0 grow basis-60 font-medium wrap-anywhere">{title}</span>
-        {entry.actor && (
-          <span className="shrink-0 text-xs text-base-content/55">{entry.actor}</span>
-        )}
+        {entry.actor && <span className="shrink-0 text-xs text-emphasis-60">{entry.actor}</span>}
       </span>
       {entry.text && (
-        <p className="line-clamp-2 text-xs sm:pl-15 wrap-anywhere text-base-content/65">
-          {entry.text}
-        </p>
+        <p className="line-clamp-2 text-xs sm:pl-15 wrap-anywhere text-emphasis-70">{entry.text}</p>
       )}
     </CoveredIssueRow>
   );
@@ -167,7 +163,7 @@ function DateRangeFields({
         value={range.from ?? ""}
         onChange={(event) => onChange({ ...range, from: event.target.value || null })}
       />
-      <span className="text-base-content/40">~</span>
+      <span className="text-emphasis-40">~</span>
       <input
         type="date"
         className="input input-sm w-36 rounded-full"

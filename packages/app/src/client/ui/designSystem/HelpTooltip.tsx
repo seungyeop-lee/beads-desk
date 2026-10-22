@@ -20,7 +20,7 @@ export function HelpTooltip({ help, placement = "below" }: HelpTooltipProps) {
         className={
           headerEnd
             ? "btn btn-ghost btn-sm btn-square"
-            : "btn btn-circle btn-ghost btn-xs text-base-content/45"
+            : "btn btn-circle btn-ghost btn-xs text-emphasis-50"
         }
         aria-label={help}
       >

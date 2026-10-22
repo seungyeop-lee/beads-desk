@@ -39,7 +39,7 @@ export function HumanGatePanel({ issue, listedIssues, issueHref, scrollIntoView 
           <span className={`tone-dot ${HUMAN_DECISION_TONE}`} />
           {messages.humanGate.panelTitle}
         </h3>
-        <p className="text-xs text-base-content/65">{messages.humanGate.panelBody}</p>
+        <p className="text-xs text-emphasis-70">{messages.humanGate.panelBody}</p>
       </div>
       {gates.map((link) => (
         <HumanGateItem key={link.id} link={link} issueHref={issueHref} />
@@ -88,7 +88,7 @@ function HumanGateItem({
       <div className="flex items-baseline gap-2">
         <CopyIssueIdButton
           issueId={link.id}
-          className="shrink-0 rounded text-xs text-base-content/55"
+          className="shrink-0 rounded text-xs text-emphasis-60"
         />
         <Link href={issueHref(link.id)} scroll={false} className="font-semibold hover:underline">
           {link.title || messages.common.untitled}

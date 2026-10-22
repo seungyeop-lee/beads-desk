@@ -57,7 +57,7 @@ function DeferDialog({ request }: { request: DialogRequest<Deferral> }) {
           <h2 className="text-lg font-bold tracking-tight">{messages.deferral.title}</h2>
           <CopyIssueIdButton
             issueId={request.issueId}
-            className="self-start rounded text-xs text-base-content/55"
+            className="self-start rounded text-xs text-emphasis-60"
           />
         </div>
         <label className="flex flex-col gap-1.5">
@@ -86,7 +86,7 @@ function DeferDialog({ request }: { request: DialogRequest<Deferral> }) {
               value={date}
               onChange={(event) => setDate(event.target.value)}
             />
-            <span className="text-xs text-base-content/55">{messages.deferral.dateHint}</span>
+            <span className="text-xs text-emphasis-60">{messages.deferral.dateHint}</span>
           </label>
         )}
         <label className="flex flex-col gap-1.5">

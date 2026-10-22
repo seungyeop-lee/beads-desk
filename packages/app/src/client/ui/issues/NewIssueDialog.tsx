@@ -119,7 +119,7 @@ export function NewIssueDialog({ create, pending, error, onClose, fixedParent }:
                 <span className={`tone-dot ${typeTone(parent.issueType)}`} />
                 <CopyIssueIdButton
                   issueId={parent.id}
-                  className="rounded text-xs text-base-content/55"
+                  className="rounded text-xs text-emphasis-60"
                 />
                 <span className="min-w-0 grow truncate">{parent.title}</span>
                 {!fixedParent && (
@@ -169,7 +169,7 @@ export function NewIssueDialog({ create, pending, error, onClose, fixedParent }:
           </div>
         </div>
         <div className="flex items-center gap-2 border-t border-base-300 bg-base-200/50 px-7 py-4">
-          <span className="text-xs text-base-content/40">{messages.newIssue.submitHint}</span>
+          <span className="text-xs text-emphasis-40">{messages.newIssue.submitHint}</span>
           <button
             type="button"
             className="btn btn-ghost ml-auto"

@@ -41,7 +41,7 @@ export function IssueCard({
       cover={{ href }}
       current={center}
     >
-      <span className="flex items-center gap-1.5 text-base-content/55">
+      <span className="flex items-center gap-1.5 text-emphasis-60">
         <IssueTypeTag issueType={issue.issueType} />
         <span aria-hidden>·</span>
         <span className={`tone-dot ${workStateTone(state)}`} />
@@ -53,12 +53,12 @@ export function IssueCard({
         />
       </span>
       <span
-        className={`text-sm leading-snug wrap-anywhere whitespace-pre-wrap font-medium ${state === "closed" ? "text-base-content/65" : "text-base-content"}`}
+        className={`text-sm leading-snug wrap-anywhere whitespace-pre-wrap font-medium ${state === "closed" ? "text-emphasis-70" : "text-base-content"}`}
       >
         {issue.title}
       </span>
       {plan && (
-        <span className="mt-auto flex items-center gap-1.5 text-base-content/55">
+        <span className="mt-auto flex items-center gap-1.5 text-emphasis-60">
           {plan.outside && (
             <span className="relative" title={messages.graph.outsideHint}>
               {messages.graph.outside}

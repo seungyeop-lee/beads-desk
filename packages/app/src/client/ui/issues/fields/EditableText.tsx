@@ -36,7 +36,7 @@ export function EditableText({
         className={`-mx-1.5 cursor-text rounded-md px-1.5 text-left hover:bg-base-content/6 ${className}`}
         onClick={edit}
       >
-        {shown || <span className="text-base-content/50">{placeholder}</span>}
+        {shown || <span className="text-emphasis-50">{placeholder}</span>}
       </button>
     );
   }

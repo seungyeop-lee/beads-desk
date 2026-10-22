@@ -28,7 +28,7 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <IssueTypeTag issueType={gate.issueType} />
-          <CopyIssueIdButton issueId={gate.id} className="rounded text-base-content/55" />
+          <CopyIssueIdButton issueId={gate.id} className="rounded text-emphasis-60" />
           <Link
             href={issueHref(gate.id)}
             scroll={false}
@@ -70,7 +70,7 @@ function PreviousGateFeedback({ gateId }: { gateId: string }) {
       loadFailed={(failed) => messages.humanGate.previousLoadFailed(failed)}
       waiting={
         <span
-          className="loading loading-spinner loading-sm text-base-content/40"
+          className="loading loading-spinner loading-sm text-emphasis-40"
           aria-label={messages.humanGate.previousLoading}
         />
       }
@@ -95,10 +95,10 @@ function PreviousGateFeedback({ gateId }: { gateId: string }) {
                   </h4>
                   <CopyIssueIdButton
                     issueId={gate.id}
-                    className="rounded text-xs text-base-content/45"
+                    className="rounded text-xs text-emphasis-50"
                   />
                   {gate.closedAt !== null && (
-                    <span className="text-xs text-base-content/55">
+                    <span className="text-xs text-emphasis-60">
                       {messages.humanGate.roundClosed(formatTime(locale, gate.closedAt))}
                     </span>
                   )}
@@ -117,7 +117,7 @@ function PreviousGateFeedback({ gateId }: { gateId: string }) {
                 <CommentTimeline comments={comments} />
               ) : (
                 closeReason && (
-                  <p className="text-base-content/60">
+                  <p className="text-emphasis-60">
                     {messages.issueDetail.closeReason}: {closeReason}
                   </p>
                 )
@@ -135,7 +135,7 @@ function BlockedIssues({ blocks }: { blocks: Issue[] }) {
   const messages = useMessages();
   const [only] = blocks;
   if (!only) {
-    return <p className="text-base-content/60">{messages.humanGate.noBlocks}</p>;
+    return <p className="text-emphasis-60">{messages.humanGate.noBlocks}</p>;
   }
   if (blocks.length === 1) {
     return (
@@ -147,7 +147,7 @@ function BlockedIssues({ blocks }: { blocks: Issue[] }) {
   }
   return (
     <>
-      <p className="text-base-content/60">{messages.humanGate.manyBlocks(blocks.length)}</p>
+      <p className="text-emphasis-60">{messages.humanGate.manyBlocks(blocks.length)}</p>
       <ul className="flex flex-col divide-y divide-base-300 rounded-box border border-base-300">
         {blocks.map((issue) => (
           <li key={issue.id} className="px-4 py-2">
@@ -174,10 +174,7 @@ function BlockedIssueLine({ issue }: { issue: Issue }) {
       >
         {issue.title || messages.common.untitled}
       </Link>
-      <CopyIssueIdButton
-        issueId={issue.id}
-        className="shrink-0 rounded text-xs text-base-content/45"
-      />
+      <CopyIssueIdButton issueId={issue.id} className="shrink-0 rounded text-xs text-emphasis-50" />
     </div>
   );
 }
@@ -191,7 +188,7 @@ function BlockedIssueDescription({ issueId }: { issueId: string }) {
       loadFailed={(failed) => messages.issueDetail.loadFailed(failed)}
       waiting={
         <span
-          className="loading loading-spinner loading-sm text-base-content/40"
+          className="loading loading-spinner loading-sm text-emphasis-40"
           aria-label={messages.issueDetail.loading}
         />
       }
@@ -200,7 +197,7 @@ function BlockedIssueDescription({ issueId }: { issueId: string }) {
         issue.description ? (
           <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={issue.description} />
         ) : (
-          <p className="text-base-content/50">{messages.humanDecisions.noDescription}</p>
+          <p className="text-emphasis-50">{messages.humanDecisions.noDescription}</p>
         )
       }
     </LoadResult>

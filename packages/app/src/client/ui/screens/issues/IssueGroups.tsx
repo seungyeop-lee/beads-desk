@@ -57,7 +57,7 @@ export function IssueGroups({
             <h2 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-1">
               <button
                 type="button"
-                className="flex items-baseline gap-2 text-[15px] font-bold"
+                className="flex items-baseline gap-2 text-body font-bold"
                 aria-expanded={expanded}
                 aria-label={messages.issues.toggleGroup(label, expanded)}
                 onClick={() => toggle(group.state)}
@@ -65,15 +65,15 @@ export function IssueGroups({
                 <ChevronRightIcon
                   width={14}
                   height={14}
-                  className={`self-center text-base-content/50 transition-transform ${expanded ? "rotate-90" : ""}`}
+                  className={`self-center text-emphasis-50 transition-transform ${expanded ? "rotate-90" : ""}`}
                 />
                 <span className={`tone-dot ${workStateTone(group.state)} self-center`} />
                 {label}
-                <span className="font-mono text-xs font-normal text-base-content/50">
+                <span className="font-mono text-xs font-normal text-emphasis-50">
                   {group.issues.length}
                 </span>
               </button>
-              <span className="text-xs text-base-content/50">
+              <span className="text-xs text-emphasis-50">
                 {messages.workStates.hints[group.state]}
               </span>
             </h2>

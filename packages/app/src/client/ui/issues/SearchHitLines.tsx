@@ -20,10 +20,7 @@ export function SearchHitLines({
   return (
     <span className="flex flex-col gap-0.5">
       {hits.map(({ field, excerpt }, index) => (
-        <span
-          key={index}
-          className="flex min-w-0 items-center gap-1.5 text-xs text-base-content/60"
-        >
+        <span key={index} className="flex min-w-0 items-center gap-1.5 text-xs text-emphasis-60">
           <IssueChip className="shrink-0">
             {field === "comment" ? messages.issues.commentHit : messages.issue.bodyFields[field]}
           </IssueChip>

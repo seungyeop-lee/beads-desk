@@ -10,7 +10,7 @@ export function DeferralLine({ issue }: { issue: Pick<Issue, "status" | "deferUn
   const locale = useLocale();
   if (issue.status !== "deferred") return null;
   return (
-    <span className="flex min-w-0 items-center gap-1.5 text-xs text-base-content/60">
+    <span className="flex min-w-0 items-center gap-1.5 text-xs text-emphasis-60">
       <IssueChip tone={statusTone("deferred")}>{messages.deferral.until}</IssueChip>
       <span className="truncate tabular-nums">
         {deferUntilLabel(messages, locale, issue.deferUntil)}

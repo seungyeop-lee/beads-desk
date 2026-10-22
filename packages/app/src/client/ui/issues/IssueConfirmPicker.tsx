@@ -64,7 +64,7 @@ export function IssueConfirmPicker({
         <span className={`tone-dot ${typeTone(picked.issueType)}`} />
         <CopyIssueIdButton
           issueId={picked.id}
-          className="shrink-0 rounded text-xs text-base-content/55"
+          className="shrink-0 rounded text-xs text-emphasis-60"
         />
         <span className="min-w-0 grow truncate">{picked.title}</span>
         <button

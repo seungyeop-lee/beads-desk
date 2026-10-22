@@ -52,7 +52,7 @@ export function HumanResponsePanel({ issueId, writes, title, body, placeholder }
           <span className={`tone-dot ${HUMAN_DECISION_TONE}`} />
           {title}
         </h3>
-        <p className="text-xs text-base-content/65">{body}</p>
+        <p className="text-xs text-emphasis-70">{body}</p>
       </div>
       {/*
        * 응답 없이 닫는 동안에는 적어 둔 응답이 bd에 넘어가지 않으므로 편집기를 감춥니다.

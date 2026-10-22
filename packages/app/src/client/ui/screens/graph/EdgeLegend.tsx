@@ -24,7 +24,7 @@ export function EdgeLegend({
   if (kinds.length === 0) return null;
   return (
     <div
-      className="@container relative flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/65"
+      className="@container relative flex flex-wrap gap-x-4 gap-y-1 text-xs text-emphasis-70"
       aria-label={messages.graph.legend}
     >
       <EdgeMarkers idPrefix={idPrefix} />

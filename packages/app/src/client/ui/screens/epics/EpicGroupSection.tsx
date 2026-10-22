@@ -25,7 +25,7 @@ export function EpicGroupSection({
       <h2 className="px-1">
         <button
           type="button"
-          className="flex items-baseline gap-2 text-[15px] font-bold"
+          className="flex items-baseline gap-2 text-body font-bold"
           aria-expanded={expanded}
           aria-label={messages.epics.toggleGroup(label, expanded)}
           onClick={onToggle}
@@ -33,11 +33,11 @@ export function EpicGroupSection({
           <ChevronRightIcon
             width={14}
             height={14}
-            className={`self-center text-base-content/50 transition-transform ${expanded ? "rotate-90" : ""}`}
+            className={`self-center text-emphasis-50 transition-transform ${expanded ? "rotate-90" : ""}`}
           />
           <span className={`tone-dot ${statusTone(kind)} self-center`} />
           {label}
-          <span className="font-mono text-xs font-normal text-base-content/50">{count}</span>
+          <span className="font-mono text-xs font-normal text-emphasis-50">{count}</span>
         </button>
       </h2>
       {expanded && children}

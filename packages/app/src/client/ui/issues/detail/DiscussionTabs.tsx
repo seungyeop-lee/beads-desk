@@ -42,7 +42,7 @@ export function DiscussionTabs({ issue, disabled, onAddComment }: Props) {
             onClick={() => setTab(key)}
           >
             {label}
-            {count ? <span className="font-mono text-base-content/50">{count}</span> : null}
+            {count ? <span className="font-mono text-emphasis-50">{count}</span> : null}
           </button>
         ))}
       </div>

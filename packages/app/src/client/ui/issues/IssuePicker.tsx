@@ -59,7 +59,7 @@ export function IssuePicker({ label, placeholder, disabled, onPick, exclude, ran
   return (
     <div className="relative">
       <label className="input input-sm w-full">
-        <SearchIcon width={14} height={14} className="text-base-content/40" />
+        <SearchIcon width={14} height={14} className="text-emphasis-40" />
         <input
           className="grow"
           role="combobox"
@@ -98,7 +98,7 @@ export function IssuePicker({ label, placeholder, disabled, onPick, exclude, ran
             aria-label={messages.common.loading}
           />
         ) : matches.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-base-content/50">{messages.issuePicker.empty}</p>
+          <p className="px-3 py-2 text-xs text-emphasis-50">{messages.issuePicker.empty}</p>
         ) : (
           matches.map((issue, index) => (
             <div
@@ -116,7 +116,7 @@ export function IssuePicker({ label, placeholder, disabled, onPick, exclude, ran
               onPointerEnter={() => setActive(index)}
             >
               <span className={`tone-dot ${typeTone(issue.issueType)}`} />
-              <span className="shrink-0 font-mono text-xs text-base-content/55">{issue.id}</span>
+              <span className="shrink-0 font-mono text-xs text-emphasis-60">{issue.id}</span>
               <span className="min-w-0 grow truncate">{issue.title}</span>
               <StatusChip status={issue.status} />
             </div>

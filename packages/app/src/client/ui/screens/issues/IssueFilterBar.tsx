@@ -97,7 +97,7 @@ export function IssueFilterBar({
           value={dates.from ?? ""}
           onChange={(event) => onDatesChange({ ...dates, from: event.target.value || null })}
         />
-        <span className="text-base-content/40">~</span>
+        <span className="text-emphasis-40">~</span>
         <input
           type="date"
           className="input input-sm w-36 rounded-full"
