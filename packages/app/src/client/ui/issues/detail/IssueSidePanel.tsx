@@ -2,7 +2,8 @@ import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { linkedIssues } from "@/client/modules/issues/domain/issueRelations";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { statusLabel, statusTone } from "../issueLabels";
@@ -95,7 +96,7 @@ function IssueSummary({
       {BODY_FIELDS.filter((field) => issue[field]).map((field) => (
         <section key={field} className="flex flex-col gap-2">
           <h3 className="caption">{messages.issue.bodyFields[field]}</h3>
-          <MarkdownEditor readOnly value={issue[field]} />
+          <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={issue[field]} />
         </section>
       ))}
       {links.length > 0 && <DependencyList links={links} issueHref={sideHref} />}

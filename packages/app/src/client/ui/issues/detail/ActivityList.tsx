@@ -1,8 +1,9 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import { useIssueHistory } from "@/client/modules/issues/application/useIssueHistory";
 import { issueActivity } from "@/client/modules/issues/domain/issueActivity";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { LoadResult } from "@/client/ui/designSystem/LoadResult";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { activityLineText } from "./activityText";
 import { TimelineItem } from "./CommentList";
@@ -25,7 +26,11 @@ export function ActivityList({ issue }: { issue: Pick<IssueDetail, "id" | "comme
             <li key={entry.key}>
               {entry.kind === "comment" ? (
                 <TimelineItem author={entry.comment.author} at={entry.at}>
-                  <MarkdownEditor readOnly value={entry.comment.text} />
+                  <MarkdownEditor
+                    readOnly
+                    openAddress={tabMarkdownUrl}
+                    value={entry.comment.text}
+                  />
                 </TimelineItem>
               ) : (
                 <TimelineItem author={entry.actor} at={entry.at}>

@@ -10,12 +10,13 @@ import { sortByRequestedAt } from "@/client/modules/humanDecisions/domain/humanD
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { LoadResult } from "@/client/ui/designSystem/LoadResult";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { FirstBlockedLine } from "@/client/ui/issues/BlockerLine";
 import { HumanDecisionPanel } from "@/client/ui/issues/detail/HumanDecisionPanel";
@@ -288,7 +289,7 @@ function SelectedDecision({ question }: { question: Issue }) {
           </header>
           {issue.description ? (
             <div className="text-sm">
-              <MarkdownEditor readOnly value={issue.description} />
+              <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={issue.description} />
             </div>
           ) : (
             <p className="text-sm text-base-content/50">{messages.humanDecisions.noDescription}</p>

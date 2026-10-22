@@ -1,3 +1,4 @@
+import { useEffect, useState, type RefObject } from "react";
 import type { RenderOptions } from "pele/lazy";
 
 type ApplyPreview = (preview: string | HTMLElement | null) => void;
@@ -34,7 +35,7 @@ export function createMermaidPreview(root: HTMLElement, { loading, enlarge }: La
         fontFamilyMono: style.getPropertyValue("--pele-font-mono").trim(),
       }).then(
         (svg) => {
-          // 누르는 동작은 MarkdownEditor가 편집기 root에서 받아 diagramAt으로 그림을 찾습니다.
+          // 누르는 동작은 useEnlargedDiagrams가 편집기 root에서 받아 diagramAt으로 그림을 찾습니다.
           if (current())
             apply(
               `<div data-mermaid-preview="${id}" role="button" tabindex="0" aria-label="${enlarge}">${svg}</div>`,
@@ -53,7 +54,7 @@ export function createMermaidPreview(root: HTMLElement, { loading, enlarge }: La
 }
 
 /** target이 그려진 그림 안에 있으면 그 그림을 감싼 요소를 돌려줍니다. 아니면 null입니다. */
-export function diagramAt(target: EventTarget | null): HTMLElement | null {
+function diagramAt(target: EventTarget | null): HTMLElement | null {
   return target instanceof Element ? target.closest<HTMLElement>(DIAGRAM_BUTTON) : null;
 }
 
@@ -72,4 +73,38 @@ export function cloneDiagram(diagram: HTMLElement): SVGSVGElement {
     }
   }
   return clone;
+}
+
+/**
+ * `root` 안에서 누르거나 Enter나 Space로 고른 그림을 크게 보이게 할 대상으로 고르고, 그 그림을 돌려줍니다.
+ * 그림은 Crepe가 sanitize해서 넣는 HTML이라 처리기를 붙일 수 없으므로, 그림을 누르는 동작을 편집기 root에서 받습니다.
+ */
+export function useEnlargedDiagrams(root: RefObject<HTMLElement | null>): {
+  enlarged: HTMLElement | null;
+  close: () => void;
+} {
+  const [enlarged, setEnlarged] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const element = root.current;
+    if (!element) return;
+    const onClick = (event: MouseEvent) => {
+      const diagram = diagramAt(event.target);
+      if (diagram) setEnlarged(diagram);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      const diagram = diagramAt(event.target);
+      if (!diagram || (event.key !== "Enter" && event.key !== " ")) return;
+      event.preventDefault();
+      setEnlarged(diagram);
+    };
+    element.addEventListener("click", onClick);
+    element.addEventListener("keydown", onKeyDown);
+    return () => {
+      element.removeEventListener("click", onClick);
+      element.removeEventListener("keydown", onKeyDown);
+    };
+  }, [root]);
+
+  return { enlarged, close: () => setEnlarged(null) };
 }

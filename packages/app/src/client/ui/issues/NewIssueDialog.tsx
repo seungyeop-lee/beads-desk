@@ -2,11 +2,12 @@ import type { Issue } from "@beads-desk/bd/issue";
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { createIssueAction } from "@/server/web/issues/issueActions";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
 import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { PRIORITIES } from "@/shared/contract/issueActions";
 import { IssuePicker } from "./IssuePicker";
@@ -158,6 +159,7 @@ export function NewIssueDialog({ onCreated, onClose, fixedParent }: Props) {
             <div className="textarea h-auto min-h-32 w-full text-sm">
               <MarkdownEditor
                 value=""
+                openAddress={tabMarkdownUrl}
                 label={messages.issue.bodyFields.description}
                 placeholder={messages.newIssue.descriptionPlaceholder}
                 onChange={setDescription}

@@ -1,9 +1,9 @@
 import { useEffect, useRef, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { CloseIcon } from "./icons";
+import { CloseIcon } from "../designSystem/icons";
 import { cloneDiagram } from "./mermaidPreview";
-import { ModalBackdrop, useShowModal } from "./modal";
+import { ModalBackdrop, useShowModal } from "../designSystem/modal";
 
 type Props = {
   /** 편집기 안에 그려진 그림을 감싼 요소입니다. dialog는 그 SVG를 복제해 그립니다. */

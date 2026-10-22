@@ -7,7 +7,8 @@ import {
 import Link from "next/link";
 import { useEffect, useId, useRef, type RefObject } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HUMAN_DECISION_TONE } from "../issueLabels";
@@ -105,7 +106,7 @@ function HumanGateItem({
       {reason && (
         <section className="flex flex-col gap-1 text-sm" aria-label={messages.humanGate.reason}>
           <h4 className="font-semibold">{messages.humanGate.reason}</h4>
-          <MarkdownEditor readOnly value={reason} />
+          <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={reason} />
         </section>
       )}
       <HumanGateResponse gateId={link.id} />

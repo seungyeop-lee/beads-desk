@@ -7,5 +7,5 @@
 @import "./theme.css";
 @import "./base.css";
 @import "./components.css";
-@import "./markdownEditor.css";
+@import "../../markdown/markdownEditor.css";
 @source "../../../..";

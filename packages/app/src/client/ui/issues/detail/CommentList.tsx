@@ -1,6 +1,7 @@
 import type { IssueComment } from "@beads-desk/bd/issue";
 import { useState, type ReactNode } from "react";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { nameTone } from "../issueLabels";
 import { formatTime } from "../issueTime";
@@ -41,6 +42,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
           <MarkdownEditor
             key={inputKey}
             value=""
+            openAddress={tabMarkdownUrl}
             label={messages.comments.newComment}
             placeholder={messages.comments.placeholder}
             onChange={setDraft}
@@ -66,7 +68,7 @@ export function CommentList({ comments, disabled, onAdd }: Props) {
 export function CommentTimeline({ comments }: { comments: IssueComment[] }) {
   return comments.map((comment) => (
     <TimelineItem key={comment.id} author={comment.author} at={comment.createdAt}>
-      <MarkdownEditor readOnly value={comment.text} />
+      <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={comment.text} />
     </TimelineItem>
   ));
 }

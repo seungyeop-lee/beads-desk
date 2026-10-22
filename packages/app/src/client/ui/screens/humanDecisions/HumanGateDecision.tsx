@@ -4,8 +4,9 @@ import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { usePreviousGateRounds } from "@/client/modules/humanGates/application/usePreviousGateRounds";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import type { HumanGateSummary } from "@/shared/contract/humanGates";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { CommentTimeline } from "@/client/ui/issues/detail/CommentList";
 import { HumanGateResponse } from "@/client/ui/issues/detail/HumanGateResponse";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
@@ -42,7 +43,7 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
       {reason && (
         <section className="flex flex-col gap-1 text-sm" aria-label={messages.humanGate.reason}>
           <h3 className="font-semibold">{messages.humanGate.reason}</h3>
-          <MarkdownEditor readOnly value={reason} />
+          <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={reason} />
         </section>
       )}
 
@@ -197,7 +198,7 @@ function BlockedIssueDescription({ issueId }: { issueId: string }) {
     >
       {(issue) =>
         issue.description ? (
-          <MarkdownEditor readOnly value={issue.description} />
+          <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={issue.description} />
         ) : (
           <p className="text-base-content/50">{messages.humanDecisions.noDescription}</p>
         )

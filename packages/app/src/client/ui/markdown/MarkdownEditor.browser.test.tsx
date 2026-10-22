@@ -5,14 +5,15 @@ import type { FormEvent } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 import { cdp, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
-import { codeMirrorDom } from "./codeMirrorDom.testkit";
-import { contrast } from "./colorContrast.testkit";
+import { codeMirrorDom } from "../designSystem/codeMirrorDom.testkit";
+import { contrast } from "../designSystem/colorContrast.testkit";
 import { MarkdownEditor } from "./MarkdownEditor";
-import { milkdownDom } from "./milkdownDom.testkit";
-import { peleDom } from "./peleDom.testkit";
+import { milkdownDom } from "../designSystem/milkdownDom.testkit";
+import { peleDom } from "../designSystem/peleDom.testkit";
 
 const DIAGRAM = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";
 const TYPESCRIPT = [
@@ -44,6 +45,7 @@ test("읽기 전용 편집기는 markdown을 서식대로 그리고, 원문 HTML
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
+        openAddress={tabMarkdownUrl}
         readOnly
         value={"## 조사 결과\n\n- 첫 항목\n\n`bd-code`\n\n<b>원문 HTML</b>"}
       />
@@ -62,6 +64,7 @@ test("드라이브 문자로 시작하는 Windows 절대경로의 링크와 이�
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
+        openAddress={tabMarkdownUrl}
         readOnly
         value={
           "[슬래시 문서](C:/x/y.md) ![역슬래시 그림](C:\\x\\y.png) [공백 문서](<d:\\work\\조사 결과.md>) [스크립트](javascript:alert(1))"
@@ -88,6 +91,7 @@ test("Windows 경로의 문장부호 앞 역슬래시는 인라인 링크와 참
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
+        openAddress={tabMarkdownUrl}
         readOnly
         value={
           "[a](C:\\work\\.beads\\a.md) ![밑줄 그림](C:\\a_b\\_x.png) [참조 문서][r] ![참조 그림][s]\n\n[r]: C:\\work\\.beads\\b.md\n[s]: C:\\a_b\\_y.png"
@@ -117,6 +121,7 @@ test("Windows 경로 링크와 그림이 있는 문단을 고쳐도 주소는 �
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
+        openAddress={tabMarkdownUrl}
         value={`[a]${destinations[0]} [공백 문서]${destinations[1]} ![밑줄 그림]${destinations[2]} [참조 문서][r] 끝\n\n[r]: C:\\work\\.beads\\b.md`}
         label="설명"
         onChange={changed}
@@ -154,7 +159,12 @@ test.each([
     const changed = vi.fn<(markdown: string) => void>();
     const screen = await render(
       <LocaleProvider locale="ko">
-        <MarkdownEditor value={markdown} label="설명" onChange={changed} />
+        <MarkdownEditor
+          openAddress={tabMarkdownUrl}
+          value={markdown}
+          label="설명"
+          onChange={changed}
+        />
       </LocaleProvider>,
     );
     const editor = screen.getByRole("textbox", { name: "설명" });
@@ -180,7 +190,12 @@ test("편집기에서 Windows 경로 링크의 주소를 고치면 고친 주소
   const changed = vi.fn<(markdown: string) => void>();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value={"[a](C:\\work\\.beads\\a.md) 끝"} label="설명" onChange={changed} />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"[a](C:\\work\\.beads\\a.md) 끝"}
+        label="설명"
+        onChange={changed}
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -204,7 +219,12 @@ test("링크 도구로 고른 글자에 Windows 드라이브 경로를 넣으면
     const changed = vi.fn<(markdown: string) => void>();
     const screen = await render(
       <LocaleProvider locale="ko">
-        <MarkdownEditor value="문서 끝" label="설명" onChange={changed} />
+        <MarkdownEditor
+          openAddress={tabMarkdownUrl}
+          value="문서 끝"
+          label="설명"
+          onChange={changed}
+        />
       </LocaleProvider>,
     );
     // 컴포넌트 테스트 전체를 함께 돌릴 때는 userEvent.keyboard의 키 입력이 가끔 편집기에 닿지 않고 사라져
@@ -228,7 +248,12 @@ test("링크 도구로 기존 링크의 주소를 Windows 드라이브 경로로
   const changed = vi.fn<(markdown: string) => void>();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value="[a](docs/a.md) 끝" label="설명" onChange={changed} />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value="[a](docs/a.md) 끝"
+        label="설명"
+        onChange={changed}
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -250,7 +275,12 @@ test("링크 도구에서 Windows 경로 링크의 주소를 고치지 않고 �
   const changed = vi.fn<(markdown: string) => void>();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value={"[a](C:\\work\\.beads\\a.md) 끝"} label="설명" onChange={changed} />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"[a](C:\\work\\.beads\\a.md) 끝"}
+        label="설명"
+        onChange={changed}
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -270,7 +300,11 @@ test("링크 도구는 Windows 경로 링크의 주소를 문장부호 앞 역�
   const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value={"[a](C:\\work\\.beads\\a.md) 끝"} label="설명" />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"[a](C:\\work\\.beads\\a.md) 끝"}
+        label="설명"
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -291,7 +325,12 @@ test("링크 도구의 수정 칸에서 Windows 경로 링크의 주소를 일�
   const changed = vi.fn<(markdown: string) => void>();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value={"[a](C:\\work\\.beads\\a.md) 끝"} label="설명" onChange={changed} />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"[a](C:\\work\\.beads\\a.md) 끝"}
+        label="설명"
+        onChange={changed}
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -322,6 +361,7 @@ test("링크 도구 미리보기의 주소 글자는 경로 종류와 관계없�
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
+        openAddress={tabMarkdownUrl}
         value={`${links.map(([name, url]) => `[${name}](${url})`).join(" ")} 끝`}
         label="설명"
       />
@@ -369,7 +409,13 @@ test("제목으로 시작하는 본문은 읽을 때도 편집할 때도 글자�
   for (const readOnly of [true, false]) {
     const screen = await render(
       <LocaleProvider locale="ko">
-        <MarkdownEditor readOnly={readOnly} value={body} label="설명" focusOnCreate />
+        <MarkdownEditor
+          openAddress={tabMarkdownUrl}
+          readOnly={readOnly}
+          value={body}
+          label="설명"
+          focusOnCreate
+        />
       </LocaleProvider>,
     );
     const heading = screen.getByRole("heading", { name: "배경" });
@@ -388,7 +434,11 @@ test("제목으로 시작하는 본문은 읽을 때도 편집할 때도 글자�
 test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고, 모든 그림이 다시 그려지지 않은 채 새 테마의 색을 따른다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value={`${DIAGRAM}\n\n${DIAGRAM}\n\n저장 전 문단`} label="설명" />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={`${DIAGRAM}\n\n${DIAGRAM}\n\n저장 전 문단`}
+        label="설명"
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -426,7 +476,7 @@ test("어두운 테마에서 코드 블록의 모든 강조 토큰은 블록 바
   document.documentElement.dataset.theme = "desk-dark";
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor readOnly value={TYPESCRIPT} />
+      <MarkdownEditor openAddress={tabMarkdownUrl} readOnly value={TYPESCRIPT} />
     </LocaleProvider>,
   );
   await expect.poll(() => tokenColor(screen.container, "return")).not.toBe("");
@@ -447,7 +497,11 @@ test("어두운 테마에서 코드 블록의 모든 강조 토큰은 블록 바
 test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고, 코드 블록을 다시 만들지 않은 채 강조 색이 새 테마를 따른다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value={`${TYPESCRIPT}\n\n저장 전 문단`} label="설명" />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={`${TYPESCRIPT}\n\n저장 전 문단`}
+        label="설명"
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -472,7 +526,7 @@ test("편집하는 동안 테마가 바뀌어도 입력한 글자가 남고, 코
 test("어두운 테마에서도 코드 블록의 현재 줄, 고른 글자, 괄호 짝 표시는 밝은 테마만큼 바탕과 구분되고, 그 위의 강조 토큰은 4.5:1 이상 대비된다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value={TYPESCRIPT} label="설명" />
+      <MarkdownEditor openAddress={tabMarkdownUrl} value={TYPESCRIPT} label="설명" />
     </LocaleProvider>,
   );
   await expect.poll(() => tokenColor(screen.container, "return")).not.toBe("");
@@ -701,6 +755,7 @@ test("그림의 한글 라벨은 노드 상자 안에 들어가고, 지원하지
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
+        openAddress={tabMarkdownUrl}
         readOnly
         value={`\`\`\`mermaid\nzenuml\n  사용자->서버.요청()\n\`\`\`\n\n${DIAGRAM}`}
       />
@@ -729,6 +784,7 @@ test("그려진 그림만 눌러 크게 볼 수 있고, 크게 본 그림은 원
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
+        openAddress={tabMarkdownUrl}
         readOnly
         value={`\`\`\`mermaid\nzenuml\n  사용자->서버.요청()\n\`\`\`\n\n\`\`\`ts\nconst value = 1;\n\`\`\`\n\n${titled}`}
       />
@@ -775,7 +831,11 @@ test("편집기를 감싼 form과 dialog는 그림 dialog를 Esc, 닫기 단추,
     <LocaleProvider locale="ko">
       <dialog onCancel={cancelled} onClose={closed}>
         <form onSubmit={submitted}>
-          <MarkdownEditor value={`${DIAGRAM}\n\n저장 전 문단`} label="설명" />
+          <MarkdownEditor
+            openAddress={tabMarkdownUrl}
+            value={`${DIAGRAM}\n\n저장 전 문단`}
+            label="설명"
+          />
         </form>
       </dialog>
     </LocaleProvider>,
@@ -816,8 +876,8 @@ test("읽기 화면의 그림은 코드를 숨기고 간선 글자까지 그리�
   const titled = DIAGRAM.replace("flowchart LR\n", "flowchart LR\n  accTitle: 처리 흐름\n");
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor readOnly value={`${titled}\n\n${titled}`} />
-      <MarkdownEditor readOnly value={titled} />
+      <MarkdownEditor openAddress={tabMarkdownUrl} readOnly value={`${titled}\n\n${titled}`} />
+      <MarkdownEditor openAddress={tabMarkdownUrl} readOnly value={titled} />
     </LocaleProvider>,
   );
   await expect.poll(() => diagramColors(screen.container)).toHaveLength(3);
@@ -837,7 +897,13 @@ test("읽기 화면의 그림은 코드를 숨기고 간선 글자까지 그리�
 test("새 이슈 설명처럼 빈 편집기에 붙여 넣은 그림은 코드와 미리보기를 함께 보이고, 마지막 입력만 그리며, 문법 오류면 코드만 보이다가 고치면 다시 그린다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value="" label="설명" placeholder="설명을 적습니다" onChange={() => {}} />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value=""
+        label="설명"
+        placeholder="설명을 적습니다"
+        onChange={() => {}}
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -876,7 +942,7 @@ test("편집 도구 줄에서 문단 형식을 제목 2로 바꾸고 표 넣기�
   const changed = vi.fn<(markdown: string) => void>();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value="" label="설명" onChange={changed} />
+      <MarkdownEditor openAddress={tabMarkdownUrl} value="" label="설명" onChange={changed} />
     </LocaleProvider>,
   );
   await screen.getByRole("textbox", { name: "설명" }).click();
@@ -896,7 +962,12 @@ test("편집 중에 붙여 넣은 이미지 파일은 본문에 들어가지 않
   const changed = vi.fn<(markdown: string) => void>();
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value="저장할 문단" label="설명" onChange={changed} />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value="저장할 문단"
+        label="설명"
+        onChange={changed}
+      />
     </LocaleProvider>,
   );
   const editor = screen.getByRole("textbox", { name: "설명" });
@@ -961,7 +1032,7 @@ async function codeIndicators(view: EditorView, at: number) {
 async function renderCodeEditor(value: string) {
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor value={value} label="설명" />
+      <MarkdownEditor openAddress={tabMarkdownUrl} value={value} label="설명" />
     </LocaleProvider>,
   );
   await expect.poll(() => tokenColor(screen.container, "return")).not.toBe("");

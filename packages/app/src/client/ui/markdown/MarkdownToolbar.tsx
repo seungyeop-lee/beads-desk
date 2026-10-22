@@ -11,7 +11,7 @@ import {
   QuoteIcon,
   StrikethroughIcon,
   TableIcon,
-} from "./icons";
+} from "../designSystem/icons";
 
 export type FormatAction =
   | "bold"

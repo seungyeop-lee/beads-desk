@@ -1,10 +1,11 @@
 import { expect, test, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { MarkdownEditor } from "./MarkdownEditor";
-import { codeMirrorDom } from "./codeMirrorDom.testkit";
-import { milkdownDom } from "./milkdownDom.testkit";
+import { codeMirrorDom } from "../designSystem/codeMirrorDom.testkit";
+import { milkdownDom } from "../designSystem/milkdownDom.testkit";
 
 // pele module은 테스트 파일마다 처음 불러올 때 한 번만 만들어집니다. 이 파일에 그림을 그리는 테스트를 더하면 먼저 실행된 테스트가
 // module을 불러 와서 아래 테스트가 module을 기다리게 만들 수 없으므로, 그런 테스트는 MarkdownEditor.browser.test.tsx에 둡니다.
@@ -26,8 +27,16 @@ const markdown = (code: string) => `\`\`\`mermaid\n${code}\n\`\`\``;
 test("mermaid가 아닌 코드 블록만 있는 본문은 pele module을 요청하지 않는다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
-      <MarkdownEditor readOnly value={"```ts\nconst value = 1;\n```"} />
-      <MarkdownEditor value={"```ts\nconst other = 2;\n```"} label="설명" />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        readOnly
+        value={"```ts\nconst value = 1;\n```"}
+      />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"```ts\nconst other = 2;\n```"}
+        label="설명"
+      />
     </LocaleProvider>,
   );
 
@@ -42,6 +51,7 @@ test("pele module이 늦게 도착하면 그동안 다른 언어로 바꾼 블�
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor
+        openAddress={tabMarkdownUrl}
         value={`${markdown("flowchart LR\n A[처음 그림] --> B")}\n\n${markdown("flowchart LR\n A[남은 그림] --> B")}`}
         label="설명"
       />

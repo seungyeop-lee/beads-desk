@@ -1,6 +1,7 @@
 import { PencilIcon, PlusIcon } from "@/client/ui/designSystem/icons";
 import { keepUnchangedBlocks } from "@/client/modules/markdown/domain/keepUnchangedBlocks";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { useInlineEdit } from "../fields/useInlineEdit";
 
@@ -50,7 +51,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
         )}
       </div>
       {draft === null ? (
-        <MarkdownEditor readOnly value={shown} />
+        <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={shown} />
       ) : (
         <form
           className="flex flex-col gap-2"
@@ -62,6 +63,7 @@ export function EditableMarkdown({ label, value, onSave }: Props) {
           <div className="rounded-field border border-base-300 px-3 py-2 focus-within:border-base-content/40">
             <MarkdownEditor
               value={shown}
+              openAddress={tabMarkdownUrl}
               label={label}
               focusOnCreate
               disabled={saving}

@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { dismissHumanAction, respondToHumanAction } from "@/server/web/issues/issueActions";
-import { MarkdownEditor } from "@/client/ui/designSystem/MarkdownEditor";
+import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
+import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { showToast } from "@/client/ui/designSystem/Toast";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HUMAN_DECISION_TONE } from "../issueLabels";
@@ -62,6 +63,7 @@ export function HumanResponsePanel({ issueId, writes, title, body, placeholder }
       >
         <MarkdownEditor
           value=""
+          openAddress={tabMarkdownUrl}
           label={messages.humanDecision.response}
           placeholder={placeholder}
           onChange={setResponse}
