@@ -201,6 +201,34 @@ test("좁은 너비에서 긴 파일 이름의 칩은 칩 안에서 줄을 넘�
   for (const box of chip.element().getClientRects()) expect(box.right).toBeLessThanOrEqual(right);
 });
 
+test("링크 글자 일부만 굵게 써도 링크 하나는 칩 하나와 새 탭 아이콘 링크 하나로 보이고, 함께 펼치고 접는다", async () => {
+  files = { "/tmp/r/x.diff": () => new Response(DIFF) };
+  const screen = await renderReadOnly("[**리뷰** 변경.diff](/tmp/r/x.diff) 뒤 글자");
+
+  const chip = screen.getByRole("button", { name: labels.filePreview("리뷰 변경.diff") });
+  await expect.element(chip).toBeVisible();
+  expect(screen.getByRole("button").elements()).toHaveLength(1);
+  expect(
+    screen.getByRole("link", { name: labels.openInNewTab("리뷰 변경.diff") }).elements(),
+  ).toHaveLength(1);
+  expect(screen.getByRole("link").elements()).toHaveLength(1);
+  // 보이는 아이콘은 칩의 chevron 하나와 새 탭 아이콘 하나입니다.
+  const paragraph = chip.element().closest("p")!;
+  const shownIcons = [...paragraph.querySelectorAll("svg")].filter(
+    (icon) => icon.getClientRects().length > 0,
+  );
+  expect(shownIcons).toHaveLength(2);
+
+  await userEvent.click(screen.getByText("리뷰", { exact: true }));
+  await expect.element(chip).toHaveAttribute("aria-expanded", "true");
+  await expect
+    .element(screen.getByRole("region", { name: labels.filePreviewContents("리뷰 변경.diff") }))
+    .toBeVisible();
+  await userEvent.click(screen.getByText("변경.diff", { exact: false }));
+  await expect.element(chip).toHaveAttribute("aria-expanded", "false");
+  await expect.element(chip).toHaveFocus();
+});
+
 test("목록 항목의 링크를 펼치면 그 항목 안, 항목 글 아래에 내용이 보인다", async () => {
   files = { "/tmp/r/fix.patch": () => new Response(DIFF) };
   const screen = await renderReadOnly("- [패치](/tmp/r/fix.patch) 항목\n- 둘째 항목");

@@ -47,7 +47,7 @@ type PreviewState = {
   expanded: ReadonlySet<number>;
 };
 
-/** 칩으로 그린 링크입니다. `name`은 링크 글자를 담는 contentDOM입니다. */
+/** 칩으로 그린 링크 `<a>`입니다. 링크 하나가 이 조각 여럿일 수 있습니다. `name`은 링크 글자를 담는 contentDOM입니다. */
 type Chip = { dom: HTMLElement; name: HTMLElement };
 
 const previewKey = new PluginKey<PreviewState>("localFilePreview");
@@ -60,6 +60,8 @@ const previewKey = new PluginKey<PreviewState>("localFilePreview");
  *
  * 칩은 `<a>`로 그려 Cmd/Ctrl 클릭과 가운데 버튼 클릭이 브라우저 기본 동작대로 새 탭을 엽니다.
  * mark view는 문서 위치를 모르므로, 칩의 접근 가능한 이름과 펼친 상태는 plugin view가 칩의 위치로 링크를 찾아 적습니다.
+ * 링크 글자 일부에만 굵게 같은 다른 서식이 있으면 ProseMirror가 링크를 `<a>` 여러 개로 나눠 그립니다. 그때는 첫 조각만 button으로
+ * 두고 나머지 조각은 그 칩이 이어지는 모양으로 그려, 링크 하나가 칩 하나로 보이게 합니다.
  */
 export function localFilePreview(
   linkType: MarkType,
@@ -70,34 +72,80 @@ export function localFilePreview(
   const contentsId = (link: PreviewLink) => `${idPrefix}-${link.from}`;
   const chips = new Set<Chip>();
 
-  const linkOf = (view: EditorView, chip: Chip) => {
-    const pos = view.posAtDOM(chip.name, 0);
-    return previewKey.getState(view.state)!.links.find((link) => link.from <= pos && pos < link.to);
+  /** 칩 조각이 그리는 링크와, 그 조각이 링크의 첫 조각인지와 마지막 조각인지를 돌려줍니다. */
+  const pieceOf = (view: EditorView, chip: Chip) => {
+    const from = view.posAtDOM(chip.name, 0);
+    const to = view.posAtDOM(chip.name, chip.name.childNodes.length);
+    const link = previewKey
+      .getState(view.state)!
+      .links.find((link) => link.from <= from && from < link.to);
+    return link && { link, first: from === link.from, last: to === link.to };
   };
+  const piecesOf = (view: EditorView, link: PreviewLink) =>
+    [...chips].filter((chip) => pieceOf(view, chip)?.link === link);
   const toggle = (view: EditorView, chip: Chip) => {
-    const link = linkOf(view, chip);
-    if (link) view.dispatch(view.state.tr.setMeta(previewKey, link.from));
+    const piece = pieceOf(view, chip);
+    if (!piece) return;
+    view.dispatch(view.state.tr.setMeta(previewKey, piece.link.from));
+    // 첫 조각이 아닌 조각은 접근성 트리에서 숨겼으므로, 눌러서 받은 focus를 칩(첫 조각)으로 옮깁니다.
+    if (!piece.first) {
+      piecesOf(view, piece.link)
+        .find((other) => pieceOf(view, other)!.first)
+        ?.dom.focus();
+    }
+  };
+  /** 링크가 여러 조각이면 한 조각에 pointer를 올려도 칩 전체가 hover 모양이 되게 합니다. */
+  const hover = (view: EditorView, chip: Chip, hovered: boolean) => {
+    const link = pieceOf(view, chip)?.link;
+    if (!link) return;
+    for (const piece of piecesOf(view, link)) {
+      piece.dom.classList.toggle("file-preview-chip-hover", hovered);
+    }
   };
   const showChips = (view: EditorView) => {
     const { expanded } = previewKey.getState(view.state)!;
     for (const chip of chips) {
-      const link = linkOf(view, chip);
-      if (!link) continue;
-      chip.dom.setAttribute("aria-label", labels.filePreview(link.name));
-      chip.dom.setAttribute("aria-controls", contentsId(link));
-      chip.dom.setAttribute("aria-expanded", String(expanded.has(link.from)));
+      const piece = pieceOf(view, chip);
+      if (!piece) continue;
+      const { link, first, last } = piece;
+      chip.dom.classList.toggle("file-preview-chip-continued", !first);
+      chip.dom.classList.toggle("file-preview-chip-continues", !last);
+      setAttributes(
+        chip.dom,
+        first
+          ? {
+              role: "button",
+              "aria-label": labels.filePreview(link.name),
+              "aria-controls": contentsId(link),
+              "aria-expanded": String(expanded.has(link.from)),
+              "aria-hidden": null,
+              tabindex: null,
+            }
+          : {
+              role: null,
+              "aria-label": null,
+              "aria-controls": null,
+              "aria-expanded": null,
+              "aria-hidden": "true",
+              tabindex: "-1",
+            },
+      );
     }
   };
   const linkView = (mark: Mark, view: EditorView): MarkView => {
     const rendered = DOMSerializer.renderSpec(document, mark.type.spec.toDOM!(mark, true));
     const anchor = rendered.dom as HTMLElement;
     if (!filePreviewFormat(anchor.getAttribute("href") ?? "")) return { ...rendered, dom: anchor };
-    const chip = chipView(anchor, () => toggle(view, chip));
+    const chip = chipView(
+      anchor,
+      () => toggle(view, chip),
+      (hovered) => hover(view, chip, hovered),
+    );
     chips.add(chip);
     return {
       dom: chip.dom,
       contentDOM: chip.name,
-      // showChips가 바꾼 속성을 ProseMirror가 문서 변경으로 읽지 않게 합니다.
+      // showChips와 hover가 바꾼 속성을 ProseMirror가 문서 변경으로 읽지 않게 합니다.
       ignoreMutation: (mutation) => mutation.type === "attributes",
       destroy: () => chips.delete(chip),
     };
@@ -202,12 +250,16 @@ function linkRanges(block: ProseNode, start: number, linkType: MarkType) {
 /**
  * 링크 `<a>`를 chevron과 링크 글자를 묶은 칩으로 바꿉니다. 수정 키 없이 누르거나 Enter·Space를 누르면 링크로 이동하지 않고
  * `toggle`을 부릅니다. Enter는 `<a>`가 click으로 바꿔 보내므로 Space만 따로 받습니다.
+ * role과 접근 가능한 이름은 그 조각이 링크의 첫 조각인지 알아야 정할 수 있으므로 plugin view가 적습니다.
  */
-function chipView(anchor: HTMLElement, toggle: () => void): Chip {
+function chipView(
+  anchor: HTMLElement,
+  toggle: () => void,
+  hover: (hovered: boolean) => void,
+): Chip {
   const name = document.createElement("span");
   anchor.replaceChildren(lineIcon("m9 6 6 6-6 6"), name);
   anchor.classList.add("file-preview-chip");
-  anchor.setAttribute("role", "button");
   anchor.addEventListener("click", (event) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
       return;
@@ -220,7 +272,17 @@ function chipView(anchor: HTMLElement, toggle: () => void): Chip {
     event.preventDefault();
     toggle();
   });
+  anchor.addEventListener("pointerenter", () => hover(true));
+  anchor.addEventListener("pointerleave", () => hover(false));
   return { dom: anchor, name };
+}
+
+/** 값이 null인 속성은 지웁니다. */
+function setAttributes(element: Element, attributes: Record<string, string | null>) {
+  for (const [name, value] of Object.entries(attributes)) {
+    if (value === null) element.removeAttribute(name);
+    else element.setAttribute(name, value);
+  }
 }
 
 /** 칩 오른쪽에 두어 파일을 새 탭에서 여는 아이콘 링크입니다. */
