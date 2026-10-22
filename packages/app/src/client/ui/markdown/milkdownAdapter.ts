@@ -3,6 +3,7 @@ import type { MarkType, Node as ProseNode } from "@milkdown/kit/prose/model";
 import type { EditorState, PluginView } from "@milkdown/kit/prose/state";
 import type { DirectEditorProps, EditorView } from "@milkdown/kit/prose/view";
 import { WINDOWS_DRIVE_PATH } from "@/client/modules/markdown/domain/drivePath";
+import { opensInNewTab } from "@/client/modules/markdown/domain/localMarkdownUrl";
 import {
   sourceUrlOf,
   windowsPath,
@@ -122,6 +123,7 @@ export function previewAddressLinkTool(
  *
  * link의 href와 image의 src에는 원문에서 되살린 경로를 둡니다. Milkdown 링크 도구는 href만 읽어 미리 보여 주고
  * 복사하고 수정 칸에 채우므로, 파싱한 주소를 두면 `C:\work\.beads`가 `C:\work.beads`로 보입니다.
+ * 링크는 로컬 파일과 외부 주소만 새 탭에서 엽니다(`opensInNewTab`).
  * sourceUrl은 remarkWindowsPathSource가 남긴 원문 주소로, 저장할 markdown에 원문 주소를 쓸 때만 쓰고 HTML 속성으로는
  * 내보내지 않습니다(null인 속성은 DOM에 붙지 않습니다).
  * 아래 parseMarkdown과 toMarkdown runner는 Milkdown 기본 runner에서 주소를 되살린 경로로 바꾸고 sourceUrl을 더한
@@ -155,7 +157,8 @@ export function windowsPathAddressConfig(
         toDOM: (mark) => {
           const dom = schema.toDOM!(mark, false) as [string, Record<string, unknown>];
           const href = address(String(mark.attrs.href));
-          return [dom[0], { ...dom[1], href, sourceUrl: null }];
+          const target = opensInNewTab(href) ? "_blank" : null;
+          return [dom[0], { ...dom[1], href, target, sourceUrl: null }];
         },
         toMarkdown: {
           ...schema.toMarkdown,

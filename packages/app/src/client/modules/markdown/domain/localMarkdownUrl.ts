@@ -1,5 +1,5 @@
 import { WINDOWS_DRIVE_PATH } from "./drivePath";
-import { localFileUrl } from "@/shared/contract/localFiles";
+import { localFilePathOf, localFileUrl } from "@/shared/contract/localFiles";
 import { SCREEN_PATHS } from "@/shared/domain/screenPaths";
 import { workspaceHref } from "@/shared/contract/workspaces";
 
@@ -15,6 +15,14 @@ export function localMarkdownUrl(url: string, workspace: string): string {
   if (!url.startsWith("/") || url.startsWith("//") || APP_ROOTS.has(root)) return url;
   if (SCREEN_PATHS.has(root)) return workspaceHref(workspace, url);
   return localFileUrl(path, workspace);
+}
+
+/**
+ * 본문 링크를 새 탭에서 열지 정합니다. `address`는 localMarkdownUrl이 바꾼 주소입니다.
+ * 로컬 파일과 외부 웹 주소는 새 탭에서 열어 보던 화면을 남기고, 앱 화면 주소는 지금 탭에서 이동합니다.
+ */
+export function opensInNewTab(address: string): boolean {
+  return localFilePathOf(address) !== null || /^(https?:)?\/\//i.test(address);
 }
 
 function decodedPath(url: string): string {

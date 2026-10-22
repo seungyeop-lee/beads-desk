@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { copyFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 import { placeCaretAfter } from "../support/editorCaret";
 
@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 재생되는 영상, 앱 화면, 외부 주소를 열고, diff와 큰 로그 파일을 본문에 펼치며, 편집 후 원문 경로를 유지한다", async ({
+test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, diff와 큰 로그 파일을 칩으로 본문에 펼치며, 편집 후 원문 경로를 유지한다", async ({
   page,
   workspace,
 }) => {
@@ -56,12 +56,12 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
       const image = description.getByRole("img", { name: `${name} PNG` });
       await expect(image).toBeVisible();
       await expect(image).toHaveJSProperty("naturalWidth", 80);
-      await description.getByRole("link", { name: `${name} 문서` }).click();
-      await expect(page.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
-      expect(new URL(page.url()).searchParams.get("path")).toBe(path.md);
-      await page.goBack();
-      await expect(dialog).toBeVisible();
+      const opened = await openedTab(description.getByRole("link", { name: `${name} 문서` }));
+      await expect(opened.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
+      expect(new URL(opened.url()).searchParams.get("path")).toBe(path.md);
+      await opened.close();
     }
+    await expect(dialog).toBeVisible();
 
     // 펼친 내용은 서버의 파일 API 응답으로 채웁니다. 배치와 강조, 오류 문구는 localFilePreview.browser.test.tsx가 확인합니다.
     await description.getByRole("button", { name: "리뷰 변경 미리보기" }).click();
@@ -73,11 +73,10 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     await expect(largeContents).toContainText("파일이 1 MB보다 커서 미리보기를 생략했습니다.");
     await expect(largeContents.getByRole("link", { name: "파일 열기" })).toBeVisible();
 
-    await description.getByRole("link", { name: "화면 녹화" }).click();
-    await expectPlayable(page.locator("video"));
-    expect(new URL(page.url()).searchParams.get("path")).toBe(video);
-    await page.goBack();
-    await expect(dialog).toBeVisible();
+    const videoTab = await openedTab(description.getByRole("link", { name: "화면 녹화" }));
+    await expectPlayable(videoTab.locator("video"));
+    expect(new URL(videoTab.url()).searchParams.get("path")).toBe(video);
+    await videoTab.close();
 
     await description.getByRole("link", { name: "에픽 화면" }).click();
     await expect(page).toHaveURL(new RegExp(`/w/${workspace.slug}/epics$`));
@@ -91,17 +90,27 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     await expect
       .poll(async () => (await workspace.showIssue(id)).description, { timeout: SAVE_TIMEOUT })
       .toBe(markdown.replace("편집할 문단", "편집할 문단 고침"));
-    await page.route("https://example.com/doc", (route) =>
-      route.fulfill({ contentType: "text/plain; charset=utf-8", body: "외부 문서 화면" }),
-    );
-    await description.getByRole("link", { name: "외부 문서" }).click();
-    await expect(page).toHaveURL("https://example.com/doc");
-    await expect(page.getByText("외부 문서 화면")).toBeVisible();
+    // 외부 주소는 새 탭에서 열리므로, 그 탭의 요청도 받도록 context에서 가로챕니다.
+    await page
+      .context()
+      .route("https://example.com/doc", (route) =>
+        route.fulfill({ contentType: "text/plain; charset=utf-8", body: "외부 문서 화면" }),
+      );
+    const external = await openedTab(description.getByRole("link", { name: "외부 문서" }));
+    await expect(external).toHaveURL("https://example.com/doc");
+    await expect(external.getByText("외부 문서 화면")).toBeVisible();
   } finally {
     execFileSync("git", ["-C", workspace.path, "worktree", "remove", "--force", worktree]);
     await rm(outside, { recursive: true, force: true });
   }
 });
+
+/** 본문 링크를 눌러 새 탭에 열린 page를 돌려줍니다. 링크를 연 탭은 이슈 화면에 그대로 남습니다. */
+async function openedTab(link: Locator): Promise<Page> {
+  const opened = link.page().waitForEvent("popup");
+  await link.click();
+  return opened;
+}
 
 /**
  * 파일 API가 보낸 영상을 Chrome이 끝까지 읽고 재생 위치를 옮겨 이어 재생하는지 확인합니다.

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { localFileUrl } from "@/shared/contract/localFiles";
-import { localMarkdownUrl } from "./localMarkdownUrl";
+import { localMarkdownUrl, opensInNewTab } from "./localMarkdownUrl";
 
 test.each([
   ["/epics", "/w/demo/epics"],
@@ -38,5 +38,22 @@ test.each(["C:\\Users\\me\\조사 결과.md", "C:/tmp/a.png", "d:\\work\\result.
   (path) => {
     expect(localMarkdownUrl(path, "demo")).toBe(localFileUrl(path, "demo"));
     expect(localMarkdownUrl(encodeURI(path), "demo")).toBe(localFileUrl(path, "demo"));
+  },
+);
+
+test.each([
+  "/tmp/a.md",
+  "C:\\r\\a.png",
+  "https://example.com/a",
+  "HTTP://example.com",
+  "//example.com/a",
+])("로컬 파일과 외부 웹 주소는 새 탭에서 연다: %s", (url) => {
+  expect(opensInNewTab(localMarkdownUrl(url, "demo"))).toBe(true);
+});
+
+test.each(["/epics", "/issues?issue=abc", "/w/other/issues", "#heading", "mailto:me@example.com"])(
+  "앱 화면 주소와 그 밖의 주소는 지금 탭에서 연다: %s",
+  (url) => {
+    expect(opensInNewTab(localMarkdownUrl(url, "demo"))).toBe(false);
   },
 );

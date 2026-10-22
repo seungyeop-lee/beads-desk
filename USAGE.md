@@ -82,7 +82,9 @@ An opened file is shown according to its extension:
 - `.webm`, `.mp4`: played as a video.
 - Any other extension, including HTML, SVG, and script files: shown as plain text so that the file does not run in the app's origin.
 
-Links to `.diff`, `.patch`, `.log`, and `.txt` files also have an expand button next to them. Pressing it shows the file contents right below the paragraph or list item that holds the link, without leaving the issue; pressing it again collapses them. `.diff` and `.patch` files are shown with added and removed lines highlighted, and `.log` and `.txt` files as they are. Long contents scroll inside the expanded box. Files larger than 1 MB are not loaded; a message and a link that opens the file are shown instead. The button appears only while the body is not being edited.
+Links to local files and to external addresses such as `https://` open in a new tab, so the issue you were viewing stays open. Links to app screens such as `/epics` open in the current tab.
+
+Links to `.diff`, `.patch`, `.log`, and `.txt` files are shown as chips with a chevron in front of the file name. Clicking the chip, or pressing Enter or Space while it has focus, shows the file contents right below the paragraph or list item that holds the link, without leaving the issue; doing it again collapses them. To open the file itself in a new tab, click the ↗ icon right after the chip, or Cmd/Ctrl-click or middle-click the chip. `.diff` and `.patch` files are shown with added and removed lines highlighted, and `.log` and `.txt` files as they are. Long contents scroll inside the expanded box. Files larger than 1 MB are not loaded; a message and a link that opens the file in a new tab are shown instead. The chip and icon appear only while the body is not being edited; while editing, these links look like ordinary links.
 
 ## Updating and uninstalling
 

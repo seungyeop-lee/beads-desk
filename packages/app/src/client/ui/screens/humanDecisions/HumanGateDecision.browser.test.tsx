@@ -103,7 +103,7 @@ test("gate 상세는 머리글에 gate의 ID를, 막고 있는 작업 목록에 
     .toBeVisible();
 });
 
-test("gate 사유의 로그 파일 링크는 펼치기 버튼으로 사유 안에서 파일 내용을 펼친다", async () => {
+test("gate 사유의 로그 파일 링크는 미리보기 칩으로 사유 안에서 파일 내용을 펼친다", async () => {
   vi.stubGlobal("fetch", async () => new Response("리뷰 로그 첫 줄"));
   const summary: HumanGateSummary = {
     gate: issue("desk-g2", { title: "Review: desk-work", issueType: "gate" }),

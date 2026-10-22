@@ -188,6 +188,7 @@ export const koMessages = {
     filePreviewTooLarge: (megabytes: number) =>
       `파일이 ${megabytes} MB보다 커서 미리보기를 생략했습니다.`,
     openFile: "파일 열기",
+    openInNewTab: (name: string) => `${name} 새 탭에서 열기`,
 
     toolbar: (label: string) => `${label} 서식 도구`,
     blockType: "문단 형식",

@@ -1,9 +1,19 @@
 import { LanguageDescription } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { classHighlighter, highlightCode } from "@lezer/highlight";
-import type { Mark, MarkType, Node as ProseNode } from "@milkdown/kit/prose/model";
-import { type EditorState, Plugin, PluginKey } from "@milkdown/kit/prose/state";
-import { Decoration, DecorationSet, type EditorView } from "@milkdown/kit/prose/view";
+import {
+  DOMSerializer,
+  type Mark,
+  type MarkType,
+  type Node as ProseNode,
+} from "@milkdown/kit/prose/model";
+import { Plugin, PluginKey } from "@milkdown/kit/prose/state";
+import {
+  Decoration,
+  DecorationSet,
+  type EditorView,
+  type MarkView,
+} from "@milkdown/kit/prose/view";
 import {
   type LocalTextFile,
   readLocalTextFile,
@@ -24,20 +34,32 @@ type PreviewLink = {
   to: number;
   /** 링크가 든 블록(문단, 제목, 목록 항목의 글)이 끝나는 위치입니다. 펼친 내용은 이 위치에 놓습니다. */
   blockEnd: number;
-  /** 링크 글자입니다. 버튼과 내용 영역의 접근 가능한 이름에 씁니다. */
+  /** 링크 글자입니다. 칩, 아이콘 링크, 내용 영역의 접근 가능한 이름에 씁니다. */
   name: string;
   /** 링크를 그릴 때와 같은 로컬 파일 API 주소입니다. */
   address: string;
   format: FilePreviewFormat;
 };
 
-/** 펼친 링크의 시작 위치 모음입니다. */
-const expandedKey = new PluginKey<ReadonlySet<number>>("localFilePreview");
+type PreviewState = {
+  links: PreviewLink[];
+  /** 펼친 링크의 시작 위치 모음입니다. */
+  expanded: ReadonlySet<number>;
+};
+
+/** 칩으로 그린 링크입니다. `name`은 링크 글자를 담는 contentDOM입니다. */
+type Chip = { dom: HTMLElement; name: HTMLElement };
+
+const previewKey = new PluginKey<PreviewState>("localFilePreview");
 
 /**
- * 읽기 전용 본문에서 .diff·.patch·.log·.txt 로컬 파일 링크 옆에 펼치기 버튼을 두고, 누르면 링크가 든 블록 아래에
- * 파일 내용을 펼치는 plugin입니다. 버튼과 내용은 decoration으로 그려 문서와 markdown 원문을 바꾸지 않습니다.
+ * 읽기 전용 본문에서 .diff·.patch·.log·.txt 로컬 파일 링크를 펼치기 칩으로 그리고, 칩을 누르면 링크가 든 블록 아래에
+ * 파일 내용을 펼치는 plugin입니다. 칩 오른쪽에는 파일을 새 탭에서 여는 아이콘 링크를 둡니다.
+ * 칩은 링크 mark view로, 아이콘 링크와 내용은 decoration으로 그려 문서와 markdown 원문을 바꾸지 않습니다.
  * `address`는 링크를 그릴 때와 같은 주소 함수로, 그 결과가 로컬 파일 API 주소인 링크만 대상입니다.
+ *
+ * 칩은 `<a>`로 그려 Cmd/Ctrl 클릭과 가운데 버튼 클릭이 브라우저 기본 동작대로 새 탭을 엽니다.
+ * mark view는 문서 위치를 모르므로, 칩의 접근 가능한 이름과 펼친 상태는 plugin view가 칩의 위치로 링크를 찾아 적습니다.
  */
 export function localFilePreview(
   linkType: MarkType,
@@ -45,43 +67,83 @@ export function localFilePreview(
   labels: Labels,
 ): Plugin {
   const idPrefix = `file-preview-${crypto.randomUUID()}`;
+  const contentsId = (link: PreviewLink) => `${idPrefix}-${link.from}`;
+  const chips = new Set<Chip>();
+
+  const linkOf = (view: EditorView, chip: Chip) => {
+    const pos = view.posAtDOM(chip.name, 0);
+    return previewKey.getState(view.state)!.links.find((link) => link.from <= pos && pos < link.to);
+  };
+  const toggle = (view: EditorView, chip: Chip) => {
+    const link = linkOf(view, chip);
+    if (link) view.dispatch(view.state.tr.setMeta(previewKey, link.from));
+  };
+  const showChips = (view: EditorView) => {
+    const { expanded } = previewKey.getState(view.state)!;
+    for (const chip of chips) {
+      const link = linkOf(view, chip);
+      if (!link) continue;
+      chip.dom.setAttribute("aria-label", labels.filePreview(link.name));
+      chip.dom.setAttribute("aria-controls", contentsId(link));
+      chip.dom.setAttribute("aria-expanded", String(expanded.has(link.from)));
+    }
+  };
+  const linkView = (mark: Mark, view: EditorView): MarkView => {
+    const rendered = DOMSerializer.renderSpec(document, mark.type.spec.toDOM!(mark, true));
+    const anchor = rendered.dom as HTMLElement;
+    if (!filePreviewFormat(anchor.getAttribute("href") ?? "")) return { ...rendered, dom: anchor };
+    const chip = chipView(anchor, () => toggle(view, chip));
+    chips.add(chip);
+    return {
+      dom: chip.dom,
+      contentDOM: chip.name,
+      // showChips가 바꾼 속성을 ProseMirror가 문서 변경으로 읽지 않게 합니다.
+      ignoreMutation: (mutation) => mutation.type === "attributes",
+      destroy: () => chips.delete(chip),
+    };
+  };
+
   return new Plugin({
-    key: expandedKey,
+    key: previewKey,
     state: {
-      init: () => new Set<number>(),
-      apply: (tr, expanded) => {
-        if (tr.docChanged) return new Set<number>();
-        const toggled: number | undefined = tr.getMeta(expandedKey);
-        if (toggled === undefined) return expanded;
-        const next = new Set(expanded);
-        if (!next.delete(toggled)) next.add(toggled);
-        return next;
+      init: (_config, state) => ({
+        links: previewLinks(state.doc, linkType, address),
+        expanded: new Set<number>(),
+      }),
+      apply: (tr, previous) => {
+        if (tr.docChanged) {
+          return { links: previewLinks(tr.doc, linkType, address), expanded: new Set<number>() };
+        }
+        const toggled: number | undefined = tr.getMeta(previewKey);
+        if (toggled === undefined) return previous;
+        const expanded = new Set(previous.expanded);
+        if (!expanded.delete(toggled)) expanded.add(toggled);
+        return { ...previous, expanded };
       },
     },
+    view: (view) => {
+      showChips(view);
+      return { update: showChips };
+    },
     props: {
+      markViews: { [linkType.name]: linkView },
       decorations: (state) => {
-        const expanded = expandedKey.getState(state)!;
-        const links = previewLinks(state.doc, linkType, address);
+        const { links, expanded } = previewKey.getState(state)!;
         return DecorationSet.create(
           state.doc,
           links.flatMap((link, order) => {
-            const id = `${idPrefix}-${link.from}`;
-            const toggle = Decoration.widget(
-              link.to,
-              (view) => toggleButton(view, link, id, labels),
-              {
-                side: 1,
-                marks: [],
-                key: `toggle-${link.from}`,
-                stopEvent: () => true,
-                ignoreSelection: true,
-              },
-            );
-            if (!expanded.has(link.from)) return [toggle];
+            const open = Decoration.widget(link.to, () => openLink(link, labels), {
+              side: 1,
+              marks: [],
+              key: `open-${link.from}`,
+              stopEvent: () => true,
+              ignoreSelection: true,
+            });
+            if (!expanded.has(link.from)) return [open];
             // 같은 블록 아래의 내용은 side 순서로 놓이므로, 링크 순서를 side로 줍니다.
             const contents = Decoration.widget(
               link.blockEnd,
-              () => previewContents(link, id, labels),
+              () => previewContents(link, contentsId(link), labels),
               {
                 side: order + 1,
                 key: `contents-${link.from}`,
@@ -89,7 +151,7 @@ export function localFilePreview(
                 ignoreSelection: true,
               },
             );
-            return [toggle, contents];
+            return [open, contents];
           }),
         );
       },
@@ -137,28 +199,51 @@ function linkRanges(block: ProseNode, start: number, linkType: MarkType) {
   return ranges;
 }
 
-/** 링크 뒤에 놓는 펼치기 버튼입니다. 펼친 상태는 plugin state에만 두고, 누를 때마다 그 값을 버튼에 옮겨 적습니다. */
-function toggleButton(view: EditorView, link: PreviewLink, id: string, labels: Labels) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "file-preview-toggle";
-  const label = labels.filePreview(link.name);
-  button.title = label;
-  button.setAttribute("aria-label", label);
-  button.setAttribute("aria-controls", id);
-  const showExpanded = (state: EditorState) =>
-    button.setAttribute("aria-expanded", String(expandedKey.getState(state)!.has(link.from)));
-  showExpanded(view.state);
-  button.append(chevronIcon());
-  button.addEventListener("click", () => {
-    view.dispatch(view.state.tr.setMeta(expandedKey, link.from));
-    showExpanded(view.state);
+/**
+ * 링크 `<a>`를 chevron과 링크 글자를 묶은 칩으로 바꿉니다. 수정 키 없이 누르거나 Enter·Space를 누르면 링크로 이동하지 않고
+ * `toggle`을 부릅니다. Enter는 `<a>`가 click으로 바꿔 보내므로 Space만 따로 받습니다.
+ */
+function chipView(anchor: HTMLElement, toggle: () => void): Chip {
+  const name = document.createElement("span");
+  anchor.replaceChildren(lineIcon("m9 6 6 6-6 6"), name);
+  anchor.classList.add("file-preview-chip");
+  anchor.setAttribute("role", "button");
+  anchor.addEventListener("click", (event) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    toggle();
   });
-  return button;
+  anchor.addEventListener("keydown", (event) => {
+    if (event.key !== " ") return;
+    event.preventDefault();
+    toggle();
+  });
+  return { dom: anchor, name };
 }
 
-/** designSystem/icons.tsx의 ChevronRightIcon과 같은 모양입니다. 펼치면 CSS가 아래로 돌립니다. */
-function chevronIcon() {
+/** 칩 오른쪽에 두어 파일을 새 탭에서 여는 아이콘 링크입니다. */
+function openLink(link: PreviewLink, labels: Labels) {
+  const anchor = document.createElement("a");
+  anchor.href = link.address;
+  anchor.target = "_blank";
+  anchor.className = "file-preview-open";
+  const label = labels.openInNewTab(link.name);
+  anchor.title = label;
+  anchor.setAttribute("aria-label", label);
+  anchor.append(
+    lineIcon(
+      "M15 3h6v6",
+      "M10 14 21 3",
+      "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6",
+    ),
+  );
+  return anchor;
+}
+
+/** designSystem/icons.tsx의 아이콘과 같은 선 모양(lucide, stroke 2)의 아이콘입니다. */
+function lineIcon(...paths: string[]) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   for (const [name, value] of Object.entries({
     viewBox: "0 0 24 24",
@@ -171,9 +256,11 @@ function chevronIcon() {
   })) {
     svg.setAttribute(name, value);
   }
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", "m9 6 6 6-6 6");
-  svg.append(path);
+  for (const d of paths) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
   return svg;
 }
 
@@ -197,6 +284,7 @@ async function fileView(file: LocalTextFile, link: PreviewLink, labels: Labels):
   if (file.status === "tooLarge") {
     const open = document.createElement("a");
     open.href = link.address;
+    open.target = "_blank";
     open.textContent = labels.openFile;
     const view = message(`${labels.filePreviewTooLarge(FILE_PREVIEW_MAX_BYTES / 1024 / 1024)} `);
     view.append(open);

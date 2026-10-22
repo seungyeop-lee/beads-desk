@@ -44,7 +44,7 @@ function renderReadOnly(value: string) {
   );
 }
 
-test("diff·patch·log·txt 로컬 파일 링크 옆에만 접힌 미리보기 버튼을 두고, 펼치기 전에는 파일을 받지 않는다", async () => {
+test("diff·patch·log·txt 로컬 파일 링크만 접힌 미리보기 칩과 새 탭 아이콘 링크로 그리고, 펼치기 전에는 파일을 받지 않는다", async () => {
   const screen = await renderReadOnly(
     [
       "[변경 diff](/tmp/r/a.diff) [패치](/tmp/r/b.PATCH) [로그](</tmp/r/실행 기록.log>) [메모](C:\\r\\note.txt)",
@@ -54,11 +54,18 @@ test("diff·patch·log·txt 로컬 파일 링크 옆에만 접힌 미리보기 �
   );
 
   for (const name of ["변경 diff", "패치", "로그", "메모"]) {
-    const button = screen.getByRole("button", { name: labels.filePreview(name) });
-    await expect.element(button).toHaveAttribute("aria-expanded", "false");
+    const chip = screen.getByRole("button", { name: labels.filePreview(name) });
+    await expect.element(chip).toHaveAttribute("aria-expanded", "false");
+    const open = screen.getByRole("link", { name: labels.openInNewTab(name) });
+    expect(open.element().getAttribute("href")).toBe(chip.element().getAttribute("href"));
+    await expect.element(open).toHaveAttribute("target", "_blank");
   }
-  await expect.element(screen.getByRole("link", { name: "문서" })).toBeVisible();
   expect(screen.getByRole("button").elements()).toHaveLength(4);
+  // 칩이 아닌 링크도 로컬 파일과 외부 주소는 새 탭에서 열고, 앱 화면은 지금 탭에서 엽니다.
+  for (const name of ["문서", "그림", "웹 diff"]) {
+    await expect.element(screen.getByRole("link", { name })).toHaveAttribute("target", "_blank");
+  }
+  await expect.element(screen.getByRole("link", { name: "화면" })).not.toHaveAttribute("target");
   expect(screen.getByRole("region").elements()).toHaveLength(0);
   expect(requestedPaths).toEqual([]);
 });
@@ -72,10 +79,10 @@ test("문장 중간의 링크를 펼치면 그 링크가 든 문단 바로 아�
     "변경은 [변경 diff](/tmp/r/a.diff)에 있고 [실행 로그](/tmp/r/run.log)도 남겼습니다.\n\n다음 문단",
   );
 
-  const diffButton = screen.getByRole("button", { name: labels.filePreview("변경 diff") });
-  const logButton = screen.getByRole("button", { name: labels.filePreview("실행 로그") });
-  await userEvent.click(logButton);
-  await userEvent.click(diffButton);
+  const diffChip = screen.getByRole("button", { name: labels.filePreview("변경 diff") });
+  const logChip = screen.getByRole("button", { name: labels.filePreview("실행 로그") });
+  await userEvent.click(logChip);
+  await userEvent.click(diffChip);
 
   const diffContents = screen.getByRole("region", {
     name: labels.filePreviewContents("변경 diff"),
@@ -83,7 +90,7 @@ test("문장 중간의 링크를 펼치면 그 링크가 든 문단 바로 아�
   const logContents = screen.getByRole("region", { name: labels.filePreviewContents("실행 로그") });
   await expect.element(diffContents.getByText("+const after = 2;")).toBeVisible();
   await expect.element(logContents.getByText("두 번째 줄", { exact: false })).toBeVisible();
-  await expect.element(diffButton).toHaveAttribute("aria-expanded", "true");
+  await expect.element(diffChip).toHaveAttribute("aria-expanded", "true");
   const sentence = screen
     .getByText(/도 남겼습니다/)
     .element()
@@ -98,11 +105,90 @@ test("문장 중간의 링크를 펼치면 그 링크가 든 문단 바로 아�
   expect(logBox!.top).toBeGreaterThanOrEqual(diffBox!.bottom);
   expect(next.getBoundingClientRect().top).toBeGreaterThanOrEqual(logBox!.bottom);
 
-  await userEvent.click(diffButton);
+  await userEvent.click(diffChip);
   await expect.element(diffContents).not.toBeInTheDocument();
-  await expect.element(diffButton).toHaveAttribute("aria-expanded", "false");
+  await expect.element(diffChip).toHaveAttribute("aria-expanded", "false");
   await expect.element(logContents).toBeVisible();
-  await expect.element(diffButton).toHaveFocus();
+  await expect.element(diffChip).toHaveFocus();
+});
+
+test("칩에 focus를 두고 Enter나 Space를 누르면 펼치고 접는다", async () => {
+  files = { "/tmp/r/a.diff": () => new Response(DIFF) };
+  const screen = await renderReadOnly("[변경 diff](/tmp/r/a.diff)");
+  const chip = screen.getByRole("button", { name: labels.filePreview("변경 diff") });
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("변경 diff") });
+  await expect.element(chip).toBeVisible();
+
+  chip.element().focus();
+  await userEvent.keyboard("{Enter}");
+  await expect.element(contents.getByText("+const after = 2;")).toBeVisible();
+  await expect.element(chip).toHaveAttribute("aria-expanded", "true");
+  expect(chip.element().getAttribute("aria-controls")).toBe(contents.element().id);
+
+  await userEvent.keyboard(" ");
+  await expect.element(contents).not.toBeInTheDocument();
+  await expect.element(chip).toHaveAttribute("aria-expanded", "false");
+  await expect.element(chip).toHaveFocus();
+});
+
+test("Cmd/Ctrl을 누른 채 칩을 누르면 펼치지 않고 브라우저 기본 동작에 맡긴다", async () => {
+  const screen = await renderReadOnly("[변경 diff](/tmp/r/a.diff)");
+  const chip = screen.getByRole("button", { name: labels.filePreview("변경 diff") });
+  let defaultPrevented: boolean | undefined;
+  // 칩이 기본 동작을 막지 않았는지 기록한 뒤, 테스트 브라우저가 실제로 새 탭을 열지 않게 막습니다.
+  const recordClick = (event: MouseEvent) => {
+    defaultPrevented = event.defaultPrevented;
+    event.preventDefault();
+  };
+  document.addEventListener("click", recordClick);
+  try {
+    await userEvent.click(chip, { modifiers: ["ControlOrMeta"] });
+  } finally {
+    document.removeEventListener("click", recordClick);
+  }
+
+  expect(defaultPrevented).toBe(false);
+  await expect.element(chip).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getByRole("region").elements()).toHaveLength(0);
+});
+
+test("칩의 chevron과 새 탭 아이콘은 칩 글자와 세로 중앙이 맞는다", async () => {
+  const screen = await renderReadOnly("앞 글자 [변경 diff](/tmp/r/a.diff) 뒤 글자");
+  const chipLocator = screen.getByRole("button", { name: labels.filePreview("변경 diff") });
+  await expect.element(chipLocator).toBeVisible();
+  const chip = chipLocator.element();
+  const open = screen.getByRole("link", { name: labels.openInNewTab("변경 diff") }).element();
+  const middle = (element: Element) => {
+    const box = element.getBoundingClientRect();
+    return (box.top + box.bottom) / 2;
+  };
+
+  const text = middle(chip.querySelector("span")!);
+  expect(Math.abs(middle(chip.querySelector("svg")!) - text)).toBeLessThanOrEqual(1);
+  expect(Math.abs(middle(open.querySelector("svg")!) - text)).toBeLessThanOrEqual(1);
+});
+
+test("좁은 너비에서 긴 파일 이름의 칩은 칩 안에서 줄을 넘기고 본문 밖으로 넘치지 않는다", async () => {
+  const name = "리뷰에서 받은 변경 사항을 모두 담은 아주긴파일이름_without_spaces_v2";
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <div style={{ width: 160 }}>
+        <MarkdownEditor
+          openAddress={tabMarkdownUrl}
+          readOnly
+          value={`앞 글자 [${name}](/tmp/r/review.diff) 뒤 글자`}
+        />
+      </div>
+    </LocaleProvider>,
+  );
+  const chip = screen.getByRole("button", { name: labels.filePreview(name) });
+  await expect.element(chip).toBeVisible();
+  const paragraph = chip.element().closest("p")!;
+
+  expect(chip.element().getClientRects().length).toBeGreaterThan(1);
+  expect(paragraph.scrollWidth).toBeLessThanOrEqual(paragraph.clientWidth);
+  const right = paragraph.getBoundingClientRect().right;
+  for (const box of chip.element().getClientRects()) expect(box.right).toBeLessThanOrEqual(right);
 });
 
 test("목록 항목의 링크를 펼치면 그 항목 안, 항목 글 아래에 내용이 보인다", async () => {
@@ -193,7 +279,10 @@ test("허용 범위 밖이거나 없는 파일을 펼치면 서버가 보낸 오
   await expect
     .element(screen.getByRole("region", { name: labels.filePreviewContents("없음") }))
     .toHaveTextContent("파일을 찾을 수 없습니다.");
-  const href = screen.getByRole("link", { name: "밖" }).element().getAttribute("href");
+  const href = screen
+    .getByRole("button", { name: labels.filePreview("밖") })
+    .element()
+    .getAttribute("href");
   expect(new URL(href!, location.href).searchParams.get("path")).toBe("/etc/secret.log");
 });
 
@@ -209,12 +298,16 @@ test("1 MB를 넘는 파일을 펼치면 내용 대신 생략 문구와 파일�
     .toBeVisible();
   const open = contents.getByRole("link", { name: labels.openFile });
   expect(open.element().getAttribute("href")).toBe(
-    screen.getByRole("link", { name: "큰 로그" }).element().getAttribute("href"),
+    screen
+      .getByRole("button", { name: labels.filePreview("큰 로그") })
+      .element()
+      .getAttribute("href"),
   );
+  await expect.element(open).toHaveAttribute("target", "_blank");
   expect(contents.element().querySelector("pre")).toBeNull();
 });
 
-test("편집 중에는 미리보기 버튼을 두지 않고 원문을 바꾸지 않는다", async () => {
+test("편집 중에는 칩과 새 탭 아이콘 링크를 두지 않고 원문을 바꾸지 않는다", async () => {
   const changed = vi.fn<(markdown: string) => void>();
   const markdown = "변경은 [변경 diff](/tmp/r/a.diff)에 있습니다.";
   const screen = await render(
@@ -231,6 +324,9 @@ test("편집 중에는 미리보기 버튼을 두지 않고 원문을 바꾸지 
   await expect.element(screen.getByRole("link", { name: "변경 diff" })).toBeVisible();
   expect(
     screen.getByRole("button", { name: labels.filePreview("변경 diff") }).elements(),
+  ).toHaveLength(0);
+  expect(
+    screen.getByRole("link", { name: labels.openInNewTab("변경 diff") }).elements(),
   ).toHaveLength(0);
   expect(changed).not.toHaveBeenCalled();
 });

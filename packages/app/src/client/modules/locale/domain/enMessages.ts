@@ -172,6 +172,7 @@ export const enMessages: Messages = {
     filePreviewTooLarge: (megabytes) =>
       `Preview skipped because the file is larger than ${megabytes} MB.`,
     openFile: "Open file",
+    openInNewTab: (name) => `Open ${name} in new tab`,
 
     toolbar: (label) => `${label} formatting`,
     blockType: "Text style",
