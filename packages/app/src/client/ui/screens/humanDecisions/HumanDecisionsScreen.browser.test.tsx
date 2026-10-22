@@ -240,10 +240,11 @@ test("좁은 창에서 보던 질문이 닫혀 다음 질문으로 넘어가면 
   const panel = screen.getByRole("region", { name: "2번째 질문" });
   await expect.element(panel.getByText("30번째 문단입니다.")).toBeInTheDocument();
   const headerHeight = screen.getByRole("banner").element().getBoundingClientRect().height;
+  // 스크롤을 거는 effect는 rerender 뒤 비동기로 실행되므로, 스크롤되기 전에도 이미 참이 되는 하한 대신 상한을 폴링해 스크롤이 끝나기를 기다린다.
   await expect
     .poll(() => panel.element().getBoundingClientRect().top)
-    .toBeGreaterThanOrEqual(headerHeight);
-  expect(panel.element().getBoundingClientRect().top).toBeLessThan(headerHeight + 48);
+    .toBeLessThan(headerHeight + 48);
+  expect(panel.element().getBoundingClientRect().top).toBeGreaterThanOrEqual(headerHeight);
 
   await panel.getByRole("heading", { name: "2번째 질문", exact: true }).click();
   window.scrollTo({ top: 0 });
