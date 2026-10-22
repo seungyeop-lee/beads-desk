@@ -33,7 +33,7 @@ vi.mock("@/client/modules/epics/application/useEpics", () => ({
       : { data: null, error: null, loading: true };
   },
 }));
-vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
+vi.mock("@/client/modules/gates/application/useGateTitles", () => ({
   useGateTitles: () => new Map(),
 }));
 vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>

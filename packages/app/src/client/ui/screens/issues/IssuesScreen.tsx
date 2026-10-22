@@ -2,7 +2,7 @@
 
 import { useIssueListView } from "@/client/modules/issues/application/useIssueListView";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
-import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
+import { useGateTitles } from "@/client/modules/gates/application/useGateTitles";
 import { labelChoices } from "@/client/modules/issues/domain/issueLabelFilter";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueTable } from "@/client/ui/issues/IssueTable";

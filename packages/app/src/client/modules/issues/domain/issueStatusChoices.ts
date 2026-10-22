@@ -1,7 +1,5 @@
-import { ISSUE_STATUSES, type IssueStatus } from "@beads-desk/bd/issue";
-
-/** decision은 열려 있으면 유효한 결정이고 닫히면 폐기되거나 대체된 결정이라, 작업 진행을 나타내는 상태는 고르지 않습니다. */
-const DECISION_STATUSES: readonly IssueStatus[] = ["open", "closed"];
+import { ISSUE_STATUSES } from "@beads-desk/bd/issue";
+import { DECISION_STATUSES } from "@/client/modules/decisions/domain/decisionStatuses";
 
 /**
  * 이슈 유형에 맞는 상태 선택지를 돌려줍니다.

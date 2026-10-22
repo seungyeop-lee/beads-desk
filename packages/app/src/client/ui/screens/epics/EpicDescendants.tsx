@@ -7,7 +7,7 @@ import {
   epicDescendantRows,
   notChildCandidate,
 } from "@/client/modules/epics/domain/epicsView";
-import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { addDependencyAction } from "@/server/web/issues/issueActions";
 import { IssueConfirmPicker } from "@/client/ui/issues/IssueConfirmPicker";

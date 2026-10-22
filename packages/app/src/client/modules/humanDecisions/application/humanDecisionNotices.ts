@@ -1,14 +1,16 @@
 import { useEffect } from "react";
 import { readHumanDecisionItems } from "@/client/infra/humanDecisions/humanDecisionItemsApiClient";
-import { documentMessages } from "@/client/infra/locale/documentLocale";
 import {
   loadNoticePreference,
+  saveNoticePreference,
+  subscribeNoticePreference,
+} from "@/client/infra/humanDecisions/noticePreferenceStore";
+import { documentMessages } from "@/client/infra/locale/documentLocale";
+import {
   type NotificationAccess,
   notificationAccess,
   requestNotificationAccess,
-  saveNoticePreference,
   showBrowserNotification,
-  subscribeNoticePreference,
 } from "@/client/infra/notifications/browserNotifications";
 import { subscribeWatchedWorkspaceChanges } from "@/client/infra/workspaceEvents/workspaceEventSource";
 import {
@@ -19,13 +21,17 @@ import {
   createHumanDecisionTracker,
   type HumanDecisionNotice,
 } from "@/client/modules/humanDecisions/domain/humanDecisionNotices";
+import {
+  createReadCoalescer,
+  type ReadCoalescer,
+} from "@/client/modules/workspace/application/readCoalescer";
 import { workspaceHref } from "@/shared/contract/workspaces";
 
 const tracker = createHumanDecisionTracker();
 /** 이 탭이 SSE 연결을 연 동안 그 연결이 감시하는 workspace입니다. 다른 탭이 연결을 열었으면 비어 있습니다. */
 let watched: readonly string[] = [];
-/** 읽는 중인 workspace와, 읽는 동안 그 workspace가 다시 바뀌었는지입니다. */
-const reading = new Map<string, { changedAgain: boolean }>();
+/** workspace마다 판단 기다림을 읽는 읽기 묶음입니다. */
+const readings = new Map<string, ReadCoalescer>();
 
 /**
  * 판단 기다림이 새로 생기면 브라우저 알림을 띄웁니다. 알릴지는 SSE 연결을 연 탭 하나만 판단하므로 탭이 여러 개여도 한 번만 뜨고,
@@ -87,21 +93,11 @@ function readIfEnabled(workspaces: readonly string[]) {
   for (const workspace of workspaces) void read(workspace);
 }
 
-/**
- * 읽는 중에 같은 workspace의 변경 알림이 여러 번 와도 읽기가 끝난 뒤 한 번만 다시 읽습니다.
- * 서버는 bd를 한 번에 하나씩 실행하므로 알림마다 읽으면 조회가 쌓여, 그 뒤에 줄 선 쓰기가 늦어집니다.
- */
 async function read(workspace: string) {
-  const inProgress = reading.get(workspace);
-  if (inProgress) {
-    inProgress.changedAgain = true;
-    return;
-  }
-  const current = { changedAgain: false };
-  reading.set(workspace, current);
+  const coalescer = readings.get(workspace) ?? createReadCoalescer();
+  readings.set(workspace, coalescer);
   try {
-    do {
-      current.changedAgain = false;
+    await coalescer.run(async () => {
       const result = await readHumanDecisionItems(workspace);
       const attended = await attendedWorkspaces();
       // 읽는 동안 알림을 껐거나 연결이 그 workspace를 감시하지 않게 됐으면, 그 결과를 기준으로 남기지 않습니다.
@@ -109,9 +105,10 @@ async function read(workspace: string) {
         const notice = tracker.observe(workspace, result.data, attended);
         if (notice) show(notice);
       }
-    } while (current.changedAgain);
+      return true;
+    });
   } finally {
-    reading.delete(workspace);
+    readings.delete(workspace);
   }
 }
 

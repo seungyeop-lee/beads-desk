@@ -32,7 +32,7 @@ vi.mock("@/client/modules/issues/application/useIssueTextMatches", () => ({
     error: null,
   }),
 }));
-vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
+vi.mock("@/client/modules/gates/application/useGateTitles", () => ({
   useGateTitles: () => new Map(),
 }));
 vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({

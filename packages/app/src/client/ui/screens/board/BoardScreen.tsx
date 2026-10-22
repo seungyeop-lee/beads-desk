@@ -9,8 +9,8 @@ import {
   type ClosedWindow,
 } from "@/client/modules/board/domain/boardView";
 import { useBoard } from "@/client/modules/board/application/useBoard";
-import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
-import { blockersOf, type GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import { useGateTitles } from "@/client/modules/gates/application/useGateTitles";
+import { blockersOf, type GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { statusPrompts } from "@/client/ui/issues/fields/statusPrompts";

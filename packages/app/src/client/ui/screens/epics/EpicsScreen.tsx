@@ -1,7 +1,7 @@
 "use client";
 
 import { useEpicsView } from "@/client/modules/epics/application/useEpicsView";
-import { useGateTitles } from "@/client/modules/humanGates/application/useGateTitles";
+import { useGateTitles } from "@/client/modules/gates/application/useGateTitles";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";

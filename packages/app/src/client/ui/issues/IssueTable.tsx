@@ -2,7 +2,7 @@ import { HUMAN_LABEL, type Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { memo, useMemo, useState, type ReactNode } from "react";
 import type { ChildProgress } from "@/client/modules/epics/domain/epicsView";
-import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import {

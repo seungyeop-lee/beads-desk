@@ -1,7 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { beforeEach, expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
-import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicSummary } from "@/shared/contract/epics";
@@ -37,7 +37,7 @@ vi.mock("@/client/modules/epics/application/useEpics", () => ({
 vi.mock("@/client/modules/humanDecisions/application/useHumanDecisionCount", () => ({
   useHumanDecisionCount: () => ({ data: 0, error: null, loading: false }),
 }));
-vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
+vi.mock("@/client/modules/gates/application/useGateTitles", () => ({
   useGateTitles: () => reads.gateTitles,
 }));
 vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>

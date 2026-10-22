@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
-import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
@@ -34,7 +34,7 @@ const reads = vi.hoisted(() => ({
 vi.mock("@/client/modules/board/application/useBoard", () => ({
   useBoard: () => ({ data: reads.items, error: null, loading: false }),
 }));
-vi.mock("@/client/modules/humanGates/application/useGateTitles", () => ({
+vi.mock("@/client/modules/gates/application/useGateTitles", () => ({
   useGateTitles: () => reads.gateTitles,
 }));
 vi.mock("@/client/modules/issues/application/useIssueWrites", () => ({

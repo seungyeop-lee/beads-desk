@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
-import { saveNoticePreference } from "@/client/infra/notifications/browserNotifications";
+import { saveNoticePreference } from "@/client/infra/humanDecisions/noticePreferenceStore";
 import { koMessages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { HumanDecisionNoticeToggle } from "./HumanDecisionNoticeToggle";

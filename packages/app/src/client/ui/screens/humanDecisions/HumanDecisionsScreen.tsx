@@ -3,15 +3,16 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef } from "react";
-import { useHumanGates } from "@/client/modules/humanGates/application/useHumanGates";
+import { useEffect, useRef } from "react";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
-import { sortByRequestedAt } from "@/client/modules/humanDecisions/domain/humanDecisionsView";
+import { useHumanDecisionsItems } from "@/client/modules/humanDecisions/application/useHumanDecisionsItems";
+import {
+  type PendingItem,
+  selectPendingItem,
+} from "@/client/modules/humanDecisions/domain/humanDecisionsView";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
-import { useIssueList } from "@/client/modules/issues/application/useIssueList";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
-import type { HumanGateSummary } from "@/shared/contract/humanGates";
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
@@ -20,7 +21,6 @@ import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { FirstBlockedLine } from "@/client/ui/issues/BlockerLine";
 import { HumanDecisionPanel } from "@/client/ui/issues/detail/HumanDecisionPanel";
-import type { ListedIssues } from "@/client/ui/issues/detail/listedIssues";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { IssueChip, PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
@@ -30,50 +30,22 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateDecision } from "./HumanGateDecision";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
-import { awaitingHuman } from "@/shared/domain/issues/awaitingHuman";
 
 /** 왼쪽 목록에서 고른 항목 id를 담는 query 이름입니다. 주소에 남겨 새로고침하거나 주소를 다시 열어도 같은 항목을 보입니다. */
 const ITEM_PARAM = "item";
-
-/** 왼쪽 목록의 한 줄입니다. human gate는 막고 있는 작업과 함께, 질문은 이슈 하나로 보입니다. */
-type PendingItem =
-  | { kind: "gate"; id: string; summary: HumanGateSummary }
-  | { kind: "question"; id: string; issue: Issue };
 
 /**
  * 판단을 기다리는 human gate와 질문을 왼쪽에 확인 요청과 질문 묶음으로 나눠 보이고, 고른 항목의 내용을 읽으며 오른쪽에서 바로 처리합니다.
  * 오른쪽에 보이는 항목을 주소 query가 항상 가리켜 새로고침해도 유지되고, 비어 있는 묶음은 숨깁니다.
  */
 export function HumanDecisionsScreen() {
-  const { data: issues, error, loading } = useIssueList();
-  const { data: gates, error: gatesError, loading: gatesLoading } = useHumanGates();
+  const { pending, listedIssues, loaded, errors, loading } = useHumanDecisionsItems();
   const humanDecisionCount = useHumanDecisionCount();
   const messages = useMessages();
-  // 한쪽만 먼저 보이면 고른 항목이 다른 쪽이 도착할 때 바뀌므로, gate 조회가 끝난 뒤(실패 포함) 함께 보입니다.
-  const loaded = issues !== null && (gates !== null || gatesError !== null);
-  const awaiting = useMemo(
-    () => sortByRequestedAt(awaitingHuman(gates ?? [], issues ?? [])),
-    [gates, issues],
-  );
-  const pending = useMemo(
-    (): PendingItem[] => [
-      ...awaiting.gates.map((summary) => ({ kind: "gate" as const, id: summary.gate.id, summary })),
-      ...awaiting.questions.map((issue) => ({ kind: "question" as const, id: issue.id, issue })),
-    ],
-    [awaiting],
-  );
-  const listedIssues: ListedIssues = useMemo(
-    () =>
-      new Map(
-        pending.map((item) => [item.id, item.kind === "gate" ? item.summary.gate : item.issue]),
-      ),
-    [pending],
-  );
   const replaceQuery = useQueryReplace();
   const searchParams = useSearchParams();
   const selectedId = searchParams.get(ITEM_PARAM);
-  // 처리해 닫힌 항목은 목록에서 빠지므로, 고른 항목이 없어지면 맨 위 항목을 이어서 보여 줍니다.
-  const selected = pending.find((item) => item.id === selectedId) ?? pending[0];
+  const selected = selectPendingItem(pending, selectedId);
   const select = (id: string) => {
     replaceQuery((params) => params.set(ITEM_PARAM, id));
   };
@@ -124,15 +96,13 @@ export function HumanDecisionsScreen() {
         title={messages.humanDecisions.title}
         tone={screenTone("/human")}
         count={humanDecisionCount.data ?? undefined}
-        loading={loading || gatesLoading}
+        loading={loading}
         help={messages.humanDecisions.description}
       />
 
-      {/* bd 실행 자체가 실패하면 두 조회가 같은 오류를 받으므로 한 번만 보입니다. */}
-      {[...new Set([error, gatesError])].map(
-        (message) =>
-          message && <ErrorAlert key={message}>{messages.issues.loadFailed(message)}</ErrorAlert>,
-      )}
+      {errors.map((message) => (
+        <ErrorAlert key={message}>{messages.issues.loadFailed(message)}</ErrorAlert>
+      ))}
 
       {loaded &&
         (selected ? (

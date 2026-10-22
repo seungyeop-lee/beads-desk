@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { readOpenGates } from "@/client/infra/gates/gatesApiClient";
-import { gateTitles, type GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import { gateTitles, type GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { useWorkspaceRead } from "@/client/modules/workspace/application/useWorkspaceRead";
 
 /**

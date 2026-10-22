@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { useState } from "react";
-import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import type { IssueTextHits } from "@/client/modules/issues/domain/issueListView";
 import type { WorkState, WorkStateGroup } from "@/client/modules/issues/domain/workState";

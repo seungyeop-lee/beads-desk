@@ -5,7 +5,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 import { useFocusView } from "@/client/modules/focus/application/useFocusView";
 import { NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
-import { blockersOf, type Blocker } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import { blockersOf, type Blocker } from "@/client/modules/gates/domain/humanGateBlockers";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { HUMAN_DECISION_TONE, workStateTone } from "@/client/ui/issues/issueLabels";

@@ -2,12 +2,14 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { readHumanDecisionItems } from "@/client/infra/humanDecisions/humanDecisionItemsApiClient";
 import {
   loadNoticePreference,
+  saveNoticePreference,
+  subscribeNoticePreference,
+} from "@/client/infra/humanDecisions/noticePreferenceStore";
+import {
   type NotificationAccess,
   notificationAccess,
   requestNotificationAccess,
-  saveNoticePreference,
   showBrowserNotification,
-  subscribeNoticePreference,
 } from "@/client/infra/notifications/browserNotifications";
 import {
   subscribeWatchedWorkspaceChanges,
@@ -24,13 +26,15 @@ import type { HumanDecisionItem } from "@/shared/contract/humanDecisions";
 vi.mock("@/client/infra/humanDecisions/humanDecisionItemsApiClient", () => ({
   readHumanDecisionItems: vi.fn<typeof readHumanDecisionItems>(),
 }));
-vi.mock("@/client/infra/notifications/browserNotifications", () => ({
+vi.mock("@/client/infra/humanDecisions/noticePreferenceStore", () => ({
   loadNoticePreference: vi.fn<typeof loadNoticePreference>(),
+  saveNoticePreference: vi.fn<typeof saveNoticePreference>(),
+  subscribeNoticePreference: vi.fn<typeof subscribeNoticePreference>(() => () => {}),
+}));
+vi.mock("@/client/infra/notifications/browserNotifications", () => ({
   notificationAccess: vi.fn<typeof notificationAccess>(),
   requestNotificationAccess: vi.fn<typeof requestNotificationAccess>(),
-  saveNoticePreference: vi.fn<typeof saveNoticePreference>(),
   showBrowserNotification: vi.fn<typeof showBrowserNotification>(),
-  subscribeNoticePreference: vi.fn<typeof subscribeNoticePreference>(() => () => {}),
 }));
 vi.mock("@/client/infra/workspaceEvents/workspaceEventSource", () => ({
   subscribeWatchedWorkspaceChanges: vi.fn<typeof subscribeWatchedWorkspaceChanges>(),

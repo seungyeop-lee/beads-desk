@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useId } from "react";
-import type { GateTitles } from "@/client/modules/humanGates/domain/humanGateBlockers";
+import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 import { EpicProgressBar, epicPercent } from "@/client/ui/issues/EpicProgress";

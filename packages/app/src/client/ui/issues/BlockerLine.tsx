@@ -4,7 +4,7 @@ import {
   blockersOf,
   type Blocker,
   type GateTitles,
-} from "@/client/modules/humanGates/domain/humanGateBlockers";
+} from "@/client/modules/gates/domain/humanGateBlockers";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { IssueHref } from "./IssueDetailRoute";
 import { HumanGateChip } from "./HumanGateChip";
