@@ -12,8 +12,10 @@ import {
   closeIssueAction,
   deferIssueAction,
   deleteIssueAction,
+  dismissHumanAction,
   removeDependencyAction,
   removeLabelAction,
+  respondToHumanAction,
   setIssueStatusAction,
   updateIssueAction,
 } from "@/server/web/issues/issueActions";
@@ -122,6 +124,22 @@ export function issueEdits(writes: IssueWrites, issueId: string) {
     return result.ok;
   };
 
+  /** 사람의 판단을 기다리는 이슈에 응답하고, 성공하면 안내합니다. */
+  const respondToHuman = async (response: string, announce: () => void) => {
+    const result = await writes.run((workspace) =>
+      respondToHumanAction(workspace, issueId, response),
+    );
+    if (result.ok) announce();
+    return result.ok;
+  };
+
+  /** 사람의 판단을 기다리는 이슈를 응답 없이 닫고, 성공하면 안내합니다. */
+  const dismissHuman = async (reason: string, announce: () => void) => {
+    const result = await writes.run((workspace) => dismissHumanAction(workspace, issueId, reason));
+    if (result.ok) announce();
+    return result.ok;
+  };
+
   return {
     update: async (changes: IssueChanges) =>
       (await writes.run((workspace) => updateIssueAction(workspace, issueId, changes))).ok,
@@ -139,6 +157,10 @@ export function issueEdits(writes: IssueWrites, issueId: string) {
     removeDependency,
 
     remove,
+
+    respondToHuman,
+
+    dismissHuman,
 
     addComment: async (text: string) =>
       (await writes.run((workspace) => addCommentAction(workspace, issueId, text))).ok,

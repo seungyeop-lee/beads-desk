@@ -8,8 +8,10 @@ import {
   closeIssueAction,
   deferIssueAction,
   deleteIssueAction,
+  dismissHumanAction,
   removeDependencyAction,
   removeLabelAction,
+  respondToHumanAction,
   setIssueStatusAction,
   updateIssueAction,
 } from "@/server/web/issues/issueActions";
@@ -25,8 +27,10 @@ vi.mock("@/server/web/issues/issueActions", () => ({
   closeIssueAction: vi.fn<typeof closeIssueAction>(),
   deferIssueAction: vi.fn<typeof deferIssueAction>(),
   deleteIssueAction: vi.fn<typeof deleteIssueAction>(),
+  dismissHumanAction: vi.fn<typeof dismissHumanAction>(),
   removeDependencyAction: vi.fn<typeof removeDependencyAction>(),
   removeLabelAction: vi.fn<typeof removeLabelAction>(),
+  respondToHumanAction: vi.fn<typeof respondToHumanAction>(),
   setIssueStatusAction: vi.fn<typeof setIssueStatusAction>(),
   updateIssueAction: vi.fn<typeof updateIssueAction>(),
 }));
@@ -233,6 +237,33 @@ test("관계 추가가 실패하면 안내하지 않고 실패로 돌려준다",
   });
 
   expect(added).toBe(false);
+});
+
+test("사람 판단 응답은 응답을 보내고, 성공하면 알린다", async () => {
+  const order: string[] = [];
+  vi.mocked(respondToHumanAction).mockImplementation(async () => {
+    order.push("write");
+    return { ok: true, data: null };
+  });
+
+  const responded = await issueEdits(writes, "demo-1").respondToHuman("진행합니다", () =>
+    order.push("announce"),
+  );
+
+  expect(respondToHumanAction).toHaveBeenCalledWith("demo", "demo-1", "진행합니다");
+  expect(order).toEqual(["write", "announce"]);
+  expect(responded).toBe(true);
+});
+
+test("사람 판단 응답 없이 닫기는 사유를 보내고, 실패하면 알리지 않는다", async () => {
+  vi.mocked(dismissHumanAction).mockResolvedValue({ ok: false, error: "거부" });
+
+  const dismissed = await issueEdits(writes, "demo-1").dismissHuman("중복", () => {
+    throw new Error("알리면 안 됩니다");
+  });
+
+  expect(dismissHumanAction).toHaveBeenCalledWith("demo", "demo-1", "중복");
+  expect(dismissed).toBe(false);
 });
 
 test("연결 끊기는 확인을 받은 뒤에 끊고, 선행은 이 이슈에서, 후속은 이 이슈로 끊는다", async () => {
