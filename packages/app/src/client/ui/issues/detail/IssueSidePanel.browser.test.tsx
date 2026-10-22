@@ -3,6 +3,7 @@ import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { escapeStepHandlers } from "@/client/ui/designSystem/modal";
+import { peleDom } from "@/client/ui/designSystem/peleDom.testkit";
 import { issueDetail } from "@/shared/domain/issues/issueFixture.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { IssueSidePanel } from "./IssueSidePanel";
@@ -68,7 +69,7 @@ test("상세 dialog 안의 옆 패널에서 그림을 크게 본 뒤 Esc로 닫�
 
   await side.getByRole("button", { name: messages.markdownEditor.enlargeDiagram }).click();
   await expect.element(enlarged).toBeVisible();
-  expect(enlarged.element().querySelector("svg.pele")?.textContent).toContain("선행 그림");
+  expect(enlarged.element().querySelector(peleDom.diagram)?.textContent).toContain("선행 그림");
   await userEvent.keyboard("{Escape}");
 
   await expect.element(enlarged).not.toBeInTheDocument();

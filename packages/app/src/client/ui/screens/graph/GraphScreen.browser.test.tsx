@@ -3,6 +3,7 @@ import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { VIEWPORT_MARGIN } from "@/client/modules/graph/domain/graphViewport";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import { daisyDom } from "@/client/ui/daisyDom.testkit";
 import { contrast, srgb } from "@/client/ui/designSystem/colorContrast.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
@@ -42,7 +43,7 @@ async function renderGraph(scope: "epic" | "center", id: string, data: GraphData
     </LocaleProvider>,
   );
   // dialog는 작게 줄인 상태에서 커지며 열리므로, 좌표를 재기 전에 열림 효과가 끝나기를 기다립니다.
-  const box = screen.getByRole("dialog").element().querySelector<HTMLElement>(".modal-box")!;
+  const box = screen.getByRole("dialog").element().querySelector<HTMLElement>(daisyDom.modalBox)!;
   await expect
     .poll(() => Math.abs(box.getBoundingClientRect().width - box.offsetWidth))
     .toBeLessThan(1);

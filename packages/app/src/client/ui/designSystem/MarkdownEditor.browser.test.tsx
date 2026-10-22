@@ -12,6 +12,7 @@ import { codeMirrorDom } from "./codeMirrorDom.testkit";
 import { contrast } from "./colorContrast.testkit";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { milkdownDom } from "./milkdownDom.testkit";
+import { peleDom } from "./peleDom.testkit";
 
 const DIAGRAM = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";
 const TYPESCRIPT = [
@@ -712,7 +713,7 @@ test("그림의 한글 라벨은 노드 상자 안에 들어가고, 지원하지
   await expect
     .element(unsupported!.querySelector<HTMLElement>(codeMirrorDom.content))
     .toBeVisible();
-  const nodes = diagram!.querySelectorAll(`${milkdownDom.previewDiagram} .pele-node`);
+  const nodes = diagram!.querySelectorAll(`${milkdownDom.previewDiagram} ${peleDom.node}`);
   expect(nodes).toHaveLength(2);
   for (const node of nodes) {
     const box = node.querySelector("rect")!.getBoundingClientRect();
@@ -745,7 +746,7 @@ test("그려진 그림만 눌러 크게 볼 수 있고, 크게 본 그림은 원
   const dialog = page.getByRole("dialog", { name: "크게 본 그림" });
   await expect.element(dialog).toBeVisible();
   const original = screen.container.querySelector<SVGSVGElement>(milkdownDom.previewDiagram)!;
-  const enlarged = dialog.element().querySelector<SVGSVGElement>("svg.pele")!;
+  const enlarged = dialog.element().querySelector<SVGSVGElement>(peleDom.diagram)!;
   expect(enlarged.getBoundingClientRect().width).toBeGreaterThan(
     original.getBoundingClientRect().width,
   );
@@ -755,7 +756,9 @@ test("그려진 그림만 눌러 크게 볼 수 있고, 크게 본 그림은 원
   expect(enlarged.getAttribute("aria-labelledby")).toBe(ids(enlarged)[0]);
 
   const colors = () =>
-    [original, enlarged].map((svg) => getComputedStyle(svg.querySelector(".pele-node rect")!).fill);
+    [original, enlarged].map(
+      (svg) => getComputedStyle(svg.querySelector(`${peleDom.node} rect`)!).fill,
+    );
   const [light] = colors();
   expect(colors()).toEqual([light, light]);
   document.documentElement.dataset.theme = "desk-dark";
@@ -1086,7 +1089,7 @@ function diagramColors(container: HTMLElement) {
   return Array.from(
     container.querySelectorAll(`${milkdownDom.codeBlock} ${milkdownDom.previewDiagram}`),
     (svg) => {
-      const node = svg.querySelector(".pele-node rect");
+      const node = svg.querySelector(`${peleDom.node} rect`);
       return node ? getComputedStyle(node).fill : "";
     },
   );
