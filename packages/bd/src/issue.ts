@@ -276,7 +276,7 @@ export type IssueEvent = {
   type: string;
   actor: string;
   createdAt: number;
-  /** bd가 바뀐 필드를 JSON으로 남긴 이벤트(updated, claimed, status_changed, reopened)의 변경입니다. */
+  /** bd가 바뀐 필드를 JSON으로 남긴 이벤트(updated, claimed, status_changed)의 변경입니다. */
   changes: IssueFieldChange[];
   /** 관계를 더하거나 지운 이벤트의 상대 이슈입니다. bd는 지운 이벤트에 관계 유형을 남기지 않습니다. */
   dependency: { dependsOnId: string; type: string | null } | null;
