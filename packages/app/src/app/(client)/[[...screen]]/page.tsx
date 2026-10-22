@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { WorkspaceSelectScreen } from "@/client/ui/screens/workspaces/WorkspaceSelectScreen";
-import { registeredWorkspaces } from "@/server/web/workspaces/registeredWorkspaces";
+import { listWorkspaces } from "@/server/infra/runtime/serverRuntime";
 import { workspaceHref } from "@/shared/contract/workspaces";
 import { SCREEN_PATHS } from "@/shared/domain/screenPaths";
 
@@ -24,7 +24,7 @@ export default async function UnscopedAddressPage({
   const hrefOf = (slug: string) =>
     `${workspaceHref(slug, screenPath)}${query.size > 0 ? `?${query}` : ""}`;
 
-  const workspaces = registeredWorkspaces();
+  const workspaces = listWorkspaces();
   if (workspaces.length === 1) redirect(hrefOf(workspaces[0]!.slug));
   return (
     <WorkspaceSelectScreen

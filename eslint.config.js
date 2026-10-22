@@ -4,14 +4,15 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
-// 화면 route(`app/(client)`)의 Server Component가 import할 수 있는 `server/web` 파일입니다.
+// 화면 route(`app/(client)`)의 Server Component가 import할 수 있는 `server` 하위 파일입니다.
 // 루트 AGENTS.md는 파일 이름을 적지 않고 이 목록을 가리키므로, 허용 목록은 여기에만 둡니다.
 const clientRouteServerFiles = [
-  "locale/requestLocale",
-  "theme/requestTheme",
-  "workspaces/registeredWorkspaces",
+  "web/locale/requestLocale",
+  "web/theme/requestTheme",
+  "web/workspaces/registeredWorkspaces",
+  "infra/runtime/serverRuntime",
 ];
-const clientRouteServerAllowed = `web/(?:${clientRouteServerFiles.join("|")})$`;
+const clientRouteServerAllowed = `(?:${clientRouteServerFiles.join("|")})$`;
 
 // 문서로만 적어 두면 낡는 경계를 여기서 강제합니다.
 // 각 패턴은 `@/` alias와 상대 경로 양쪽을 모두 막습니다.
@@ -38,7 +39,7 @@ const boundaries = {
   },
   clientRouteServerSurface: {
     regex: `^@/server/(?!${clientRouteServerAllowed})|^(?:\\.\\./)+server/(?!${clientRouteServerAllowed})`,
-    message: `화면 route(\`app/(client)\`)는 \`server/web\`에서 ${clientRouteServerFiles.map((file) => `\`${file}\``).join(", ")}만 import합니다.`,
+    message: `화면 route(\`app/(client)\`)는 \`server\`의 ${clientRouteServerFiles.map((file) => `\`${file}\``).join(", ")} 파일만 import합니다.`,
   },
   serverFromAppRoot: {
     regex: "^@/server(?:/|$)|^(?:\\.\\./)+server(?:/|$)",

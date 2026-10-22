@@ -36,9 +36,8 @@ import {
   isNewIssueInput,
   isReplacement,
   isString,
-  write,
-  writeClose,
 } from "./issueActionGuards";
+import { write, writeClose } from "./issueActionWrites";
 
 export async function updateIssueAction(
   workspace: string,

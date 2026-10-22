@@ -1,10 +1,5 @@
-import { findWorkspace, listWorkspaces } from "@/server/infra/runtime/serverRuntime";
+import { findWorkspace } from "@/server/infra/runtime/serverRuntime";
 import type { Workspace } from "@/shared/contract/workspaces";
-
-/** 화면 route가 쓰는 등록한 workspace 목록입니다. 등록한 순서대로 둡니다. */
-export function registeredWorkspaces(): Workspace[] {
-  return listWorkspaces();
-}
 
 /**
  * 화면 주소의 workspace segment로 등록한 workspace를 찾습니다. 없으면 null입니다.

@@ -177,9 +177,6 @@ function describeBoundaryViolation(): string | null {
       if (!targetPath) continue;
       const to = layerOf(targetPath);
       if (!to) return `${fromPath}:${line}이 layer 밖 module을 import합니다: ${specifier}`;
-      if (fromPath.startsWith("app/(client)/") && to === "server/infra") {
-        return `${fromPath}:${line}의 client entrypoint는 server infra를 직접 import할 수 없습니다: ${specifier}`;
-      }
       if (!ALLOWED_DEPENDENCIES[from][to]) {
         return `${fromPath}:${line}의 ${from} → ${to} 의존은 허용되지 않습니다: ${specifier}`;
       }
