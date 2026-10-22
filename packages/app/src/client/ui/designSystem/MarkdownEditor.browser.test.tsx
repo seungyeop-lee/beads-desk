@@ -206,8 +206,14 @@ test("링크 도구로 고른 글자에 Windows 드라이브 경로를 넣으면
         <MarkdownEditor value="문서 끝" label="설명" onChange={changed} />
       </LocaleProvider>,
     );
-    await screen.getByRole("textbox", { name: "설명" }).getByText("문서 끝").click();
-    await userEvent.keyboard("{Home}{Shift>}{ArrowRight}{ArrowRight}{/Shift}");
+    // 컴포넌트 테스트 전체를 함께 돌릴 때는 userEvent.keyboard의 키 입력이 가끔 편집기에 닿지 않고 사라져
+    // 글자 고르기가 확정되지 않습니다(이 파일만 돌리면 재현되지 않음). 선택이 확정됐는지 확인하고, 사라졌으면 다시 고릅니다.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      await screen.getByRole("textbox", { name: "설명" }).getByText("문서 끝").click();
+      await userEvent.keyboard("{Home}{Shift>}{ArrowRight}{ArrowRight}{/Shift}");
+      if (await selectionBecomes("문서")) break;
+    }
+    await expect.poll(() => window.getSelection()?.toString()).toBe("문서");
     await expect.poll(() => visible(milkdownDom.toolbarLinkButton)).toBeTruthy();
     await userEvent.click(visible(milkdownDom.toolbarLinkButton)!);
     await confirmLinkAddress(address);
@@ -345,6 +351,16 @@ function visible(selector: string) {
   return Array.from(document.querySelectorAll<HTMLElement>(selector)).find((element) =>
     element.checkVisibility(),
   );
+}
+
+/** selection이 `text`가 될 때까지 최대 `limit`ms 기다리고 성공 여부를 돌려줍니다. */
+async function selectionBecomes(text: string, limit = 300) {
+  const start = performance.now();
+  while (performance.now() - start < limit) {
+    if (window.getSelection()?.toString() === text) return true;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  return window.getSelection()?.toString() === text;
 }
 
 test("제목으로 시작하는 본문은 읽을 때도 편집할 때도 글자를 고르는 동안 움직이지 않는다", async () => {
