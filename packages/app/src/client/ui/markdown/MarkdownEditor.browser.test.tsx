@@ -11,6 +11,7 @@ import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
 import { codeMirrorDom } from "../designSystem/codeMirrorDom.testkit";
 import { contrast } from "../designSystem/colorContrast.testkit";
+import { daisyDom } from "../daisyDom.testkit";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { milkdownDom } from "../designSystem/milkdownDom.testkit";
 import { peleDom } from "../designSystem/peleDom.testkit";
@@ -861,7 +862,7 @@ test("편집기를 감싼 form과 dialog는 그림 dialog를 Esc, 닫기 단추,
 
   (button.element() as HTMLElement).focus();
   await userEvent.keyboard(" ");
-  await dialog.element().querySelector<HTMLElement>(".modal-backdrop button")!.click();
+  await dialog.element().querySelector<HTMLElement>(daisyDom.modalBackdropButton)!.click();
   await expect.element(dialog).not.toBeInTheDocument();
 
   expect(host.open).toBe(true);
