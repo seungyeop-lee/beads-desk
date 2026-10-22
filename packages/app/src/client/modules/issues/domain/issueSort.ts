@@ -1,11 +1,4 @@
-import { ISSUE_STATUSES, type Issue } from "@beads-desk/bd/issue";
-
-/** 상태별로 묶어 open → in_progress → blocked → deferred → closed 순으로 보이고, closed는 최근에 닫은 것부터 보입니다. */
-export function byStatusGroup(a: Issue, b: Issue): number {
-  const rank = statusRank(a.status, ISSUE_STATUSES) - statusRank(b.status, ISSUE_STATUSES);
-  if (rank !== 0) return rank;
-  return a.status === "closed" ? byClosedDesc(a, b) : byPriorityThenCreated(a, b);
-}
+import type { Issue } from "@beads-desk/bd/issue";
 
 /** status가 order에서 몇 번째인지를 정합니다. order에 없는 status는 어느 status보다 뒤에 옵니다. */
 export function statusRank(status: string, order: readonly string[]): number {
