@@ -1,6 +1,6 @@
-import { LanguageDescription } from "@codemirror/language";
+import { type Language, LanguageDescription } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import { classHighlighter, highlightCode } from "@lezer/highlight";
+import { classHighlighter, highlightCode, tagHighlighter, tags } from "@lezer/highlight";
 import {
   DOMSerializer,
   type Mark,
@@ -53,7 +53,7 @@ type Chip = { dom: HTMLElement; name: HTMLElement };
 const previewKey = new PluginKey<PreviewState>("localFilePreview");
 
 /**
- * 읽기 전용 본문에서 .diff·.patch·.log·.txt 로컬 파일 링크를 펼치기 칩으로 그리고, 칩을 누르면 링크가 든 블록 아래에
+ * 읽기 전용 본문에서 펼쳐 볼 수 있는 로컬 파일 링크(filePreview.ts)를 펼치기 칩으로 그리고, 칩을 누르면 링크가 든 블록 아래에
  * 파일 내용을 펼치는 plugin입니다. 칩 오른쪽에는 파일을 새 탭에서 여는 아이콘 링크를 둡니다.
  * 칩은 링크 mark view로, 아이콘 링크와 내용은 decoration으로 그려 문서와 markdown 원문을 바꾸지 않습니다.
  * `address`는 링크를 그릴 때와 같은 주소 함수로, 그 결과가 로컬 파일 API 주소인 링크만 대상입니다.
@@ -293,8 +293,8 @@ async function fileView(file: LocalTextFile, link: PreviewLink, labels: Labels):
   const text = document.createElement("pre");
   // 키보드로도 넘친 내용을 스크롤할 수 있게 합니다.
   text.tabIndex = 0;
-  if (link.format === "diff") text.append(await highlightedDiff(file.text).catch(() => file.text));
-  else text.textContent = file.text;
+  if (link.format === "plain") text.textContent = file.text;
+  else text.append(await highlighted(file.text, link.format).catch(() => file.text));
   return text;
 }
 
@@ -306,16 +306,34 @@ function message(text: string) {
 }
 
 /**
- * 코드 블록과 같은 @codemirror/language-data의 diff mode로 토큰을 나눠, 토큰마다 classHighlighter의 `tok-*` class를 붙입니다.
+ * classHighlighter에 더해, classHighlighter가 class를 붙이지 않는 토큰에도 class를 붙입니다. 취소선과 구분선은 코드 블록 강조
+ * (codeHighlighting.ts)가 칠하는 토큰이고, monospace(인라인 코드와 코드 블록 글자)와 processingInstruction(#, -, *, `, > 같은
+ * 표시 기호)은 markdown 원문에서 구분해 보이려는 토큰입니다.
+ */
+const previewHighlighters = [
+  classHighlighter,
+  tagHighlighter([
+    { tag: tags.strikethrough, class: "tok-strikethrough" },
+    { tag: tags.contentSeparator, class: "tok-contentSeparator" },
+    { tag: tags.monospace, class: "tok-monospace" },
+    { tag: tags.processingInstruction, class: "tok-processingInstruction" },
+  ]),
+];
+
+/**
+ * 원문을 형식의 language mode로 토큰으로 나눠, 토큰마다 `tok-*` class를 붙입니다.
  * 색은 markdownEditor.css가 코드 블록 강조와 같은 --code-* 변수로 정합니다.
  */
-async function highlightedDiff(text: string): Promise<DocumentFragment> {
-  const diff = await LanguageDescription.matchLanguageName(languages, "diff")!.load();
+async function highlighted(
+  text: string,
+  format: Exclude<FilePreviewFormat, "plain">,
+): Promise<DocumentFragment> {
+  const mode = format === "diff" ? await diffMode() : await markdownMode(text);
   const fragment = document.createDocumentFragment();
   highlightCode(
     text,
-    diff.language.parser.parse(text),
-    classHighlighter,
+    mode.parser.parse(text),
+    previewHighlighters,
     (part, classes) => {
       if (!classes) return fragment.append(part);
       const token = document.createElement("span");
@@ -326,4 +344,30 @@ async function highlightedDiff(text: string): Promise<DocumentFragment> {
     () => fragment.append("\n"),
   );
   return fragment;
+}
+
+/** 코드 블록과 같은 @codemirror/language-data의 diff mode입니다. */
+async function diffMode(): Promise<Language> {
+  const diff = await LanguageDescription.matchLanguageName(languages, "diff")!.load();
+  return diff.language;
+}
+
+/**
+ * GFM markdown mode입니다. 코드 블록(```ts 등)은 본문 코드 블록처럼 @codemirror/language-data의 그 언어 mode로 나눕니다.
+ * 언어 mode는 불러오기 전에는 그 코드 블록을 나누지 않고 건너뛰므로, 원문을 한 번 나눠 코드 블록이 쓰는 언어를 모두 불러온 뒤에 돌려줍니다.
+ */
+async function markdownMode(text: string): Promise<Language> {
+  const { markdown, markdownLanguage } = await import("@codemirror/lang-markdown");
+  const used = new Set<LanguageDescription>();
+  const { language } = markdown({
+    base: markdownLanguage,
+    codeLanguages: (info) => {
+      const description = LanguageDescription.matchLanguageName(languages, info, true);
+      if (description) used.add(description);
+      return description;
+    },
+  });
+  language.parser.parse(text);
+  await Promise.allSettled([...used].map((description) => description.load()));
+  return language;
 }

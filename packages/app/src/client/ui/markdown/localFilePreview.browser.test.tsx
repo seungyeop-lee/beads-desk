@@ -12,6 +12,16 @@ const DIFF = ["@@ -1,2 +1,2 @@", "-const before = 1;", "+const after = 2;", " un
   "\n",
 );
 const LOG = "+ 이 줄은 로그라서 칠하지 않습니다\n두 번째 줄";
+const MARKDOWN = [
+  "# 조사 결과",
+  "",
+  "- **굵게**와 *기울임*",
+  "- [참고 문서](https://example.com/doc)와 `inlineCall()`",
+  "",
+  "```ts",
+  "const answer = 42;",
+  "```",
+].join("\n");
 
 /** 경로마다 파일 API가 돌려줄 응답입니다. 없는 경로는 404입니다. */
 let files: Record<string, () => Response> = {};
@@ -44,25 +54,25 @@ function renderReadOnly(value: string) {
   );
 }
 
-test("diff·patch·log·txt 로컬 파일 링크만 접힌 미리보기 칩과 새 탭 아이콘 링크로 그리고, 펼치기 전에는 파일을 받지 않는다", async () => {
+test("diff·patch·md·log·txt 로컬 파일 링크만 접힌 미리보기 칩과 새 탭 아이콘 링크로 그리고, 펼치기 전에는 파일을 받지 않는다", async () => {
   const screen = await renderReadOnly(
     [
-      "[변경 diff](/tmp/r/a.diff) [패치](/tmp/r/b.PATCH) [로그](</tmp/r/실행 기록.log>) [메모](C:\\r\\note.txt)",
+      "[변경 diff](/tmp/r/a.diff) [패치](/tmp/r/b.PATCH) [로그](</tmp/r/실행 기록.log>) [메모](C:\\r\\note.txt) [문서](/tmp/r/a.md)",
       "",
-      "[문서](/tmp/r/a.md) [그림](/tmp/r/a.png) [웹 diff](https://example.com/a.diff) [화면](/epics)",
+      "[그림](/tmp/r/a.png) [웹 diff](https://example.com/a.diff) [화면](/epics)",
     ].join("\n"),
   );
 
-  for (const name of ["변경 diff", "패치", "로그", "메모"]) {
+  for (const name of ["변경 diff", "패치", "로그", "메모", "문서"]) {
     const chip = screen.getByRole("button", { name: labels.filePreview(name) });
     await expect.element(chip).toHaveAttribute("aria-expanded", "false");
     const open = screen.getByRole("link", { name: labels.openInNewTab(name) });
     expect(open.element().getAttribute("href")).toBe(chip.element().getAttribute("href"));
     await expect.element(open).toHaveAttribute("target", "_blank");
   }
-  expect(screen.getByRole("button").elements()).toHaveLength(4);
+  expect(screen.getByRole("button").elements()).toHaveLength(5);
   // 칩이 아닌 링크도 로컬 파일과 외부 주소는 새 탭에서 열고, 앱 화면은 지금 탭에서 엽니다.
-  for (const name of ["문서", "그림", "웹 diff"]) {
+  for (const name of ["그림", "웹 diff"]) {
     await expect.element(screen.getByRole("link", { name })).toHaveAttribute("target", "_blank");
   }
   await expect.element(screen.getByRole("link", { name: "화면" })).not.toHaveAttribute("target");
@@ -228,6 +238,34 @@ test("diff는 추가·삭제 줄을 코드 블록 강조 색으로 칠하고, lo
   await expect.element(log.getByText("두 번째 줄", { exact: false })).toBeVisible();
   expect(log.element().querySelector("pre")?.textContent).toBe(LOG);
   expect(log.element().querySelectorAll("pre span")).toHaveLength(0);
+});
+
+test("md는 렌더링하지 않은 원문을 펼쳐 markdown 구문과 코드 블록의 언어 토큰을 강조한다", async () => {
+  files = { "/tmp/r/report.md": () => new Response(MARKDOWN) };
+  const screen = await renderReadOnly("[보고서](/tmp/r/report.md)");
+
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("보고서") }));
+
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("보고서") });
+  await expect.element(contents.getByText("조사 결과", { exact: false })).toBeVisible();
+  const pre = contents.element().querySelector("pre")!;
+  expect(pre.textContent).toBe(MARKDOWN);
+  expect(pre.querySelector("h1, strong, a")).toBeNull();
+  const tokens = (selector: string) =>
+    [...pre.querySelectorAll(selector)].map((token) => token.textContent).join("");
+  expect(tokens(".tok-heading")).toContain("조사 결과");
+  expect(tokens(".tok-strong")).toContain("굵게");
+  expect(tokens(".tok-emphasis")).toContain("기울임");
+  expect(tokens(".tok-link")).toContain("참고 문서");
+  expect(tokens(".tok-url")).toBe("https://example.com/doc");
+  expect(tokens(".tok-monospace")).toContain("inlineCall()");
+  expect(tokens(".tok-processingInstruction")).toContain("-");
+  // 코드 블록 안은 markdown이 아니라 TypeScript 토큰으로 나뉩니다.
+  expect(tokens(".tok-keyword")).toBe("const");
+  expect(tokens(".tok-variableName.tok-definition")).toBe("answer");
+  expect(tokens(".tok-number")).toBe("42");
+  const plain = getComputedStyle(pre).color;
+  expect(getComputedStyle(pre.querySelector(".tok-keyword")!).color).not.toBe(plain);
 });
 
 test("최대 높이보다 긴 내용은 펼친 영역 안에서 스크롤하고, 다음 블록은 그 영역 아래에 놓인다", async () => {

@@ -56,7 +56,9 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
       const image = description.getByRole("img", { name: `${name} PNG` });
       await expect(image).toBeVisible();
       await expect(image).toHaveJSProperty("naturalWidth", 80);
-      const opened = await openedTab(description.getByRole("link", { name: `${name} 문서` }));
+      const opened = await openedTab(
+        description.getByRole("link", { name: `${name} 문서 새 탭에서 열기` }),
+      );
       await expect(opened.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
       expect(new URL(opened.url()).searchParams.get("path")).toBe(path.md);
       await opened.close();

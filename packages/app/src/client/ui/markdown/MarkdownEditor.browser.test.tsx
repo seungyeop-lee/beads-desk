@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 import { cdp, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { koMessages } from "@/client/modules/locale/domain/koMessages";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
@@ -16,6 +17,7 @@ import { MarkdownEditor } from "./MarkdownEditor";
 import { milkdownDom } from "./milkdownDom.testkit";
 import { peleDom } from "../designSystem/peleDom.testkit";
 
+const labels = koMessages.markdownEditor;
 const DIAGRAM = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";
 const TYPESCRIPT = [
   "```ts",
@@ -80,9 +82,13 @@ test("드라이브 문자로 시작하는 Windows 절대경로의 링크와 이�
   const links = [
     ["슬래시 문서", "C:/x/y.md"],
     ["공백 문서", "d:\\work\\조사 결과.md"],
-  ];
+  ] as const;
   for (const [name, path] of links) {
-    const href = screen.getByRole("link", { name }).element().getAttribute("href");
+    // 읽기 전용 본문은 .md 링크를 펼치기 칩(button)으로 그립니다.
+    const href = screen
+      .getByRole("button", { name: labels.filePreview(name) })
+      .element()
+      .getAttribute("href");
     expect(localPath(href)).toBe(path);
   }
   expect(screen.getByText("스크립트").element().closest("a")?.getAttribute("href")).toBe("");
@@ -118,12 +124,12 @@ test("Windows 경로의 문장부호 앞 역슬래시는 인라인 링크와 참
     </LocaleProvider>,
   );
 
-  const link = screen.getByRole("link", { name: "a" });
+  const link = screen.getByRole("button", { name: labels.filePreview("a") });
   await expect.element(link).toBeInTheDocument();
   expect(localPath(link.element().getAttribute("href"))).toBe("C:\\work\\.beads\\a.md");
   const image = screen.getByRole("img", { name: "밑줄 그림" }).element();
   expect(localPath(image.getAttribute("src"))).toBe("C:\\a_b\\_x.png");
-  const reference = screen.getByRole("link", { name: "참조 문서" }).element();
+  const reference = screen.getByRole("button", { name: labels.filePreview("참조 문서") }).element();
   expect(localPath(reference.getAttribute("href"))).toBe("C:\\work\\.beads\\b.md");
   const referenceImage = screen.getByRole("img", { name: "참조 그림" }).element();
   expect(localPath(referenceImage.getAttribute("src"))).toBe("C:\\a_b\\_y.png");
