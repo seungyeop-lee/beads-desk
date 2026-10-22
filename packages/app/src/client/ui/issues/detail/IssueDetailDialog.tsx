@@ -1,7 +1,5 @@
-import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
@@ -9,13 +7,13 @@ import type { IssueDetailLocation } from "@/client/modules/issues/domain/issueDe
 import { ChevronLeftIcon, CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { escapeStepHandlers, ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
-import { IssueTypeTag } from "../IssueTypeTag";
 import { IssueDetailView } from "./IssueDetailView";
 import type { ListedIssues } from "./listedIssues";
 import { IssueSidePanel } from "./IssueSidePanel";
 import { WriteErrorAlert } from "../WriteErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { CopyIssueIdButton } from "../CopyIssueIdButton";
+import { IssueDetailHeader } from "./IssueDetailHeader";
+import { useCloseIssueSidePanel } from "../useCloseIssueSidePanel";
 
 type Props = {
   embedded?: boolean;
@@ -53,7 +51,7 @@ export function IssueDetailDialog({
   const { issue: issueId, side } = location;
   const sideHref = (sideId: string) => detailHref({ issue: issueId, side: sideId });
   const closeSideHref = detailHref({ issue: issueId, side: null });
-  const router = useRouter();
+  const closeSidePanel = useCloseIssueSidePanel(side ? closeSideHref : null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   // 열 때는 머리글의 ID 복사 단추가 아니라 닫기 단추가 focus를 받아, 바로 Enter를 누르면 dialog가 닫힙니다.
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -134,11 +132,7 @@ export function IssueDetailDialog({
         closedby={covered ? "none" : undefined}
         onClose={onClose}
         // 옆 패널이 열려 있으면 옆 패널의 닫기 단추와 같은 주소로 옮겨 옆 패널만 닫습니다.
-        {...escapeStepHandlers(() => {
-          if (!side) return false;
-          router.push(closeSideHref, { scroll: false });
-          return true;
-        })}
+        {...escapeStepHandlers(closeSidePanel)}
       >
         <div
           className={`modal-box flex h-[85dvh] max-h-[90dvh] w-11/12 flex-col overflow-y-auto p-0 md:h-auto md:flex-row md:overflow-hidden ${side ? "max-w-[110rem]" : "max-w-6xl"}`}
@@ -185,30 +179,25 @@ function IssueDetailPanel({
   const messages = useMessages();
   return (
     <div className="flex min-h-[32rem] min-w-0 shrink-0 grow flex-col md:min-h-0 md:shrink">
-      <header className="flex shrink-0 flex-wrap items-center gap-3 border-b border-base-300 px-6 py-3">
-        {previous && (
-          <Link
-            className="btn btn-ghost btn-sm -ml-3 gap-1 px-2 font-mono text-xs font-normal text-emphasis-60"
-            href={detailHref(previous)}
-            scroll={false}
-            aria-label={messages.issueDetail.backTo(previous.issue)}
-          >
-            <ChevronLeftIcon width={14} height={14} />
-            {previous.issue}
-          </Link>
-        )}
-        <CopyIssueIdButton
-          issueId={issueId}
-          className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 text-xs text-emphasis-70"
-        />
-        {issue && (
-          <span className="text-sm text-emphasis-70">
-            <IssueTypeTag issueType={issue.issueType} />
-          </span>
-        )}
-        {(loading || writes.pending) && (
-          <Spinner tone="muted" label={messages.issueDetail.working} />
-        )}
+      <IssueDetailHeader
+        issueId={issueId}
+        issueType={issue?.issueType}
+        loading={loading || writes.pending}
+        loadingLabel={messages.issueDetail.working}
+        leading={
+          previous && (
+            <Link
+              className="btn btn-ghost btn-sm -ml-3 gap-1 px-2 font-mono text-xs font-normal text-emphasis-60"
+              href={detailHref(previous)}
+              scroll={false}
+              aria-label={messages.issueDetail.backTo(previous.issue)}
+            >
+              <ChevronLeftIcon width={14} height={14} />
+              {previous.issue}
+            </Link>
+          )
+        }
+      >
         <div className="ml-auto">
           <button
             ref={closeRef}
@@ -220,7 +209,7 @@ function IssueDetailPanel({
             <CloseIcon />
           </button>
         </div>
-      </header>
+      </IssueDetailHeader>
 
       <div className="flex min-h-0 grow flex-col overflow-y-auto">
         {(writes.error || error) && (

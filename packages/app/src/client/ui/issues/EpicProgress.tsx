@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { epicPercent } from "@/client/modules/epics/domain/epicsView";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -31,19 +32,24 @@ export function EpicProgressBar({
   closed,
   total,
   className,
+  style,
+  "aria-label": label,
 }: {
   epicId: string;
   closed: number;
   total: number;
   className: string;
+  style?: CSSProperties;
+  "aria-label"?: string;
 }) {
   const messages = useMessages();
   return (
     <progress
       className={`progress h-1.5 text-progress ${className}`}
+      style={style}
       value={closed}
       max={Math.max(total, 1)}
-      aria-label={messages.epics.progress(epicId)}
+      aria-label={label ?? messages.epics.progress(epicId)}
     />
   );
 }

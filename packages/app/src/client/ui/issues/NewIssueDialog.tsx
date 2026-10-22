@@ -4,15 +4,14 @@ import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
 import { ISSUE_TYPES } from "@/client/modules/issues/domain/issueTypes";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
-import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { PRIORITIES, type NewIssueInput } from "@/shared/contract/issueActions";
 import { IssuePicker } from "./IssuePicker";
-import { priorityLabel, typeLabel, typeTone } from "./issueLabels";
-import { CopyIssueIdButton } from "./CopyIssueIdButton";
+import { priorityLabel, typeLabel } from "./issueLabels";
+import { SelectedIssueRow } from "./SelectedIssueRow";
 
 type Props = {
   /** 폼을 채운 입력으로 새 이슈 만들기를 실행합니다. 성공하면 부르는 쪽이 대화상자를 닫고 만든 이슈로 이동합니다. */
@@ -116,24 +115,15 @@ export function NewIssueDialog({ create, pending, error, onClose, fixedParent }:
           <div className="flex flex-col gap-1.5">
             <span className="caption">{messages.newIssue.parent}</span>
             {parent ? (
-              <span className="flex h-10 items-center gap-2 rounded-field border border-base-300 px-3 text-sm">
-                <span className={`tone-dot ${typeTone(parent.issueType)}`} />
-                <CopyIssueIdButton
-                  issueId={parent.id}
-                  className="rounded text-xs text-emphasis-60"
-                />
-                <span className="min-w-0 grow truncate">{parent.title}</span>
-                {!fixedParent && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-xs btn-square"
-                    aria-label={messages.newIssue.clearParent}
-                    onClick={() => setPickedParent(null)}
-                  >
-                    <CloseIcon width={13} height={13} />
-                  </button>
-                )}
-              </span>
+              <SelectedIssueRow
+                issue={parent}
+                variant="parent"
+                clear={
+                  fixedParent
+                    ? undefined
+                    : { label: messages.newIssue.clearParent, onClear: () => setPickedParent(null) }
+                }
+              />
             ) : (
               <IssuePicker
                 label={messages.newIssue.parentSearch}

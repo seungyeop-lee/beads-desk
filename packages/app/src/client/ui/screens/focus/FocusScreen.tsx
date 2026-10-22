@@ -15,6 +15,7 @@ import { HUMAN_DECISION_TONE, workStateTone } from "@/client/ui/issues/issueLabe
 import { WaitingOnLines } from "@/client/ui/issues/BlockerLine";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
+import { EpicProgressBar } from "@/client/ui/issues/EpicProgress";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
@@ -152,16 +153,17 @@ export function FocusScreen() {
                             {closedChildren}/{totalChildren}
                           </span>
                         </span>
-                        <progress
-                          className="progress h-1.5 w-full text-progress"
+                        <EpicProgressBar
+                          epicId={epic.id}
+                          className="w-full"
                           style={
                             {
                               "--color-progress":
                                 "color-mix(in oklab, var(--color-sage), var(--color-progress-ink) 25%)",
                             } as CSSProperties
                           }
-                          value={closedChildren}
-                          max={Math.max(totalChildren, 1)}
+                          closed={closedChildren}
+                          total={totalChildren}
                           aria-label={messages.focus.epicProgressOf(epic.title)}
                         />
                       </Link>

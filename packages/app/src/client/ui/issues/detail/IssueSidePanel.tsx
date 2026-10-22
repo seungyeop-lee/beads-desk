@@ -1,4 +1,3 @@
-import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
@@ -7,13 +6,12 @@ import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAd
 import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
-import { statusLabel, statusTone } from "../issueLabels";
-import { IssueTypeTag } from "../IssueTypeTag";
+import { StatusChip } from "../IssueChip";
 import { DependencyList } from "./DependencyList";
 import { BODY_FIELDS } from "@/shared/domain/issues/bodyFields";
 import { CommentTimeline } from "./CommentList";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { CopyIssueIdButton } from "../CopyIssueIdButton";
+import { IssueDetailHeader } from "./IssueDetailHeader";
 
 type Props = {
   issueId: string;
@@ -34,17 +32,13 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
       className="flex min-h-[32rem] min-w-0 w-full shrink-0 flex-col border-t border-base-300 bg-base-200/30 md:min-h-0 md:w-[34rem] md:max-w-[45%] md:border-t-0 md:border-l"
       aria-label={messages.issueDetail.sidePanel(issueId)}
     >
-      <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-base-300 px-5 py-3">
-        <CopyIssueIdButton
-          issueId={issueId}
-          className="shrink-0 rounded-md bg-base-200 px-2 py-0.5 text-xs text-emphasis-70"
-        />
-        {data && (
-          <span className="text-sm text-emphasis-70">
-            <IssueTypeTag issueType={data.issueType} />
-          </span>
-        )}
-        {loading && <Spinner tone="muted" label={messages.common.loading} />}
+      <IssueDetailHeader
+        issueId={issueId}
+        issueType={data?.issueType}
+        loading={loading}
+        loadingLabel={messages.common.loading}
+        variant="side"
+      >
         <Link className="btn btn-ghost btn-sm ml-auto font-medium" href={openHref} scroll={false}>
           {messages.issueDetail.openInMain}
         </Link>
@@ -56,7 +50,7 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
         >
           <CloseIcon />
         </Link>
-      </header>
+      </IssueDetailHeader>
 
       <div className="flex min-h-0 grow flex-col overflow-y-auto">
         {error && !data && (
@@ -85,9 +79,7 @@ function IssueSummary({
         <h2 className="text-xl leading-snug font-bold tracking-tight wrap-anywhere">
           {issue.title || messages.common.untitled}
         </h2>
-        <span className={`chip self-start ${statusTone(issue.status)}`}>
-          {statusLabel(messages, issue.status)}
-        </span>
+        <StatusChip status={issue.status} size="md" className="self-start" />
       </div>
       {BODY_FIELDS.filter((field) => issue[field]).map((field) => (
         <section key={field} className="flex flex-col gap-2">

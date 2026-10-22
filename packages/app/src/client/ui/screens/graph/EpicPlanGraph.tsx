@@ -9,8 +9,7 @@ import {
   VIEWPORT_MARGIN,
 } from "@/client/modules/graph/domain/graphViewport";
 import { workState } from "@/client/modules/issues/domain/workState";
-import { workStateTone } from "@/client/ui/issues/issueLabels";
-import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
+import { GraphIssueHeading } from "@/client/ui/issues/GraphIssueHeading";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
@@ -18,7 +17,7 @@ import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { EdgeLegend } from "./EdgeLegend";
 import { IssueGraph } from "./IssueGraph";
 import { useGraphLayout } from "./useGraphLayout";
-import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
+import { CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 
 type Props = {
   data: GraphData;
@@ -189,7 +188,6 @@ function UnorderedIssueRow({
   href: string;
   waiters: number;
 }) {
-  const messages = useMessages();
   const state = workState(issue);
   return (
     <CoveredIssueRow
@@ -200,13 +198,7 @@ function UnorderedIssueRow({
       title={issue.title}
       cover={{ href }}
     >
-      <span className="flex items-center gap-1.5 text-emphasis-60">
-        <IssueTypeTag issueType={issue.issueType} />
-        <span aria-hidden>·</span>
-        <span className={`tone-dot ${workStateTone(state)}`} />
-        <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
-        <CoveredIssueIdButton issueId={issue.id} short className="ml-auto shrink-0 rounded" />
-      </span>
+      <GraphIssueHeading issue={issue} />
       <span className="text-sm leading-snug font-medium wrap-anywhere text-base-content">
         {issue.title}
       </span>

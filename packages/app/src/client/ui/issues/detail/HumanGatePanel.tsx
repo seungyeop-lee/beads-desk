@@ -3,8 +3,8 @@ import Link from "next/link";
 import { useEffect, useId, useRef, type RefObject } from "react";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
 import { openHumanGateBlockers } from "@/client/modules/issues/domain/issueRelations";
-import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
-import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
+import { keepIssuePanelInView } from "../keepIssuePanelInView";
+import { HumanGateReason } from "./HumanGateReason";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HUMAN_DECISION_TONE } from "../issueLabels";
@@ -48,9 +48,6 @@ export function HumanGatePanel({ issue, listedIssues, issueHref, scrollIntoView 
   );
 }
 
-/** 사용자가 스크롤하거나 누르거나 키를 누르면, 그 뒤로는 영역을 다시 맞추지 않습니다. */
-const USER_SCROLL_EVENTS = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
-
 /**
  * 영역이 스크롤 영역의 맨 위에 보이게 맞춥니다. 위에 놓인 본문은 markdown 편집기가 mount된 뒤에 내용을 불러와 늦게 길어지므로,
  * 한 번만 맞추면 영역이 다시 아래로 밀려납니다. 그래서 사용자가 화면을 움직이기 전까지는 영역을 담은 열의 크기가 바뀔 때마다 다시 맞춥니다.
@@ -61,15 +58,7 @@ function useKeepScrolledIntoView(ref: RefObject<HTMLElement | null>, enabled: bo
     const element = ref.current;
     const column = element?.parentElement;
     if (!enabled || !element || !column) return;
-    const observer = new ResizeObserver(() => element.scrollIntoView({ block: "start" }));
-    const stop = () => observer.disconnect();
-    observer.observe(column);
-    for (const type of USER_SCROLL_EVENTS) window.addEventListener(type, stop, { capture: true });
-    return () => {
-      stop();
-      for (const type of USER_SCROLL_EVENTS)
-        window.removeEventListener(type, stop, { capture: true });
-    };
+    return keepIssuePanelInView(column, () => element.scrollIntoView({ block: "start" }));
   }, [ref, enabled]);
 }
 
@@ -95,12 +84,7 @@ function HumanGateItem({
         </Link>
       </div>
       {error && <ErrorAlert>{messages.issueDetail.loadFailed(error)}</ErrorAlert>}
-      {reason && (
-        <section className="flex flex-col gap-1 text-sm" aria-label={messages.humanGate.reason}>
-          <h4 className="font-semibold">{messages.humanGate.reason}</h4>
-          <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={reason} />
-        </section>
-      )}
+      <HumanGateReason reason={reason} headingLevel={4} />
       <HumanGateResponse gateId={link.id} />
     </section>
   );

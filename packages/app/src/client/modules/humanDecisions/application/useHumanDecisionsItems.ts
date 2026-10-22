@@ -17,7 +17,7 @@ export type HumanDecisionsItems = {
   listedIssues: ReadonlyMap<string, Issue>;
   /** 두 조회가 모두 끝났는지입니다. 한쪽만 먼저 보이면 고른 항목이 다른 쪽이 도착할 때 바뀌므로, gate 조회가 끝난 뒤(실패 포함) 함께 보입니다. */
   loaded: boolean;
-  /** 중복을 뺀 조회 오류입니다. bd 실행 자체가 실패하면 두 조회가 같은 오류를 받습니다. */
+  /** 각 조회에서 받은 오류입니다. 같은 오류를 한 번만 보이는 처리는 화면이 맡습니다. */
   errors: string[];
   /** 어느 한쪽이라도 읽는 중인지입니다. */
   loading: boolean;
@@ -41,8 +41,7 @@ export function useHumanDecisionsItems(): HumanDecisionsItems {
     [pending],
   );
   const errors = useMemo(
-    () =>
-      [...new Set([error, gatesError])].filter((message): message is string => message !== null),
+    () => [error, gatesError].filter((message): message is string => message !== null),
     [error, gatesError],
   );
   return { pending, listedIssues, loaded, errors, loading: loading || gatesLoading };

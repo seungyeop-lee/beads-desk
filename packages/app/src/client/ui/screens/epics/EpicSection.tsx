@@ -5,7 +5,8 @@ import { epicPercent } from "@/client/modules/epics/domain/epicsView";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 import { EpicProgressBar } from "@/client/ui/issues/EpicProgress";
-import { statusLabel, statusTone } from "@/client/ui/issues/issueLabels";
+import { StatusChip } from "@/client/ui/issues/IssueChip";
+import { formatDate } from "@/client/ui/issues/issueTime";
 import type { EpicSummary } from "@/shared/contract/epics";
 import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
 import { useGraphHref } from "@/client/ui/address/useGraphHref";
@@ -65,9 +66,7 @@ export function EpicSection({
             md보다 좁은 창에서는 고정한 폭이 둘째 줄에 다 들어가지 않아 조작이 줄바꿈되므로 고정하지 않습니다. */}
         <div className="col-span-full flex flex-wrap items-center justify-end gap-3 xl:contents">
           <span className="flex shrink-0 md:min-w-24">
-            <span className={`chip ${statusTone(epic.status)}`}>
-              {statusLabel(messages, epic.status)}
-            </span>
+            <StatusChip status={epic.status} size="md" />
           </span>
           {epic.status === "closed" ? (
             <ClosedEpicProgress
@@ -135,9 +134,7 @@ function ClosedEpicProgress({
           className="shrink-0 whitespace-nowrap text-xs text-emphasis-60 md:w-40"
           dateTime={new Date(closedAt).toISOString()}
         >
-          {messages.epics.closedOn(
-            new Date(closedAt).toLocaleDateString(locale, { dateStyle: "medium" }),
-          )}
+          {messages.epics.closedOn(formatDate(locale, closedAt))}
         </time>
       )}
       <EpicCount closed={closed} total={total} percent={null} />

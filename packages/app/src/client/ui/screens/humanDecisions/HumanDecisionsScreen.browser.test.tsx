@@ -244,6 +244,17 @@ test("좁은 창에서 보던 질문이 닫혀 다음 질문으로 넘어가면 
     .poll(() => panel.element().getBoundingClientRect().top)
     .toBeGreaterThanOrEqual(headerHeight);
   expect(panel.element().getBoundingClientRect().top).toBeLessThan(headerHeight + 48);
+
+  await panel.getByRole("heading", { name: "2번째 질문", exact: true }).click();
+  window.scrollTo({ top: 0 });
+  reads.details["desk-s2"] = {
+    ...reads.details["desk-s2"],
+    description: `${reads.details["desk-s2"].description}\n\n나중에 도착한 마지막 문단입니다.`,
+  };
+  await screen.rerender(<ScreenInAppLayout />);
+  await expect.element(panel.getByText("나중에 도착한 마지막 문단입니다.")).toBeInTheDocument();
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  expect(window.scrollY).toBe(0);
 });
 
 test("페이지 끝까지 스크롤해도 상단 머리글이 화면 위에 붙어 있다", async () => {

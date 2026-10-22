@@ -1,6 +1,10 @@
 import type { Messages } from "@/client/modules/locale/domain/messages";
 import type { Locale } from "@/shared/contract/locale";
 
+export function formatDate(locale: Locale, ms: number): string {
+  return new Date(ms).toLocaleDateString(locale, { dateStyle: "medium" });
+}
+
 export function formatTime(locale: Locale, ms: number): string {
   return new Date(ms).toLocaleString(locale);
 }

@@ -2,11 +2,9 @@ import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useState } from "react";
 import type { PickerOptions } from "@/client/modules/issues/domain/issuePicker";
-import { CloseIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssuePicker } from "./IssuePicker";
-import { typeTone } from "./issueLabels";
-import { CopyIssueIdButton } from "./CopyIssueIdButton";
+import { SelectedIssueRow } from "./SelectedIssueRow";
 
 type Props = PickerOptions & {
   label: string;
@@ -61,23 +59,15 @@ export function IssueConfirmPicker({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="flex h-8 min-w-0 grow items-center gap-2 rounded-field border border-base-300 bg-base-100 px-3 text-sm">
-        <span className={`tone-dot ${typeTone(picked.issueType)}`} />
-        <CopyIssueIdButton
-          issueId={picked.id}
-          className="shrink-0 rounded text-xs text-emphasis-60"
-        />
-        <span className="min-w-0 grow truncate">{picked.title}</span>
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs btn-square"
-          aria-label={messages.issuePicker.clearSelection}
-          disabled={confirming}
-          onClick={() => setPicked(null)}
-        >
-          <CloseIcon width={13} height={13} />
-        </button>
-      </span>
+      <SelectedIssueRow
+        issue={picked}
+        variant="confirm"
+        clear={{
+          label: messages.issuePicker.clearSelection,
+          disabled: confirming,
+          onClear: () => setPicked(null),
+        }}
+      />
       <button
         type="button"
         className="btn btn-sm btn-ghost shrink-0 rounded-full"

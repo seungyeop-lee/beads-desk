@@ -8,7 +8,7 @@ import { plainSectionTitle } from "@/client/modules/hygiene/domain/lintSections"
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
-import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
+import { IssueLoadErrors } from "@/client/ui/issues/IssueLoadErrors";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { useCloseAsReplacedPrompts } from "@/client/ui/issues/useCloseAsReplacedPrompts";
@@ -51,10 +51,7 @@ export function HygieneScreen() {
         loading={loading || stale.loading || writes.pending}
       />
 
-      {/* 서버에 연결하지 못하면 두 조회가 같은 오류를 내므로 한 번만 보입니다. */}
-      {[...new Set([error, stale.error])].map(
-        (message) => message && <ErrorAlert key={message}>{text.loadFailed(message)}</ErrorAlert>,
-      )}
+      <IssueLoadErrors errors={[error, stale.error]} loadFailed={text.loadFailed} />
       <WriteErrorAlert writes={writes} />
 
       {/* 넓은 창에서는 열마다 카드를 따로 쌓습니다. 카드를 grid 행에 나란히 두면 목록이 긴 카드가 행 높이를 정해서,

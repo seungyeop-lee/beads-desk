@@ -17,6 +17,8 @@ import { LabelChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { LoadResult } from "@/client/ui/designSystem/LoadResult";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
+import { HumanDecisionHeading } from "@/client/ui/issues/HumanDecisionHeading";
+import { HumanGateReason } from "@/client/ui/issues/detail/HumanGateReason";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
 /** 고른 human gate의 사유를 보이고 응답하거나 응답 없이 닫으며, 이전 라운드 피드백은 응답 아래에, 막고 있는 작업은 맨 아래에 보입니다. */
@@ -27,27 +29,8 @@ export function HumanGateDecision({ summary }: { summary: HumanGateSummary }) {
 
   return (
     <section className="surface min-w-0 flex flex-col gap-5 p-6" aria-label={gate.title}>
-      <header className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <IssueTypeTag issueType={gate.issueType} />
-          <CopyIssueIdButton issueId={gate.id} className="rounded text-emphasis-60" />
-          <Link
-            href={issueHref(gate.id)}
-            scroll={false}
-            className="ml-auto font-medium hover:underline"
-          >
-            {messages.humanDecisions.openDetail} →
-          </Link>
-        </div>
-        <h2 className="text-xl leading-snug font-bold">{gate.title || messages.common.untitled}</h2>
-      </header>
-
-      {reason && (
-        <section className="flex flex-col gap-1 text-sm" aria-label={messages.humanGate.reason}>
-          <h3 className="font-semibold">{messages.humanGate.reason}</h3>
-          <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={reason} />
-        </section>
-      )}
+      <HumanDecisionHeading issue={gate} href={issueHref(gate.id)} />
+      <HumanGateReason reason={reason} />
 
       <HumanGateResponse gateId={gate.id} />
       {summary.previousGateCount > 0 && <PreviousGateFeedback gateId={gate.id} />}

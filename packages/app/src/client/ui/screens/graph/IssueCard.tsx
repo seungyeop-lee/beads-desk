@@ -1,8 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { workState } from "@/client/modules/issues/domain/workState";
-import { workStateTone } from "@/client/ui/issues/issueLabels";
-import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
-import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
+import { CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
+import { GraphIssueHeading } from "@/client/ui/issues/GraphIssueHeading";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -41,17 +40,7 @@ export function IssueCard({
       cover={{ href }}
       current={center}
     >
-      <span className="flex items-center gap-1.5 text-emphasis-60">
-        <IssueTypeTag issueType={issue.issueType} />
-        <span aria-hidden>·</span>
-        <span className={`tone-dot ${workStateTone(state)}`} />
-        <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
-        <CoveredIssueIdButton
-          issueId={issue.id}
-          short
-          className="nodrag ml-auto shrink-0 rounded"
-        />
-      </span>
+      <GraphIssueHeading issue={issue} variant="node" />
       <span
         className={`text-sm leading-snug wrap-anywhere whitespace-pre-wrap font-medium ${state === "closed" ? "text-emphasis-70" : "text-base-content"}`}
       >

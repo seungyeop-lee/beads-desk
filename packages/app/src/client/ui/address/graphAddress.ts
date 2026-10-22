@@ -1,5 +1,5 @@
 import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
-import { ISSUE_DETAIL_PARAMS } from "./issueDetailParams";
+import { ISSUE_DETAIL_PARAMS, ISSUE_PARAM } from "./issueDetailParams";
 import { SCREEN_PATHS } from "@/shared/domain/screenPaths";
 
 /**
@@ -25,7 +25,8 @@ export function graphHref(scope: GraphScope, from?: string): string {
   if (sourceScope?.kind !== scope.kind || sourceScope.id !== scope.id) {
     trail.push(`${source.pathname}${source.search}`);
   }
-  for (const key of ["epic", "center", ...ISSUE_DETAIL_PARAMS]) source.searchParams.delete(key);
+  for (const key of [...Object.values(SCOPE_PARAMS), ...ISSUE_DETAIL_PARAMS])
+    source.searchParams.delete(key);
   for (const [key, value] of source.searchParams) params.append(key, value);
   for (const address of trail) params.append(RETURN_PARAM, address);
   return `${source.pathname}?${params}`;
@@ -35,7 +36,9 @@ export function graphBackHref(scope: GraphScope, params: URLSearchParams): strin
   const trail = readReturnTrail(params);
   const previous = trail?.pop();
   if (!previous) {
-    return scope.kind === "epic" ? "/epics" : `/issues?${new URLSearchParams({ issue: scope.id })}`;
+    return scope.kind === "epic"
+      ? "/epics"
+      : `/issues?${new URLSearchParams({ [ISSUE_PARAM]: scope.id })}`;
   }
   const target = readScreenAddress(previous)!;
   if (readGraphScope(target.searchParams)) {
@@ -91,9 +94,9 @@ function readScreenAddress(address: string): URL | null {
 
 /** 범위가 없으면 null입니다. 그래프는 화면 안의 링크로만 열므로, 둘 다 있는 주소는 에픽 보기로 읽습니다. */
 export function readGraphScope(params: URLSearchParams): GraphScope | null {
-  for (const kind of ["epic", "center"] as const) {
-    const id = params.get(SCOPE_PARAMS[kind]);
-    if (id) return { kind, id };
+  for (const [kind, param] of Object.entries(SCOPE_PARAMS)) {
+    const id = params.get(param);
+    if (id) return { kind: kind as GraphScope["kind"], id };
   }
   return null;
 }

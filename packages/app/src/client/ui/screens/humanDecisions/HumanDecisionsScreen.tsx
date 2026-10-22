@@ -5,7 +5,6 @@ import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
 import { Spinner } from "@/client/ui/designSystem/Spinner";
 
 import type { Issue } from "@beads-desk/bd/issue";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
@@ -19,7 +18,7 @@ import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrit
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { useQueryReplace } from "@/client/ui/address/useQueryReplace";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
-import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
+import { IssueLoadErrors } from "@/client/ui/issues/IssueLoadErrors";
 import { LoadResult } from "@/client/ui/designSystem/LoadResult";
 import { MarkdownEditor } from "@/client/ui/markdown/MarkdownEditor";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
@@ -32,7 +31,8 @@ import { WriteErrorAlert } from "@/client/ui/issues/WriteErrorAlert";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HumanGateDecision } from "./HumanGateDecision";
-import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
+import { HumanDecisionHeading } from "@/client/ui/issues/HumanDecisionHeading";
+import { keepIssuePanelInView } from "@/client/ui/issues/keepIssuePanelInView";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 
 /** 왼쪽 목록에서 고른 항목 id를 담는 query 이름입니다. 주소에 남겨 새로고침하거나 주소를 다시 열어도 같은 항목을 보입니다. */
@@ -75,10 +75,11 @@ export function HumanDecisionsScreen() {
     // 보던 항목이 닫혀 다음 항목으로 넘어가면 화면이 같은 위치에 머물러 바뀐 것을 알아보기 어려우므로, 새 항목의 시작으로 스크롤합니다.
     if (shownClosed && mainRef.current && listRef.current && panelRef.current) {
       stopFollowingRef.current?.();
-      stopFollowingRef.current = keepPanelStartInView(
-        mainRef.current,
-        listRef.current,
-        panelRef.current,
+      const main = mainRef.current;
+      const list = listRef.current;
+      const panel = panelRef.current;
+      stopFollowingRef.current = keepIssuePanelInView(panel, () =>
+        scrollToPanelStart(main, list, panel),
       );
     }
   }, [selectedId, loaded, selected, replaceQuery]);
@@ -104,9 +105,7 @@ export function HumanDecisionsScreen() {
         help={messages.humanDecisions.description}
       />
 
-      {errors.map((message) => (
-        <ErrorAlert key={message}>{messages.issues.loadFailed(message)}</ErrorAlert>
-      ))}
+      <IssueLoadErrors errors={errors} loadFailed={messages.issues.loadFailed} />
 
       {loaded &&
         (selected ? (
@@ -148,25 +147,6 @@ export function HumanDecisionsScreen() {
 
 /** 좁은 폭에서 스크롤한 뒤 상단 머리글과 패널 사이에 두는 간격(px)입니다. 목록과 패널 사이 간격(gap-6)과 같게 둡니다. */
 const PANEL_SCROLL_GAP = 24;
-
-/** 사용자가 스크롤하거나 누르거나 키를 누르면, 그 뒤로는 패널 위치를 다시 맞추지 않습니다. */
-const USER_SCROLL_EVENTS = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
-
-/**
- * 오른쪽 패널의 시작이 보이게 페이지를 스크롤하고, 돌려준 함수를 부르거나 사용자가 화면을 움직일 때까지 패널 크기가 바뀔 때마다 다시 맞춥니다.
- * 새 항목의 상세와 본문은 패널이 그려진 뒤에 도착하므로, 처음 맞출 때는 페이지가 짧아 원하는 위치까지 스크롤되지 않을 수 있습니다.
- */
-function keepPanelStartInView(main: HTMLElement, list: HTMLElement, panel: HTMLElement) {
-  const observer = new ResizeObserver(() => scrollToPanelStart(main, list, panel));
-  const stop = () => {
-    observer.disconnect();
-    for (const type of USER_SCROLL_EVENTS)
-      window.removeEventListener(type, stop, { capture: true });
-  };
-  observer.observe(panel);
-  for (const type of USER_SCROLL_EVENTS) window.addEventListener(type, stop, { capture: true });
-  return stop;
-}
 
 /**
  * 넓은 폭에서는 패널이 목록 옆에 놓이므로 페이지 맨 위로 올립니다.
@@ -235,22 +215,7 @@ function SelectedDecision({ question }: { question: Issue }) {
     >
       {(issue) => (
         <section className="surface min-w-0 flex flex-col gap-5 p-6" aria-label={issue.title}>
-          <header className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              <IssueTypeTag issueType={issue.issueType} />
-              <CopyIssueIdButton issueId={issue.id} className="rounded text-emphasis-60" />
-              <Link
-                href={issueHref(issue.id)}
-                scroll={false}
-                className="ml-auto font-medium hover:underline"
-              >
-                {messages.humanDecisions.openDetail} →
-              </Link>
-            </div>
-            <h2 className="text-xl leading-snug font-bold">
-              {issue.title || messages.common.untitled}
-            </h2>
-          </header>
+          <HumanDecisionHeading issue={issue} href={issueHref(issue.id)} />
           {issue.description ? (
             <div className="text-sm">
               <MarkdownEditor readOnly openAddress={tabMarkdownUrl} value={issue.description} />

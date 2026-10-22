@@ -30,6 +30,7 @@ import type { GraphData } from "@/shared/contract/graph";
 import { EdgeLegend } from "./EdgeLegend";
 import { EpicPlanGraph } from "./EpicPlanGraph";
 import { graphBackHref, readGraphScope } from "@/client/ui/address/graphAddress";
+import { useCloseIssueSidePanel } from "@/client/ui/issues/useCloseIssueSidePanel";
 import { IssueGraph } from "./IssueGraph";
 import { useGraphLayout } from "./useGraphLayout";
 
@@ -52,6 +53,9 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
   const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
   const title = `${scopeTitle} · ${messages.graph.scopes[scope.kind]}`;
 
+  const withoutSide = new URLSearchParams(params);
+  withoutSide.delete(SIDE_PARAM);
+  const closeSidePanel = useCloseIssueSidePanel(params.has(SIDE_PARAM) ? `?${withoutSide}` : null);
   const screenDetailReady = useScreenDetailReady();
   useShowModal(dialogRef, screenDetailReady);
 
@@ -63,11 +67,8 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
       onClose={() => router.replace(backHref, { scroll: false })}
       // Escape는 옆 패널, 상세, 그래프 순으로 한 단계씩 닫습니다. 옆 패널은 옆 패널의 닫기 단추처럼 history에 쌓아 닫습니다.
       {...escapeStepHandlers(() => {
-        if (params.has(SIDE_PARAM)) {
-          const next = new URLSearchParams(params);
-          next.delete(SIDE_PARAM);
-          router.push(`?${next}`, { scroll: false });
-        } else if (params.has(ISSUE_PARAM)) {
+        if (closeSidePanel()) return true;
+        if (params.has(ISSUE_PARAM)) {
           replaceQueryOnly((next) => {
             for (const name of ISSUE_DETAIL_PARAMS) next.delete(name);
           });

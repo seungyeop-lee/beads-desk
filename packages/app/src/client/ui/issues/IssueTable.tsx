@@ -1,3 +1,4 @@
+import { IssueDataTable } from "./IssueDataTable";
 import { toggled } from "@/shared/domain/sets";
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
@@ -95,67 +96,49 @@ export const IssueTable = memo(function IssueTable({
   if (rows.length === 0) {
     return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
-  const dependencyColumn = epicOrderHref ? EPIC_ORDER_COLUMN : DEPENDENCY_COUNT_COLUMN;
   return (
-    <div className="@container surface min-w-0 max-w-full overflow-x-auto">
-      {/* 제목 열은 표 폭에서 나머지 열의 폭을 뺀 만큼 차지합니다. 표 영역이 64rem보다 좁으면 표를 64rem으로 넓히고
-          상태·우선순위·라벨·의존 열은 가로 스크롤로 봅니다. 표 영역이 64rem에서 그 네 열의 폭을 뺀 폭보다 좁으면
-          64rem 대신 영역 폭(100cqw)에 네 열의 폭만 더해 ID와 제목 열이 스크롤하지 않아도 영역 안에 다 보이게 합니다.
-          네 열의 폭은 표에 둔 CSS 변수로 정하고, 각 열의 머리 칸과 표 폭 계산이 같은 변수를 읽습니다.
-          표 영역이 34rem보다 좁으면 유형 열(6.5rem)을 감추고 유형을 제목 앞에 보여, 그만큼 제목 칸을 넓힙니다. */}
-      <table
-        className={`table ${TRAILING_COLUMNS} ${dependencyColumn} w-[max(100cqw,min(100cqw_+_var(--status-column)_+_var(--priority-column)_+_var(--labels-column)_+_var(--dependency-column),64rem))] table-fixed`}
-      >
-        <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
-          <tr>
-            <th className="w-24">ID</th>
-            <th className="w-26 @max-[34rem]:hidden">{messages.issue.type}</th>
-            <th>{messages.issue.title}</th>
-            <th className="w-(--status-column)">{messages.issue.status}</th>
-            <th className="w-(--priority-column)">{messages.issue.priority}</th>
-            <th className="w-(--labels-column)">{messages.issue.labels}</th>
-            <th className="w-(--dependency-column) text-right">{messages.issue.dependencyCount}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(tree ? visibleTreeRows(rows, expanded) : rows).map((row) => (
-            <IssueRow
-              key={row.issue.id}
-              issue={row.issue}
-              outline={
-                tree && {
-                  depth: row.depth,
-                  childCount: row.childCount,
-                  expanded: expanded.has(row.issue.id),
-                  onToggle: () => {
-                    setExpanded(toggled(expanded, row.issue.id));
-                  },
-                }
+    <IssueDataTable variant="issues" epicOrder={!!epicOrderHref}>
+      <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
+        <tr>
+          <th className="w-(--id-column)">ID</th>
+          <th className="w-26 @max-[34rem]:hidden">{messages.issue.type}</th>
+          <th>{messages.issue.title}</th>
+          <th className="w-(--status-column)">{messages.issue.status}</th>
+          <th className="w-(--priority-column)">{messages.issue.priority}</th>
+          <th className="w-(--labels-column)">{messages.issue.labels}</th>
+          <th className="w-(--dependency-column) text-right">{messages.issue.dependencyCount}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {(tree ? visibleTreeRows(rows, expanded) : rows).map((row) => (
+          <IssueRow
+            key={row.issue.id}
+            issue={row.issue}
+            outline={
+              tree && {
+                depth: row.depth,
+                childCount: row.childCount,
+                expanded: expanded.has(row.issue.id),
+                onToggle: () => {
+                  setExpanded(toggled(expanded, row.issue.id));
+                },
               }
-              issueHref={issueHref}
-              titleOf={(id) => titles.get(id)}
-              gateTitles={gateTitles}
-              waiters={waiters?.get(row.issue.id) ?? 0}
-              writes={writes}
-              epicOrderHref={epicOrderHref}
-              epicProgress={epicProgress}
-              searchHits={searchHits?.get(row.issue.id)}
-              searchTerm={searchTerm}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+            }
+            issueHref={issueHref}
+            titleOf={(id) => titles.get(id)}
+            gateTitles={gateTitles}
+            waiters={waiters?.get(row.issue.id) ?? 0}
+            writes={writes}
+            epicOrderHref={epicOrderHref}
+            epicProgress={epicProgress}
+            searchHits={searchHits?.get(row.issue.id)}
+            searchTerm={searchTerm}
+          />
+        ))}
+      </tbody>
+    </IssueDataTable>
   );
 });
-
-const TRAILING_COLUMNS = "[--status-column:8rem] [--priority-column:8rem] [--labels-column:9rem]";
-
-/** 의존 칸에 의존 수만 보이는 표의 의존 열 폭입니다. */
-const DEPENDENCY_COUNT_COLUMN = "[--dependency-column:5rem]";
-
-/** 에픽 행의 의존 칸에 순서 보기 링크를 보이는 표의 의존 열 폭입니다. 영어 링크 문구가 칸의 좌우 여백 안에 들어가도록 넓힙니다. */
-const EPIC_ORDER_COLUMN = "[--dependency-column:7rem]";
 
 const NO_CHILDREN: ChildProgress = { closed: 0, total: 0 };
 

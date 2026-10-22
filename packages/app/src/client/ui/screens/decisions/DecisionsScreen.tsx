@@ -19,6 +19,8 @@ import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
+import { IssueDataTable } from "@/client/ui/issues/IssueDataTable";
+import { formatDate } from "@/client/ui/issues/issueTime";
 import { CopyIssueIdButton } from "@/client/ui/issues/CopyIssueIdButton";
 
 /**
@@ -84,42 +86,31 @@ function DecisionTable({ title, rows, emptyMessage, issueHref, writes }: TablePr
       {rows.length === 0 ? (
         <EmptyState message={emptyMessage} />
       ) : (
-        <div className="@container surface min-w-0 max-w-full overflow-x-auto">
-          {/* 제목 열은 표 폭에서 나머지 열의 폭을 뺀 만큼 차지합니다. 표 영역이 64rem보다 좁으면 표를 64rem으로 넓히고
-              상태·대체 관계·날짜 열은 가로 스크롤로 봅니다. 표 영역이 64rem에서 그 세 열의 폭을 뺀 폭보다 좁으면
-              64rem 대신 영역 폭(100cqw)에 세 열의 폭만 더해 ID와 제목 열이 스크롤하지 않아도 영역 안에 다 보이게 합니다.
-              세 열의 폭은 표에 둔 CSS 변수로 정하고, 각 열의 머리 칸과 표 폭 계산이 같은 변수를 읽습니다. */}
-          <table
-            className={`table ${TRAILING_COLUMNS} w-[max(100cqw,min(100cqw_+_var(--status-column)_+_var(--supersession-column)_+_var(--created-on-column),64rem))] table-fixed`}
-          >
-            <thead>
-              <tr>
-                <th className="w-24">ID</th>
-                <th>{messages.issue.title}</th>
-                <th className="w-(--status-column)">{messages.issue.status}</th>
-                <th className="w-(--supersession-column)">{messages.decisions.supersession}</th>
-                <th className="w-(--created-on-column)">{messages.decisions.createdOn}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <DecisionRowView
-                  key={row.decision.id}
-                  row={row}
-                  issueHref={issueHref}
-                  writes={writes}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <IssueDataTable variant="decisions">
+          <thead>
+            <tr>
+              <th className="w-(--id-column)">ID</th>
+              <th>{messages.issue.title}</th>
+              <th className="w-(--status-column)">{messages.issue.status}</th>
+              <th className="w-(--supersession-column)">{messages.decisions.supersession}</th>
+              <th className="w-(--created-on-column)">{messages.decisions.createdOn}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <DecisionRowView
+                key={row.decision.id}
+                row={row}
+                issueHref={issueHref}
+                writes={writes}
+              />
+            ))}
+          </tbody>
+        </IssueDataTable>
       )}
     </section>
   );
 }
-
-const TRAILING_COLUMNS =
-  "[--status-column:8rem] [--supersession-column:18rem] [--created-on-column:9rem]";
 
 function DecisionRowView({
   row,
@@ -177,7 +168,7 @@ function DecisionRowView({
         </div>
       </td>
       <td className="text-sm text-emphasis-70 tabular-nums">
-        {new Date(decision.createdAt).toLocaleDateString(locale, { dateStyle: "medium" })}
+        {formatDate(locale, decision.createdAt)}
       </td>
     </tr>
   );

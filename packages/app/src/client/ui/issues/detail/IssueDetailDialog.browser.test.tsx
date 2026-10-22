@@ -197,6 +197,21 @@ test("gate 응답 칸으로 열면 설명을 다 그린 뒤에도 사람 확인 
     .element(screen.getByRole("button", { name: "법무 검토를 기다리는 작업", exact: true }))
     .not.toBeInViewport();
   expect(window.scrollY).toBe(0);
+
+  await screen.getByRole("heading", { name: messages.humanGate.panelTitle }).click();
+  const title = screen.getByRole("button", { name: "법무 검토를 기다리는 작업", exact: true });
+  title.element().scrollIntoView({ block: "start" });
+  read.detail = {
+    ...gatedIssue(),
+    description: `${LONG_DESCRIPTION}\n\n나중에 도착한 마지막 문단입니다.`,
+  };
+  await screen.rerender(<GatedDetail scrollToHumanGate />);
+  await expect.element(screen.getByText("나중에 도착한 마지막 문단입니다.")).toBeInTheDocument();
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  await expect.element(title).toBeInViewport();
+  await expect
+    .element(screen.getByRole("heading", { name: messages.humanGate.panelTitle }))
+    .not.toBeInViewport();
 });
 
 test("gate 응답 칸 없이 열면 설명이 길어도 상세가 맨 위에서 열린다", async () => {
