@@ -1,7 +1,20 @@
-/** 목록이 비었을 때 목록 자리에 보이는 안내입니다. */
-export function EmptyState({ message }: { message: string }) {
+type Props = {
+  message: string;
+  variant?: "screen" | "compact" | "graph";
+  className?: string;
+};
+
+const variants = {
+  screen: "py-14 text-emphasis-50",
+  compact: "py-6 text-emphasis-50",
+  graph: "px-6 py-10 text-emphasis-60",
+};
+
+export function EmptyState({ message, variant = "screen", className = "" }: Props) {
   return (
-    <p className="rounded-box border border-dashed border-base-300 py-14 text-center text-sm text-emphasis-50">
+    <p
+      className={`rounded-box border border-dashed border-base-300 text-center text-sm ${variants[variant]} ${className}`}
+    >
       {message}
     </p>
   );

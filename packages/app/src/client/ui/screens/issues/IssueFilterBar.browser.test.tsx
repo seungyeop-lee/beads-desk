@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -72,4 +73,25 @@ test("라벨 메뉴는 라벨 없음과 선택지의 라벨을 보이고, 고른
   await screen.getByRole("checkbox", { name: "api" }).click();
 
   expect(onLabelsChange).toHaveBeenCalledWith(["triage", "api"]);
+});
+
+test("날짜 범위를 지워도 날짜 기준은 그대로 유지한다", async () => {
+  const onDatesChange = vi.fn<ComponentProps<typeof IssueFilterBar>["onDatesChange"]>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueFilterBar
+        types={[]}
+        onTypesChange={() => {}}
+        labels={[]}
+        labelChoices={[]}
+        onLabelsChange={() => {}}
+        search=""
+        onSearchChange={() => {}}
+        dates={{ field: "closed", from: "2026-01-01", to: "2026-02-01" }}
+        onDatesChange={onDatesChange}
+      />
+    </LocaleProvider>,
+  );
+  await screen.getByRole("button", { name: messages.issues.clearDates }).click();
+  expect(onDatesChange).toHaveBeenCalledWith({ field: "closed", from: null, to: null });
 });

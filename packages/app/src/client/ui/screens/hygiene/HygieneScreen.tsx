@@ -1,5 +1,7 @@
 "use client";
 
+import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
+import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
 import { useId, useState, type ReactNode } from "react";
 import { useHygiene, useStaleIssues } from "@/client/modules/hygiene/application/useHygiene";
 import { plainSectionTitle } from "@/client/modules/hygiene/domain/lintSections";
@@ -41,7 +43,7 @@ export function HygieneScreen() {
   );
 
   return (
-    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
+    <ScreenFrame>
       <ScreenHeader
         title={text.title}
         tone={screenTone("/hygiene")}
@@ -165,7 +167,7 @@ export function HygieneScreen() {
       </div>
 
       <IssueDetailRoute />
-    </main>
+    </ScreenFrame>
   );
 }
 
@@ -190,14 +192,11 @@ function HygieneCard({ className, title, hint, empty, action, children }: CardPr
     <section aria-labelledby={titleId} className={`flex min-w-0 flex-col gap-2 ${className}`}>
       <div className="flex items-end gap-3 px-1">
         <div className="flex min-w-0 grow flex-col gap-0.5">
-          <h2 className="flex items-baseline gap-2 text-body font-bold">
-            <span id={titleId}>{title}</span>
-            {children && (
-              <span className="font-mono text-xs font-normal text-emphasis-50">
-                {children.length}
-              </span>
-            )}
-          </h2>
+          <GroupHeading
+            title={<span id={titleId}>{title}</span>}
+            count={children?.length}
+            variant="bare"
+          />
           <p className="text-xs text-emphasis-60">{hint}</p>
         </div>
         {action}

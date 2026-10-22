@@ -1,3 +1,4 @@
+import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -206,10 +207,7 @@ function IssueDetailPanel({
           </span>
         )}
         {(loading || writes.pending) && (
-          <span
-            className="loading loading-spinner loading-xs text-emphasis-40"
-            aria-label={messages.issueDetail.working}
-          />
+          <Spinner tone="muted" label={messages.issueDetail.working} />
         )}
         <div className="ml-auto">
           <button

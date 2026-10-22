@@ -1,5 +1,8 @@
 "use client";
 
+import { EmptyState } from "@/client/ui/designSystem/EmptyState";
+import { Spinner } from "@/client/ui/designSystem/Spinner";
+
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useRef } from "react";
@@ -84,12 +87,7 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
             </Link>
             <span className="text-emphasis-50"> · {messages.graph.scopes[scope.kind]}</span>
           </h1>
-          {loading && (
-            <span
-              className="loading loading-spinner loading-xs"
-              aria-label={messages.common.loading}
-            />
-          )}
+          {loading && <Spinner label={messages.common.loading} />}
           <HelpTooltip help={messages.graph.help[scope.kind]} placement="header-end" />
           <Link
             href={backHref}
@@ -169,9 +167,7 @@ function BlockingChainGraph({
           />
         </>
       ) : (
-        <p className="rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-emphasis-60">
-          {messages.graph.empty.center}
-        </p>
+        <EmptyState message={messages.graph.empty.center} variant="graph" />
       )}
     </>
   );

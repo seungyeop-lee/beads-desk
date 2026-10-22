@@ -1,5 +1,6 @@
 "use client";
 
+import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
 import { useEpicsView } from "@/client/modules/epics/application/useEpicsView";
 import { useGateTitles } from "@/client/modules/gates/application/useGateTitles";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
@@ -29,7 +30,7 @@ export function EpicsScreen() {
   const messages = useMessages();
 
   return (
-    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
+    <ScreenFrame>
       <ScreenHeader
         title={messages.epics.title}
         tone={screenTone("/epics")}
@@ -78,6 +79,6 @@ export function EpicsScreen() {
       ))}
 
       <IssueDetailRoute />
-    </main>
+    </ScreenFrame>
   );
 }

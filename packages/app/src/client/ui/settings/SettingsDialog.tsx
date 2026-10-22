@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
-import { LocalePicker } from "@/client/ui/locale/LocalePicker";
+import { LocalePicker } from "./LocalePicker";
 import { ThemePicker } from "@/client/ui/theme/ThemePicker";
 import { HumanDecisionNoticeToggle } from "./HumanDecisionNoticeToggle";
 

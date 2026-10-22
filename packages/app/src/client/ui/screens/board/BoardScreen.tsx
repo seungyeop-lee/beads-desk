@@ -1,5 +1,7 @@
 "use client";
 
+import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
+import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useState, type DragEvent } from "react";
 import {
@@ -79,7 +81,7 @@ export function BoardScreen() {
   // 열이 나란히 놓이는 너비(md 이상)에서는 main이 body의 남은 창 높이를 채우고, 카드가 넘치면 카드 목록만 열 안에서 스크롤됩니다. 좁은 너비에서는 각 열이 카드 내용만큼 늘어나 페이지를 스크롤해 봅니다.
   // body는 창 높이를 최소 높이로만 가지므로 main의 flex-basis를 0px로 둡니다. flex-1의 0%는 높이가 정해지지 않은 body 안에서 내용 높이로 계산되어, body가 카드 높이만큼 길어집니다.
   return (
-    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16 md:min-h-0 md:grow md:basis-0 md:pb-6">
+    <ScreenFrame variant="board">
       <ScreenHeader
         title={messages.board.title}
         tone={screenTone("/board")}
@@ -107,14 +109,12 @@ export function BoardScreen() {
               onDragLeave={() => setDropTarget((target) => (target === column ? null : target))}
               onDrop={drop(column)}
             >
-              <h2 className="flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1 px-1.5 text-sm font-bold">
-                <span className={`tone-dot ${COLUMN_TONES[column]}`} />
-                <span className="flex items-baseline gap-2 whitespace-nowrap">
-                  {messages.board.columns[column]}
-                  <span className="font-mono text-xs font-normal text-emphasis-50">
-                    {columns[column].length}
-                  </span>
-                </span>
+              <GroupHeading
+                variant="board"
+                title={messages.board.columns[column]}
+                count={columns[column].length}
+                tone={COLUMN_TONES[column]}
+              >
                 {column === "closed" && (
                   <select
                     className="ghost-select ml-auto h-7 text-xs font-medium"
@@ -129,7 +129,7 @@ export function BoardScreen() {
                     ))}
                   </select>
                 )}
-              </h2>
+              </GroupHeading>
               {/* 좁은 너비에서 빈 열에도 제목 한 줄짜리 카드 한 장 높이를 남겨, 끌어 온 카드를 놓을 자리를 보입니다. */}
               <ul className="flex min-h-19 flex-col gap-2 md:min-h-0 md:flex-1 md:overflow-y-auto">
                 {columns[column].map((issue) => (
@@ -148,7 +148,7 @@ export function BoardScreen() {
       )}
 
       <IssueDetailRoute />
-    </main>
+    </ScreenFrame>
   );
 }
 

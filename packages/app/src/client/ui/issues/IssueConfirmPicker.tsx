@@ -1,3 +1,4 @@
+import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useState } from "react";
 import type { PickerOptions } from "@/client/modules/issues/domain/issuePicker";
@@ -87,7 +88,7 @@ export function IssueConfirmPicker({
         disabled={confirming}
         onClick={() => void confirm()}
       >
-        {confirming && <span className="loading loading-spinner loading-xs" />}
+        {confirming && <Spinner />}
         {confirmLabel}
       </button>
     </div>

@@ -1,3 +1,4 @@
+import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useIssueDetail } from "@/client/modules/issues/application/useIssueDetail";
@@ -43,12 +44,7 @@ export function IssueSidePanel({ issueId, closeHref, openHref, sideHref }: Props
             <IssueTypeTag issueType={data.issueType} />
           </span>
         )}
-        {loading && (
-          <span
-            className="loading loading-spinner loading-xs text-emphasis-40"
-            aria-label={messages.common.loading}
-          />
-        )}
+        {loading && <Spinner tone="muted" label={messages.common.loading} />}
         <Link className="btn btn-ghost btn-sm ml-auto font-medium" href={openHref} scroll={false}>
           {messages.issueDetail.openInMain}
         </Link>

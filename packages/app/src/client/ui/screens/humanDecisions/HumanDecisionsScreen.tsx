@@ -1,5 +1,9 @@
 "use client";
 
+import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
+import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
+import { Spinner } from "@/client/ui/designSystem/Spinner";
+
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -91,7 +95,7 @@ export function HumanDecisionsScreen() {
   ].filter((group) => group.items.length > 0);
 
   return (
-    <main ref={mainRef} className="mx-auto flex max-w-content flex-col gap-6 px-8 pb-16">
+    <ScreenFrame ref={mainRef} variant="spacious">
       <ScreenHeader
         title={messages.humanDecisions.title}
         tone={screenTone("/human")}
@@ -110,12 +114,7 @@ export function HumanDecisionsScreen() {
             <div ref={listRef} className="flex flex-col gap-5">
               {groups.map((group) => (
                 <section key={group.label} aria-label={group.label} className="flex flex-col gap-2">
-                  <h2 className="flex items-baseline gap-2 px-1 text-body font-bold">
-                    {group.label}
-                    <span className="font-mono text-xs font-normal text-emphasis-50">
-                      {group.items.length}
-                    </span>
-                  </h2>
+                  <GroupHeading title={group.label} count={group.items.length} variant="list" />
                   <ul className="surface flex flex-col divide-y divide-base-300">
                     {group.items.map((item) => (
                       <li key={item.id}>
@@ -143,7 +142,7 @@ export function HumanDecisionsScreen() {
         ))}
 
       <IssueDetailRoute listedIssues={listedIssues} />
-    </main>
+    </ScreenFrame>
   );
 }
 
@@ -232,12 +231,7 @@ function SelectedDecision({ question }: { question: Issue }) {
     <LoadResult
       state={{ data: issue, error }}
       loadFailed={(failed) => messages.issueDetail.loadFailed(failed)}
-      waiting={
-        <span
-          className="loading loading-spinner loading-sm text-emphasis-40"
-          aria-label={messages.issueDetail.loading}
-        />
-      }
+      waiting={<Spinner size="sm" tone="muted" label={messages.issueDetail.loading} />}
     >
       {(issue) => (
         <section className="surface min-w-0 flex flex-col gap-5 p-6" aria-label={issue.title}>

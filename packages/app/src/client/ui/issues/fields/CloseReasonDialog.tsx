@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
+import { ConfirmDialog } from "@/client/ui/designSystem/ConfirmDialog";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { createDialogRequest, type DialogRequest } from "./dialogRequest";
 import { CopyIssueIdButton } from "../CopyIssueIdButton";
@@ -21,13 +21,10 @@ export function CloseReasonDialogHost() {
 }
 
 function CloseReasonDialog({ request }: { request: DialogRequest<string> }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   // 머리글의 ID 복사 단추보다 사유 입력이 먼저 focus를 받습니다.
   const reasonRef = useRef<HTMLInputElement>(null);
   const [reason, setReason] = useState("");
   const messages = useMessages();
-
-  useShowModal(dialogRef, true, reasonRef);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -35,40 +32,29 @@ function CloseReasonDialog({ request }: { request: DialogRequest<string> }) {
   };
 
   return (
-    <dialog
-      ref={dialogRef}
-      className="modal"
-      aria-label={messages.closeIssue.title}
-      onClose={() => request.settle(null)}
+    <ConfirmDialog
+      title={messages.closeIssue.title}
+      confirmLabel={messages.closeIssue.submit}
+      initialFocus={reasonRef}
+      onCancel={() => request.settle(null)}
+      onSubmit={submit}
+      subtitle={
+        <CopyIssueIdButton
+          issueId={request.issueId}
+          className="self-start rounded text-xs text-emphasis-60"
+        />
+      }
     >
-      <form className="modal-box flex max-w-md flex-col gap-4" onSubmit={submit}>
-        <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-bold tracking-tight">{messages.closeIssue.title}</h2>
-          <CopyIssueIdButton
-            issueId={request.issueId}
-            className="self-start rounded text-xs text-emphasis-60"
-          />
-        </div>
-        <label className="flex flex-col gap-1.5">
-          <span className="caption">{messages.closeIssue.reason}</span>
-          <input
-            ref={reasonRef}
-            className="input w-full"
-            placeholder={messages.closeIssue.reasonPlaceholder}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
-        </label>
-        <div className="flex justify-end gap-2">
-          <button type="button" className="btn btn-ghost" onClick={() => request.settle(null)}>
-            {messages.common.cancel}
-          </button>
-          <button type="submit" className="btn btn-primary">
-            {messages.closeIssue.submit}
-          </button>
-        </div>
-      </form>
-      <ModalBackdrop />
-    </dialog>
+      <label className="flex flex-col gap-1.5">
+        <span className="caption">{messages.closeIssue.reason}</span>
+        <input
+          ref={reasonRef}
+          className="input w-full"
+          placeholder={messages.closeIssue.reasonPlaceholder}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+        />
+      </label>
+    </ConfirmDialog>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
+import { DateRangeFields } from "@/client/ui/designSystem/DateRangeFields";
+import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
 import { useActivityFeed } from "@/client/modules/activityFeed/application/useActivityFeed";
 import { useActivitySeenAt } from "@/client/modules/activityFeed/application/useActivitySeenAt";
 import {
   activityFeedRows,
   hasDateRange,
-  type ActivityDateRange,
   type ActivityFeedRow,
 } from "@/client/modules/activityFeed/domain/activityFeedView";
 import { localDate } from "@/client/modules/issues/domain/issueDateFilter";
@@ -41,14 +42,21 @@ export function ActivityFeedScreen() {
   const rows = page ? activityFeedRows(page.entries, seenAt) : null;
 
   return (
-    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
+    <ScreenFrame>
       <ScreenHeader
         title={text.title}
         tone={screenTone("/activity")}
         help={text.description}
         loading={loading}
       >
-        <DateRangeFields range={range} onChange={setRange} />
+        <DateRangeFields
+          label={text.dates}
+          fromLabel={text.dateFrom}
+          toLabel={text.dateTo}
+          clearLabel={text.clearDates}
+          range={range}
+          onChange={setRange}
+        />
       </ScreenHeader>
 
       {error && <ErrorAlert>{text.loadFailed(error)}</ErrorAlert>}
@@ -76,7 +84,7 @@ export function ActivityFeedScreen() {
       )}
 
       <IssueDetailRoute />
-    </main>
+    </ScreenFrame>
   );
 }
 
@@ -143,43 +151,5 @@ function EntryRow({ entry }: { entry: ActivityEntry }) {
         <p className="line-clamp-2 text-xs sm:pl-15 wrap-anywhere text-emphasis-70">{entry.text}</p>
       )}
     </CoveredIssueRow>
-  );
-}
-
-function DateRangeFields({
-  range,
-  onChange,
-}: {
-  range: ActivityDateRange;
-  onChange: (range: ActivityDateRange) => void;
-}) {
-  const text = useMessages().activityFeed;
-  return (
-    <fieldset aria-label={text.dates} className="flex min-w-0 flex-wrap items-center gap-1.5">
-      <input
-        type="date"
-        className="input input-sm w-36 rounded-full"
-        aria-label={text.dateFrom}
-        value={range.from ?? ""}
-        onChange={(event) => onChange({ ...range, from: event.target.value || null })}
-      />
-      <span className="text-emphasis-40">~</span>
-      <input
-        type="date"
-        className="input input-sm w-36 rounded-full"
-        aria-label={text.dateTo}
-        value={range.to ?? ""}
-        onChange={(event) => onChange({ ...range, to: event.target.value || null })}
-      />
-      {hasDateRange(range) && (
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs rounded-full"
-          onClick={() => onChange({ from: null, to: null })}
-        >
-          {text.clearDates}
-        </button>
-      )}
-    </fieldset>
   );
 }

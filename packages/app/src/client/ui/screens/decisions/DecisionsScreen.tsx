@@ -1,5 +1,7 @@
 "use client";
 
+import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
+import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
 import Link from "next/link";
 import { useDecisions } from "@/client/modules/decisions/application/useDecisions";
 import { decisionGroups, type DecisionRow } from "@/client/modules/decisions/domain/decisionsView";
@@ -31,7 +33,7 @@ export function DecisionsScreen() {
   const messages = useMessages();
 
   return (
-    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
+    <ScreenFrame>
       <ScreenHeader
         title={messages.decisions.title}
         tone={screenTone("/decisions")}
@@ -62,7 +64,7 @@ export function DecisionsScreen() {
       )}
 
       <IssueDetailRoute />
-    </main>
+    </ScreenFrame>
   );
 }
 
@@ -78,10 +80,7 @@ function DecisionTable({ title, rows, emptyMessage, issueHref, writes }: TablePr
   const messages = useMessages();
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="flex items-baseline gap-2 text-lg font-bold tracking-tight">
-        {title}
-        <span className="font-mono text-xs font-normal text-emphasis-50">{rows.length}</span>
-      </h2>
+      <GroupHeading title={title} count={rows.length} variant="table" />
       {rows.length === 0 ? (
         <EmptyState message={emptyMessage} />
       ) : (

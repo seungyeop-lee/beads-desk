@@ -1,3 +1,4 @@
+import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -84,7 +85,7 @@ export function EpicDescendants({
       {error && <ErrorAlert>{messages.epics.childrenLoadFailed(error)}</ErrorAlert>}
       {!descendants && !error && (
         <span className="flex items-center gap-2 text-sm text-emphasis-60">
-          <span className="loading loading-spinner loading-sm" />
+          <Spinner size="sm" />
           {messages.epics.childrenLoading}
         </span>
       )}

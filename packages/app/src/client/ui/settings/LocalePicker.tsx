@@ -1,7 +1,7 @@
-import { useRouter } from "next/navigation";
+import { PreferenceSelect } from "@/client/ui/designSystem/PreferenceSelect";
 import { saveLocale } from "@/client/infra/locale/documentLocale";
 import { isLocale, LOCALES, type Locale } from "@/shared/contract/locale";
-import { useLocale, useMessages } from "./LocaleProvider";
+import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /** 언어 이름은 어느 언어로 보고 있든 그 언어 자신의 이름으로 보여 줍니다. */
 const LANGUAGE_NAMES: Record<Locale, string> = { ko: "한국어", en: "English" };
@@ -10,24 +10,14 @@ const LANGUAGE_NAMES: Record<Locale, string> = { ko: "한국어", en: "English" 
 export function LocalePicker() {
   const locale = useLocale();
   const messages = useMessages();
-  const router = useRouter();
   return (
-    <select
-      className="select w-full"
-      aria-label={messages.settings.language}
+    <PreferenceSelect
+      label={messages.settings.language}
       value={locale}
-      onChange={(event) => {
-        const next = event.target.value;
-        if (!isLocale(next)) return;
-        saveLocale(next);
-        router.refresh();
-      }}
-    >
-      {LOCALES.map((option) => (
-        <option key={option} value={option}>
-          {LANGUAGE_NAMES[option]}
-        </option>
-      ))}
-    </select>
+      options={LOCALES}
+      optionLabel={(option) => LANGUAGE_NAMES[option]}
+      isValue={isLocale}
+      save={saveLocale}
+    />
   );
 }

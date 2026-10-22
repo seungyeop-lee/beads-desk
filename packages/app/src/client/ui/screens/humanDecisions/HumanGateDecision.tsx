@@ -1,5 +1,7 @@
 "use client";
 
+import { Spinner } from "@/client/ui/designSystem/Spinner";
+
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { usePreviousGateRounds } from "@/client/modules/humanGates/application/usePreviousGateRounds";
@@ -68,12 +70,7 @@ function PreviousGateFeedback({ gateId }: { gateId: string }) {
     <LoadResult
       state={{ data: rounds && rounds.length > 0 ? rounds : null, error }}
       loadFailed={(failed) => messages.humanGate.previousLoadFailed(failed)}
-      waiting={
-        <span
-          className="loading loading-spinner loading-sm text-emphasis-40"
-          aria-label={messages.humanGate.previousLoading}
-        />
-      }
+      waiting={<Spinner size="sm" tone="muted" label={messages.humanGate.previousLoading} />}
     >
       {(rounds) => (
         <section
@@ -186,12 +183,7 @@ function BlockedIssueDescription({ issueId }: { issueId: string }) {
     <LoadResult
       state={{ data: issue, error }}
       loadFailed={(failed) => messages.issueDetail.loadFailed(failed)}
-      waiting={
-        <span
-          className="loading loading-spinner loading-sm text-emphasis-40"
-          aria-label={messages.issueDetail.loading}
-        />
-      }
+      waiting={<Spinner size="sm" tone="muted" label={messages.issueDetail.loading} />}
     >
       {(issue) =>
         issue.description ? (

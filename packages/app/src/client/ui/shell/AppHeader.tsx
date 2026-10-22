@@ -38,7 +38,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-20 shrink-0 border-b border-base-300 bg-base-100/85 backdrop-blur">
-      <div className="mx-auto flex max-w-content flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-8 xl:h-14 xl:flex-nowrap xl:gap-6 xl:py-0">
+      <div className="content-width flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-8 xl:h-14 xl:flex-nowrap xl:gap-6 xl:py-0">
         <Link href={workspaceHref()} className="flex shrink-0 items-center gap-2.5">
           <BeadsMark />
           <span className="text-body font-bold tracking-tight">beads-desk</span>

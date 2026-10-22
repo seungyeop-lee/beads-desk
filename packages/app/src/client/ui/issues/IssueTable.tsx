@@ -1,3 +1,4 @@
+import { toggled } from "@/shared/domain/sets";
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { memo, useMemo, useState, type ReactNode } from "react";
@@ -127,9 +128,7 @@ export const IssueTable = memo(function IssueTable({
                   childCount: row.childCount,
                   expanded: expanded.has(row.issue.id),
                   onToggle: () => {
-                    const next = new Set(expanded);
-                    if (!next.delete(row.issue.id)) next.add(row.issue.id);
-                    setExpanded(next);
+                    setExpanded(toggled(expanded, row.issue.id));
                   },
                 }
               }

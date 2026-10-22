@@ -1,5 +1,8 @@
 "use client";
 
+import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
+import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
+import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode } from "react";
@@ -43,7 +46,7 @@ export function FocusScreen() {
   const countOf = { in_progress: view?.inProgress, ready: view?.ready, blocked: view?.blocked };
 
   return (
-    <main className="mx-auto flex max-w-content flex-col gap-6 px-8 pb-16">
+    <ScreenFrame variant="spacious">
       <ScreenHeader title={messages.focus.title} tone={screenTone("/focus")} loading={loading} />
 
       {error && <ErrorAlert>{messages.issues.loadFailed(error)}</ErrorAlert>}
@@ -172,7 +175,7 @@ export function FocusScreen() {
       )}
 
       <IssueDetailRoute />
-    </main>
+    </ScreenFrame>
   );
 }
 
@@ -214,15 +217,11 @@ type SectionProps = {
 function FocusSection({ title, tone, empty, action, children }: SectionProps) {
   return (
     <section aria-label={title} className="flex flex-col gap-2">
-      <h2 className="flex items-center gap-2 px-1 text-body font-bold">
-        {tone && <span className={`tone-dot ${tone}`} />}
-        {title}
+      <GroupHeading title={title} tone={tone}>
         <span className="ml-auto font-normal">{action}</span>
-      </h2>
+      </GroupHeading>
       {children.length === 0 ? (
-        <p className="rounded-box border border-dashed border-base-300 py-6 text-center text-sm text-emphasis-50">
-          {empty}
-        </p>
+        <EmptyState message={empty} variant="compact" />
       ) : (
         <ul className="surface flex flex-col divide-y divide-base-300">{children}</ul>
       )}

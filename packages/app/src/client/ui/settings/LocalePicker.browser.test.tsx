@@ -3,7 +3,7 @@ import { render } from "vitest-browser-react";
 import { enMessages as messages } from "@/client/modules/locale/domain/enMessages";
 import { LOCALE_COOKIE } from "@/shared/contract/locale";
 import { LocalePicker } from "./LocalePicker";
-import { LocaleProvider } from "./LocaleProvider";
+import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 
 const refresh = vi.hoisted(() => vi.fn<() => void>());
 

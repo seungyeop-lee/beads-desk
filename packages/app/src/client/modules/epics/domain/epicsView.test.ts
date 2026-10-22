@@ -14,7 +14,6 @@ import {
   searchEpics,
   settleExpandedEpics,
   sortEpics,
-  toggled,
   topLevelEpics,
 } from "./epicsView";
 
@@ -244,10 +243,7 @@ describe("에픽 카드 펼침", () => {
     expect(groupExpanded(search, toggleGroups, collapsed, "open")).toBe(false);
   });
 
-  test("toggled는 모음에서 값을 빼거나 넣고, noSearchToggles는 검색어에 빈 토글을 만든다", () => {
-    expect(toggled(new Set(["a"]), "a")).toEqual(new Set());
-    expect(toggled(new Set(["a"]), "b")).toEqual(new Set(["a", "b"]));
-
+  test("noSearchToggles는 검색어에 빈 토글을 만든다", () => {
     const toggles = noSearchToggles("결제");
     expect(toggles.query).toBe("결제");
     expect(toggles.epics).toEqual(new Set());

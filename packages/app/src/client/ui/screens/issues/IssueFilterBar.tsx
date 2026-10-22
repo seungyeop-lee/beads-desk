@@ -1,3 +1,4 @@
+import { DateRangeFields } from "@/client/ui/designSystem/DateRangeFields";
 import type {
   IssueDateField,
   IssueDateFilter,
@@ -72,9 +73,13 @@ export function IssueFilterBar({
         onChange={onLabelsChange}
       />
 
-      <fieldset
-        aria-label={messages.issues.dates}
-        className="flex min-w-0 flex-wrap items-center gap-1.5"
+      <DateRangeFields
+        label={messages.issues.dates}
+        fromLabel={messages.issues.dateFrom}
+        toLabel={messages.issues.dateTo}
+        clearLabel={messages.issues.clearDates}
+        range={dates}
+        onChange={(range) => onDatesChange({ ...dates, ...range })}
       >
         <select
           className="select select-sm w-28 rounded-full"
@@ -90,31 +95,7 @@ export function IssueFilterBar({
             </option>
           ))}
         </select>
-        <input
-          type="date"
-          className="input input-sm w-36 rounded-full"
-          aria-label={messages.issues.dateFrom}
-          value={dates.from ?? ""}
-          onChange={(event) => onDatesChange({ ...dates, from: event.target.value || null })}
-        />
-        <span className="text-emphasis-40">~</span>
-        <input
-          type="date"
-          className="input input-sm w-36 rounded-full"
-          aria-label={messages.issues.dateTo}
-          value={dates.to ?? ""}
-          onChange={(event) => onDatesChange({ ...dates, to: event.target.value || null })}
-        />
-        {(dates.from || dates.to) && (
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs rounded-full"
-            onClick={() => onDatesChange({ ...dates, from: null, to: null })}
-          >
-            {messages.issues.clearDates}
-          </button>
-        )}
-      </fieldset>
+      </DateRangeFields>
 
       <SearchField
         label={messages.issues.search}

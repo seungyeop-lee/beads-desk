@@ -113,13 +113,6 @@ export function noSearchToggles(query: string): SearchToggles {
   return { query, epics: new Set(), groups: new Set() };
 }
 
-/** 모음에서 값을 빼거나, 없으면 넣습니다. */
-export function toggled<T>(values: ReadonlySet<T>, value: T): ReadonlySet<T> {
-  const next = new Set(values);
-  if (!next.delete(value)) next.add(value);
-  return next;
-}
-
 /**
  * 에픽 카드가 펼쳐 보이는지 정합니다.
  * 검색하는 동안에는 검색어가 펼칼 카드와 사용자가 접은 카드를 반전(XOR)해 정하고, 그렇지 않으면 사용자가 펼쳐 둔 카드를 그대로 둡니다.

@@ -3,7 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import type { Deferral } from "@/client/modules/issues/application/issueEdits";
 import { earliestDeferDay } from "@/client/modules/issues/domain/issueDeferral";
-import { ModalBackdrop, useShowModal } from "@/client/ui/designSystem/modal";
+import { ConfirmDialog } from "@/client/ui/designSystem/ConfirmDialog";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { DEFER_PERIODS } from "@/shared/contract/issueActions";
 import { createDialogRequest, type DialogRequest } from "./dialogRequest";
@@ -29,7 +29,6 @@ export function DeferDialogHost() {
 }
 
 function DeferDialog({ request }: { request: DialogRequest<Deferral> }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   // 머리글의 ID 복사 단추보다 기한 선택이 먼저 focus를 받습니다.
   const untilRef = useRef<HTMLSelectElement>(null);
   const [choice, setChoice] = useState<UntilChoice>("tomorrow");
@@ -38,76 +37,63 @@ function DeferDialog({ request }: { request: DialogRequest<Deferral> }) {
   const [reason, setReason] = useState("");
   const messages = useMessages();
 
-  useShowModal(dialogRef, true, untilRef);
-
   const submit = (event: FormEvent) => {
     event.preventDefault();
     request.settle({ until: choice === "date" ? { date } : choice, reason });
   };
 
   return (
-    <dialog
-      ref={dialogRef}
-      className="modal"
-      aria-label={messages.deferral.title}
-      onClose={() => request.settle(null)}
+    <ConfirmDialog
+      title={messages.deferral.title}
+      confirmLabel={messages.deferral.submit}
+      initialFocus={untilRef}
+      onCancel={() => request.settle(null)}
+      onSubmit={submit}
+      subtitle={
+        <CopyIssueIdButton
+          issueId={request.issueId}
+          className="self-start rounded text-xs text-emphasis-60"
+        />
+      }
     >
-      <form className="modal-box flex max-w-md flex-col gap-4" onSubmit={submit}>
-        <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-bold tracking-tight">{messages.deferral.title}</h2>
-          <CopyIssueIdButton
-            issueId={request.issueId}
-            className="self-start rounded text-xs text-emphasis-60"
-          />
-        </div>
+      <label className="flex flex-col gap-1.5">
+        <span className="caption">{messages.deferral.until}</span>
+        <select
+          ref={untilRef}
+          className="select w-full"
+          value={choice}
+          onChange={(event) => setChoice(event.target.value as UntilChoice)}
+        >
+          {UNTIL_CHOICES.map((option) => (
+            <option key={option} value={option}>
+              {messages.deferral.periods[option]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {choice === "date" && (
         <label className="flex flex-col gap-1.5">
-          <span className="caption">{messages.deferral.until}</span>
-          <select
-            ref={untilRef}
-            className="select w-full"
-            value={choice}
-            onChange={(event) => setChoice(event.target.value as UntilChoice)}
-          >
-            {UNTIL_CHOICES.map((option) => (
-              <option key={option} value={option}>
-                {messages.deferral.periods[option]}
-              </option>
-            ))}
-          </select>
-        </label>
-        {choice === "date" && (
-          <label className="flex flex-col gap-1.5">
-            <span className="caption">{messages.deferral.date}</span>
-            <input
-              type="date"
-              required
-              className="input w-full"
-              min={earliestDay}
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-            />
-            <span className="text-xs text-emphasis-60">{messages.deferral.dateHint}</span>
-          </label>
-        )}
-        <label className="flex flex-col gap-1.5">
-          <span className="caption">{messages.deferral.reason}</span>
+          <span className="caption">{messages.deferral.date}</span>
           <input
+            type="date"
+            required
             className="input w-full"
-            placeholder={messages.deferral.reasonPlaceholder}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
+            min={earliestDay}
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
           />
+          <span className="text-xs text-emphasis-60">{messages.deferral.dateHint}</span>
         </label>
-        <div className="flex justify-end gap-2">
-          <button type="button" className="btn btn-ghost" onClick={() => request.settle(null)}>
-            {messages.common.cancel}
-          </button>
-          <button type="submit" className="btn btn-primary">
-            {messages.deferral.submit}
-          </button>
-        </div>
-      </form>
-      <ModalBackdrop />
-    </dialog>
+      )}
+      <label className="flex flex-col gap-1.5">
+        <span className="caption">{messages.deferral.reason}</span>
+        <input
+          className="input w-full"
+          placeholder={messages.deferral.reasonPlaceholder}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+        />
+      </label>
+    </ConfirmDialog>
   );
 }

@@ -1,10 +1,11 @@
+import { toggled } from "@/shared/domain/sets";
+import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useState } from "react";
 import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import type { IssueTextHits } from "@/client/modules/issues/domain/issueListView";
 import type { WorkState, WorkStateGroup } from "@/client/modules/issues/domain/workState";
-import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
@@ -42,9 +43,7 @@ export function IssueGroups({
   // 열 이름은 펼친 묶음 가운데 맨 위의 표에만 보입니다.
   const headerGroup = groups.find((group) => !collapsed.has(group.state))?.state;
   const toggle = (state: WorkState) => {
-    const next = new Set(collapsed);
-    if (!next.delete(state)) next.add(state);
-    setCollapsed(next);
+    setCollapsed(toggled(collapsed, state));
   };
 
   return (
@@ -54,29 +53,20 @@ export function IssueGroups({
         const label = messages.workStates.labels[group.state];
         return (
           <section key={group.state} aria-label={label} className="flex flex-col gap-2">
-            <h2 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-1">
-              <button
-                type="button"
-                className="flex items-baseline gap-2 text-body font-bold"
-                aria-expanded={expanded}
-                aria-label={messages.issues.toggleGroup(label, expanded)}
-                onClick={() => toggle(group.state)}
-              >
-                <ChevronRightIcon
-                  width={14}
-                  height={14}
-                  className={`self-center text-emphasis-50 transition-transform ${expanded ? "rotate-90" : ""}`}
-                />
-                <span className={`tone-dot ${workStateTone(group.state)} self-center`} />
-                {label}
-                <span className="font-mono text-xs font-normal text-emphasis-50">
-                  {group.issues.length}
-                </span>
-              </button>
+            <GroupHeading
+              title={label}
+              count={group.issues.length}
+              tone={workStateTone(group.state)}
+              disclosure={{
+                expanded,
+                label: messages.issues.toggleGroup(label, expanded),
+                onToggle: () => toggle(group.state),
+              }}
+            >
               <span className="text-xs text-emphasis-50">
                 {messages.workStates.hints[group.state]}
               </span>
-            </h2>
+            </GroupHeading>
             {expanded && (
               <IssueTable
                 issues={group.issues}

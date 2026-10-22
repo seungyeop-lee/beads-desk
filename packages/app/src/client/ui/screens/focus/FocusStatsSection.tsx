@@ -1,3 +1,4 @@
+import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -46,8 +47,7 @@ export function FocusStatsSection({ stats }: { stats: FocusStats }) {
 
   return (
     <section aria-label={text.title} className="flex flex-col gap-2">
-      <h2 className="flex items-center gap-2 px-1 text-body font-bold">
-        {text.title}
+      <GroupHeading title={text.title}>
         <span className="ml-auto flex gap-2">
           <SignalLink
             href={issueViewHref("deferred")}
@@ -62,7 +62,7 @@ export function FocusStatsSection({ stats }: { stats: FocusStats }) {
             count={stats.closableEpics}
           />
         </span>
-      </h2>
+      </GroupHeading>
       <div className="grid min-h-44 grid-cols-2 gap-3 lg:grid-cols-4">
         <ThroughputChart daily={stats.daily} />
         <div className="surface flex flex-col justify-center gap-4 px-4 py-3">

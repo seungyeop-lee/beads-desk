@@ -1,3 +1,4 @@
+import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { epicsFirst } from "@/client/modules/issues/domain/issuePicker";
@@ -178,7 +179,7 @@ export function NewIssueDialog({ create, pending, error, onClose, fixedParent }:
             {messages.common.cancel}
           </button>
           <button type="submit" className="btn btn-primary" disabled={pending || !title.trim()}>
-            {pending && <span className="loading loading-spinner loading-xs" />}
+            {pending && <Spinner />}
             {messages.newIssue.create}
           </button>
         </div>

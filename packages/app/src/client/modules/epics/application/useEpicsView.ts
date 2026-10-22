@@ -1,3 +1,4 @@
+import { toggled } from "@/shared/domain/sets";
 import { useDeferredValue, useState } from "react";
 import {
   groupEpics,
@@ -11,7 +12,6 @@ import {
   searchEpics,
   settleExpandedEpics,
   sortEpics,
-  toggled,
   topLevelEpics,
   type EpicSearch,
   type SearchToggles,

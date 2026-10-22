@@ -1,3 +1,4 @@
+import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -101,9 +102,11 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
               plan={graphPlan}
             />
           ) : (
-            <p className="flex-1 self-start rounded-box border border-dashed border-base-300 px-6 py-10 text-center text-sm text-emphasis-60">
-              {messages.graph.empty.epic}
-            </p>
+            <EmptyState
+              message={messages.graph.empty.epic}
+              variant="graph"
+              className="flex-1 self-start"
+            />
           )}
         </div>
         {plan.unordered.length > 0 && (

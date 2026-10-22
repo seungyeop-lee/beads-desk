@@ -1,3 +1,4 @@
+import { Spinner } from "@/client/ui/designSystem/Spinner";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useId, useState, type KeyboardEvent } from "react";
 import { useIssueCandidates } from "@/client/modules/issues/application/useIssueList";
@@ -93,10 +94,7 @@ export function IssuePicker({ label, placeholder, disabled, onPick, exclude, ran
         {error ? (
           <p className="px-3 py-2 text-xs text-error">{messages.issues.loadFailed(error)}</p>
         ) : data === null ? (
-          <span
-            className="loading loading-spinner loading-xs m-2"
-            aria-label={messages.common.loading}
-          />
+          <Spinner className="m-2" label={messages.common.loading} />
         ) : matches.length === 0 ? (
           <p className="px-3 py-2 text-xs text-emphasis-50">{messages.issuePicker.empty}</p>
         ) : (

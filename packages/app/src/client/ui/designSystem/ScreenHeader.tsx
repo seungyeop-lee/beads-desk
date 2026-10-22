@@ -1,3 +1,4 @@
+import { Spinner } from "@/client/ui/designSystem/Spinner";
 import { useId, type ReactNode } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { HelpTooltip } from "./HelpTooltip";
@@ -35,12 +36,7 @@ export function ScreenHeader({ title, tone, count, loading, help, children }: Pr
             {count}
           </span>
         )}
-        {loading && (
-          <span
-            className="loading loading-spinner loading-xs text-emphasis-40"
-            aria-label={messages.common.loading}
-          />
-        )}
+        {loading && <Spinner tone="muted" label={messages.common.loading} />}
       </div>
       {children && <div className="ml-auto flex flex-wrap items-center gap-2">{children}</div>}
     </header>

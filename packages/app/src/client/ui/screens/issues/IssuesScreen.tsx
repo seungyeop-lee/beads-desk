@@ -1,5 +1,6 @@
 "use client";
 
+import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
 import { useIssueListView } from "@/client/modules/issues/application/useIssueListView";
 import { useIssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { useGateTitles } from "@/client/modules/gates/application/useGateTitles";
@@ -33,7 +34,7 @@ export function IssuesScreen() {
   const messages = useMessages();
 
   return (
-    <main className="mx-auto flex max-w-content flex-col gap-4 px-8 pb-16">
+    <ScreenFrame>
       <ScreenHeader
         title={messages.issues.title}
         tone={screenTone("/issues")}
@@ -89,6 +90,6 @@ export function IssuesScreen() {
         ))}
 
       <IssueDetailRoute />
-    </main>
+    </ScreenFrame>
   );
 }

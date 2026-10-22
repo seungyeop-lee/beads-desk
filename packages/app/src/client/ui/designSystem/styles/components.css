@@ -377,3 +377,8 @@
   --xy-minimap-node-stroke-color: var(--color-primary);
   vector-effect: non-scaling-stroke;
 }
+
+@utility content-width {
+  margin-inline: auto;
+  max-width: var(--container-content);
+}
