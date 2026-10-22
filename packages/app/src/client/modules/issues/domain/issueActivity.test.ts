@@ -58,6 +58,7 @@ test("이벤트를 종류별 줄로 바꾼다", () => {
   expect(lines(event("e", "closed", 0, { text: "끝" }))).toEqual([
     { kind: "closed", reason: "끝" },
   ]);
+  expect(lines(event("e", "reopened", 0))).toEqual([{ kind: "reopened" }]);
   expect(lines(event("e", "claimed", 0, { changes: [change, change] }))).toEqual([
     { kind: "field", change },
     { kind: "field", change },

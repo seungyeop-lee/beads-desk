@@ -4,6 +4,7 @@ import type { IssueComment, IssueEvent, IssueFieldChange } from "@beads-desk/bd/
 export type ActivityLine =
   | { kind: "created" }
   | { kind: "closed"; reason: string | null }
+  | { kind: "reopened" }
   | { kind: "field"; change: IssueFieldChange }
   | { kind: "dependencyAdded"; dependsOnId: string; dependencyType: string | null }
   | { kind: "dependencyRemoved"; dependsOnId: string }
@@ -57,6 +58,7 @@ function activityLines(event: IssueEvent): ActivityLine[] {
   }
   if (event.type === "created") return [{ kind: "created" }];
   if (event.type === "closed") return [{ kind: "closed", reason: event.text }];
+  if (event.type === "reopened") return [{ kind: "reopened" }];
   if (event.dependency) {
     const { dependsOnId, type } = event.dependency;
     return event.type === "dependency_removed"

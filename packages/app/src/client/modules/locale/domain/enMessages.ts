@@ -310,6 +310,7 @@ export const enMessages: Messages = {
     created: "Created the issue.",
     closed: "Closed the issue.",
     closedWithReason: (reason) => `Closed the issue: ${reason}`,
+    reopened: "Reopened the issue.",
     fieldChanged: (field, before, after) => `${field}: ${before} → ${after}`,
     bodyChanged: (field) => `Edited ${field.toLowerCase()}.`,
     dependencyAdded: (relation, issueId) => `Linked ${issueId} as ${relation.toLowerCase()}.`,

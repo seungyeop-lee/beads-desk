@@ -14,6 +14,8 @@ export function activityLineText(messages: Messages, locale: Locale, line: Activ
       return text.created;
     case "closed":
       return line.reason ? text.closedWithReason(line.reason) : text.closed;
+    case "reopened":
+      return text.reopened;
     case "field":
       return fieldChangeText(messages, locale, line.change);
     case "dependencyAdded":

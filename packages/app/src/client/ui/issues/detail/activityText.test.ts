@@ -30,10 +30,11 @@ test("설명처럼 긴 본문 필드는 값 없이 고쳤다는 사실만 보인
   expect(field("acceptanceCriteria", "", "기준")).toBe("수용 기준 내용을 고쳤습니다.");
 });
 
-test("생성, 닫기, 관계, 라벨, 모르는 이벤트를 문장으로 바꾼다", () => {
+test("생성, 닫기, 다시 열기, 관계, 라벨, 모르는 이벤트를 문장으로 바꾼다", () => {
   expect(ko({ kind: "created" })).toBe("이슈를 만들었습니다.");
   expect(ko({ kind: "closed", reason: "끝" })).toBe("이슈를 닫았습니다: 끝");
   expect(ko({ kind: "closed", reason: null })).toBe("이슈를 닫았습니다.");
+  expect(ko({ kind: "reopened" })).toBe("이슈를 다시 열었습니다.");
   expect(ko({ kind: "dependencyAdded", dependsOnId: "demo-b", dependencyType: "blocks" })).toBe(
     "선행 관계로 demo-b을(를) 연결했습니다.",
   );
@@ -47,6 +48,7 @@ test("생성, 닫기, 관계, 라벨, 모르는 이벤트를 문장으로 바꾼
 });
 
 test("영어 사전으로도 같은 규칙을 따른다", () => {
+  expect(activityLineText(MESSAGES.en, "en", { kind: "reopened" })).toBe("Reopened the issue.");
   expect(
     activityLineText(MESSAGES.en, "en", {
       kind: "field",

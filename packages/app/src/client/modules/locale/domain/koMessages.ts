@@ -319,6 +319,7 @@ export const koMessages = {
     created: "이슈를 만들었습니다.",
     closed: "이슈를 닫았습니다.",
     closedWithReason: (reason: string) => `이슈를 닫았습니다: ${reason}`,
+    reopened: "이슈를 다시 열었습니다.",
     fieldChanged: (field: string, before: string, after: string) =>
       `${field}: ${before} → ${after}`,
     bodyChanged: (field: string) => `${field} 내용을 고쳤습니다.`,
