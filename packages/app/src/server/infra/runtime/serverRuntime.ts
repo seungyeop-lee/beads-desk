@@ -1,4 +1,4 @@
-import { runBd } from "@beads-desk/bd";
+import { bdVersion } from "@beads-desk/bd";
 import { isAbsolute } from "node:path";
 // launcher(`bin/bd-desk.js`)와 같은 규칙으로 workspace를 찾도록 launcher가 쓰는 파일을 그대로 씁니다.
 import { findWorkspaceRoot } from "../../../../bin/workspaceRoot.js";
@@ -18,10 +18,7 @@ const RUNTIME_KEY = Symbol.for("beads-desk.serverRuntime");
 
 export async function startServerRuntime(): Promise<void> {
   const runtime = runtimeState();
-  const result = await runBd(["version"], { cwd: runtime.workspaces[0] });
-  if (result.code === 0) {
-    runtime.bdVersion = result.stdout.trim();
-  }
+  runtime.bdVersion = await bdVersion(runtime.workspaces[0]);
 }
 
 export function getServerRuntime(): ServerRuntime {

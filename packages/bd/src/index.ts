@@ -1,4 +1,5 @@
 export {
+  bdVersion,
   boardIssues,
   decisionRecords,
   dependencyGraph,
@@ -28,7 +29,6 @@ export {
   type IssueRef,
   type LintFinding,
   type OrphanIssue,
-  withWorkSignals,
 } from "./queries";
 export {
   addComment,
@@ -53,4 +53,4 @@ export {
   updateIssueFields,
 } from "./mutations";
 export { bdBin } from "./bdBin";
-export { runBd, type BdError, type BdErrorKind, type BdOutcome } from "./runBd";
+export { type BdError, type BdErrorKind, type BdOutcome } from "./runBd";

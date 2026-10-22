@@ -7,6 +7,7 @@ import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import {
   addComment,
   addDependency,
+  bdVersion,
   boardIssues,
   claimIssue,
   closeIssue,
@@ -53,6 +54,10 @@ test("bd lint 결과에서 권장 섹션이 빠진 이슈와 빠진 섹션을 �
   const finding = value(await lintFindings(cwd)).find(({ id }) => id === bug);
   expect(finding).toMatchObject({ title: "재현 절차 없는 버그", issueType: "bug" });
   expect(finding?.missing.join("\n")).toMatch(/Steps to Reproduce[\s\S]*Acceptance Criteria/);
+});
+
+test("bd version 출력의 앞뒤 공백을 지워 돌려준다", async () => {
+  expect(await bdVersion(cwd)).toMatch(/^bd version \d+\.\d+\.\d+/);
 });
 
 test("bd find-duplicates 결과에서 제목과 설명이 같은 이슈 쌍을 읽는다", async () => {

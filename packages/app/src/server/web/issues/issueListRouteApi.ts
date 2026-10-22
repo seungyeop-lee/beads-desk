@@ -1,4 +1,4 @@
-import { listIssues, readyIssues, withWorkSignals } from "@beads-desk/bd";
+import { listIssues, readyIssues } from "@beads-desk/bd";
 import { readIssueExport } from "@/server/infra/issueExport/issueExportCache";
 import { searchIssueText } from "@/server/modules/issueSearch/domain/issueTextSearch";
 import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
@@ -14,9 +14,7 @@ export async function handleIssueListRequest(request: Request): Promise<Response
 
   return withRequestWorkspace(request, async (cwd) =>
     respondBdOutcome(
-      filter.kind === "ready"
-        ? await readyIssues(cwd)
-        : await withWorkSignals(cwd, listIssues(cwd, filter.statuses)),
+      filter.kind === "ready" ? await readyIssues(cwd) : await listIssues(cwd, filter.statuses),
     ),
   );
 }

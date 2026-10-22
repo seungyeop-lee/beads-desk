@@ -1,5 +1,5 @@
 import { globalState } from "@/server/infra/globalState/globalState";
-import { changeFingerprintReader } from "./changeFingerprintReader";
+import { sharedChangeFingerprintReader } from "./changeFingerprintReader";
 
 type Listener = () => void;
 
@@ -43,7 +43,7 @@ export function subscribeWorkspaceChanges(
     feed = {
       listeners: new Set(),
       timer: null,
-      readFingerprint: changeFingerprintReader(workspaceRoot),
+      readFingerprint: sharedChangeFingerprintReader(workspaceRoot),
       last: null,
       settled: false,
       polling: null,

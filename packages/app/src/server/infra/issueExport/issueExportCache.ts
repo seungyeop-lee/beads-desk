@@ -1,7 +1,7 @@
 import { exportedIssues, type BdOutcome } from "@beads-desk/bd";
 import type { ExportedIssue } from "@beads-desk/bd/issue";
 import { globalState } from "@/server/infra/globalState/globalState";
-import { changeFingerprintReader } from "@/server/infra/workspaceChanges/changeFingerprintReader";
+import { sharedChangeFingerprintReader } from "@/server/infra/workspaceChanges/changeFingerprintReader";
 
 type WorkspaceExport = {
   readFingerprint: () => Promise<string | null>;
@@ -24,7 +24,7 @@ function workspaceExports(): Map<string, WorkspaceExport> {
 export async function readIssueExport(workspaceRoot: string): Promise<BdOutcome<ExportedIssue[]>> {
   let state = workspaceExports().get(workspaceRoot);
   if (!state) {
-    state = { readFingerprint: changeFingerprintReader(workspaceRoot), cached: null };
+    state = { readFingerprint: sharedChangeFingerprintReader(workspaceRoot), cached: null };
     workspaceExports().set(workspaceRoot, state);
   }
   const fingerprint = await state.readFingerprint();

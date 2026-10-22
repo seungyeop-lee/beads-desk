@@ -1,17 +1,12 @@
-import { listIssues, withWorkSignals } from "@beads-desk/bd";
-import { beforeEach, expect, test, vi } from "vitest";
+import { listIssues } from "@beads-desk/bd";
+import { expect, test, vi } from "vitest";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { readEpicDescendants } from "./epicDescendants";
 
 vi.mock("@beads-desk/bd", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@beads-desk/bd")>()),
   listIssues: vi.fn<typeof listIssues>(),
-  withWorkSignals: vi.fn<typeof withWorkSignals>(),
 }));
-
-beforeEach(() => {
-  vi.mocked(withWorkSignals).mockImplementation((_cwd, listing) => listing);
-});
 
 test("epic의 후손 이슈와 에픽 밖에서 기다리는 이슈까지 센 후손 이슈의 대기 수를 조립한다", async () => {
   const issues = [
@@ -27,7 +22,6 @@ test("epic의 후손 이슈와 에픽 밖에서 기다리는 이슈까지 센 �
   const result = await readEpicDescendants("/workspace", "e-1");
 
   expect(listIssues).toHaveBeenCalledWith("/workspace", []);
-  expect(withWorkSignals).toHaveBeenCalledWith("/workspace", expect.any(Promise));
   expect(result).toEqual({
     ok: true,
     value: {

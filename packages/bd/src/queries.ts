@@ -89,8 +89,18 @@ const ALL_GATE_LIST_ARGS = [
 
 const OPEN_LIST_ARGS = ["list", "--json", "--tree=false", "--limit", LIST_LIMIT];
 
+/** 설치된 bd의 버전을 돌려줍니다. bd 실행이 실패하면 null을 돌려줍니다. */
+export async function bdVersion(cwd: string): Promise<string | null> {
+  const result = await runBdChecked(cwd, ["version"]);
+  return result.ok ? result.value.trim() : null;
+}
+
+/**
+ * 이슈 목록을 읽고 작업 상태(workState)를 정하는 값을 채워 돌려줍니다. 이 값이 빠지면 막힌 이슈가 열린 이슈로 보입니다.
+ * 목록과 함께 bd blocked와 bd ready를 실행하며, 조회가 하나라도 실패하면 오류를 돌려줍니다.
+ */
 export function listIssues(cwd: string, statuses: IssueStatus[]): Promise<BdOutcome<Issue[]>> {
-  return queryIssues(cwd, listArgs(statuses));
+  return withWorkSignals(cwd, queryIssues(cwd, listArgs(statuses)));
 }
 
 export type DependencyGraph = {
@@ -582,7 +592,7 @@ function supersedingIssue(record: unknown): string | null {
  * 조회가 하나라도 실패하면 열을 잘못 나누게 되므로 오류를 돌려줍니다.
  */
 export async function boardIssues(cwd: string): Promise<BdOutcome<BoardIssue[]>> {
-  const result = await withWorkSignals(cwd, queryIssues(cwd, listArgs([])));
+  const result = await listIssues(cwd, []);
   if (!result.ok) return result;
   return {
     ok: true,

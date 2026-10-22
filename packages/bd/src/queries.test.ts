@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 import { fakeBdWorkspace } from "./fakeBd.testkit";
 import { parseIssues, type Issue } from "./issue";
 import {
+  bdVersion,
   boardIssues,
   decisionRecords,
   dependencyGraph,
@@ -42,6 +43,8 @@ describe("listIssues", () => {
       "list --json --tree=false --status open,in_progress --limit 0": {
         stdout: await fixture("list.json"),
       },
+      [BLOCKED_ARGS]: { stdout: "[]" },
+      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await listIssues(fakeBd.workDir, ["open", "in_progress"]);
@@ -59,6 +62,8 @@ describe("listIssues", () => {
       [LIST_ALL_ARGS]: {
         stdout: "[]",
       },
+      [BLOCKED_ARGS]: { stdout: "[]" },
+      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await listIssues(fakeBd.workDir, []);
@@ -69,6 +74,8 @@ describe("listIssues", () => {
   test("bd가 실패하면 stderr와 종료 코드를 담은 오류를 돌려준다", async () => {
     await useFakeBd({
       "list --json --tree=false --status open --limit 0": { stderr: "boom", code: 2 },
+      [BLOCKED_ARGS]: { stdout: "[]" },
+      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await listIssues(fakeBd.workDir, ["open"]);
@@ -79,6 +86,8 @@ describe("listIssues", () => {
   test("bd가 stderr 없이 실패하면 종료 코드를 담은 메시지를 돌려준다", async () => {
     await useFakeBd({
       "list --json --tree=false --status open --limit 0": { code: 2 },
+      [BLOCKED_ARGS]: { stdout: "[]" },
+      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await listIssues(fakeBd.workDir, ["open"]);
@@ -92,6 +101,8 @@ describe("listIssues", () => {
   test("bd 출력이 JSON이 아니면 오류를 돌려준다", async () => {
     await useFakeBd({
       "list --json --tree=false --status open --limit 0": { stdout: "not json" },
+      [BLOCKED_ARGS]: { stdout: "[]" },
+      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await listIssues(fakeBd.workDir, ["open"]);
@@ -100,6 +111,24 @@ describe("listIssues", () => {
       ok: false,
       error: { kind: "unparsableOutput", exitCode: 0 },
     });
+  });
+});
+
+describe("bdVersion", () => {
+  test("bd version 출력의 앞뒤 공백을 지워 돌려준다", async () => {
+    await useFakeBd({
+      version: { stdout: "\nbd version 1.3.1 (Homebrew)\n" },
+    });
+
+    expect(await bdVersion(fakeBd.workDir)).toBe("bd version 1.3.1 (Homebrew)");
+  });
+
+  test("bd 실행이 실패하면 null을 돌려준다", async () => {
+    await useFakeBd({
+      version: { stderr: "boom", code: 1 },
+    });
+
+    expect(await bdVersion(fakeBd.workDir)).toBeNull();
   });
 });
 
