@@ -9,11 +9,11 @@ import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAd
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
-import { codeMirrorDom } from "../designSystem/codeMirrorDom.testkit";
+import { codeMirrorDom } from "./codeMirrorDom.testkit";
 import { contrast } from "../designSystem/colorContrast.testkit";
 import { daisyDom } from "../daisyDom.testkit";
 import { MarkdownEditor } from "./MarkdownEditor";
-import { milkdownDom } from "../designSystem/milkdownDom.testkit";
+import { milkdownDom } from "./milkdownDom.testkit";
 import { peleDom } from "../designSystem/peleDom.testkit";
 
 const DIAGRAM = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";

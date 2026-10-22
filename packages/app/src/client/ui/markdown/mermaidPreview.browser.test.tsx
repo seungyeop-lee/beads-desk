@@ -4,8 +4,8 @@ import { render } from "vitest-browser-react";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { MarkdownEditor } from "./MarkdownEditor";
-import { codeMirrorDom } from "../designSystem/codeMirrorDom.testkit";
-import { milkdownDom } from "../designSystem/milkdownDom.testkit";
+import { codeMirrorDom } from "./codeMirrorDom.testkit";
+import { milkdownDom } from "./milkdownDom.testkit";
 
 // pele module은 테스트 파일마다 처음 불러올 때 한 번만 만들어집니다. 이 파일에 그림을 그리는 테스트를 더하면 먼저 실행된 테스트가
 // module을 불러 와서 아래 테스트가 module을 기다리게 만들 수 없으므로, 그런 테스트는 MarkdownEditor.browser.test.tsx에 둡니다.

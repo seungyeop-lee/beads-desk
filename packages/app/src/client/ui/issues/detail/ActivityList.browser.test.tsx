@@ -2,8 +2,8 @@ import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { ActivityList } from "./ActivityList";
-import { codeMirrorDom } from "@/client/ui/designSystem/codeMirrorDom.testkit";
-import { milkdownDom } from "@/client/ui/designSystem/milkdownDom.testkit";
+import { codeMirrorDom } from "@/client/ui/markdown/codeMirrorDom.testkit";
+import { milkdownDom } from "@/client/ui/markdown/milkdownDom.testkit";
 
 vi.mock("@/client/modules/issues/application/useIssueHistory", () => ({
   useIssueHistory: () => ({ data: [], error: null, loading: false }),
