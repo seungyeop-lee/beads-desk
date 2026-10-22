@@ -3,4 +3,5 @@
 export type { DecisionRecord, DependencyGraph, EpicStatus } from "./issueQueries";
 export type { HumanGate, PreviousGateRound } from "./gateQueries";
 export type { IssueRef } from "./hygieneQueries";
+export type { JournalRecord } from "./eventsJournal";
 export type { DeferPeriod, DeferUntil, IssueFieldChanges, Replacement } from "./mutations";

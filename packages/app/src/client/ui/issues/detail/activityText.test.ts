@@ -21,7 +21,12 @@ test("보류 기한은 시각으로, 라벨 목록은 쉼표로 이어 보이고
   expect(field("deferUntil", null, until)).toBe(
     `보류 기한: 없음 → ${formatTime("ko", Date.parse(until))}`,
   );
+  // 활동 피드는 bd export와 같은 epoch ms로 보류 기한을 담습니다.
+  expect(field("deferUntil", Date.parse(until), null)).toBe(
+    `보류 기한: ${formatTime("ko", Date.parse(until))} → 없음`,
+  );
   expect(field("labels", ["a"], ["a", "b"])).toBe("라벨: a → a, b");
+  expect(field("labels", [], ["a"])).toBe("라벨: 없음 → a");
   expect(field("customField", "x", "")).toBe("customField: x → 없음");
 });
 

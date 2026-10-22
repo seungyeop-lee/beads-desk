@@ -514,7 +514,7 @@ export const enMessages: Messages = {
   activityFeed: {
     title: "Activity",
     description:
-      "Issues created, closed, and commented on across the workspace, newest first. Gate records are left out.",
+      "Issues created, edited, closed, and commented on across the workspace, newest first. Edits appear only while bd's events journal is on. Gate records are left out.",
     loadFailed: (error) => `Could not load activity: ${error}`,
     entries: "Activity records",
     empty: "No activity yet.",
@@ -523,6 +523,12 @@ export const enMessages: Messages = {
       created: "Created",
       closed: "Closed",
       commented: "Comment",
+      updated: "Updated",
+    },
+    journalOff: {
+      message:
+        "To see issue edits (description, status, title, and more), turn on bd's events journal in this workspace with the command below. Only changes made after it is on are recorded.",
+      command: "bd config set events-journal true",
     },
     dates: "Dates",
     dateFrom: "From",

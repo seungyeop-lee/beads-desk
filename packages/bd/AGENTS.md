@@ -3,7 +3,7 @@
 ## 구성
 
 - `src/issue.ts`: 이슈 model type과 bd JSON 파서, bd가 정한 개념의 판정. public `./issue` entry입니다.
-- `src/issueQueries.ts`, `src/gateQueries.ts`, `src/hygieneQueries.ts`, `src/bdVersion.ts`, `src/changeFingerprint.ts`: 조회 대상별 읽기. 읽기를 더할 때는 대상에 맞는 파일에 넣습니다.
+- `src/issueQueries.ts`, `src/gateQueries.ts`, `src/hygieneQueries.ts`, `src/eventsJournal.ts`, `src/bdVersion.ts`, `src/changeFingerprint.ts`: 조회 대상별 읽기. 읽기를 더할 때는 대상에 맞는 파일에 넣습니다.
 - `src/issueList.ts`: 목록을 읽는 bd 명령의 인자 조립과 이슈 목록 해석. `src/bdJson.ts`: bd JSON 출력에서 값을 꺼내는 공통 규칙. 둘 다 public entry로 내보내지 않습니다.
 - `src/mutations.ts`: 쓰기 명령. `src/runBd.ts`: bd 실행 큐와 오류 해석. `src/bdBin.ts`: 실행 파일 찾기.
 

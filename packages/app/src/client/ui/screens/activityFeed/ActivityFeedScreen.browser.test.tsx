@@ -19,7 +19,7 @@ const tab = vi.hoisted(() => ({
 
 vi.mock("@/client/modules/activityFeed/application/useActivityFeed", () => ({
   useActivityFeed: () => ({
-    page: { entries: tab.entries, hasMore: false },
+    page: { entries: tab.entries, hasMore: false, journalEnabled: false },
     error: null,
     loading: false,
     showMore: () => {},
@@ -54,6 +54,7 @@ function entry(key: string, at: number): ActivityEntry {
     title: `${key} 제목`,
     actor: "agent",
     text: null,
+    changes: [],
   };
 }
 
@@ -151,12 +152,13 @@ test("넓은 창에서는 목록이 화면 틀의 폭을 다 써서 오른쪽 �
   expect(list.getBoundingClientRect().right).toBeCloseTo(dateTo.getBoundingClientRect().right, 0);
 });
 
-test("좁은 창에서도 목록과 날짜 입력칸이 가로로 넘치지 않는다", async () => {
+test("좁은 창에서도 목록과 날짜 입력칸, events journal 안내의 명령이 가로로 넘치지 않는다", async () => {
   await page.viewport(441, 900);
 
   const screen = await openScreen();
 
   await expect.element(screen.getByText("t-new 제목")).toBeVisible();
+  await expect.element(screen.getByText(messages.activityFeed.journalOff.command)).toBeVisible();
   expect(document.documentElement.scrollWidth).toBe(document.documentElement.clientWidth);
 });
 

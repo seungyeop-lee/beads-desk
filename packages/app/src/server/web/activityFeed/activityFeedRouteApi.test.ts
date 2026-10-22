@@ -43,6 +43,7 @@ test("bd export 레코드에서 조회 범위 안의 기록을 새것부터 limi
     "dolt show --json": { stdout: JSON.stringify({ embedded: false, database: "demo" }) },
     "sql SELECT DOLT_HASHOF_DB() AS h --json": { stdout: JSON.stringify([{ h: "hash-1" }]) },
     export: { stdout: exported.map((record) => JSON.stringify(record)).join("\n") },
+    "config get events-journal --json": { stdout: JSON.stringify({ value: "false" }) },
   });
   const since = Date.parse("2026-10-20T00:00:00Z");
   const until = Date.parse("2026-10-21T00:00:00Z");
@@ -64,9 +65,59 @@ test("bd export 레코드에서 조회 범위 안의 기록을 새것부터 limi
           title: "첫 이슈",
           actor: null,
           text: "끝냄",
+          changes: [],
         },
       ],
       hasMore: true,
+      journalEnabled: false,
+    },
+  });
+});
+
+test("events journal이 켜져 있으면 update 레코드로 만든 수정 기록을 함께 돌려준다", async () => {
+  const issue = { id: "demo-1", title: "첫 이슈", issue_type: "task", status: "open" };
+  const journal = [
+    { seq: 1, ts: "2026-10-20T01:00:00Z", op: "create", issue_id: "demo-1", actor: "alice", issue },
+    {
+      seq: 2,
+      ts: "2026-10-20T02:00:00Z",
+      op: "update",
+      issue_id: "demo-1",
+      actor: "bob",
+      issue: { ...issue, status: "in_progress" },
+    },
+  ];
+  await fakeBd.useFakeBd({
+    "dolt show --json": { stdout: JSON.stringify({ embedded: false, database: "demo" }) },
+    "sql SELECT DOLT_HASHOF_DB() AS h --json": { stdout: JSON.stringify([{ h: "hash-1" }]) },
+    export: { stdout: JSON.stringify({ ...issue, created_at: "2026-10-20T01:00:00Z" }) },
+    "config get events-journal --json": { stdout: JSON.stringify({ value: "true" }) },
+    "events tail --since 0 --json": {
+      stdout: journal.map((record) => JSON.stringify(record)).join("\n"),
+    },
+  });
+
+  const response = await handleActivityFeedRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/activity?limit=1"),
+  );
+
+  expect(await response.json()).toEqual({
+    ok: true,
+    data: {
+      entries: [
+        {
+          key: "demo-1:updated:2",
+          kind: "updated",
+          at: Date.parse("2026-10-20T02:00:00Z"),
+          issueId: "demo-1",
+          title: "첫 이슈",
+          actor: "bob",
+          text: null,
+          changes: [{ field: "status", before: "open", after: "in_progress" }],
+        },
+      ],
+      hasMore: true,
+      journalEnabled: true,
     },
   });
 });

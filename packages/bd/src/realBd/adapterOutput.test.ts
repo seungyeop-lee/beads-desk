@@ -16,6 +16,7 @@ import {
   dismissHuman,
   exportedIssues,
   duplicateCandidates,
+  eventsJournalEnabled,
   humanDecisionIssues,
   humanGates,
   issueEvents,
@@ -26,6 +27,7 @@ import {
   previousGateRounds,
   readyIssues,
   respondToHuman,
+  retainedJournalRecords,
   showIssue,
   updateIssueFields,
 } from "..";
@@ -383,6 +385,32 @@ test("bd export 레코드에서 본문 필드 네 개와 댓글, 만든 사람�
     issueType: "gate",
     status: "closed",
   });
+});
+
+test("events journal을 켠 뒤의 수정은 update 레코드로, 수정 뒤의 이슈 상태와 함께 읽는다", async () => {
+  expect(value(await eventsJournalEnabled(cwd))).toBe(false);
+  const before = value(await createIssue(cwd, { title: "journal을 켜기 전 작업" }));
+  await run("bd", "config", "set", "events-journal", "true");
+  expect(value(await eventsJournalEnabled(cwd))).toBe(true);
+
+  value(await updateIssueFields(cwd, before, { description: "켠 뒤에 고친 설명" }));
+  await run("bd", "label", "add", before, "journal");
+  expect((await closeIssue(cwd, before, { reason: "확인" })).ok).toBe(true);
+  await run("bd", "reopen", before);
+
+  const records = value(await retainedJournalRecords(cwd)).filter(
+    (record) => record.issueId === before,
+  );
+  expect(records.map((record) => record.op)).toEqual(["update", "update", "close", "update"]);
+  expect(records[0]).toMatchObject({
+    seq: expect.any(Number),
+    at: expect.any(Number),
+    actor: expect.stringMatching(/.+/),
+    issue: { id: before, description: "켠 뒤에 고친 설명", status: "open" },
+  });
+  expect(records[1]?.issue?.labels).toEqual(["journal"]);
+  expect(records[2]?.issue?.status).toBe("closed");
+  expect(records[3]?.issue?.status).toBe("open");
 });
 
 test("셸에 BD_JSON_ENVELOPE, BD_JSON, BEADS_DIR가 있어도 지정한 workspace의 이슈를 읽는다", async () => {

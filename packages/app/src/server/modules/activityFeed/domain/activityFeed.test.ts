@@ -1,9 +1,29 @@
 import { expect, test } from "vitest";
+import type { ExportedIssue } from "@beads-desk/bd/issue";
+import type { JournalRecord } from "@beads-desk/bd/types";
 import { exportedIssue } from "@/shared/domain/issues/issueFixture.testkit";
 import type { ActivityFeedQuery } from "@/shared/contract/activityFeed";
 import { activityFeedPage } from "./activityFeed";
 
 const ALL: ActivityFeedQuery = { since: null, until: null, limit: 100 };
+
+/** 이슈 t-1의 journal 레코드를 만듭니다. state는 그 레코드에 남은 수정 뒤의 이슈 상태입니다. */
+function record(
+  seq: number,
+  op: string,
+  at: number,
+  state: Partial<ExportedIssue> | null,
+  issueId = "t-1",
+): JournalRecord {
+  return {
+    seq,
+    at,
+    op,
+    issueId,
+    actor: "agent",
+    issue: state && exportedIssue(issueId, state),
+  };
+}
 
 function comment(id: string, author: string, text: string, createdAt: number) {
   return { id, author, text, createdAt };
@@ -22,7 +42,7 @@ test("만들기, 닫기, 댓글 기록을 새것부터 놓고, 줄마다 시각�
     exportedIssue("t-2", { title: "문서 정리", createdAt: 2_000, createdBy: "bob" }),
   ];
 
-  expect(activityFeedPage(issues, ALL)).toEqual({
+  expect(activityFeedPage(issues, null, ALL)).toEqual({
     entries: [
       {
         key: "t-1:closed",
@@ -32,6 +52,7 @@ test("만들기, 닫기, 댓글 기록을 새것부터 놓고, 줄마다 시각�
         title: "로그인 수정",
         actor: null,
         text: "수정 완료",
+        changes: [],
       },
       {
         key: "t-1:comment:c-1",
@@ -41,6 +62,7 @@ test("만들기, 닫기, 댓글 기록을 새것부터 놓고, 줄마다 시각�
         title: "로그인 수정",
         actor: "agent-7",
         text: "원인을 찾았다",
+        changes: [],
       },
       {
         key: "t-2:created",
@@ -50,6 +72,7 @@ test("만들기, 닫기, 댓글 기록을 새것부터 놓고, 줄마다 시각�
         title: "문서 정리",
         actor: "bob",
         text: null,
+        changes: [],
       },
       {
         key: "t-1:created",
@@ -59,9 +82,11 @@ test("만들기, 닫기, 댓글 기록을 새것부터 놓고, 줄마다 시각�
         title: "로그인 수정",
         actor: "alice",
         text: null,
+        changes: [],
       },
     ],
     hasMore: false,
+    journalEnabled: false,
   });
 });
 
@@ -77,7 +102,9 @@ test("gate를 만들고 닫은 기록과 gate에 달린 댓글은 피드에 넣�
     }),
   ];
 
-  expect(activityFeedPage(issues, ALL).entries.map((entry) => entry.key)).toEqual(["t-1:created"]);
+  expect(activityFeedPage(issues, null, ALL).entries.map((entry) => entry.key)).toEqual([
+    "t-1:created",
+  ]);
 });
 
 test("시각이 같으면 닫기, 댓글, 만들기 순서로 놓아 한 이슈의 기록이 일어난 순서의 역순이 된다", () => {
@@ -89,7 +116,7 @@ test("시각이 같으면 닫기, 댓글, 만들기 순서로 놓아 한 이슈�
     }),
   ];
 
-  expect(activityFeedPage(issues, ALL).entries.map((entry) => entry.kind)).toEqual([
+  expect(activityFeedPage(issues, null, ALL).entries.map((entry) => entry.kind)).toEqual([
     "closed",
     "commented",
     "created",
@@ -104,7 +131,7 @@ test("since 이상 until 미만인 기록만 남긴다", () => {
     exportedIssue("t-end", { createdAt: 2_000 }),
   ];
 
-  const page = activityFeedPage(issues, { since: 1_000, until: 2_000, limit: 100 });
+  const page = activityFeedPage(issues, null, { since: 1_000, until: 2_000, limit: 100 });
 
   expect(page.entries.map((entry) => entry.issueId)).toEqual(["t-last", "t-start"]);
 });
@@ -112,8 +139,8 @@ test("since 이상 until 미만인 기록만 남긴다", () => {
 test("limit건까지만 돌려주고, 더 남은 기록이 있는지 알린다", () => {
   const issues = [1, 2, 3].map((n) => exportedIssue(`t-${n}`, { createdAt: n * 1_000 }));
 
-  const first = activityFeedPage(issues, { since: null, until: null, limit: 2 });
-  const all = activityFeedPage(issues, { since: null, until: null, limit: 3 });
+  const first = activityFeedPage(issues, null, { since: null, until: null, limit: 2 });
+  const all = activityFeedPage(issues, null, { since: null, until: null, limit: 3 });
 
   expect(first.entries.map((entry) => entry.issueId)).toEqual(["t-3", "t-2"]);
   expect(first.hasMore).toBe(true);
@@ -135,10 +162,154 @@ test("댓글과 닫은 사유는 줄바꿈을 한 칸으로 줄이고 긴 본문
     }),
   ];
 
-  const byKey = new Map(activityFeedPage(issues, ALL).entries.map((entry) => [entry.key, entry]));
+  const byKey = new Map(
+    activityFeedPage(issues, null, ALL).entries.map((entry) => [entry.key, entry]),
+  );
 
   expect(byKey.get("t-1:created")?.actor).toBeNull();
   expect(byKey.get("t-1:closed")?.text).toBeNull();
   expect(byKey.get("t-1:comment:c-1")).toMatchObject({ actor: null, text: "첫 줄 둘째 줄" });
   expect(byKey.get("t-1:comment:c-2")?.text).toBe(`${"가".repeat(200)}…`);
+});
+
+test("journal의 update 레코드는 같은 이슈의 바로 앞 레코드와 비교해 바뀐 필드를 담은 수정 기록이 되고, 다시 열기는 상태가 닫힘에서 열림으로 바뀐 수정이 된다", () => {
+  const issues = [exportedIssue("t-1", { title: "새 제목", createdAt: 1_000 })];
+  const base = { title: "옛 제목" };
+  const journal = [
+    record(1, "create", 1_000, base),
+    record(2, "update", 2_000, { ...base, description: "설명" }),
+    record(3, "update", 3_000, { ...base, description: "설명", status: "in_progress" }),
+    record(4, "update", 4_000, { title: "새 제목", description: "설명", status: "in_progress" }),
+    record(5, "update", 5_000, {
+      title: "새 제목",
+      description: "설명",
+      status: "in_progress",
+      labels: ["ui"],
+    }),
+    record(6, "close", 6_000, {
+      title: "새 제목",
+      description: "설명",
+      status: "closed",
+      labels: ["ui"],
+    }),
+    record(7, "update", 7_000, {
+      title: "새 제목",
+      description: "설명",
+      status: "open",
+      labels: ["ui"],
+    }),
+  ];
+
+  const updates = activityFeedPage(issues, journal, ALL).entries.filter(
+    (entry) => entry.kind === "updated",
+  );
+
+  expect(updates).toEqual([
+    {
+      key: "t-1:updated:7",
+      kind: "updated",
+      at: 7_000,
+      issueId: "t-1",
+      title: "새 제목",
+      actor: "agent",
+      text: null,
+      changes: [{ field: "status", before: "closed", after: "open" }],
+    },
+    expect.objectContaining({
+      at: 5_000,
+      changes: [{ field: "labels", before: [], after: ["ui"] }],
+    }),
+    expect.objectContaining({
+      at: 4_000,
+      changes: [{ field: "title", before: "옛 제목", after: "새 제목" }],
+    }),
+    expect.objectContaining({
+      at: 3_000,
+      changes: [{ field: "status", before: "open", after: "in_progress" }],
+    }),
+    // 본문은 길어서 피드가 고친 사실만 보이므로 값을 담지 않습니다.
+    expect.objectContaining({
+      at: 2_000,
+      changes: [{ field: "description", before: null, after: null }],
+    }),
+  ]);
+});
+
+test("journal을 켜기 전에 만든 이슈처럼 앞 레코드가 없는 첫 수정은 바뀐 필드 없이 수정 기록이 된다", () => {
+  const issues = [exportedIssue("t-1", { createdAt: 1_000 })];
+  const journal = [record(1, "update", 2_000, { priority: 1 })];
+
+  expect(activityFeedPage(issues, journal, ALL).entries).toContainEqual(
+    expect.objectContaining({ key: "t-1:updated:1", kind: "updated", changes: [] }),
+  );
+});
+
+test("journal의 create, close, comment 레코드로는 기록을 만들지 않아, 만들기와 닫기, 댓글은 bd export의 기록 한 건씩만 보인다", () => {
+  const issues = [
+    exportedIssue("t-1", {
+      createdAt: 1_000,
+      closedAt: 3_000,
+      comments: [comment("c-1", "agent", "확인", 2_000)],
+    }),
+  ];
+  const journal = [
+    record(1, "create", 1_000, {}),
+    record(2, "comment", 2_000, {}),
+    record(3, "close", 3_000, { status: "closed" }),
+  ];
+
+  expect(activityFeedPage(issues, journal, ALL).entries.map((entry) => entry.key)).toEqual([
+    "t-1:closed",
+    "t-1:comment:c-1",
+    "t-1:created",
+  ]);
+});
+
+test("앞 레코드와 비교해 피드가 보이는 필드가 그대로이거나 상태가 닫힘으로 바뀌기만 했으면 수정 기록을 만들지 않는다", () => {
+  const issues = [exportedIssue("t-1", { createdAt: 1_000, closedAt: 3_000 })];
+  const journal = [
+    record(1, "create", 1_000, {}),
+    record(2, "update", 2_000, { updatedAt: 2_000 }),
+    record(3, "update", 3_000, { status: "closed", closedAt: 3_000 }),
+  ];
+
+  expect(activityFeedPage(issues, journal, ALL).entries.map((entry) => entry.kind)).toEqual([
+    "closed",
+    "created",
+  ]);
+});
+
+test("gate와 bd export에 없는 지운 이슈의 수정 기록은 넣지 않는다", () => {
+  const issues = [exportedIssue("t-gate", { issueType: "gate", createdAt: 1_000 })];
+  const journal = [
+    record(1, "update", 2_000, { issueType: "gate", priority: 1 }, "t-gate"),
+    record(2, "update", 2_000, { priority: 1 }, "t-gone"),
+    record(3, "delete", 3_000, null, "t-gone"),
+  ];
+
+  expect(activityFeedPage(issues, journal, ALL).entries).toEqual([]);
+});
+
+test("수정 기록에도 since 이상 until 미만과 limit을 적용하고, 같은 시각의 수정은 나중 레코드를 앞에 놓는다", () => {
+  const issues = [exportedIssue("t-1", { createdAt: 1_000 })];
+  const journal = [
+    record(1, "update", 1_000, { priority: 1 }),
+    record(2, "update", 1_500, { priority: 2 }),
+    record(3, "update", 1_500, { priority: 3 }),
+    record(4, "update", 2_000, { priority: 4 }),
+  ];
+
+  const page = activityFeedPage(issues, journal, { since: 1_000, until: 2_000, limit: 3 });
+
+  expect(page.entries.map((entry) => entry.key)).toEqual([
+    "t-1:updated:3",
+    "t-1:updated:2",
+    "t-1:updated:1",
+  ]);
+  expect(page.hasMore).toBe(true);
+});
+
+test("journal이 꺼져 있으면 null로 받아 응답에 꺼져 있다고 알리고, 켜져 있으면 레코드가 없어도 켜져 있다고 알린다", () => {
+  expect(activityFeedPage([], null, ALL).journalEnabled).toBe(false);
+  expect(activityFeedPage([], [], ALL).journalEnabled).toBe(true);
 });

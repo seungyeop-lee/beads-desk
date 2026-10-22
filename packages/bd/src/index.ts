@@ -30,6 +30,7 @@ export {
   type IssueRef,
 } from "./hygieneQueries";
 export { openChangeFingerprint, type ChangeFingerprint } from "./changeFingerprint";
+export { eventsJournalEnabled, type JournalRecord, retainedJournalRecords } from "./eventsJournal";
 export { bdVersion } from "./bdVersion";
 export {
   addComment,

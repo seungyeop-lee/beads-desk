@@ -532,7 +532,7 @@ export const koMessages = {
   activityFeed: {
     title: "활동",
     description:
-      "workspace 전체에서 이슈를 만들고 닫고 댓글을 단 기록을 새것부터 보여 줍니다. gate의 기록은 뺍니다.",
+      "workspace 전체에서 이슈를 만들고 고치고 닫고 댓글을 단 기록을 새것부터 보여 줍니다. 고친 기록은 bd의 events journal이 켜져 있을 때만 보입니다. gate의 기록은 뺍니다.",
     loadFailed: (error: string) => `활동 기록을 불러오지 못했습니다: ${error}`,
     entries: "활동 기록",
     empty: "아직 기록이 없습니다.",
@@ -541,7 +541,14 @@ export const koMessages = {
       created: "만듦",
       closed: "닫음",
       commented: "댓글",
+      updated: "수정함",
     } satisfies Record<ActivityKind, string>,
+    /** events journal이 꺼진 workspace에서 피드 위에 보이는 안내입니다. command는 두 언어에서 같습니다. */
+    journalOff: {
+      message:
+        "이슈를 고친 기록(설명, 상태, 제목 등)을 보려면 이 workspace에서 아래 명령으로 bd의 events journal을 켜 주세요. 켠 뒤에 생긴 변경부터 기록됩니다.",
+      command: "bd config set events-journal true",
+    },
     dates: "기간",
     dateFrom: "시작일",
     dateTo: "종료일",

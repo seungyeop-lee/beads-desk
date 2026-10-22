@@ -16,6 +16,7 @@ import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
 import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
+import { fieldChangeText } from "@/client/ui/issues/detail/activityText";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { screenTone } from "@/client/ui/shell/screenTabs";
 import type { ActivityEntry, ActivityKind } from "@/shared/contract/activityFeed";
@@ -25,10 +26,15 @@ const KIND_TONES: Record<ActivityKind, string> = {
   created: "tone-azure",
   closed: "tone-sage",
   commented: "tone-none",
+  updated: "tone-peach",
 };
 
+/** 닫은 사유, 댓글 본문, 바뀐 필드처럼 기록 줄 아래에 붙는 글입니다. */
+const DETAIL_TEXT = "line-clamp-2 text-xs sm:pl-15 wrap-anywhere text-emphasis-70";
+
 /**
- * workspace 전체에서 이슈를 만들고 닫고 댓글을 단 기록을 새것부터 날짜별로 보입니다. 줄을 누르면 이 화면 위에 이슈 상세가 열립니다.
+ * workspace 전체에서 이슈를 만들고 고치고 닫고 댓글을 단 기록을 새것부터 날짜별로 보입니다. 줄을 누르면 이 화면 위에 이슈 상세가 열립니다.
+ * 고친 기록은 events journal에서 읽으므로, journal이 꺼진 workspace에서는 켜는 방법을 목록 위에 안내합니다.
  * 지난번에 이 화면을 연 뒤 생긴 기록과 그 전 기록 사이에 구분선을 긋습니다.
  * 이슈 상세 dialog와 주소의 날짜 범위가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
@@ -60,6 +66,15 @@ export function ActivityFeedScreen() {
       </ScreenHeader>
 
       {error && <ErrorAlert>{text.loadFailed(error)}</ErrorAlert>}
+
+      {page && !page.journalEnabled && (
+        <div className="surface flex flex-col items-start gap-2 px-4 py-3 text-sm">
+          <p className="text-emphasis-70">{text.journalOff.message}</p>
+          <code className="rounded bg-base-200 px-2 py-1 font-mono text-xs wrap-anywhere">
+            {text.journalOff.command}
+          </code>
+        </div>
+      )}
 
       {rows &&
         (rows.length === 0 ? (
@@ -147,9 +162,12 @@ function EntryRow({ entry }: { entry: ActivityEntry }) {
         <span className="min-w-0 grow basis-60 font-medium wrap-anywhere">{title}</span>
         {entry.actor && <span className="shrink-0 text-xs text-emphasis-60">{entry.actor}</span>}
       </span>
-      {entry.text && (
-        <p className="line-clamp-2 text-xs sm:pl-15 wrap-anywhere text-emphasis-70">{entry.text}</p>
-      )}
+      {entry.text && <p className={DETAIL_TEXT}>{entry.text}</p>}
+      {entry.changes.map((change) => (
+        <p key={change.field} className={DETAIL_TEXT}>
+          {fieldChangeText(messages, locale, change)}
+        </p>
+      ))}
     </CoveredIssueRow>
   );
 }

@@ -249,12 +249,17 @@ export async function runBdChecked(
 ): Promise<{ ok: true; value: string } | { ok: false; error: BdCommandError }> {
   const result = await runBd(args, { cwd, ...options });
   if (result.code !== 0) {
-    const message =
-      (result.stderr.trim() ? result.stderr : jsonError(result.stdout)) ??
-      `bd exited with code ${result.code}.`;
-    return { ok: false, error: { message, exitCode: result.code } };
+    return { ok: false, error: commandError(result) };
   }
   return { ok: true, value: result.stdout };
+}
+
+/** 실패한 bd 실행에서 bd가 남긴 실패 이유를 꺼냅니다. */
+export function commandError(result: BdResult): BdCommandError {
+  const message =
+    (result.stderr.trim() ? result.stderr : jsonError(result.stdout)) ??
+    `bd exited with code ${result.code}.`;
+  return { message, exitCode: result.code };
 }
 
 // bd create --json 같은 명령은 실패 이유를 stderr가 아니라 stdout의 {"error": ...}로 출력합니다.

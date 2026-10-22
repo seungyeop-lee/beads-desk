@@ -13,7 +13,16 @@ const at = (day: number, hour = 0, minute = 0, ms = 0) =>
   new Date(2026, 9, day, hour, minute, 0, ms).getTime();
 
 function entry(key: string, time: number): ActivityEntry {
-  return { key, kind: "created", at: time, issueId: key, title: key, actor: null, text: null };
+  return {
+    key,
+    kind: "created",
+    at: time,
+    issueId: key,
+    title: key,
+    actor: null,
+    text: null,
+    changes: [],
+  };
 }
 
 /** 줄을 읽기 쉬운 문자열로 바꿉니다. 날짜 머리글은 `# 날짜`, 구분선은 `---`, 기록은 key입니다. */

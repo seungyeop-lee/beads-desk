@@ -1,3 +1,4 @@
+import { readEventsJournal } from "@/server/infra/eventsJournal/eventsJournalCache";
 import { readIssueExport } from "@/server/infra/issueExport/issueExportCache";
 import { readActivityFeedPage } from "@/server/modules/activityFeed/application/activityFeed";
 import { withRequestWorkspace } from "@/server/web/http/requestWorkspace";
@@ -11,6 +12,6 @@ export async function handleActivityFeedRequest(request: Request): Promise<Respo
     return respondBadRequest((await serverMessages()).invalidActivityFeedQuery);
   }
   return withRequestWorkspace(request, async (cwd) =>
-    respondBdOutcome(await readActivityFeedPage(readIssueExport, cwd, query)),
+    respondBdOutcome(await readActivityFeedPage(readIssueExport, readEventsJournal, cwd, query)),
   );
 }

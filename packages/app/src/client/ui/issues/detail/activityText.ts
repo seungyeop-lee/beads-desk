@@ -35,7 +35,12 @@ export function activityLineText(messages: Messages, locale: Locale, line: Activ
   }
 }
 
-function fieldChangeText(messages: Messages, locale: Locale, change: IssueFieldChange): string {
+/** 바뀐 필드 하나를 화면 문장으로 바꿉니다. 활동 피드의 수정 기록도 이 문장을 씁니다. */
+export function fieldChangeText(
+  messages: Messages,
+  locale: Locale,
+  change: IssueFieldChange,
+): string {
   const bodyField = BODY_FIELDS.find((field) => field === change.field);
   if (bodyField) {
     // 본문은 길어서 한 줄에 담지 않고 고친 사실만 알립니다.
@@ -63,13 +68,17 @@ function fieldName(messages: Messages, field: string): string {
 }
 
 function fieldValue(messages: Messages, locale: Locale, field: string, raw: unknown): string {
-  if (raw === null || raw === undefined || raw === "") return messages.common.none;
+  if (raw === null || raw === undefined || raw === "" || (Array.isArray(raw) && raw.length === 0)) {
+    return messages.common.none;
+  }
   if (field === "status" && typeof raw === "string") return statusLabel(messages, raw);
   if (field === "issueType" && typeof raw === "string") return typeLabel(messages, raw);
   if (field === "priority" && typeof raw === "number")
     return `P${raw} ${priorityLabel(messages, raw)}`;
-  if (field === "deferUntil" && typeof raw === "string" && Number.isFinite(Date.parse(raw))) {
-    return formatTime(locale, Date.parse(raw));
+  if (field === "deferUntil") {
+    // bd history는 ISO 문자열로, 활동 피드는 bd export와 같은 epoch ms로 담습니다.
+    const at = typeof raw === "string" ? Date.parse(raw) : raw;
+    if (typeof at === "number" && Number.isFinite(at)) return formatTime(locale, at);
   }
   if (Array.isArray(raw)) return raw.join(", ");
   return typeof raw === "object" ? JSON.stringify(raw) : String(raw);
