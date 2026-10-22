@@ -8,7 +8,6 @@ import {
   byPriority,
   statusRank,
 } from "@/client/modules/issues/domain/issueSort";
-import { workState } from "@/client/modules/issues/domain/workState";
 import type { EpicGroupKind } from "./epicGroups";
 import type { EpicSummary } from "@/shared/contract/epics";
 
@@ -159,7 +158,7 @@ export function epicDescendantRows(descendants: readonly Issue[]): IssueTreeRow[
   return issueTree([...descendants].sort(byId));
 }
 
-/** 이슈 하나의 직접 하위 이슈 수와 그중 닫힌 수, 작업 상태가 진행 중인 수입니다. */
+/** 이슈 하나의 직접 하위 이슈 수와 그중 닫힌 수, 저장 상태가 진행 중인 수입니다. */
 export type ChildProgress = { closed: number; inProgress: number; total: number };
 
 /**
@@ -168,12 +167,12 @@ export type ChildProgress = { closed: number; inProgress: number; total: number 
  */
 export function childProgress(descendants: readonly Issue[]): ReadonlyMap<string, ChildProgress> {
   const progress = new Map<string, ChildProgress>();
-  for (const issue of descendants) {
-    if (issue.parent === null) continue;
-    const counted = progress.get(issue.parent) ?? { closed: 0, inProgress: 0, total: 0 };
-    progress.set(issue.parent, {
-      closed: counted.closed + (issue.status === "closed" ? 1 : 0),
-      inProgress: counted.inProgress + (workState(issue) === "in_progress" ? 1 : 0),
+  for (const { parent, status } of descendants) {
+    if (parent === null) continue;
+    const counted = progress.get(parent) ?? { closed: 0, inProgress: 0, total: 0 };
+    progress.set(parent, {
+      closed: counted.closed + (status === "closed" ? 1 : 0),
+      inProgress: counted.inProgress + (status === "in_progress" ? 1 : 0),
       total: counted.total + 1,
     });
   }

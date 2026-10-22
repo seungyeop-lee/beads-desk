@@ -23,3 +23,6 @@ export function expectEpicProgressSegments(
     getComputedStyle(closedSegment!).backgroundColor,
   );
 }
+
+/** 진행 중인 하위 이슈 수를 `진행 중 N`이나 `N in progress` 글자로 보인 요소를 찾습니다. 진행 중은 막대 구간으로만 보이므로 화면에 없어야 합니다. */
+export const IN_PROGRESS_COUNT_TEXT = /^(진행 중 \d+|\d+ in progress)$/;

@@ -13,7 +13,6 @@ import {
   type IssueDetail,
   type IssueEvent,
   type IssueStatus,
-  workState,
 } from "./issue";
 import { queryIssues, withNoLimit } from "./issueList";
 import { outputError, runBdChecked, runBdJson, trimmedId, type BdOutcome } from "./runBd";
@@ -22,7 +21,7 @@ export type EpicStatus = {
   epic: Issue;
   totalChildren: number;
   closedChildren: number;
-  /** 작업 상태(workState)가 진행 중인 직접 하위 이슈 수입니다. 의존 관계에 막힌 이슈와 하위 에픽은 저장 상태가 진행 중이어도 세지 않습니다. */
+  /** 저장 상태가 진행 중인 직접 하위 이슈 수입니다. 작업 상태(workState)와 달리 의존 관계에 막힌 이슈와 하위 에픽도 셉니다. */
   inProgressChildren: number;
 };
 
@@ -164,10 +163,9 @@ export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome
 /**
  * epic마다 직접 하위 이슈 수와 그중 닫힌 수, 진행 중인 수를 셉니다.
  * bd epic status는 하위 이슈가 없거나 닫힌 epic을 돌려주지 않아, 모든 이슈를 한 번에 읽고 parent로 묶어 셉니다.
- * 진행 중은 이슈 목록의 진행 중 묶음과 수가 맞도록 작업 상태로 판정하므로, listIssues처럼 bd blocked와 bd ready도 함께 읽습니다.
  */
 export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>> {
-  const result = await listIssues(cwd, []);
+  const result = await queryIssues(cwd, listArgs([]));
   if (!result.ok) {
     return result;
   }
@@ -182,7 +180,7 @@ export async function epicStatuses(cwd: string): Promise<BdOutcome<EpicStatus[]>
           epic,
           totalChildren: children.length,
           closedChildren: children.filter((child) => child.status === "closed").length,
-          inProgressChildren: children.filter((child) => workState(child) === "in_progress").length,
+          inProgressChildren: children.filter((child) => child.status === "in_progress").length,
         };
       }),
   };

@@ -15,7 +15,7 @@ import { HUMAN_DECISION_TONE, workStateTone } from "@/client/ui/issues/issueLabe
 import { WaitingOnLines } from "@/client/ui/issues/BlockerLine";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 import { HumanDecisionChip } from "@/client/ui/issues/HumanDecisionChip";
-import { EpicInProgressCount, EpicProgressBar } from "@/client/ui/issues/EpicProgress";
+import { EpicProgressBar } from "@/client/ui/issues/EpicProgress";
 import { PriorityChip } from "@/client/ui/issues/IssueChip";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
@@ -150,12 +150,6 @@ export function FocusScreen() {
                             <span className="min-w-0 grow truncate font-medium">
                               {epic.title || messages.common.untitled}
                             </span>
-                            {inProgressChildren > 0 && (
-                              <EpicInProgressCount
-                                count={inProgressChildren}
-                                className="self-center"
-                              />
-                            )}
                             <span className="font-mono text-xs text-emphasis-60 tabular-nums">
                               {closedChildren}/{totalChildren}
                             </span>

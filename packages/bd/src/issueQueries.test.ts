@@ -180,8 +180,6 @@ describe("epicStatuses", () => {
           { id: "e-4", issue_type: "epic", status: "open" },
         ]),
       },
-      [BLOCKED_ARGS]: { stdout: "[]" },
-      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await epicStatuses(fakeBd.workDir);
@@ -197,22 +195,19 @@ describe("epicStatuses", () => {
     ]);
   });
 
-  test("작업 상태가 진행 중인 직접 하위 이슈만 진행 중으로 세고, 의존 관계에 막힌 진행 중 이슈와 진행 중인 하위 에픽은 세지 않는다", async () => {
+  test("저장 상태가 진행 중인 직접 하위 이슈를 세고, 의존 관계에 막힌 이슈와 하위 에픽도 진행 중으로 센다", async () => {
     await useFakeBd({
       [LIST_ALL_ARGS]: {
         stdout: JSON.stringify([
           { id: "e-1", issue_type: "epic", status: "open" },
           { id: "e-1.1", status: "closed", parent: "e-1" },
           { id: "e-1.2", status: "in_progress", parent: "e-1" },
-          { id: "e-1.3", status: "in_progress", parent: "e-1" },
+          { id: "e-1.3", status: "in_progress", parent: "e-1", blocked_by: ["e-1.2"] },
           { id: "e-1.4", issue_type: "epic", status: "in_progress", parent: "e-1" },
+          { id: "e-1.5", status: "open", parent: "e-1" },
           { id: "e-1.4.1", status: "in_progress", parent: "e-1.4" },
         ]),
       },
-      [BLOCKED_ARGS]: {
-        stdout: JSON.stringify([{ id: "e-1.3", status: "in_progress", blocked_by: ["e-1.2"] }]),
-      },
-      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await epicStatuses(fakeBd.workDir);
@@ -226,16 +221,22 @@ describe("epicStatuses", () => {
           inProgressChildren,
         ]),
     ).toEqual([
-      ["e-1", 4, 1, 1],
+      ["e-1", 5, 1, 3],
       ["e-1.4", 1, 0, 1],
     ]);
+  });
+
+  test("작업 상태를 정하는 bd blocked와 bd ready는 실행하지 않는다", async () => {
+    await useFakeBd({ [LIST_ALL_ARGS]: { stdout: "[]" } });
+
+    await epicStatuses(fakeBd.workDir);
+
+    expect(await fakeBd.callsLog()).toBe(`${fakeBd.workDir} --sandbox ${LIST_ALL_ARGS}\n`);
   });
 
   test("bd가 실패하면 오류를 돌려준다", async () => {
     await useFakeBd({
       [LIST_ALL_ARGS]: { stderr: "boom", code: 1 },
-      [BLOCKED_ARGS]: { stdout: "[]" },
-      [READY_ARGS]: { stdout: "[]" },
     });
 
     const result = await epicStatuses(fakeBd.workDir);

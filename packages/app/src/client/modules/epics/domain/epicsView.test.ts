@@ -178,13 +178,13 @@ test("하위 이슈 4개 중 1개가 닫히고 1개가 진행 중인 에픽은 �
   expect(epicPercent(1, 4)).toBe(25);
 });
 
-test("진행 중으로 저장됐지만 의존 관계에 막힌 하위 이슈와 진행 중인 하위 에픽은 진행 중으로 세지 않는다", () => {
+test("저장 상태가 진행 중이면 의존 관계에 막힌 하위 이슈와 하위 에픽도 진행 중으로 센다", () => {
   const progress = childProgress([
     issue("a.1", { parent: "a", status: "in_progress", blockedBy: ["a.2"] }),
     issue("a.2", { parent: "a", issueType: "epic", status: "in_progress" }),
   ]);
 
-  expect(progress.get("a")).toEqual({ closed: 0, inProgress: 0, total: 2 });
+  expect(progress.get("a")).toEqual({ closed: 0, inProgress: 2, total: 2 });
 });
 
 test("닫힌 하위 이슈 비율을 반올림하고, 하위 이슈가 없는 에픽은 0%로 본다", () => {

@@ -403,7 +403,6 @@ export const enMessages: Messages = {
     noMatches: "No epics match the search.",
     toggleChildren: (id, expanded) => `${expanded ? "Collapse" : "Expand"} child issues of ${id}`,
     progress: (id) => `Progress of ${id}`,
-    inProgressChildren: (count) => `${count} in progress`,
     childrenLoading: "Loading child issues",
     childrenLoadFailed: (error) => `Could not load child issues: ${error}`,
     childrenEmpty: "No child issues.",

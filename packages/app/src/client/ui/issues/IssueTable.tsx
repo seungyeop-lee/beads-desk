@@ -204,7 +204,7 @@ function IssueRow({
           <HumanDecisionChip issue={issue} className="ml-2" />
           <WaiterCount count={waiters} className="ml-2" />
           {epicProgress && issue.issueType === "epic" ? (
-            <span className="ml-2 inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 align-middle">
+            <span className="ml-2 inline-flex items-center gap-1.5 align-middle">
               <EpicProgress
                 epicId={issue.id}
                 {...(epicProgress.get(issue.id) ?? NO_CHILDREN)}

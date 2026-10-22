@@ -418,8 +418,6 @@ export const koMessages = {
     toggleChildren: (id: string, expanded: boolean) =>
       `${id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`,
     progress: (id: string) => `${id} 진행률`,
-    /** 작업 상태가 진행 중인 직접 하위 이슈 수입니다. */
-    inProgressChildren: (count: number) => `진행 중 ${count}`,
     childrenLoading: "하위 이슈를 불러오는 중",
     childrenLoadFailed: (error: string) => `하위 이슈를 불러오지 못했습니다: ${error}`,
     childrenEmpty: "하위 이슈가 없습니다.",

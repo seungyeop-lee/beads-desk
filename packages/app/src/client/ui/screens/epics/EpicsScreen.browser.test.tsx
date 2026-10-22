@@ -10,7 +10,10 @@ import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { EpicDescendants, EpicSummary } from "@/shared/contract/epics";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { graphHref } from "@/client/ui/address/graphAddress";
-import { expectEpicProgressSegments } from "@/client/ui/issues/EpicProgress.testkit";
+import {
+  expectEpicProgressSegments,
+  IN_PROGRESS_COUNT_TEXT,
+} from "@/client/ui/issues/EpicProgress.testkit";
 import { EpicsScreen } from "./EpicsScreen";
 
 const EPICS: EpicSummary[] = [
@@ -97,7 +100,7 @@ for (const width of [455, 500, 1440]) {
 // 1100px과 768px은 오른쪽 조작이 둘째 줄로 내려가는 폭이고, 768px은 열 폭을 고정하기 시작하는 md 경계입니다.
 for (const width of [2000, 1280, 1100, 768]) {
   for (const locale of ["ko", "en"] as const) {
-    test(`창 폭 ${width}px에서 진행 개수의 자릿수, 진행 중 수, 닫힘 여부가 달라도 에픽 카드의 상태 칩, 막대나 닫은 날짜, 진행 개수, 진행 중 수, 순서 보기 링크의 열 위치가 같다(${locale})`, async () => {
+    test(`창 폭 ${width}px에서 진행 개수의 자릿수, 진행 중 수, 닫힘 여부가 달라도 에픽 카드의 상태 칩, 막대나 닫은 날짜, 진행 개수, 순서 보기 링크의 열 위치가 같다(${locale})`, async () => {
       reads.epics = [
         {
           epic: epic("desk-a", "열린 에픽 3/8"),
@@ -158,19 +161,8 @@ for (const width of [2000, 1280, 1100, 768]) {
       const edges = new Map<string, Set<number>>();
       const record = (column: string, value: number) =>
         edges.set(column, (edges.get(column) ?? new Set()).add(Math.round(value)));
-      // 진행 중 수 글자가 열 폭보다 넓어 넘친 폭입니다. 진행 중인 하위 이슈가 있는 카드만 담습니다.
-      const inProgressOverflows: number[] = [];
-      for (const { epic, closedChildren, totalChildren, inProgressChildren } of reads.epics) {
+      for (const { epic, closedChildren, totalChildren } of reads.epics) {
         const card = screen.getByRole("article", { name: epic.title, exact: true });
-        if (inProgressChildren > 0) {
-          const inProgress = card
-            .getByText(MESSAGES[locale].epics.inProgressChildren(inProgressChildren), {
-              exact: true,
-            })
-            .element();
-          record("진행 중 수 왼쪽", inProgress.getBoundingClientRect().left);
-          inProgressOverflows.push(Math.max(0, inProgress.scrollWidth - inProgress.clientWidth));
-        }
         const chip = card.getByText(statusLabel(MESSAGES[locale], epic.status), { exact: true });
         record("상태 칩 왼쪽", box(chip).left);
         // 닫은 날짜가 없는 닫힌 에픽은 막대·닫은 날짜 열이 비어 있습니다.
@@ -202,7 +194,6 @@ for (const width of [2000, 1280, 1100, 768]) {
         Math.round(box(screen.getByText(text, { exact: true })).right),
       );
       expect(new Set(percents).size, `${locale} ${width}px 퍼센트 오른쪽`).toBe(1);
-      expect(inProgressOverflows, `${locale} ${width}px 진행 중 수 넘침`).toEqual([0, 0]);
     });
   }
 }
@@ -548,7 +539,7 @@ test("펼친 하위 목록의 에픽 행은 하위 수 대신 그 에픽의 직�
   await expect.element(taskRow.getByRole("progressbar")).not.toBeInTheDocument();
 });
 
-test("하위 이슈 4개 중 1개가 닫히고 1개가 진행 중인 에픽은 카드와 펼친 하위 목록의 에픽 행 모두 닫힌 구간 뒤에 진행 중 구간을 그리고 진행 중 1과 25%를 보이며, 진행 중 하위 이슈가 없는 에픽은 진행 중 수를 보이지 않는다", async () => {
+test("하위 이슈 4개 중 1개가 닫히고 1개가 진행 중인 에픽은 카드와 펼친 하위 목록의 에픽 행 모두 닫힌 구간 뒤에 진행 중 구간을 그리고 25%를 보이며, 진행 중 수는 글자로 보이지 않는다", async () => {
   const childEpic = issue("desk-a.1", {
     title: "하위 에픽 B",
     issueType: "epic",
@@ -591,16 +582,15 @@ test("하위 이슈 4개 중 1개가 닫히고 1개가 진행 중인 에픽은 �
   await expect.element(cardBar).toHaveAttribute("aria-valuenow", "1");
   await expect.element(cardBar).toHaveAttribute("aria-valuemax", "4");
   expectEpicProgressSegments(cardBar.element(), progress);
-  // 처음에 펼쳐진 카드라, 카드 머리글과 하위 목록의 B 행에 진행 중 1이 하나씩 있습니다.
-  expect(card.getByText(messages.epics.inProgressChildren(1)).elements()).toHaveLength(2);
   await expect.element(card.getByText("25%", { exact: true })).toBeVisible();
 
   const row = screen.getByRole("row", { name: /하위 에픽 B/ });
   const rowBar = row.getByRole("progressbar", { name: messages.epics.progress("desk-a.1") });
   await expect.element(rowBar).toHaveAttribute("aria-valuenow", "1");
   expectEpicProgressSegments(rowBar.element(), progress);
-  await expect.element(row.getByText(messages.epics.inProgressChildren(1))).toBeVisible();
   await expect.element(row.getByText("1/4 · 25%", { exact: true })).toBeVisible();
+  // 처음에 펼쳐진 카드라, 카드 머리글과 하위 목록의 B 행을 함께 확인합니다.
+  await expect.element(card.getByText(IN_PROGRESS_COUNT_TEXT)).not.toBeInTheDocument();
 
   const idleCard = screen.getByRole("article", { name: "멈춘 에픽", exact: true });
   expectEpicProgressSegments(
@@ -608,9 +598,6 @@ test("하위 이슈 4개 중 1개가 닫히고 1개가 진행 중인 에픽은 �
     { closed: 1, inProgress: 0, total: 4 },
   );
   await expect.element(idleCard.getByText("25%", { exact: true })).toBeVisible();
-  await expect
-    .element(idleCard.getByText(messages.epics.inProgressChildren(0)))
-    .not.toBeInTheDocument();
 });
 
 // 455px는 Chrome 110%에서 가장 좁힌 창입니다.

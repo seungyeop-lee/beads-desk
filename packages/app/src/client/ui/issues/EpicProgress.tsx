@@ -3,8 +3,8 @@ import { epicPercent, type ChildProgress } from "@/client/modules/epics/domain/e
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /**
- * 에픽의 직접 하위 이슈 진행률을 막대와 `닫힌 수/전체 수 · %`로 보이고, 진행 중인 하위 이슈가 있으면 그 수를 덧붙입니다.
- * 요소들을 감싸지 않고 나란히 돌려주므로, 배치는 부르는 쪽이 정합니다.
+ * 에픽의 직접 하위 이슈 진행률을 막대와 `닫힌 수/전체 수 · %`로 보입니다.
+ * 막대와 글자를 감싸지 않고 나란히 돌려주므로, 둘의 배치는 부르는 쪽이 정합니다.
  */
 export function EpicProgress({
   epicId,
@@ -28,7 +28,6 @@ export function EpicProgress({
       <span className="whitespace-nowrap font-mono text-xs text-emphasis-60 tabular-nums">
         {closed}/{total} · {epicPercent(closed, total)}%
       </span>
-      {inProgress > 0 && <EpicInProgressCount count={inProgress} />}
     </>
   );
 }
@@ -73,24 +72,5 @@ export function EpicProgressBar({
         <span className="tone-bar tone-pear" style={{ flexGrow: inProgress }} />
       </span>
     </div>
-  );
-}
-
-/** 진행 중인 하위 이슈 수를 막대의 진행 중 구간과 같은 색 점과 함께 보입니다. */
-export function EpicInProgressCount({
-  count,
-  className = "",
-}: {
-  count: number;
-  className?: string;
-}) {
-  const messages = useMessages();
-  return (
-    <span
-      className={`inline-flex items-center gap-1 whitespace-nowrap text-xs text-emphasis-60 tabular-nums ${className}`}
-    >
-      <span className="tone-dot tone-pear" aria-hidden="true" />
-      {messages.epics.inProgressChildren(count)}
-    </span>
   );
 }
