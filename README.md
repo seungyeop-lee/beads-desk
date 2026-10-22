@@ -20,8 +20,9 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 
 - Markdown and Mermaid diagrams render in descriptions and comments. Click a diagram to enlarge it.
 - [Local file links](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#local-file-links-in-issues) open in the app: images show in the issue, and `.webm` and `.mp4` recordings play.
+- Links to `.diff`, `.patch`, `.md`, `.log`, and `.txt` files expand below the paragraph, so you can read them without leaving the issue. Diffs show line numbers and highlight the changed words; Markdown files show their source with syntax highlighting.
 
-![Issue detail showing a Mermaid sequence diagram and, below it, a screenshot of a checkout page from a local file](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/attachments.png)
+![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and expanded previews of a Markdown note with syntax highlighting and of a diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/0ce5f2a40eb5083b756ed8106612155cfaac58a4/docs/screenshots/attachments.png)
 
 ### Keep decisions on record
 

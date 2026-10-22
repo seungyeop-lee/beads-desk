@@ -20,8 +20,9 @@
 
 - 설명과 댓글의 Markdown과 Mermaid 그림을 그려 보여 줍니다. 그림을 누르면 크게 볼 수 있습니다.
 - [로컬 파일 링크](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#이슈-본문의-로컬-파일-링크)는 앱 안에서 열립니다. 이미지는 이슈 안에 보이고, `.webm`과 `.mp4` 녹화는 재생됩니다.
+- `.diff`, `.patch`, `.md`, `.log`, `.txt` 파일 링크는 문단 아래에 펼쳐져서, 이슈를 떠나지 않고 내용을 읽을 수 있습니다. diff는 줄 번호와 함께 바뀐 단어를 강조해 보여 주고, Markdown 파일은 구문 강조를 입힌 원문으로 보여 줍니다.
 
-![Issue detail showing a Mermaid sequence diagram and, below it, a screenshot of a checkout page from a local file](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/attachments.png)
+![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and expanded previews of a Markdown note with syntax highlighting and of a diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/0ce5f2a40eb5083b756ed8106612155cfaac58a4/docs/screenshots/attachments.png)
 
 ### 결정 기록 남기기
 
