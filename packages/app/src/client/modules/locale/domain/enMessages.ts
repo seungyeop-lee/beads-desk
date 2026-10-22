@@ -173,6 +173,9 @@ export const enMessages: Messages = {
       `Preview skipped because the file is larger than ${megabytes} MB.`,
     openFile: "Open file",
     openInNewTab: (name) => `Open ${name} in new tab`,
+    diffBadges: { new: "new file", deleted: "deleted", renamed: "renamed", binary: "binary" },
+    diffLineCounts: (added, deleted) =>
+      `${added} ${added === 1 ? "line" : "lines"} added, ${deleted} ${deleted === 1 ? "line" : "lines"} deleted`,
 
     toolbar: (label) => `${label} formatting`,
     blockType: "Text style",

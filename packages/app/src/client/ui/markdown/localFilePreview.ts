@@ -354,6 +354,13 @@ async function fileView(file: LocalTextFile, link: PreviewLink, labels: Labels):
     view.append(open);
     return view;
   }
+  // 파일 diff로 나눌 수 없는 diff는 아래에서 줄의 부호에 따라 글자색만 입힌 원문으로 보입니다.
+  if (link.format === "diff") {
+    const diff = await import("./diffPreviewView")
+      .then(({ diffPreviewView }) => diffPreviewView(file.text, labels))
+      .catch(() => null);
+    if (diff) return diff;
+  }
   const text = document.createElement("pre");
   // 키보드로도 넘친 내용을 스크롤할 수 있게 합니다.
   text.tabIndex = 0;

@@ -1,7 +1,7 @@
 import { localFilePathOf } from "@/shared/contract/localFiles";
 
 /**
- * diff는 추가·삭제 줄을 칠해 보이고, markdown은 렌더링하지 않은 원문에 구문 강조를 입혀 보이고, plain은 원문 그대로 보입니다.
+ * diff는 파일별 diff 보기(파일 머리, 줄 번호, 줄 배경, 줄 안 단어 강조)로 그리고, markdown은 렌더링하지 않은 원문에 구문 강조를 입혀 보이고, plain은 원문 그대로 보입니다.
  */
 export type FilePreviewFormat = "diff" | "markdown" | "plain";
 

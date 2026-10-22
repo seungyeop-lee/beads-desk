@@ -290,15 +290,136 @@
   border-radius: var(--radius-field);
   background: var(--color-base-200);
 }
-.markdown-editor .milkdown .file-preview pre {
+.markdown-editor .milkdown .file-preview > :is(pre, .file-preview-diff) {
   max-height: 20rem;
   overflow: auto;
-  margin: 0;
-  padding: 8px 12px;
   font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.5;
+}
+.markdown-editor .milkdown .file-preview pre {
+  margin: 0;
+  padding: 8px 12px;
   white-space: pre;
+}
+/*
+ * 펼친 diff 보기입니다(diffPreviewView.ts). 내용 전체가 한 영역에서 가로세로로 스크롤하고, 파일 머리 막대는 보이는 폭에 맞춰
+ * 위쪽과 왼쪽에 붙어 있습니다. 줄 배경과 강조 색은 코드 블록 강조 색(--code-*)을 섞어 만들어 테마를 따릅니다.
+ */
+.markdown-editor .milkdown .file-preview-diff {
+  container-type: inline-size;
+  --diff-added: var(--code-literal);
+  --diff-deleted: var(--code-string);
+}
+.markdown-editor .milkdown .file-preview-diff-content {
+  width: max-content;
+  min-width: 100%;
+}
+.markdown-editor .milkdown .file-preview-diff-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  width: 100cqi;
+  padding: 4px 12px;
+  border-block: 1px solid var(--color-base-300);
+  background: color-mix(in oklab, var(--color-base-content) 5%, var(--color-base-200));
+  font-family: var(--font-sans);
+}
+.markdown-editor .milkdown .file-preview-diff-content > :first-child .file-preview-diff-header {
+  border-top: none;
+}
+.markdown-editor .milkdown .file-preview-diff-path {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.markdown-editor .milkdown .file-preview-diff-path-from {
+  font-weight: 400;
+  color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+}
+.markdown-editor .milkdown .file-preview-diff-badge {
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--code-meta);
+}
+.markdown-editor .milkdown .file-preview-diff-badge.new {
+  color: var(--diff-added);
+}
+.markdown-editor .milkdown .file-preview-diff-badge.deleted {
+  color: var(--diff-deleted);
+}
+.markdown-editor .milkdown .file-preview-diff-counts {
+  margin-inline-start: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.markdown-editor .milkdown .file-preview-diff-counts .added {
+  color: var(--diff-added);
+}
+.markdown-editor .milkdown .file-preview-diff-counts .deleted {
+  color: var(--diff-deleted);
+}
+/* 본문 표에 쓰는 ProseMirror 표 규칙(@milkdown/prose의 tables.css)이 이 표에도 걸리므로, 칸 너비를 내용에 맞추도록 되돌립니다. */
+.markdown-editor .milkdown .file-preview-diff table {
+  width: 100%;
+  table-layout: auto;
+  overflow: visible;
+}
+.markdown-editor .milkdown .file-preview-diff td {
+  min-width: 0;
+  padding: 0 8px;
+  white-space: pre;
+  vertical-align: top;
+}
+.markdown-editor .milkdown .file-preview-diff td.number {
+  min-width: calc(var(--diff-number-digits) * 1ch + 16px);
+  text-align: right;
+  color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+  user-select: none;
+}
+.markdown-editor .milkdown .file-preview-diff td.sign {
+  padding: 0 2px;
+  user-select: none;
+}
+.markdown-editor .milkdown .file-preview-diff td.text {
+  width: 100%;
+  padding-inline-end: 12px;
+}
+.markdown-editor .milkdown .file-preview-diff tr.hunk td {
+  padding-block: 2px;
+  background: color-mix(in oklab, var(--code-meta) 10%, transparent);
+  color: var(--code-meta);
+}
+.markdown-editor .milkdown .file-preview-diff tr.note td {
+  color: var(--code-meta);
+}
+.markdown-editor .milkdown .file-preview-diff tr.added {
+  --diff-line: var(--diff-added);
+}
+.markdown-editor .milkdown .file-preview-diff tr.deleted {
+  --diff-line: var(--diff-deleted);
+}
+.markdown-editor .milkdown .file-preview-diff tr:is(.added, .deleted) td {
+  background: color-mix(in oklab, var(--diff-line) 13%, transparent);
+}
+.markdown-editor .milkdown .file-preview-diff tr:is(.added, .deleted) td:is(.number, .sign) {
+  background: color-mix(in oklab, var(--diff-line) 22%, transparent);
+  color: var(--diff-line);
+}
+.markdown-editor .milkdown .file-preview-diff mark {
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--diff-line) 35%, transparent);
+  color: inherit;
 }
 .markdown-editor .milkdown .file-preview-message {
   margin: 0;

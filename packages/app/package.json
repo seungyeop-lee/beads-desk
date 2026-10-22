@@ -84,6 +84,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@xyflow/react": "^12.12.0",
     "daisyui": "^5.7.47",
+    "diff": "^9.0.0",
     "mdast-util-to-markdown": "^2.2.0",
     "pele": "1.7.0",
     "react-is": "^19.3.0",

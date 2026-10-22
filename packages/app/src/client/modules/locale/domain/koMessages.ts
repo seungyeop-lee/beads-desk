@@ -189,6 +189,8 @@ export const koMessages = {
       `파일이 ${megabytes} MB보다 커서 미리보기를 생략했습니다.`,
     openFile: "파일 열기",
     openInNewTab: (name: string) => `${name} 새 탭에서 열기`,
+    diffBadges: { new: "새 파일", deleted: "삭제", renamed: "이름 변경", binary: "바이너리" },
+    diffLineCounts: (added: number, deleted: number) => `추가 ${added}줄, 삭제 ${deleted}줄`,
 
     toolbar: (label: string) => `${label} 서식 도구`,
     blockType: "문단 형식",

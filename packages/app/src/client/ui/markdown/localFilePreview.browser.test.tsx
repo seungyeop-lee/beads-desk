@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { type Locator, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { koMessages } from "@/client/modules/locale/domain/koMessages";
@@ -12,6 +12,44 @@ const labels = koMessages.markdownEditor;
 const DIFF = ["@@ -1,2 +1,2 @@", "-const before = 1;", "+const after = 2;", " unchanged"].join(
   "\n",
 );
+/** 새 파일, 이름 변경, 수정이 든 git diff입니다. */
+const MULTI_FILE_DIFF = [
+  "diff --git a/src/new.ts b/src/new.ts",
+  "new file mode 100644",
+  "index 0000000..7f21bdc",
+  "--- /dev/null",
+  "+++ b/src/new.ts",
+  "@@ -0,0 +1,2 @@",
+  "+export const a = 1;",
+  "+export const b = 2;",
+  "diff --git a/src/old.css b/src/renamed.css",
+  "similarity index 79%",
+  "rename from src/old.css",
+  "rename to src/renamed.css",
+  "index db66599..3310d07 100644",
+  "--- a/src/old.css",
+  "+++ b/src/renamed.css",
+  "@@ -1,3 +1,3 @@",
+  " .file-preview pre {",
+  "-  max-height: 20rem;",
+  "+  max-height: 24rem;",
+  "   overflow: auto;",
+  "diff --git a/src/filePreview.ts b/src/filePreview.ts",
+  "index a1b26a2..a267709 100644",
+  "--- a/src/filePreview.ts",
+  "+++ b/src/filePreview.ts",
+  "@@ -8,5 +8,6 @@ export function filePreviewFormat(address: string) {",
+  "   const path = localFilePathOf(address);",
+  "-  return extension ? (FORMATS.get(extension) ?? null) : null;",
+  "+  if (!extension) return null;",
+  "+  return FORMATS.get(extension) ?? null;",
+  " }",
+  '-const label = "미리보기";',
+  "-// 끝",
+  '+const label = "파일 미리보기";',
+  "+export default label;",
+  "",
+].join("\n");
 const LOG = "+ 이 줄은 로그라서 칠하지 않습니다\n두 번째 줄";
 const MARKDOWN = [
   "# 조사 결과",
@@ -101,7 +139,7 @@ test("문장 중간의 링크를 펼치면 그 링크가 든 문단 바로 아�
     name: labels.filePreviewContents("변경 diff"),
   });
   const logContents = screen.getByRole("region", { name: labels.filePreviewContents("실행 로그") });
-  await expect.element(diffContents.getByText("+const after = 2;")).toBeVisible();
+  await expect.element(diffContents.getByText("const after = 2;")).toBeVisible();
   await expect.element(logContents.getByText("두 번째 줄", { exact: false })).toBeVisible();
   await expect.element(diffChip).toHaveAttribute("aria-expanded", "true");
   const sentence = screen
@@ -134,7 +172,7 @@ test("칩에 focus를 두고 Enter나 Space를 누르면 펼치고 접는다", a
 
   chip.element().focus();
   await userEvent.keyboard("{Enter}");
-  await expect.element(contents.getByText("+const after = 2;")).toBeVisible();
+  await expect.element(contents.getByText("const after = 2;")).toBeVisible();
   await expect.element(chip).toHaveAttribute("aria-expanded", "true");
   expect(chip.element().getAttribute("aria-controls")).toBe(contents.element().id);
 
@@ -239,7 +277,7 @@ test("목록 항목의 링크를 펼치면 그 항목 안, 항목 글 아래에 
   await userEvent.click(screen.getByRole("button", { name: labels.filePreview("패치") }));
 
   const contents = screen.getByRole("region", { name: labels.filePreviewContents("패치") });
-  await expect.element(contents.getByText("-const before = 1;")).toBeVisible();
+  await expect.element(contents.getByText("const before = 1;")).toBeVisible();
   const [first, second] = screen.getByRole("listitem").elements();
   expect(first!.contains(contents.element())).toBe(true);
   const box = contents.element().getBoundingClientRect();
@@ -247,7 +285,7 @@ test("목록 항목의 링크를 펼치면 그 항목 안, 항목 글 아래에 
   expect(second!.getBoundingClientRect().top).toBeGreaterThanOrEqual(box.bottom);
 });
 
-test("diff는 추가·삭제 줄을 코드 블록 강조 색으로 칠하고, log는 칠하지 않고 원문 그대로 보인다", async () => {
+test("diff는 추가·삭제 줄의 바탕을 서로 다른 색으로 칠하고, log는 칠하지 않고 원문 그대로 보인다", async () => {
   files = {
     "/tmp/r/a.diff": () => new Response(DIFF),
     "/tmp/r/run.log": () => new Response(LOG),
@@ -258,17 +296,181 @@ test("diff는 추가·삭제 줄을 코드 블록 강조 색으로 칠하고, lo
   await userEvent.click(screen.getByRole("button", { name: labels.filePreview("log") }));
 
   const diff = screen.getByRole("region", { name: labels.filePreviewContents("diff") });
-  await expect.element(diff.getByText("+const after = 2;")).toBeVisible();
-  const colorOf = (text: string) => getComputedStyle(diff.getByText(text).element()).color;
-  const plain = getComputedStyle(diff.element()).color;
-  expect(colorOf("+const after = 2;")).not.toBe(plain);
-  expect(colorOf("-const before = 1;")).not.toBe(plain);
-  expect(colorOf("+const after = 2;")).not.toBe(colorOf("-const before = 1;"));
+  await expect.element(diff.getByText("const after = 2;")).toBeVisible();
+  const background = (text: string) =>
+    getComputedStyle(diff.getByText(text).element()).backgroundColor;
+  const context = background("unchanged");
+  expect(background("const after = 2;")).not.toBe(context);
+  expect(background("const before = 1;")).not.toBe(context);
+  expect(background("const after = 2;")).not.toBe(background("const before = 1;"));
 
   const log = screen.getByRole("region", { name: labels.filePreviewContents("log") });
   await expect.element(log.getByText("두 번째 줄", { exact: false })).toBeVisible();
   expect(log.element().querySelector("pre")?.textContent).toBe(LOG);
   expect(log.element().querySelectorAll("pre span")).toHaveLength(0);
+});
+
+test("여러 파일이 든 diff는 파일마다 경로, 배지, 추가·삭제 수를 머리 막대에 보인다", async () => {
+  files = { "/tmp/r/multi.diff": () => new Response(MULTI_FILE_DIFF) };
+  const screen = await renderReadOnly("[변경](/tmp/r/multi.diff)");
+
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("변경") }));
+
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("변경") });
+  for (const { path, badge, added, deleted } of [
+    { path: "src/new.ts", badge: labels.diffBadges.new, added: 2, deleted: 0 },
+    {
+      path: "src/old.css → src/renamed.css",
+      badge: labels.diffBadges.renamed,
+      added: 1,
+      deleted: 1,
+    },
+    { path: "src/filePreview.ts", badge: undefined, added: 4, deleted: 3 },
+  ]) {
+    const file = contents.getByRole("group", { name: path });
+    await expect.element(file.getByText(path, { exact: true })).toBeVisible();
+    await expect.element(file.getByText(`+${added} −${deleted}`)).toBeVisible();
+    await expect.element(file.getByText(labels.diffLineCounts(added, deleted))).toBeInTheDocument();
+    const badges = Object.values(labels.diffBadges).filter(
+      (label) => file.getByText(label, { exact: true }).elements().length > 0,
+    );
+    expect(badges).toEqual(badge ? [badge] : []);
+  }
+});
+
+test("diff 줄마다 hunk 시작 번호부터 센 옛·새 줄 번호와 부호를 보인다", async () => {
+  files = { "/tmp/r/multi.diff": () => new Response(MULTI_FILE_DIFF) };
+  const screen = await renderReadOnly("[변경](/tmp/r/multi.diff)");
+
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("변경") }));
+
+  const file = screen.getByRole("group", { name: "src/filePreview.ts" });
+  await expect.element(file).toBeVisible();
+  expect(
+    file
+      .getByRole("row")
+      .elements()
+      .map((row) => [...row.querySelectorAll("td")].map((cell) => cell.textContent)),
+  ).toEqual([
+    ["", "", "", "@@ -8,5 +8,6 @@ export function filePreviewFormat(address: string) {"],
+    ["8", "8", " ", "  const path = localFilePathOf(address);"],
+    ["9", "", "-", "  return extension ? (FORMATS.get(extension) ?? null) : null;"],
+    ["", "9", "+", "  if (!extension) return null;"],
+    ["", "10", "+", "  return FORMATS.get(extension) ?? null;"],
+    ["10", "11", " ", "}"],
+    ["11", "", "-", 'const label = "미리보기";'],
+    ["12", "", "-", "// 끝"],
+    ["", "12", "+", 'const label = "파일 미리보기";'],
+    ["", "13", "+", "export default label;"],
+  ]);
+});
+
+test("짝이 되는 삭제·추가 줄은 바뀐 단어만 강조하고, 관계없는 줄에는 단어 강조가 없다", async () => {
+  files = { "/tmp/r/multi.diff": () => new Response(MULTI_FILE_DIFF) };
+  const screen = await renderReadOnly("[변경](/tmp/r/multi.diff)");
+
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("변경") }));
+
+  const renamed = screen.getByRole("group", { name: "src/old.css → src/renamed.css" });
+  await expect.element(renamed).toBeVisible();
+  expect(marks(renamed, "max-height: 20rem;")).toEqual(["20rem"]);
+  expect(marks(renamed, "max-height: 24rem;")).toEqual(["24rem"]);
+
+  // 지운 return 줄은 바로 아래의 관계없는 if 줄을 건너뛰고, 그다음의 비슷한 return 줄과 짝을 짓습니다.
+  const file = screen.getByRole("group", { name: "src/filePreview.ts" });
+  expect(marks(file, "return extension ? (FORMATS.get(extension) ?? null) : null;")).toEqual([
+    "extension ? (",
+    ") : null",
+  ]);
+  expect(marks(file, "if (!extension) return null;")).toEqual([]);
+  expect(marks(file, 'const label = "파일 미리보기";')).toEqual(["파일 "]);
+  expect(marks(file, "// 끝")).toEqual([]);
+  expect(marks(file, "export default label;")).toEqual([]);
+  const mark = file.getByRole("mark").first().element();
+  expect(getComputedStyle(mark).backgroundColor).not.toBe(
+    getComputedStyle(mark.closest("td")!).backgroundColor,
+  );
+});
+
+test("diff 줄에 든 HTML과 스크립트는 요소로 만들지 않고 글자로 보인다", async () => {
+  const added = '<b>굵게</b><img src="x" onerror="window.__diffScript = true">';
+  files = {
+    "/tmp/r/page.diff": () => new Response(`@@ -1 +1 @@\n-<b>굵게</b>\n+${added}\n`),
+  };
+  const screen = await renderReadOnly("[페이지](/tmp/r/page.diff)");
+
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("페이지") }));
+
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("페이지") });
+  await expect.element(contents.getByText(added)).toBeVisible();
+  expect(contents.element().querySelector("b, img")).toBeNull();
+  expect((window as { __diffScript?: boolean }).__diffScript).toBeUndefined();
+});
+
+test("파일 diff가 없는 .diff 파일은 원문을 그대로 보이고, 줄의 부호에 따라 글자색만 입힌다", async () => {
+  const text = "+ 더할 일\n- 뺄 일\n메모";
+  files = { "/tmp/r/notes.diff": () => new Response(text) };
+  const screen = await renderReadOnly("[메모](/tmp/r/notes.diff)");
+
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("메모") }));
+
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("메모") });
+  await expect.element(contents.getByText("+ 더할 일")).toBeVisible();
+  const pre = contents.element().querySelector("pre")!;
+  expect(pre.textContent).toBe(text);
+  expect(contents.getByRole("table").elements()).toHaveLength(0);
+  const colorOf = (line: string) => getComputedStyle(contents.getByText(line).element()).color;
+  expect(colorOf("+ 더할 일")).not.toBe(getComputedStyle(pre).color);
+  expect(colorOf("+ 더할 일")).not.toBe(colorOf("- 뺄 일"));
+});
+
+test("긴 hunk 머리 줄과 긴 줄은 잘리지 않고 펼친 영역 안에서 가로로 스크롤해 끝까지 볼 수 있다", async () => {
+  const header = `@@ -1 +1 @@ export function ${"veryLongFunctionName".repeat(6)}(argument: string) {`;
+  const line = `const message = "${"긴 문장이 이어집니다 ".repeat(12)}";`;
+  files = {
+    "/tmp/r/wide.diff": () =>
+      new Response(
+        ["--- a/wide.ts", "+++ b/wide.ts", header, "-const message = 1;", `+${line}`, ""].join(
+          "\n",
+        ),
+      ),
+  };
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <div style={{ width: 360 }}>
+        <MarkdownEditor
+          openAddress={tabMarkdownUrl}
+          readOnly
+          value="[넓은 diff](/tmp/r/wide.diff)"
+        />
+      </div>
+    </LocaleProvider>,
+  );
+
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("넓은 diff") }));
+
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("넓은 diff") });
+  const headerCell = contents.getByText(header);
+  await expect.element(headerCell).toBeVisible();
+  const lineCell = contents.getByText(line).element();
+  const scroller = contents.element().firstElementChild as HTMLElement;
+  expect(scroller.tabIndex).toBe(0);
+  expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth);
+  // 칸 안에서 잘리지 않고, 스크롤 영역이 가장 긴 줄의 끝까지 닿습니다.
+  for (const cell of [headerCell.element(), lineCell]) {
+    expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth);
+  }
+  scroller.scrollLeft = scroller.scrollWidth;
+  const view = scroller.getBoundingClientRect();
+  for (const cell of [headerCell.element(), lineCell]) {
+    const range = document.createRange();
+    range.selectNodeContents(cell);
+    expect(range.getBoundingClientRect().right).toBeLessThanOrEqual(view.right);
+  }
+  // 파일 머리 막대는 가로로 스크롤해도 보이는 폭 안에 남습니다.
+  const path = contents.getByText("wide.ts", { exact: true }).element().getBoundingClientRect();
+  expect(path.left).toBeGreaterThanOrEqual(view.left);
+  expect(path.right).toBeLessThanOrEqual(view.right);
 });
 
 test("md는 렌더링하지 않은 원문을 펼쳐 markdown 구문과 코드 블록의 언어 토큰을 강조한다", async () => {
@@ -344,22 +546,23 @@ test("펼친 md 미리보기와 본문 코드 블록은 같은 토큰을 라이�
 
 test("최대 높이보다 긴 내용은 펼친 영역 안에서 스크롤하고, 다음 블록은 그 영역 아래에 놓인다", async () => {
   const lines = Array.from({ length: 400 }, (_, index) => `+line ${index}`).join("\n");
-  files = { "/tmp/r/long.diff": () => new Response(lines) };
+  files = { "/tmp/r/long.diff": () => new Response(`@@ -0,0 +1,400 @@\n${lines}\n`) };
   const screen = await renderReadOnly("[긴 diff](/tmp/r/long.diff)\n\n다음 문단");
 
   await userEvent.click(screen.getByRole("button", { name: labels.filePreview("긴 diff") }));
 
   const contents = screen.getByRole("region", { name: labels.filePreviewContents("긴 diff") });
-  await expect.element(contents.getByText("+line 399")).toBeVisible();
-  const scroller = contents.element().querySelector("pre")!;
+  const last = contents.getByText("line 399", { exact: true });
+  await expect.element(last).toBeVisible();
+  const scroller = contents.element().firstElementChild!;
   expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
   expect(scroller.getBoundingClientRect().height).toBeLessThan(window.innerHeight);
   expect(
     screen.getByText("다음 문단").element().getBoundingClientRect().top,
   ).toBeGreaterThanOrEqual(contents.element().getBoundingClientRect().bottom);
-  // 마지막 줄까지 강조합니다.
-  expect(getComputedStyle(contents.getByText("+line 399").element()).color).toBe(
-    getComputedStyle(contents.getByText("+line 0").element()).color,
+  // 마지막 줄까지 칠합니다.
+  expect(getComputedStyle(last.element()).backgroundColor).toBe(
+    getComputedStyle(contents.getByText("line 0", { exact: true }).element()).backgroundColor,
   );
 });
 
@@ -442,6 +645,16 @@ test("편집 중에는 칩과 새 탭 아이콘 링크를 두지 않고 원문�
   ).toHaveLength(0);
   expect(changed).not.toHaveBeenCalled();
 });
+
+/** 내용에 text가 든 diff 줄에서 단어 강조한 글자들입니다. */
+function marks(file: Locator, text: string) {
+  return file
+    .getByRole("row")
+    .filter({ hasText: text })
+    .getByRole("mark")
+    .elements()
+    .map((mark) => mark.textContent);
+}
 
 /** 글자가 text인 첫 강조 토큰의 계산된 색과 모양입니다. 그런 토큰이 없으면 undefined입니다. */
 function tokenStyle(tokens: Iterable<Element>, text: string) {

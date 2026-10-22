@@ -68,7 +68,9 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     // 펼친 내용은 서버의 파일 API 응답으로 채웁니다. 배치와 강조, 오류 문구는 localFilePreview.browser.test.tsx가 확인합니다.
     await description.getByRole("button", { name: "리뷰 변경 미리보기" }).click();
     await expect(
-      description.getByRole("region", { name: "리뷰 변경 내용" }).getByText("+바뀐 줄"),
+      description
+        .getByRole("region", { name: "리뷰 변경 내용" })
+        .getByText("바뀐 줄", { exact: true }),
     ).toBeVisible();
     await description.getByRole("button", { name: "큰 실행 로그 미리보기" }).click();
     const largeContents = description.getByRole("region", { name: "큰 실행 로그 내용" });
