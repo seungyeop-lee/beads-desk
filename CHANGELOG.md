@@ -4,6 +4,12 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-10-23
+
+### Fixed
+
+- Expanded `.diff` and `.patch` previews no longer leave an empty strip at the right edge when the diff is short enough not to scroll vertically, and short diffs no longer scroll horizontally. Added and removed lines use dedicated green and red shades, so they stand out clearly from unchanged lines in both themes.
+
 ## [0.8.1] - 2026-10-23
 
 ### Fixed
