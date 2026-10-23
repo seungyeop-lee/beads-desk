@@ -4,6 +4,14 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-10-23
+
+### Fixed
+
+- **Needs human** screen: in the wide two-column layout, the request list is capped at 360 px so the detail panel has more room. Long issue IDs wrap within the list.
+- Expanded `.diff` and `.patch` previews keep file badges and added/removed line counts within the visible width, even with long paths or while scrolling horizontally. File boundaries, line numbers, and change highlights are easier to distinguish in both themes.
+- Development builds no longer show Vue feature-flag warnings in the browser console.
+
 ## [0.8.0] - 2026-10-23
 
 ### Added
