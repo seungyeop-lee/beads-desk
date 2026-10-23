@@ -304,20 +304,33 @@
 }
 /*
  * 펼친 diff 보기입니다(diffPreviewView.ts). 내용 전체가 한 영역에서 가로세로로 스크롤하고, 파일 머리 막대는 보이는 폭에 맞춰
- * 위쪽과 왼쪽에 붙어 있습니다. 줄 배경과 강조 색은 코드 블록 강조 색(--code-*)을 섞어 만들어 테마를 따릅니다.
+ * 위쪽과 왼쪽에 붙어 있습니다.
+ * 추가·삭제 색은 구문 강조 색(--code-*)과 따로 둡니다. line은 줄 바탕, strong은 번호·부호 칸과 바뀐 단어의 바탕,
+ * text는 부호, 줄 번호, 머리 막대의 추가·삭제 수와 배지의 글자색입니다. text는 strong 바탕과 머리 막대 바탕(base-300) 위에서
+ * 4.5:1 이상 대비됩니다.
  */
 .markdown-editor .milkdown .file-preview > .file-preview-diff {
-  container-type: inline-size;
-  /* 세로 스크롤바 자리를 미리 빼야 머리 막대의 100cqi가 실제로 보이는 폭과 같아집니다. */
-  scrollbar-gutter: stable;
-  --diff-added: var(--code-literal);
-  --diff-deleted: var(--code-string);
+  --diff-added-line: light-dark(#dafbe1, rgb(46 160 67 / 25%));
+  --diff-added-strong: light-dark(#aceebb, rgb(46 160 67 / 40%));
+  --diff-added-text: light-dark(#116329, #56d364);
+  --diff-deleted-line: light-dark(#ffebe9, rgb(248 81 73 / 25%));
+  --diff-deleted-strong: light-dark(#ffcecb, rgb(248 81 73 / 40%));
+  --diff-deleted-text: light-dark(#a40e26, #ffa198);
   font-size: 14px;
   line-height: 1.6;
 }
+/*
+ * 이 요소는 스크롤 영역 안에서 보이는 폭(세로 스크롤바를 뺀 폭)을 그대로 가지므로, 머리 막대의 100cqi가 그 폭이 됩니다.
+ * 스크롤 영역 자체를 container로 두면 세로 스크롤바가 생겨도 100cqi가 스크롤바 폭만큼 줄지 않습니다.
+ * 파일들은 가장 긴 줄의 폭과 보이는 폭 중 큰 쪽에 맞춰 같은 폭으로 늘어나, 줄 배경이 오른쪽 끝까지 이어집니다.
+ */
 .markdown-editor .milkdown .file-preview-diff-content {
-  width: max-content;
-  min-width: 100%;
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: max-content;
+}
+.markdown-editor .milkdown .file-preview-diff-content > * {
+  min-width: 100cqi;
 }
 .markdown-editor .milkdown .file-preview-diff-header {
   position: sticky;
@@ -362,10 +375,10 @@
   color: var(--code-meta);
 }
 .markdown-editor .milkdown .file-preview-diff-badge.new {
-  color: var(--diff-added);
+  color: var(--diff-added-text);
 }
 .markdown-editor .milkdown .file-preview-diff-badge.deleted {
-  color: var(--diff-deleted);
+  color: var(--diff-deleted-text);
 }
 .markdown-editor .milkdown .file-preview-diff-counts {
   flex-shrink: 0;
@@ -382,10 +395,10 @@
   }
 }
 .markdown-editor .milkdown .file-preview-diff-counts .added {
-  color: var(--diff-added);
+  color: var(--diff-added-text);
 }
 .markdown-editor .milkdown .file-preview-diff-counts .deleted {
-  color: var(--diff-deleted);
+  color: var(--diff-deleted-text);
 }
 /* 본문 표에 쓰는 ProseMirror 표 규칙(@milkdown/prose의 tables.css)이 이 표에도 걸리므로, 칸 너비를 내용에 맞추도록 되돌립니다. */
 .markdown-editor .milkdown .file-preview-diff table {
@@ -399,6 +412,13 @@
   white-space: pre;
   vertical-align: top;
 }
+/*
+ * 번호·부호 칸은 내용 폭으로 줄이고, 남는 폭은 줄 내용 칸이 모두 가집니다. 줄 내용 칸에 width: 100%를 주면
+ * Chromium이 파일들의 max-content 폭을 1,000,000px로 계산해, 짧은 diff에도 끝없는 가로 스크롤이 생깁니다.
+ */
+.markdown-editor .milkdown .file-preview-diff td:is(.number, .sign) {
+  width: 1px;
+}
 .markdown-editor .milkdown .file-preview-diff td.number {
   min-width: calc(var(--diff-number-digits) * 1ch + 16px);
   text-align: right;
@@ -411,7 +431,6 @@
   user-select: none;
 }
 .markdown-editor .milkdown .file-preview-diff td.text {
-  width: 100%;
   padding-inline-end: 12px;
 }
 .markdown-editor .milkdown .file-preview-diff tr.hunk td {
@@ -426,21 +445,25 @@
   color: var(--code-meta);
 }
 .markdown-editor .milkdown .file-preview-diff tr.added {
-  --diff-line: var(--diff-added);
+  --diff-line: var(--diff-added-line);
+  --diff-strong: var(--diff-added-strong);
+  --diff-text: var(--diff-added-text);
 }
 .markdown-editor .milkdown .file-preview-diff tr.deleted {
-  --diff-line: var(--diff-deleted);
+  --diff-line: var(--diff-deleted-line);
+  --diff-strong: var(--diff-deleted-strong);
+  --diff-text: var(--diff-deleted-text);
 }
 .markdown-editor .milkdown .file-preview-diff tr:is(.added, .deleted) td {
-  background: color-mix(in oklab, var(--diff-line) 17%, transparent);
+  background: var(--diff-line);
 }
 .markdown-editor .milkdown .file-preview-diff tr:is(.added, .deleted) td:is(.number, .sign) {
-  background: color-mix(in oklab, var(--diff-line) 25%, transparent);
-  color: color-mix(in oklab, var(--diff-line) 65%, var(--color-base-content));
+  background: var(--diff-strong);
+  color: var(--diff-text);
 }
 .markdown-editor .milkdown .file-preview-diff mark {
   border-radius: 2px;
-  background: color-mix(in oklab, var(--diff-line) 45%, transparent);
+  background: var(--diff-strong);
   color: inherit;
   font-weight: 600;
 }

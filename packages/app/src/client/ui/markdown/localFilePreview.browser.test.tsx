@@ -462,6 +462,34 @@ test.each([360, 800])(
   },
 );
 
+test("세로 스크롤이 없는 diff는 머리 막대와 줄 배경이 스크롤 영역의 오른쪽 끝까지 닿는다", async () => {
+  files = {
+    "/tmp/r/short.diff": () =>
+      new Response(["--- a/short.ts", "+++ b/short.ts", DIFF, ""].join("\n")),
+  };
+  const screen = await renderReadOnly("[짧은 diff](/tmp/r/short.diff)");
+
+  await userEvent.click(screen.getByRole("button", { name: labels.filePreview("짧은 diff") }));
+
+  const contents = screen.getByRole("region", { name: labels.filePreviewContents("짧은 diff") });
+  const added = contents.getByText("const after = 2;", { exact: true });
+  await expect.element(added).toBeVisible();
+  const scroller = contents.element().firstElementChild as HTMLElement;
+  expect(scroller.scrollHeight).toBeLessThanOrEqual(scroller.clientHeight);
+  const view = scroller.getBoundingClientRect();
+  const header = contents
+    .getByRole("group", { name: "short.ts" })
+    .getByText("short.ts", { exact: true })
+    .element().parentElement!;
+  const row = added.element().closest("tr")!;
+  const visibleRight = view.left + scroller.clientWidth;
+  // 세로 스크롤바가 없으면 그 자리를 비워 두지 않습니다.
+  expect(visibleRight).toBeCloseTo(view.right, 0);
+  for (const box of [header.getBoundingClientRect(), row.getBoundingClientRect()]) {
+    expect(box.right).toBeCloseTo(visibleRight, 0);
+  }
+});
+
 test("diff 줄마다 hunk 시작 번호부터 센 옛·새 줄 번호와 부호를 보인다", async () => {
   files = { "/tmp/r/multi.diff": () => new Response(MULTI_FILE_DIFF) };
   const screen = await renderReadOnly("[변경](/tmp/r/multi.diff)");
