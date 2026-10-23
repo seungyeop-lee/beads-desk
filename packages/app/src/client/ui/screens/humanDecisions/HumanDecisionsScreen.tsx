@@ -109,7 +109,7 @@ export function HumanDecisionsScreen() {
 
       {loaded &&
         (selected ? (
-          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,22.5rem)_minmax(0,1fr)]">
             <div ref={listRef} className="flex flex-col gap-5">
               {groups.map((group) => (
                 <section key={group.label} aria-label={group.label} className="flex flex-col gap-2">
@@ -194,7 +194,7 @@ function PendingRow({
         )}
         <CoveredIssueIdButton
           issueId={issue.id}
-          className="ml-auto shrink-0 rounded text-right text-xs text-emphasis-50"
+          className="ml-auto max-w-full shrink-0 rounded text-right text-xs text-emphasis-50 wrap-anywhere"
         />
       </span>
       {item.kind === "gate" && <FirstBlockedLine blocks={item.summary.blocks} />}

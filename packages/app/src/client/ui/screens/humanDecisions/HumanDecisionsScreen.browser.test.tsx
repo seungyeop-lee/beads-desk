@@ -283,6 +283,57 @@ test("목록에서 다른 항목을 눌러 고르면 스크롤이 움직이지 �
   expect(window.scrollY).toBe(scrollY);
 });
 
+for (const { width, maxListWidth, sideBySide } of [
+  { width: 1440, maxListWidth: 360, sideBySide: true },
+  { width: 1920, maxListWidth: 360, sideBySide: true },
+  { width: 500, maxListWidth: 500, sideBySide: false },
+]) {
+  test(`창 폭 ${width}px에서 긴 제목과 ID가 목록 안에 들어가고 상세 영역이 남는 폭을 쓴다`, async () => {
+    await page.viewport(width, 900);
+    const id = "desk-long-workspace-prefix-1234567890.1234567890.1234";
+    const title = "줄바꿈할공백이없는긴제목".repeat(8);
+    const fields = { title, labels: ["human"], description: "판단할 내용을 읽고 응답합니다." };
+    reads.issues = [issue(id, fields)];
+    reads.gates = [];
+    reads.details = { [id]: issueDetail(id, fields) };
+    reads.search = new URLSearchParams({ item: id });
+    const screen = await render(<ScreenInAppLayout />);
+    const list = screen.getByRole("region", { name: messages.humanDecisions.questions });
+    const panel = screen.getByRole("region", { name: title });
+    const row = list.getByRole("button", { name: `${id} ${title}` });
+    const listBox = list.element().getBoundingClientRect();
+    const panelBox = panel.element().getBoundingClientRect();
+    const main = screen.getByRole("main").element();
+    const mainStyle = getComputedStyle(main);
+
+    expect(listBox.width).toBeLessThanOrEqual(maxListWidth);
+    expect(listBox.width).toBeGreaterThanOrEqual(320);
+    expect(panelBox.width).toBeGreaterThanOrEqual(listBox.width);
+    expect(panelBox.top >= listBox.bottom, "상세가 목록 아래에 배치됨").toBe(!sideBySide);
+    expect(panelBox.left > listBox.right, "상세가 목록 오른쪽에 배치됨").toBe(sideBySide);
+    expect(panelBox.right).toBeCloseTo(
+      main.getBoundingClientRect().right - parseFloat(mainStyle.paddingRight),
+      0,
+    );
+    for (const content of [
+      list.getByText(title, { exact: true }),
+      list.getByRole("button", { name: messages.copyId.labelOf(id) }),
+    ]) {
+      const box = content.element().getBoundingClientRect();
+      const rowBox = row.element().getBoundingClientRect();
+      expect(box.left).toBeGreaterThanOrEqual(rowBox.left);
+      expect(box.right).toBeLessThanOrEqual(rowBox.right);
+      expect(box.bottom).toBeLessThanOrEqual(rowBox.bottom);
+      expect(content.element().scrollWidth).toBeLessThanOrEqual(content.element().clientWidth);
+    }
+    await expect.element(row).toHaveAttribute("aria-current", "true");
+    await expect
+      .element(panel.getByRole("textbox", { name: messages.humanDecision.response }))
+      .toBeVisible();
+    expect(document.documentElement.scrollWidth).toBe(document.documentElement.clientWidth);
+  });
+}
+
 function ScreenInAppLayout() {
   return (
     <LocaleProvider locale="ko">
