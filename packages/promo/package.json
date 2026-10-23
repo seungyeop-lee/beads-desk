@@ -14,13 +14,13 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "devDependencies": {
-    "@remotion/bundler": "4.0.536",
-    "@remotion/renderer": "4.0.536",
+    "@remotion/bundler": "4.0.538",
+    "@remotion/renderer": "4.0.538",
     "@types/react": "^19.3.0",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "playwright": "^1.64.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "remotion": "4.0.536"
+    "playwright": "^1.64.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "4.0.538"
   }
 }
