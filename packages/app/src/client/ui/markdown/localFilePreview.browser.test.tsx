@@ -402,6 +402,66 @@ test("여러 파일이 든 diff는 파일마다 경로, 배지, 추가·삭제 �
   }
 });
 
+test.each([360, 800])(
+  "%ipx 너비에서 긴 경로와 세 자리 변경 줄 수가 있어도 배지와 줄 수는 스크롤 영역 안에 남는다",
+  async (width) => {
+    const from = `packages/app/src/${"long-directory/".repeat(6)}before.ts`;
+    const to = `packages/app/src/${"long-directory/".repeat(6)}after.ts`;
+    files = {
+      "/tmp/r/long-path.diff": () =>
+        new Response(
+          [
+            `diff --git a/${from} b/${to}`,
+            "similarity index 50%",
+            `rename from ${from}`,
+            `rename to ${to}`,
+            `--- a/${from}`,
+            `+++ b/${to}`,
+            `@@ -1,114 +1,123 @@ ${"longFunctionName".repeat(12)}`,
+            ...Array.from({ length: 114 }, (_, index) => `-const before${index} = 1;`),
+            ...Array.from({ length: 123 }, (_, index) => `+const after${index} = 2;`),
+            "",
+          ].join("\n"),
+        ),
+    };
+    const screen = await render(
+      <LocaleProvider locale="ko">
+        <div style={{ width }}>
+          <MarkdownEditor
+            openAddress={tabMarkdownUrl}
+            readOnly
+            value="[긴 경로](/tmp/r/long-path.diff)"
+          />
+        </div>
+      </LocaleProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: labels.filePreview("긴 경로") }));
+    const contents = screen.getByRole("region", { name: labels.filePreviewContents("긴 경로") });
+    const badge = contents.getByText(labels.diffBadges.renamed, { exact: true });
+    await expect.element(badge).toBeVisible();
+    const counts = contents.getByText("+123 −114", { exact: true });
+    const scroller = contents.element().firstElementChild as HTMLElement;
+    expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+    expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth);
+    const badgeTop = badge.element().getBoundingClientRect().top;
+    scroller.scrollTop = 100;
+    expect(badge.element().getBoundingClientRect().top).toBeCloseTo(badgeTop, 0);
+    for (const theme of ["desk", "desk-dark"]) {
+      document.documentElement.dataset.theme = theme;
+      for (const offset of [0, scroller.scrollWidth]) {
+        scroller.scrollLeft = offset;
+        const view = scroller.getBoundingClientRect();
+        for (const item of [badge, counts]) {
+          const box = item.element().getBoundingClientRect();
+          expect(box.left).toBeGreaterThanOrEqual(view.left);
+          expect(box.right).toBeLessThanOrEqual(view.left + scroller.clientWidth);
+          expect(box.bottom).toBeLessThanOrEqual(view.top + scroller.clientHeight);
+        }
+      }
+    }
+  },
+);
+
 test("diff 줄마다 hunk 시작 번호부터 센 옛·새 줄 번호와 부호를 보인다", async () => {
   files = { "/tmp/r/multi.diff": () => new Response(MULTI_FILE_DIFF) };
   const screen = await renderReadOnly("[변경](/tmp/r/multi.diff)");
