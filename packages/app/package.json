@@ -86,7 +86,7 @@
     "daisyui": "^5.7.47",
     "diff": "^9.0.0",
     "mdast-util-to-markdown": "^2.2.0",
-    "pele": "1.7.0",
+    "pele": "1.9.0",
     "react-is": "^19.3.0",
     "recharts": "^3.10.1",
     "remark-gfm": "^4.0.1",
