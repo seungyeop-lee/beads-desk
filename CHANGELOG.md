@@ -4,6 +4,12 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Updated Pele to 1.12.0, Next.js to 16.4.3, Remotion packages to 4.0.539, and pnpm to 12.8.2.
+
 ## [0.8.2] - 2026-10-23
 
 ### Fixed
