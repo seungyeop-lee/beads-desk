@@ -116,7 +116,8 @@ export function nonWorkspaceRootCandidates(platform: NodeJS.Platform = process.p
   // Windows는 `/tmp`를 서버 작업 디렉터리가 있는 드라이브의 루트 기준(`C:\tmp` 등)으로 풀어
   // 의도하지 않은 디렉터리가 허용되므로, 사용자별 `%TEMP%`인 `tmpdir()`만 둡니다.
   const tempDirs = windows ? [tmpdir()] : ["/tmp", "/var/tmp", tmpdir()];
-  return [...tempDirs, ...configuredRoots(windows ? win32 : posix)];
+  const path = windows ? win32 : posix;
+  return [...tempDirs, path.join(homedir(), ".beads-starter"), ...configuredRoots(path)];
 }
 
 async function gitRoots(workspace: string): Promise<string[]> {

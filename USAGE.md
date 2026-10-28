@@ -53,6 +53,7 @@ Absolute-path file links and images in an issue body open in the app. On Windows
 - A worktree of its git repository (a directory listed by `git worktree list`)
 - The OS temporary directory (`$TMPDIR` on macOS, `%TEMP%` on Windows)
 - `/tmp` and `/var/tmp`, on macOS and Linux only
+- `~/.beads-starter` in the home directory of the user running the server, including all subdirectories
 
 Other files show `This file is outside the allowed roots.`
 

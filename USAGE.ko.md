@@ -53,6 +53,7 @@ main checkout에 `.beads`가 있는 git 저장소라면, 그 저장소의 worktr
 - 그 git 저장소의 worktree(`git worktree list`에 나오는 디렉터리)
 - OS 임시 디렉터리(macOS의 `$TMPDIR`, Windows의 `%TEMP%`)
 - `/tmp`와 `/var/tmp`(macOS와 Linux만 해당)
+- 서버를 실행하는 사용자의 홈 디렉터리에 있는 `~/.beads-starter`와 그 아래의 모든 하위 폴더
 
 이 밖의 파일을 열면 `허용 범위 밖의 파일입니다.`가 표시됩니다.
 
