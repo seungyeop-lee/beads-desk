@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -24,6 +24,7 @@ const parent = resolve(
 );
 const dataWorkspace = join(parent, "acme-web");
 const emptyWorkspace = join(parent, "empty-project");
+const home = join(parent, ".home");
 
 try {
   if (values.keep && existsSync(dataWorkspace) && existsSync(emptyWorkspace)) {
@@ -40,6 +41,7 @@ try {
     });
     seedWorkspace(emptyWorkspace, { prefix: "empty", issues: [] });
   }
+  mkdirSync(home, { recursive: true });
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
@@ -57,7 +59,7 @@ const server = spawn(
   {
     cwd: APP_DIR,
     env: {
-      ...isolatedBdEnv(join(parent, ".home")),
+      ...isolatedBdEnv(home),
       NEXT_TELEMETRY_DISABLED: "1",
       BEADS_DESK_WORKSPACE: dataWorkspace,
     },

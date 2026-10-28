@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Updated Pele to 1.12.0, Next.js to 16.4.3, Remotion packages to 4.0.539, and pnpm to 12.8.2.
 
+### Fixed
+
+- `pnpm playground` now creates its isolated home directory before starting the server, so issue queries work in a new playground directory.
+
 ## [0.8.2] - 2026-10-23
 
 ### Fixed
