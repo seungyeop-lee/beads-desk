@@ -4,6 +4,12 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-10-28
+
+### Changed
+
+- Local file links and images in issue bodies can now open files under `~/.beads-starter` in the home directory of the user running the server, including all subdirectories, without setting `BEADS_DESK_LOCAL_FILE_ROOTS`.
+
 ## [Unreleased]
 
 ### Changed
