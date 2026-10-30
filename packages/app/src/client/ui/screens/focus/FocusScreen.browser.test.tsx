@@ -360,6 +360,54 @@ describe("병목", () => {
     expect(order()).toEqual(["desk-base", "desk-other", "desk-fourth-prior", "desk-undated-prior"]);
   });
 
+  test("후보는 정렬한 순서로 앞의 5개만 보이고, 그보다 많을 때만 모두 보기로 나머지를 펼치거나 다시 접는다", async () => {
+    // 후보마다 후속 이슈를 하나씩 막아 다른 기준이 같으므로, 만든 시각 순으로 desk-prior-0부터 놓입니다.
+    const blockingPairs = (count: number) =>
+      Array.from({ length: count }, (_, index) => [
+        issue(`desk-prior-${index}`, { title: `선행 ${index}`, ready: true, createdAt: index }),
+        issue(`desk-after-${index}`, {
+          title: `후속 ${index}`,
+          blockedBy: [`desk-prior-${index}`],
+        }),
+      ]).flat();
+    reads.issues = blockingPairs(6);
+    reads.epics = [];
+    const screen = await renderFocus();
+    const text = messages.focus.bottlenecks;
+    const section = screen.getByRole("region", { name: text.title, exact: true });
+    const shownIds = () =>
+      [...section.getByRole("listitem").elements()].map(
+        (item) => item.querySelector("a")!.getAttribute("aria-label")!.split(" ")[0],
+      );
+    // 행마다 ID 복사 단추가 있으므로, 펼침 상태를 알리는 단추로 모두 보기를 찾습니다.
+    const seeAll = section.getByRole("button", { expanded: false });
+    const showFewer = section.getByRole("button", { expanded: true });
+    const firstFive = [0, 1, 2, 3, 4].map((index) => `desk-prior-${index}`);
+
+    await expect.element(section.getByRole("listitem")).toHaveLength(5);
+    expect(shownIds()).toEqual(firstFive);
+    await expect.element(section.getByRole("heading")).toMatchTextContent("6");
+    await expect.element(seeAll).toHaveTextContent(text.showAll(6));
+
+    await seeAll.click();
+    await expect.element(section.getByRole("listitem")).toHaveLength(6);
+    expect(shownIds()).toEqual([...firstFive, "desk-prior-5"]);
+    await expect.element(showFewer).toHaveTextContent(text.showFewer);
+
+    await showFewer.click();
+    await expect.element(section.getByRole("listitem")).toHaveLength(5);
+    await expect.element(seeAll).toBeVisible();
+
+    reads.issues = blockingPairs(5);
+    await screen.rerender(
+      <LocaleProvider locale="ko">
+        <FocusScreen />
+      </LocaleProvider>,
+    );
+    await expect.element(section.getByRole("listitem")).toHaveLength(5);
+    await expect.element(seeAll).not.toBeInTheDocument();
+  });
+
   test("영어 화면은 정렬 기준과 계산 결과를 영어로 보이고, 막고 있는 이슈가 없으면 빈 안내를 보인다", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 30, 23, 0));

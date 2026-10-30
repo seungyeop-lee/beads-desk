@@ -358,6 +358,8 @@ export const enMessages: Messages = {
         "Blocked issues that wait only on this issue and become ready or in progress once it is closed. This assumes the issue is closed; the state shown before it is the current state from bd.",
       state: (label) => `Current state: ${label}`,
       openGraphOf: (id) => `Open the blocks chain graph of ${id}`,
+      showAll: (count) => `See all ${count} bottlenecks`,
+      showFewer: "Show fewer",
     },
     stats: {
       title: "Flow",
