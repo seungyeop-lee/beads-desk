@@ -11,7 +11,7 @@ const at = (month: number, date: number, hours = 0, minutes = 0) =>
   new Date(2026, month - 1, date, hours, minutes).getTime();
 
 function bottlenecksAt(issues: Issue[], now = NOW): Bottleneck[] {
-  return focusBottlenecks(issues, focusDeadlines(issues, now));
+  return focusBottlenecks(issues, focusDeadlines(issues, now), now);
 }
 
 /** 후보 id마다 후속 이슈 수와 바로 풀리는 이슈 수입니다. */
@@ -73,6 +73,16 @@ test("human gate가 함께 막거나, 닫혔거나, 풀려도 손댈 수 없는 
   });
 });
 
+test("열려 있어도 보류 기한이 오지 않은 후속 이슈는 bd ready처럼 바로 풀린다고 세지 않고, 보류 기한이 지났으면 센다", () => {
+  const bottlenecks = bottlenecksAt([
+    issue("prior", { ready: true }),
+    issue("deferred-later", { blockedBy: ["prior"], deferUntil: NOW + 1 }),
+    issue("deferred-past", { blockedBy: ["prior"], deferUntil: NOW - 1 }),
+  ]);
+
+  expect(counts(bottlenecks)).toEqual({ prior: { waiters: 2, unblocks: 1 } });
+});
+
 test("기한 초과, 오늘 마감, 3일 이내인 후속 이슈만 마감 근거로 붙이고, 마감 목록과 같은 분류와 마감 시각 순서로 둔다", () => {
   const issues = [
     issue("blocks-many", { ready: true }),
@@ -84,7 +94,7 @@ test("기한 초과, 오늘 마감, 3일 이내인 후속 이슈만 마감 근�
     issue("undated", { blockedBy: ["blocks-undated"] }),
   ];
   const deadlines = focusDeadlines(issues, NOW);
-  const bottlenecks = focusBottlenecks(issues, deadlines);
+  const bottlenecks = focusBottlenecks(issues, deadlines, NOW);
   const of = (id: string) => bottlenecks.find((bottleneck) => bottleneck.issue.id === id);
 
   expect(evidence(of("blocks-many"))).toEqual([

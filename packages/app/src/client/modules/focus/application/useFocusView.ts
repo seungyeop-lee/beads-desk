@@ -14,7 +14,7 @@ import type { WorkspaceReadState } from "@/client/modules/workspace/application/
 import type { EpicSummary } from "@/shared/contract/epics";
 
 /**
- * Focus 화면이 보일 데이터를 읽어 조립합니다. now는 흐름 통계의 기간을 정하는 현재 시각(epoch ms)입니다.
+ * Focus 화면이 보일 데이터를 읽어 조립합니다. now는 흐름 통계의 기간과 병목 후보가 쓰는 보류 기한 판정의 기준이 되는 현재 시각(epoch ms)입니다.
  * 사람 판단 대기 개수는 상단 탭과 같은 조회를 써서 숫자의 출처를 하나로 둡니다.
  */
 export function useFocusView(now: number): {
@@ -48,8 +48,8 @@ export function useFocusView(now: number): {
   );
   const deadlines = useFocusDeadlines(issues);
   const bottlenecks = useMemo(
-    () => (issues && deadlines ? focusBottlenecks(issues, deadlines) : null),
-    [issues, deadlines],
+    () => (issues && deadlines ? focusBottlenecks(issues, deadlines, now) : null),
+    [issues, deadlines, now],
   );
   const titles = useMemo(
     () => new Map((issues ?? []).map((issue) => [issue.id, issue.title])),
