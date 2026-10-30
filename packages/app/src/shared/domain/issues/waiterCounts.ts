@@ -7,11 +7,21 @@ export type WaitingIssue = {
 };
 
 /**
- * 이슈 id마다 대기 수를 셉니다. 대기 수는 그 이슈가 닫히면 막힘이 풀리는 쪽으로 전이적으로 영향을 받는, 닫히지 않은 이슈의 수입니다.
- * blockedBy를 거꾸로 따라가므로, 막고 있는 이슈의 범위는 bd blocked를 따릅니다. 막힌 상위 이슈의 하위 이슈도 bd blocked가 상위 이슈에 막힌 것으로 돌려주므로 함께 셉니다.
+ * 이슈 id마다 대기 수를 셉니다. 대기 수는 waitingIssueIds가 모은 이슈의 수입니다.
  * 어느 곳에서 세든 거르거나 고르기 전의 전체 목록을 넘겨야, 걸러낸 이슈를 거쳐 이어지는 사슬까지 세고 화면마다 같은 값이 나옵니다. 대기 수가 0인 이슈는 담지 않습니다.
  */
 export function waiterCounts(issues: readonly WaitingIssue[]): ReadonlyMap<string, number> {
+  return new Map([...waitingIssueIds(issues)].map(([id, waiting]) => [id, waiting.size]));
+}
+
+/**
+ * 이슈 id마다, 그 이슈가 닫히면 막힘이 풀리는 쪽으로 전이적으로 영향을 받는 닫히지 않은 이슈의 id를 모읍니다. 여러 경로로 닿는 이슈도 한 번만 담습니다.
+ * blockedBy를 거꾸로 따라가므로, 막고 있는 이슈의 범위는 bd blocked를 따릅니다. 막힌 상위 이슈의 하위 이슈도 bd blocked가 상위 이슈에 막힌 것으로 돌려주므로 함께 담습니다.
+ * 기다리는 이슈가 없는 이슈는 담지 않습니다.
+ */
+export function waitingIssueIds(
+  issues: readonly WaitingIssue[],
+): ReadonlyMap<string, ReadonlySet<string>> {
   const waitersOf = new Map<string, string[]>();
   for (const issue of issues) {
     if (issue.status === "closed") continue;
@@ -20,10 +30,10 @@ export function waiterCounts(issues: readonly WaitingIssue[]): ReadonlyMap<strin
     }
   }
 
-  const counts = new Map<string, number>();
+  const waiting = new Map<string, Set<string>>();
   for (const id of waitersOf.keys()) {
     const reached = reachableIssueIds(id, waitersOf);
-    if (reached.size > 0) counts.set(id, reached.size);
+    if (reached.size > 0) waiting.set(id, reached);
   }
-  return counts;
+  return waiting;
 }

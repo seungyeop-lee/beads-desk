@@ -73,29 +73,32 @@ test("다음에 할 일은 같은 우선순위에서 대기 수가 많은 이슈
   reads.issues = ISSUES;
   reads.epics = [];
   const screen = await renderFocus();
-  const rowText = (id: string, title: string) =>
-    screen
+  const region = (name: string) => screen.getByRole("region", { name, exact: true });
+  const inProgress = region(messages.focus.inProgress);
+  const nextUp = region(messages.focus.nextUp);
+  const blocked = region(messages.workStates.labels.blocked);
+  // 병목 영역에도 같은 이슈의 행이 있으므로, 행을 찾을 영역을 정해 찾습니다.
+  const rowText = (scope: typeof nextUp, id: string, title: string) =>
+    scope
       .getByRole("link", { name: `${id} ${title}`, exact: true })
       .element()
       .closest("li")!.textContent;
-  const nextUp = screen
-    .getByRole("region", { name: messages.focus.nextUp, exact: true })
-    .getByRole("listitem");
+  const nextUpRows = nextUp.getByRole("listitem");
 
-  await expect.element(nextUp).toHaveLength(4);
-  expect(nextUp.first().element()).toBe(
-    screen.getByRole("link", { name: "desk-bottleneck 병목 작업" }).element().closest("li"),
+  await expect.element(nextUpRows).toHaveLength(4);
+  expect(nextUpRows.first().element()).toBe(
+    nextUp.getByRole("link", { name: "desk-bottleneck 병목 작업" }).element().closest("li"),
   );
-  expect(rowText("desk-bottleneck", "병목 작업")).toContain(messages.issue.waiters(2));
+  expect(rowText(nextUp, "desk-bottleneck", "병목 작업")).toContain(messages.issue.waiters(2));
   for (const [id, title] of [
     ["desk-plain-1", "평범한 작업 하나"],
     ["desk-plain-2", "평범한 작업 둘"],
     ["desk-plain-3", "평범한 작업 셋"],
   ])
-    expect(rowText(id!, title!)).not.toMatch(WAITERS);
-  expect(rowText("desk-doing", "진행하는 작업")).toContain(messages.issue.waiters(1));
-  expect(rowText("desk-middle", "중간 작업")).toContain(messages.issue.waiters(1));
-  expect(rowText("desk-last", "마지막 작업")).not.toMatch(WAITERS);
+    expect(rowText(nextUp, id!, title!)).not.toMatch(WAITERS);
+  expect(rowText(inProgress, "desk-doing", "진행하는 작업")).toContain(messages.issue.waiters(1));
+  expect(rowText(blocked, "desk-middle", "중간 작업")).toContain(messages.issue.waiters(1));
+  expect(rowText(blocked, "desk-last", "마지막 작업")).not.toMatch(WAITERS);
 });
 
 test("다음에 할 일은 5개까지만 보이고, 바로 작업 가능한 이슈가 그보다 많을 때만 이슈 목록의 바로 작업 가능 보기로 가는 모두 보기를 보인다", async () => {
@@ -273,5 +276,113 @@ describe("마감", () => {
     await expect
       .element(heading(text.dueSoon(3)))
       .toMatchTextContent(/^Next 3 daysSat, October 31.+Mon, November 21$/);
+  });
+});
+
+describe("병목", () => {
+  // 그래프로 가는 링크에도 화살표가 있으므로, 마감 묶음 이름까지 맞춰 마감 근거 줄을 찾습니다.
+  const DUE_EVIDENCE = /→ (기한 초과|오늘 마감|3일 이내) ·/;
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // 기준 작업은 마감이 걸린 후속 작업 둘을 막고, 그중 하나는 다른 선행 작업도 기다립니다.
+  // 넷째 날 작업만 막는 이슈는 처음에는 마감 근거가 없다가, 자정이 지나면 3일 이내 마감에 들어 앞으로 옵니다.
+  const BOTTLENECK_ISSUES = [
+    issue("desk-base", { title: "기준 작업", ready: true, priority: 3 }),
+    issue("desk-other", { title: "다른 선행 작업", status: "in_progress", priority: 3 }),
+    issue("desk-tonight", {
+      title: "오늘 밤 후속",
+      blockedBy: ["desk-base"],
+      dueAt: new Date(2026, 9, 30, 23, 30).getTime(),
+    }),
+    issue("desk-joined", {
+      title: "합류 후속",
+      blockedBy: ["desk-base", "desk-other"],
+      dueAt: new Date(2026, 9, 31, 9, 0).getTime(),
+    }),
+    issue("desk-undated-prior", { title: "마감 없는 선행", ready: true, priority: 0 }),
+    issue("desk-undated-after", { title: "마감 없는 후속", blockedBy: ["desk-undated-prior"] }),
+    issue("desk-fourth-prior", { title: "넷째 날 선행", ready: true, priority: 1 }),
+    issue("desk-fourth-after", {
+      title: "넷째 날 후속",
+      blockedBy: ["desk-fourth-prior"],
+      dueAt: new Date(2026, 10, 3, 10, 0).getTime(),
+    }),
+  ];
+
+  test("후보마다 지금 상태와 닫는다고 가정한 계산을 나눠 보이고, 마감 목록과 같은 분류로 마감 근거를 붙이며, 자정이 지나면 근거와 순서를 다시 정한다", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(new Date(2026, 9, 30, 23, 0));
+    reads.issues = BOTTLENECK_ISSUES;
+    reads.epics = [];
+    const screen = await renderFocus();
+    const text = messages.focus.bottlenecks;
+    const section = screen.getByRole("region", { name: text.title, exact: true });
+    // 제목은 후보 행마다 달라서, 다른 행의 마감 근거 줄에 섞여 맞지 않습니다.
+    const row = (title: string) => section.getByRole("listitem").filter({ hasText: title });
+    const order = () =>
+      [...section.getByRole("listitem").elements()].map(
+        (item) => item.querySelector("a")!.getAttribute("aria-label")!.split(" ")[0],
+      );
+
+    await expect.element(section).toMatchTextContent(text.order);
+    expect(order()).toEqual(["desk-base", "desk-other", "desk-undated-prior", "desk-fourth-prior"]);
+
+    const base = row("기준 작업");
+    await expect
+      .element(base.getByTitle(text.state(messages.workStates.labels.ready)))
+      .toHaveTextContent(messages.workStates.labels.ready);
+    await expect.element(base).toMatchTextContent(messages.issue.waiters(2));
+    await expect.element(base).toMatchTextContent(text.unblocks(1));
+    await expect.element(base).toMatchTextContent(/→ 오늘 마감 · desk-tonight 오늘 밤 후속 ·/);
+    await expect.element(base).toMatchTextContent(/→ 3일 이내 · desk-joined 합류 후속 ·/);
+    await expect
+      .element(base.getByRole("link", { name: text.openGraphOf("desk-base"), exact: true }))
+      .toHaveAttribute("href", "/w/demo/focus?center=desk-base&returnTo=%2Ffocus");
+
+    const other = row("다른 선행 작업");
+    await expect
+      .element(other.getByTitle(text.state(messages.workStates.labels.in_progress)))
+      .toBeVisible();
+    await expect.element(other).toMatchTextContent(text.unblocks(0));
+    await expect.element(other).toMatchTextContent(/→ 3일 이내 · desk-joined/);
+    await expect.element(row("마감 없는 선행")).not.toMatchTextContent(DUE_EVIDENCE);
+    await expect.element(row("넷째 날 선행")).not.toMatchTextContent(DUE_EVIDENCE);
+
+    await vi.advanceTimersByTimeAsync(60 * 60 * 1000);
+    await expect.element(base).toMatchTextContent(/→ 기한 초과 · desk-tonight/);
+    await expect.element(base).toMatchTextContent(/→ 오늘 마감 · desk-joined/);
+    await expect
+      .element(row("넷째 날 선행"))
+      .toMatchTextContent(/→ 3일 이내 · desk-fourth-after 넷째 날 후속 ·/);
+    expect(order()).toEqual(["desk-base", "desk-other", "desk-fourth-prior", "desk-undated-prior"]);
+  });
+
+  test("영어 화면은 정렬 기준과 계산 결과를 영어로 보이고, 막고 있는 이슈가 없으면 빈 안내를 보인다", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 30, 23, 0));
+    reads.issues = BOTTLENECK_ISSUES;
+    reads.epics = [];
+    const screen = await renderFocus("en");
+    const text = enMessages.focus.bottlenecks;
+    const section = screen.getByRole("region", { name: text.title, exact: true });
+
+    await expect.element(section).toMatchTextContent(text.order);
+    await expect.element(section).toMatchTextContent(enMessages.issue.waiters(2));
+    await expect.element(section).toMatchTextContent(text.unblocks(1));
+    await expect.element(section).toMatchTextContent(/→ Due today · desk-tonight/);
+    await expect
+      .element(section.getByRole("link", { name: text.openGraphOf("desk-base"), exact: true }))
+      .toHaveTextContent(`${enMessages.graph.scopes.center} →`);
+
+    reads.issues = [issue("desk-alone", { ready: true })];
+    await screen.rerender(
+      <LocaleProvider locale="en">
+        <FocusScreen />
+      </LocaleProvider>,
+    );
+    await expect.element(section).toMatchTextContent(text.empty);
   });
 });

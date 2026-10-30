@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useEpics } from "@/client/modules/epics/application/useEpics";
+import { focusBottlenecks, type Bottleneck } from "@/client/modules/focus/domain/focusBottlenecks";
 import type { FocusDeadlines } from "@/client/modules/focus/domain/focusDeadlines";
 import { focusStats, type FocusStats } from "@/client/modules/focus/domain/focusStats";
 import { focusView, type FocusView } from "@/client/modules/focus/domain/focusView";
@@ -25,6 +26,8 @@ export function useFocusView(now: number): {
   stats: FocusStats | null;
   /** 마감 목록입니다. 흐름 통계의 now와 따로, 분류가 바뀌는 시각에 다시 나눕니다. */
   deadlines: FocusDeadlines | null;
+  /** 병목 후보입니다. 마감 근거가 마감 목록과 같도록, 마감 목록을 다시 나눌 때 함께 다시 계산합니다. */
+  bottlenecks: Bottleneck[] | null;
   /** 이슈 id마다 제목입니다. 막힘 표시에 상대 이슈 이름을 보입니다. */
   titles: ReadonlyMap<string, string>;
   /** 열린 gate의 id마다 제목과 human gate인지입니다. */
@@ -44,9 +47,23 @@ export function useFocusView(now: number): {
     [issues, epics.data, now],
   );
   const deadlines = useFocusDeadlines(issues);
+  const bottlenecks = useMemo(
+    () => (issues && deadlines ? focusBottlenecks(issues, deadlines) : null),
+    [issues, deadlines],
+  );
   const titles = useMemo(
     () => new Map((issues ?? []).map((issue) => [issue.id, issue.title])),
     [issues],
   );
-  return { issueList, epics, humanDecisionCount, view, stats, deadlines, titles, gateTitles };
+  return {
+    issueList,
+    epics,
+    humanDecisionCount,
+    view,
+    stats,
+    deadlines,
+    bottlenecks,
+    titles,
+    gateTitles,
+  };
 }

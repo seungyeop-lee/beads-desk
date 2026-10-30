@@ -358,6 +358,17 @@ export const koMessages = {
       dueSoon: (days: number) => `${days}일 이내`,
       empty: "없음",
     },
+    bottlenecks: {
+      title: "병목",
+      order:
+        "대기 수가 많은 순으로 두고, 같으면 마감 목록에 든 후속 이슈의 마감 시각이 이른 순, 닫으면 바로 작업 가능해지는 이슈가 많은 순, 우선순위 순으로 둡니다.",
+      empty: "다른 이슈를 막고 있는 이슈가 없습니다.",
+      unblocks: (count: number) => `닫으면 ${count}개 바로 작업 가능`,
+      unblocksHint:
+        "다른 선행 조건 없이 이 이슈만 기다리는 후속 이슈 가운데, 이 이슈를 닫으면 바로 작업 가능이나 진행 중이 되는 이슈 수입니다. 닫는다고 가정해 계산한 값이며, 이 이슈의 지금 상태는 앞쪽의 상태 표시가 bd 결과대로 보여 줍니다.",
+      state: (label: string) => `지금 상태: ${label}`,
+      openGraphOf: (id: string) => `${id}의 선행·후속 그래프 열기`,
+    },
     stats: {
       title: "흐름",
       throughput: "최근 7일 처리량",

@@ -348,6 +348,17 @@ export const enMessages: Messages = {
       dueSoon: (days) => `Next ${days} days`,
       empty: "None",
     },
+    bottlenecks: {
+      title: "Bottlenecks",
+      order:
+        "Sorted by blocked count, then the earliest due time among blocked issues listed in Due dates, then the most issues ready when closed, then priority.",
+      empty: "No issues are blocking other issues.",
+      unblocks: (count) => `${count} ready when closed`,
+      unblocksHint:
+        "Blocked issues that wait only on this issue and become ready or in progress once it is closed. This assumes the issue is closed; the state shown before it is the current state from bd.",
+      state: (label) => `Current state: ${label}`,
+      openGraphOf: (id) => `Open the blocks chain graph of ${id}`,
+    },
     stats: {
       title: "Flow",
       throughput: "Last 7 days",

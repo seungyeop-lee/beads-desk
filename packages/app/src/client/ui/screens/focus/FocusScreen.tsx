@@ -34,6 +34,7 @@ import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { dueAtLabel } from "@/client/ui/issues/issueTime";
 import type { Locale } from "@/shared/contract/locale";
+import { BottlenecksSection } from "./BottlenecksSection";
 import { FocusStatsSection } from "./FocusStatsSection";
 import { useMinuteClock } from "@/client/ui/designSystem/useMinuteClock";
 
@@ -41,13 +42,22 @@ import { useMinuteClock } from "@/client/ui/designSystem/useMinuteClock";
 const CARD_STATES = ["in_progress", "ready", "blocked"] as const satisfies WorkState[];
 
 /**
- * 첫 화면입니다. 위쪽 개수 카드와 흐름 통계, 왼쪽의 진행 중과 마감, 다음에 할 일, 오른쪽의 막힘과 에픽 진행률을 보입니다.
+ * 첫 화면입니다. 위쪽 개수 카드와 흐름 통계, 왼쪽의 진행 중과 마감, 다음에 할 일, 병목, 오른쪽의 막힘과 에픽 진행률을 보입니다.
  * 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function FocusScreen() {
   const now = useMinuteClock();
-  const { issueList, epics, humanDecisionCount, view, stats, deadlines, titles, gateTitles } =
-    useFocusView(now);
+  const {
+    issueList,
+    epics,
+    humanDecisionCount,
+    view,
+    stats,
+    deadlines,
+    bottlenecks,
+    titles,
+    gateTitles,
+  } = useFocusView(now);
   const { error, loading } = issueList;
   const issueHref = useIssueHref();
   const messages = useMessages();
@@ -124,6 +134,7 @@ export function FocusScreen() {
                   />
                 ))}
               </FocusSection>
+              {bottlenecks && <BottlenecksSection bottlenecks={bottlenecks} />}
             </div>
 
             <div className="flex flex-col gap-6">
