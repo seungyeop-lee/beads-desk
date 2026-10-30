@@ -6,12 +6,13 @@ const fakeBd = fakeBdWorkspace("beads-desk-hygiene-queries-");
 const { useFakeBd } = fakeBd;
 
 describe("staleIssues", () => {
-  test("기준 일수 동안 갱신되지 않은 이슈를 개수 제한 없이 읽고, 직접 작업하지 않는 decision과 epic은 뺀다", async () => {
+  test("기준 일수 동안 갱신되지 않은 이슈를 개수 제한 없이 읽고, 직접 작업하지 않는 decision, epic, molecule은 뺀다", async () => {
     await useFakeBd({
       "stale --json --days 14 --limit 0": {
         stdout: JSON.stringify([
           { id: "d-1", issue_type: "decision", status: "open" },
           { id: "e-1", issue_type: "epic", status: "open" },
+          { id: "m-1", issue_type: "molecule", status: "open" },
           { id: "t-1", issue_type: "task", status: "in_progress" },
         ]),
       },

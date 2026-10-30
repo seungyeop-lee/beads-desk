@@ -52,3 +52,16 @@ test("human 라벨이 붙은 열림·진행 중 이슈는 어느 열에도 넣�
     "dep-blocked": "blocked",
   });
 });
+
+test("bd mol pour가 만든 molecule 루트는 진행 중이어도 보드에 넣지 않고, 그 하위 단계는 작업 이슈로 넣는다", () => {
+  const issues = [
+    issue("molecule", { issueType: "molecule", status: "in_progress" }),
+    issue("step", { status: "in_progress", parent: "molecule" }),
+  ];
+
+  const columns = Object.fromEntries(
+    boardItemsOf(issues).map(({ column, issue }) => [issue.id, column]),
+  );
+
+  expect(columns).toEqual({ step: "in_progress" });
+});

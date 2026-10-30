@@ -28,8 +28,11 @@ test("보류 이슈는 막고 있는 이슈가 남아 있어도 deferred이다",
   );
 });
 
-test("epic, decision, milestone은 진행 중이거나 bd ready에 있어도 other이다", () => {
+test("epic, molecule, decision, milestone은 진행 중이거나 bd ready에 있어도 other이다", () => {
   expect(workState(issue("demo-1", { issueType: "epic", status: "in_progress" }))).toBe("other");
+  expect(workState(issue("demo-1", { issueType: "molecule", status: "in_progress" }))).toBe(
+    "other",
+  );
   expect(workState(issue("demo-1", { issueType: "decision", ready: true }))).toBe("other");
   expect(workState(issue("demo-1", { issueType: "milestone", ready: true }))).toBe("other");
   expect(workState(issue("demo-1", { issueType: "epic", status: "closed" }))).toBe("closed");

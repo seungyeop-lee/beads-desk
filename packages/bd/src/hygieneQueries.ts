@@ -4,8 +4,8 @@ import { queryIssues, withNoLimit } from "./issueList";
 import { inputError, runBdJson, type BdOutcome } from "./runBd";
 
 /**
- * days일 넘게 갱신되지 않은 이슈를 읽습니다. decision, epic, milestone은 뺍니다.
- * decision은 열려 있는 동안 유효한 기록이고, epic은 하위 이슈가 진행돼도 갱신 시각이 바뀌지 않아 방치된 것으로 잘못 보이기 때문입니다.
+ * days일 넘게 갱신되지 않은 이슈를 읽습니다. 직접 작업하지 않는 유형(NON_WORK_TYPES)은 뺍니다.
+ * decision은 열려 있는 동안 유효한 기록이고, epic과 molecule은 하위 이슈가 진행돼도 갱신 시각이 바뀌지 않아 방치된 것으로 잘못 보이기 때문입니다.
  */
 export async function staleIssues(cwd: string, days: number): Promise<BdOutcome<Issue[]>> {
   if (!Number.isInteger(days) || days < 1) {

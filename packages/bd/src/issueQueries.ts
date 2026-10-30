@@ -119,7 +119,7 @@ export async function exportedIssues(cwd: string): Promise<BdOutcome<ExportedIss
   return { ok: true, value: issues };
 }
 
-/** 바로 작업할 수 있는 이슈를 읽습니다. decision, epic, milestone은 빼고 돌려줍니다. */
+/** 바로 작업할 수 있는 이슈를 읽습니다. 직접 작업하지 않는 유형(NON_WORK_TYPES)은 빼고 돌려줍니다. */
 export async function readyIssues(cwd: string): Promise<BdOutcome<Issue[]>> {
   const result = await queryIssues(cwd, READY_ARGS);
   return result.ok ? { ok: true, value: result.value.filter(isWork) } : result;

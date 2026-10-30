@@ -9,7 +9,7 @@ function isBoardColumn(state: WorkState): state is BoardColumn {
 
 /**
  * 이슈를 작업 상태로 보드 항목으로 나눕니다. 열이 없는 작업 상태(보류, 판단 기다림, other)의 이슈는 넣지 않습니다.
- * decision, epic, milestone은 작업 상태와 관계없이 보드에 넣지 않습니다.
+ * 직접 작업하지 않는 유형(NON_WORK_TYPES)은 작업 상태와 관계없이 보드에 넣지 않습니다.
  */
 export function boardItemsOf(issues: readonly Issue[]): BoardItem[] {
   return issues

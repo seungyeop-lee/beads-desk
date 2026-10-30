@@ -46,9 +46,15 @@ describe("daily", () => {
     expect(daily.map(({ closed }) => closed)).toEqual([0, 0, 0, 0, 0, 0, 1]);
   });
 
-  test("epic, decision, milestone은 세지 않는다", () => {
+  test("epic, molecule, decision, milestone은 세지 않는다", () => {
     const { daily } = stats([
       issue("epic", { issueType: "epic", createdAt: at(15) }),
+      issue("molecule", {
+        issueType: "molecule",
+        createdAt: at(15),
+        status: "closed",
+        closedAt: at(15),
+      }),
       issue("milestone", { issueType: "milestone", createdAt: at(15) }),
       issue("decision", {
         issueType: "decision",
