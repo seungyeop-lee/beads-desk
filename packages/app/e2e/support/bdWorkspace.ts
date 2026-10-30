@@ -85,6 +85,8 @@ export type BdIssue = {
   close_reason?: string;
   notes?: string;
   defer_until?: string;
+  /** 마감일을 지우면 bd가 null로 내놓습니다. */
+  due_at?: string | null;
   dependencies?: { id: string; dependency_type: string }[];
 };
 

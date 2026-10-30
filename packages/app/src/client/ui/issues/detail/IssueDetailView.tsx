@@ -5,6 +5,7 @@ import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { hasGraphLink, linkedIssues } from "@/client/modules/issues/domain/issueRelations";
 import { statusPrompts } from "../fields/statusPrompts";
+import { DueAtField } from "../fields/DueAtField";
 import { EditableText } from "../fields/EditableText";
 import { PrioritySelect } from "../fields/PrioritySelect";
 import { StatusSelect } from "../fields/StatusSelect";
@@ -161,6 +162,14 @@ export function IssueDetailView({
                   placeholder={messages.common.none}
                   onSave={(assignee) => update({ assignee })}
                 />
+              </dd>
+            </div>
+
+            {/* 편집하면 날짜·시각 입력과 단추가 여러 줄이 되므로, 이름을 가운데가 아니라 첫 줄에 맞춥니다. */}
+            <div className="flex min-w-0 items-baseline gap-3 @4xl:contents">
+              <dt className="caption @4xl:self-baseline">{messages.issue.dueAt}</dt>
+              <dd className="min-w-0 @4xl:self-baseline">
+                <DueAtField value={issue.dueAt} onSave={(dueAt) => update({ dueAt })} />
               </dd>
             </div>
           </dl>

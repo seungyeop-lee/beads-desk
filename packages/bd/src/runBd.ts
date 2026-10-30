@@ -31,6 +31,7 @@ export type BdErrorKind =
   | "emptyTitle"
   | "noChanges"
   | "invalidDeferDate"
+  | "invalidDueAt"
   | "emptyIssueId"
   | "emptyTargetId"
   | "emptyGateId"

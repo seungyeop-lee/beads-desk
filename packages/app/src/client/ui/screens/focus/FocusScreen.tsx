@@ -7,7 +7,13 @@ import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
 import { type CSSProperties, type ReactNode } from "react";
 import { useFocusView } from "@/client/modules/focus/application/useFocusView";
+import {
+  DUE_SOON_DAYS,
+  type DatedIssue,
+  type FocusDeadlines,
+} from "@/client/modules/focus/domain/focusDeadlines";
 import { NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
+import { localDate } from "@/client/modules/issues/domain/issueDateFilter";
 import { blockersOf, type Blocker } from "@/client/modules/gates/domain/humanGateBlockers";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import { IssueDetailRoute, useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
@@ -25,7 +31,9 @@ import { ScreenHeader } from "@/client/ui/designSystem/ScreenHeader";
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { issueViewHref } from "@/client/ui/address/issueListAddress";
 import { screenTone } from "@/client/ui/shell/screenTabs";
-import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
+import { dueAtLabel } from "@/client/ui/issues/issueTime";
+import type { Locale } from "@/shared/contract/locale";
 import { FocusStatsSection } from "./FocusStatsSection";
 import { useMinuteClock } from "@/client/ui/designSystem/useMinuteClock";
 
@@ -33,12 +41,12 @@ import { useMinuteClock } from "@/client/ui/designSystem/useMinuteClock";
 const CARD_STATES = ["in_progress", "ready", "blocked"] as const satisfies WorkState[];
 
 /**
- * 첫 화면입니다. 위쪽 개수 카드와 흐름 통계, 왼쪽의 진행 중과 다음에 할 일, 오른쪽의 막힘과 에픽 진행률을 보입니다.
+ * 첫 화면입니다. 위쪽 개수 카드와 흐름 통계, 왼쪽의 진행 중과 마감, 다음에 할 일, 오른쪽의 막힘과 에픽 진행률을 보입니다.
  * 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function FocusScreen() {
   const now = useMinuteClock();
-  const { issueList, epics, humanDecisionCount, view, stats, titles, gateTitles } =
+  const { issueList, epics, humanDecisionCount, view, stats, deadlines, titles, gateTitles } =
     useFocusView(now);
   const { error, loading } = issueList;
   const issueHref = useIssueHref();
@@ -91,6 +99,7 @@ export function FocusScreen() {
                   />
                 ))}
               </FocusSection>
+              {deadlines && <DeadlinesSection deadlines={deadlines} waiters={view.waiters} />}
               <FocusSection
                 tone={workStateTone("ready")}
                 title={messages.focus.nextUp}
@@ -234,18 +243,87 @@ function FocusSection({ title, tone, empty, action, children }: SectionProps) {
   );
 }
 
+type DeadlinesSectionProps = {
+  deadlines: FocusDeadlines;
+  waiters: ReadonlyMap<string, number>;
+};
+
+/** 기한 초과, 오늘 마감, 마감 임박을 묶음마다 날짜 기준과 함께 보입니다. 비어 있는 묶음도 기준을 알 수 있게 남깁니다. */
+function DeadlinesSection({ deadlines, waiters }: DeadlinesSectionProps) {
+  const messages = useMessages();
+  const locale = useLocale();
+  const issueHref = useIssueHref();
+  const text = messages.focus.deadlines;
+  const groups: { title: string; basis: string; issues: DatedIssue[]; overdue?: boolean }[] = [
+    { title: text.overdue, basis: text.overdueBasis, issues: deadlines.overdue, overdue: true },
+    { title: text.dueToday, basis: dayLabel(locale, deadlines.today), issues: deadlines.dueToday },
+    {
+      title: text.dueSoon(DUE_SOON_DAYS),
+      basis: dayRangeLabel(locale, deadlines.soon.from, deadlines.soon.to),
+      issues: deadlines.dueSoon,
+    },
+  ];
+  return (
+    <section aria-label={text.title} className="flex flex-col gap-2">
+      <GroupHeading title={text.title} />
+      <div className="surface flex flex-col divide-y divide-base-300">
+        {groups.map(({ title, basis, issues, overdue = false }) => (
+          <section key={title} aria-label={title} className="flex flex-col">
+            <h3 className="flex flex-wrap items-baseline gap-x-2 px-4 py-2.5 text-xs font-semibold">
+              {title}
+              <span className="font-normal text-emphasis-60">{basis}</span>
+              <span className="ml-auto font-mono font-normal text-emphasis-50 tabular-nums">
+                {issues.length}
+              </span>
+            </h3>
+            {issues.length === 0 ? (
+              <p className="px-4 pb-2.5 text-xs text-emphasis-50">{text.empty}</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-base-300 border-t border-base-300">
+                {issues.map((issue) => (
+                  <FocusRow
+                    key={issue.id}
+                    issue={issue}
+                    href={issueHref(issue.id)}
+                    waiters={waiters.get(issue.id) ?? 0}
+                    due={{ at: issue.dueAt, overdue }}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const DAY_FORMAT: Intl.DateTimeFormatOptions = { month: "long", day: "numeric", weekday: "short" };
+
+/** "YYYY-MM-DD" 현지 날짜를 월, 일, 요일로 보입니다. */
+function dayLabel(locale: Locale, day: string): string {
+  return localDate(day).toLocaleDateString(locale, DAY_FORMAT);
+}
+
+function dayRangeLabel(locale: Locale, from: string, to: string): string {
+  return new Intl.DateTimeFormat(locale, DAY_FORMAT).formatRange(localDate(from), localDate(to));
+}
+
 type RowProps = {
   issue: Issue;
   href: string;
   /** 이 이슈가 닫히기를 기다리는 이슈 수입니다. */
   waiters: number;
   showAssignee?: boolean;
+  /** 마감 목록의 행이면 마감 시각을 보이고, 기한 초과면 강조합니다. */
+  due?: { at: number; overdue: boolean };
   /** 막힌 이슈가 기다리는 이슈를 한 줄씩 보입니다. human gate는 사람 확인 기다림 표시와 gate 제목으로 보입니다. */
   waitingOn?: Blocker[];
 };
 
-function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
+function FocusRow({ issue, href, waiters, showAssignee, due, waitingOn }: RowProps) {
   const messages = useMessages();
+  const locale = useLocale();
   const title = issue.title || messages.common.untitled;
   return (
     <CoveredIssueRow
@@ -277,6 +355,14 @@ function FocusRow({ issue, href, waiters, showAssignee, waitingOn }: RowProps) {
           </span>
         )}
         {issue.priority !== null && <PriorityChip priority={issue.priority} />}
+        {due && (
+          <span
+            className={`shrink-0 text-xs tabular-nums ${due.overdue ? "font-semibold text-error" : "text-emphasis-60"}`}
+          >
+            <span className="sr-only">{messages.issue.dueAt}</span>
+            {dueAtLabel(locale, due.at)}
+          </span>
+        )}
         <CoveredIssueIdButton
           issueId={issue.id}
           short

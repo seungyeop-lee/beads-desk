@@ -1,5 +1,8 @@
 {
   "baseline": 50,
-  "limit": 51,
-  "reasons": ["e2e/issues/markdown-editor.spec.ts: production build의 chunk 분리와 chunk 로드 실패"]
+  "limit": 52,
+  "reasons": [
+    "e2e/issues/markdown-editor.spec.ts: production build의 chunk 분리와 chunk 로드 실패",
+    "e2e/focus/due-dates.spec.ts: 상세에서 저장한 마감일의 bd 저장과, CLI로 바꾼 마감일의 변경 알림으로 다시 그린 지금 화면 마감 묶음"
+  ]
 }

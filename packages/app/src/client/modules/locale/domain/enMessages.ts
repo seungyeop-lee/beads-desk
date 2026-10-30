@@ -88,6 +88,7 @@ export const enMessages: Messages = {
     status: "Status",
     priority: "Priority",
     assignee: "Assignee",
+    dueAt: "Due",
     labels: "Labels",
     dependencyCount: "Deps",
     waiters: (count) => `blocks ${count}`,
@@ -253,6 +254,12 @@ export const enMessages: Messages = {
     reopen: "Undefer",
     reopenHint: "Clear the defer date and reopen the issue",
   },
+  dueAt: {
+    date: "Due date",
+    time: "Due time",
+    timeHint: "Leave the time empty for midnight",
+    clear: "Clear",
+  },
   dependencyList: {
     remove: (id) => `Remove dependency ${id}`,
   },
@@ -333,6 +340,14 @@ export const enMessages: Messages = {
     readyEmpty: "No ready issues.",
     blockedEmpty: "No blocked issues.",
     epicsEmpty: "No open or in-progress epics.",
+    deadlines: {
+      title: "Due dates",
+      overdue: "Overdue",
+      overdueBasis: "Past the due time",
+      dueToday: "Due today",
+      dueSoon: (days) => `Next ${days} days`,
+      empty: "None",
+    },
     stats: {
       title: "Flow",
       throughput: "Last 7 days",

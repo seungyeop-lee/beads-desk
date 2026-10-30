@@ -3,6 +3,7 @@ import { fixture } from "./fakeBd.testkit";
 import {
   awaitsHumanDecision,
   isOpenHumanGateLink,
+  isOverdue,
   parseIssueDetail,
   parseIssueEvents,
   parseIssues,
@@ -34,6 +35,7 @@ describe("parseIssues", () => {
       startedAt: null,
       closedAt: null,
       deferUntil: null,
+      dueAt: null,
     });
   });
 
@@ -60,6 +62,16 @@ describe("parseIssues", () => {
     ]);
 
     expect(deferred?.deferUntil).toBe(Date.parse("2026-10-16T13:04:46Z"));
+  });
+
+  test("마감일이 있는 이슈는 dueAt을 epoch ms로 담고, bd가 마감일을 지워 null로 내놓으면 null이다", () => {
+    const [due, cleared] = parseIssues([
+      { id: "x-1", due_at: "2026-11-04T15:00:00Z" },
+      { id: "x-2", due_at: null },
+    ]);
+
+    expect(due?.dueAt).toBe(Date.parse("2026-11-04T15:00:00Z"));
+    expect(cleared?.dueAt).toBeNull();
   });
 
   test("gate는 기다리는 대상을 awaitType으로 담고, gate가 아닌 이슈에는 awaitType이 없다", () => {
@@ -92,6 +104,7 @@ describe("parseIssues", () => {
         startedAt: null,
         closedAt: null,
         deferUntil: null,
+        dueAt: null,
       },
     ]);
   });
@@ -252,5 +265,22 @@ describe("parseIssueEvents", () => {
 
   test("이슈가 없어 bd가 null을 출력하면 빈 목록을 돌려준다", () => {
     expect(parseIssueEvents(null)).toEqual([]);
+  });
+});
+
+describe("isOverdue", () => {
+  const now = Date.parse("2026-11-04T06:00:00Z");
+
+  test("마감 시각이 지금보다 이르면 진행 중·막힘·보류 이슈도 기한 초과다", () => {
+    for (const status of ["open", "in_progress", "blocked", "deferred"]) {
+      expect(isOverdue({ status, dueAt: now - 1 }, now)).toBe(true);
+    }
+  });
+
+  test("마감 시각이 지금과 같거나 늦으면, 마감일이 없거나 닫힌 이슈면 기한 초과가 아니다", () => {
+    expect(isOverdue({ status: "open", dueAt: now }, now)).toBe(false);
+    expect(isOverdue({ status: "open", dueAt: now + 1 }, now)).toBe(false);
+    expect(isOverdue({ status: "open", dueAt: null }, now)).toBe(false);
+    expect(isOverdue({ status: "closed", dueAt: now - 1 }, now)).toBe(false);
   });
 });

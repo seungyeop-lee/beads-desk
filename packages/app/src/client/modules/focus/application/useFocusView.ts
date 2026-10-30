@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import type { Issue } from "@beads-desk/bd/issue";
 import { useEpics } from "@/client/modules/epics/application/useEpics";
+import type { FocusDeadlines } from "@/client/modules/focus/domain/focusDeadlines";
 import { focusStats, type FocusStats } from "@/client/modules/focus/domain/focusStats";
 import { focusView, type FocusView } from "@/client/modules/focus/domain/focusView";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
 import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { useGateTitles } from "@/client/modules/gates/application/useGateTitles";
 import { useIssueList } from "@/client/modules/issues/application/useIssueList";
+import { useFocusDeadlines } from "./useFocusDeadlines";
 import type { WorkspaceReadState } from "@/client/modules/workspace/application/useWorkspaceRead";
 import type { EpicSummary } from "@/shared/contract/epics";
 
@@ -21,6 +23,8 @@ export function useFocusView(now: number): {
   /** 이슈 목록을 다 읽기 전에는 null입니다. */
   view: FocusView | null;
   stats: FocusStats | null;
+  /** 마감 목록입니다. 흐름 통계의 now와 따로, 분류가 바뀌는 시각에 다시 나눕니다. */
+  deadlines: FocusDeadlines | null;
   /** 이슈 id마다 제목입니다. 막힘 표시에 상대 이슈 이름을 보입니다. */
   titles: ReadonlyMap<string, string>;
   /** 열린 gate의 id마다 제목과 human gate인지입니다. */
@@ -39,9 +43,10 @@ export function useFocusView(now: number): {
     () => (issues ? focusStats(issues, epics.data ?? [], now) : null),
     [issues, epics.data, now],
   );
+  const deadlines = useFocusDeadlines(issues);
   const titles = useMemo(
     () => new Map((issues ?? []).map((issue) => [issue.id, issue.title])),
     [issues],
   );
-  return { issueList, epics, humanDecisionCount, view, stats, titles, gateTitles };
+  return { issueList, epics, humanDecisionCount, view, stats, deadlines, titles, gateTitles };
 }

@@ -59,11 +59,13 @@ describe("updateIssueAction", () => {
     const result = await updateIssueAction(routeApiWorkspaceSlug, "demo-1", {
       title: "새 제목",
       priority: 0,
+      dueAt: "2026-11-05T06:30:00.000Z",
     });
 
     expect(bd.updateIssueFields).toHaveBeenCalledWith("/workspace", "demo-1", {
       title: "새 제목",
       priority: 0,
+      dueAt: "2026-11-05T06:30:00.000Z",
     });
     expect(checkWorkspaceChangesNow).toHaveBeenCalledWith("/workspace");
     expect(result).toEqual({ ok: true, data: null });
@@ -74,6 +76,7 @@ describe("updateIssueAction", () => {
     ["문자열이 아닌 값", { title: 3 }],
     ["범위를 벗어난 우선순위", { priority: 7 }],
     ["정수가 아닌 우선순위", { priority: 1.5 }],
+    ["문자열이 아닌 마감 시각", { dueAt: Date.parse("2026-11-05T06:30:00Z") }],
     ["객체가 아닌 값", "title"],
   ])("%s는 bd를 실행하지 않고 거부한다", async (_case, changes) => {
     const result = await updateIssueAction(

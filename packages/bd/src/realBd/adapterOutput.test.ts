@@ -33,6 +33,7 @@ import {
   showIssue,
   updateIssueFields,
 } from "..";
+import { isOverdue } from "../issue";
 import type { BdOutcome } from "../runBd";
 
 // 설치된 실제 bd로 adapter를 실행해, unit test의 fixture가 아니라 지금 bd의 출력과 거부 문구를 해석하는지 확인합니다.
@@ -132,6 +133,75 @@ test("보류하면 bd가 저장한 기한과 사유를 상세에서 읽는다", 
   expect(saved.deferUntil! - Date.now()).toBeGreaterThan(23 * 60 * 60 * 1000);
   // bd는 날짜를 bd를 실행한 시간대의 0시로 해석합니다.
   expect(value(await showIssue(cwd, dated)).deferUntil).toBe(new Date(2030, 0, 15).getTime());
+});
+
+test("화면이 저장한 마감 시각은 bd show --json의 due_at과 같고, 날짜만 고른 값은 bd에 날짜만 넘긴 값과 같으며, 빈 값은 마감일을 지운다", async () => {
+  const id = value(await createIssue(cwd, { title: "화면에서 마감일을 고칠 작업" }));
+  const cli = value(await createIssue(cwd, { title: "CLI로 마감일을 정한 작업" }));
+  const savedDueAt = async (issueId: string): Promise<string | null> =>
+    JSON.parse(await run("bd", "show", "--json", "--", issueId))[0].due_at ?? null;
+
+  // 화면은 날짜만 고르면 browser 시간대의 그날 0시를, 시각까지 고르면 그 시각을 UTC로 바꿔 보냅니다.
+  const dateOnly = new Date(2030, 0, 15).toISOString();
+  value(await updateIssueFields(cwd, id, { dueAt: dateOnly }));
+  await run("bd", "update", cli, "--due", "2030-01-15");
+  expect(Date.parse((await savedDueAt(id))!)).toBe(Date.parse(dateOnly));
+  expect(await savedDueAt(id)).toBe(await savedDueAt(cli));
+  expect(value(await showIssue(cwd, id)).dueAt).toBe(Date.parse(dateOnly));
+
+  const timed = new Date(2030, 0, 16, 15, 30).toISOString();
+  value(await updateIssueFields(cwd, id, { dueAt: timed }));
+  expect(Date.parse((await savedDueAt(id))!)).toBe(Date.parse(timed));
+  expect(value(await showIssue(cwd, id)).dueAt).toBe(Date.parse(timed));
+
+  value(await updateIssueFields(cwd, id, { dueAt: "" }));
+  expect(await savedDueAt(id)).toBeNull();
+  expect(value(await showIssue(cwd, id)).dueAt).toBeNull();
+
+  // bd가 다른 시각으로 저장하는 형식은 bd에 넘기지 않습니다.
+  for (const dueAt of ["2030-01-15 15:30", "2030/01/15"]) {
+    expect(await updateIssueFields(cwd, id, { dueAt })).toEqual({
+      ok: false,
+      error: { kind: "invalidDueAt", exitCode: null },
+    });
+  }
+  expect(await savedDueAt(id)).toBeNull();
+});
+
+test("기한 초과 판정은 같은 workspace의 bd list --overdue 결과와 같다", async () => {
+  const due = async (title: string, dueAt: string) => {
+    const id = value(await createIssue(cwd, { title }));
+    await run("bd", "update", id, "--due", dueAt);
+    return id;
+  };
+  const today = new Date();
+  const pad = (number: number) => String(number).padStart(2, "0");
+  const todayDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+  const past = await due("지난해 마감 작업", "2020-01-01T09:00:00Z");
+  // 날짜만 넣은 마감일은 그날 0시부터 기한 초과입니다.
+  const todayMidnight = await due("오늘 마감 작업", todayDate);
+  const nextWeek = await due("다음 주 마감 작업", "+7d");
+  const doing = await due("마감이 지난 진행 중 작업", "2020-01-01");
+  await run("bd", "update", doing, "--status", "in_progress");
+  const blocked = await due("마감이 지난 막힌 작업", "2020-01-01");
+  await run("bd", "update", blocked, "--status", "blocked");
+  const deferred = await due("마감이 지난 보류 작업", "2020-01-01");
+  value(await deferIssue(cwd, deferred, { until: "tomorrow", reason: "" }));
+  const closed = await due("마감이 지난 닫힌 작업", "2020-01-01");
+  expect((await closeIssue(cwd, closed, { reason: "" })).ok).toBe(true);
+  const undated = value(await createIssue(cwd, { title: "마감일 없는 작업" }));
+
+  const listed: { id: string }[] = JSON.parse(
+    await run("bd", "list", "--overdue", "--json", "--limit", "0"),
+  );
+  const now = Date.now();
+  const judged = value(await listIssues(cwd, [])).filter((issue) => isOverdue(issue, now));
+
+  const overdue = listed.map(({ id }) => id).sort();
+  expect(judged.map(({ id }) => id).sort()).toEqual(overdue);
+  expect(overdue).toEqual(expect.arrayContaining([past, todayMidnight, doing, blocked, deferred]));
+  for (const id of [nextWeek, closed, undated]) expect(overdue).not.toContain(id);
 });
 
 test("기한이 지난 보류 이슈는 bd ready로 읽을 때 bd가 다시 연다", async () => {

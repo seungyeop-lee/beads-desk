@@ -24,6 +24,8 @@ export type Issue = {
   closedAt: number | null;
   /** 보류 기한입니다. 기한이 지나면 다음 bd ready 조회 때 bd가 이슈를 다시 엽니다. 기한 없이 보류했거나 보류가 아니면 null입니다. */
   deferUntil: number | null;
+  /** 마감 시각입니다. bd는 날짜만 받으면 bd를 실행한 시간대의 그날 0시로 저장합니다. 마감일이 없으면 null입니다. */
+  dueAt: number | null;
   /** 의존 관계 때문에 이 이슈를 막고 있는 이슈 id입니다. bd blocked 출력에만 있어, 목록 조회가 bd blocked에 나온 이슈에만 채웁니다. */
   blockedBy?: string[];
   /** bd ready에 들어 있으면 true입니다. 목록 조회가 따로 채웁니다. */
@@ -38,6 +40,11 @@ export const HUMAN_LABEL = "human";
 /** bd human respond와 dismiss는 이슈를 닫기만 하고 라벨은 남기므로, 닫힌 이슈는 판단을 기다리지 않습니다. */
 export function awaitsHumanDecision(issue: Pick<Issue, "status" | "labels">): boolean {
   return issue.status !== "closed" && issue.labels.includes(HUMAN_LABEL);
+}
+
+/** bd list --overdue와 같은 기준입니다. 마감 시각이 now보다 이르면, 닫힌 이슈가 아닌 한 진행 중·막힘·보류 이슈도 기한 초과입니다. */
+export function isOverdue(issue: Pick<Issue, "status" | "dueAt">, now: number): boolean {
+  return issue.status !== "closed" && issue.dueAt !== null && issue.dueAt < now;
 }
 
 /**
@@ -190,6 +197,7 @@ export function parseIssue(value: unknown): Issue | null {
     startedAt: timestampOr(value.started_at, null),
     closedAt: timestampOr(value.closed_at, null),
     deferUntil: timestampOr(value.defer_until, null),
+    dueAt: timestampOr(value.due_at, null),
     ...(Array.isArray(value.blocked_by)
       ? { blockedBy: value.blocked_by.filter((id) => typeof id === "string") }
       : {}),

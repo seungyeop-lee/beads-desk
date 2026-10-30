@@ -1,7 +1,8 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
+import { enMessages } from "@/client/modules/locale/domain/enMessages";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import {
   expectEpicProgressSegments,
@@ -60,9 +61,9 @@ beforeEach(() => {
 
 const WAITERS = /\d+개 대기/;
 
-function renderFocus() {
+function renderFocus(locale: "ko" | "en" = "ko") {
   return render(
-    <LocaleProvider locale="ko">
+    <LocaleProvider locale={locale}>
       <FocusScreen />
     </LocaleProvider>,
   );
@@ -196,4 +197,81 @@ test("human gate가 막는 막힘 행은 사람 확인 기다림과 gate 제목�
 
   await expect.element(blocked).toMatchTextContent(messages.humanGate.waiting);
   await expect.element(blocked).toMatchTextContent("Review: desk-work");
+});
+
+describe("마감", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // 오늘 밤 마감, 내일 마감, 이미 지난 마감 이슈와 마감일 없는 이슈입니다. 시각은 browser 현지 시각입니다.
+  const DUE_ISSUES = [
+    issue("desk-tonight", {
+      title: "오늘 밤 마감",
+      dueAt: new Date(2026, 9, 30, 23, 30).getTime(),
+    }),
+    issue("desk-tomorrow", { title: "내일 마감", dueAt: new Date(2026, 9, 31, 12, 0).getTime() }),
+    issue("desk-past", {
+      title: "지난 마감",
+      status: "in_progress",
+      dueAt: new Date(2026, 9, 29).getTime(),
+    }),
+    issue("desk-undated", { title: "마감일 없음", ready: true }),
+  ];
+
+  test("마감 묶음마다 날짜 기준을 보이고, 이슈가 그대로여도 마감 시각과 자정을 넘으면 다시 나눈다", async () => {
+    // 1분마다 바뀌는 흐름 통계의 시계(setInterval)는 그대로 두고, 마감 분류가 쓰는 시계만 바꿉니다.
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(new Date(2026, 9, 30, 23, 0));
+    reads.issues = DUE_ISSUES;
+    reads.epics = [];
+    const screen = await renderFocus();
+    const deadlines = screen.getByRole("region", {
+      name: messages.focus.deadlines.title,
+      exact: true,
+    });
+    const group = (name: string) => deadlines.getByRole("region", { name, exact: true });
+    const overdue = group(messages.focus.deadlines.overdue);
+    const today = group(messages.focus.deadlines.dueToday);
+    const soon = group(messages.focus.deadlines.dueSoon(3));
+
+    await expect
+      .element(overdue.getByRole("heading"))
+      .toHaveTextContent("기한 초과마감 시각이 지남1");
+    await expect.element(overdue).toMatchTextContent("지난 마감");
+    await expect.element(today.getByRole("heading")).toHaveTextContent("오늘 마감10월 30일 (금)1");
+    await expect.element(today).toMatchTextContent("오늘 밤 마감");
+    await expect
+      .element(soon.getByRole("heading"))
+      .toMatchTextContent(/^3일 이내10월 31일 \(토\).+11월 2일 \(월\)1$/);
+    await expect.element(soon).toMatchTextContent("내일 마감");
+    await expect.element(deadlines).not.toMatchTextContent("마감일 없음");
+
+    await vi.advanceTimersByTimeAsync(30 * 60 * 1000 + 1);
+    await expect.element(overdue).toMatchTextContent("오늘 밤 마감");
+    await expect.element(today).toMatchTextContent(messages.focus.deadlines.empty);
+
+    await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
+    await expect.element(today.getByRole("heading")).toHaveTextContent("오늘 마감10월 31일 (토)1");
+    await expect.element(today).toMatchTextContent("내일 마감");
+    await expect.element(soon).toMatchTextContent(messages.focus.deadlines.empty);
+  });
+
+  test("영어 화면은 bd의 용어로 묶음 이름을 보이고 날짜 기준을 영어 날짜로 보인다", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 30, 23, 0));
+    reads.issues = DUE_ISSUES;
+    reads.epics = [];
+    const screen = await renderFocus("en");
+    const text = enMessages.focus.deadlines;
+    const deadlines = screen.getByRole("region", { name: text.title, exact: true });
+    const heading = (name: string) =>
+      deadlines.getByRole("region", { name, exact: true }).getByRole("heading");
+
+    await expect.element(heading(text.overdue)).toHaveTextContent("OverduePast the due time1");
+    await expect.element(heading(text.dueToday)).toHaveTextContent("Due todayFri, October 301");
+    await expect
+      .element(heading(text.dueSoon(3)))
+      .toMatchTextContent(/^Next 3 daysSat, October 31.+Mon, November 21$/);
+  });
 });

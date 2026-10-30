@@ -107,6 +107,39 @@ describe("updateIssueFields", () => {
     });
   });
 
+  test("마감 시각은 UTC 시각 형식 그대로 --due로 넘기고, 빈 값은 마감일을 지우도록 그대로 넘긴다", async () => {
+    await useFakeBd({
+      "update --due=2026-11-05T15:30:00.000Z -- demo-1": {},
+      "update --due= -- demo-2": {},
+    });
+
+    expect(
+      await updateIssueFields(fakeBd.workDir, "demo-1", { dueAt: "2026-11-05T15:30:00.000Z" }),
+    ).toEqual(succeeded);
+    expect(await updateIssueFields(fakeBd.workDir, "demo-2", { dueAt: "" })).toEqual(succeeded);
+  });
+
+  test.each([
+    "2026-11-05 15:30",
+    "2026/11/05",
+    "2026-11-05",
+    "2026-11-05T15:30:00Z",
+    "2026-11-05T15:30:00.000+09:00",
+    "+1d",
+    "2026-02-30T00:00:00.000Z",
+    "2026-13-01T00:00:00.000Z",
+  ])(
+    "bd가 다른 시각으로 저장하거나 UTC 시각 형식이 아닌 마감 시각 %s는 bd를 실행하지 않는다",
+    async (dueAt) => {
+      await useFakeBd({});
+
+      expect(await updateIssueFields(fakeBd.workDir, "demo-1", { dueAt })).toEqual({
+        ok: false,
+        error: { kind: "invalidDueAt", exitCode: null },
+      });
+    },
+  );
+
   test("bd가 실패하면 stderr를 오류로 돌려준다", async () => {
     await useFakeBd({ "update --title=New -- demo-zzz": { stderr: "no issue found", code: 1 } });
 

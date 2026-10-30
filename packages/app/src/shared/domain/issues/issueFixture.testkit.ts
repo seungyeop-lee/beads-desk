@@ -21,6 +21,7 @@ export function issue(id: string, fields: Partial<Issue> = {}): Issue {
     startedAt: null,
     closedAt: null,
     deferUntil: null,
+    dueAt: null,
     ...fields,
   };
 }

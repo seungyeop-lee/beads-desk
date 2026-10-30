@@ -23,10 +23,11 @@ function isPriority(value: unknown): value is number {
   return (PRIORITIES as readonly unknown[]).includes(value);
 }
 
-// 문자열 필드는 bd의 목록을 따릅니다. IssueChanges에 문자열이 아닌 필드가 생기면 그 검사를 여기에 더해야 typecheck를 통과합니다.
+// 문자열 필드는 bd의 목록을 따릅니다. IssueChanges에 그 목록 밖의 필드가 생기면 그 검사를 여기에 더해야 typecheck를 통과합니다.
+// 마감 시각은 문자열인지만 보고, 형식은 bd adapter가 검사합니다.
 const FIELD_CHECKS = new Map<string, (value: unknown) => boolean>([
   ...ISSUE_TEXT_FIELDS.map((field) => [field, isString] as const),
-  ...Object.entries({ priority: isPriority } satisfies Record<
+  ...Object.entries({ priority: isPriority, dueAt: isString } satisfies Record<
     Exclude<keyof IssueChanges, IssueTextField>,
     (value: unknown) => boolean
   >),

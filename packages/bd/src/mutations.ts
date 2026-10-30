@@ -57,7 +57,7 @@ export async function createIssue(cwd: string, issue: NewIssue): Promise<BdOutco
     : outputError("missingCreatedIssueId");
 }
 
-/** 문자열로 바꾸는 필드입니다. 바꿀 수 있는 필드 가운데 priority만 숫자입니다. */
+/** 받은 문자열을 그대로 bd에 넘기는 필드입니다. 숫자인 priority와 형식을 검사하는 dueAt은 따로 둡니다. */
 export const ISSUE_TEXT_FIELDS = [
   "title",
   "description",
@@ -73,6 +73,8 @@ export type IssueTextField = (typeof ISSUE_TEXT_FIELDS)[number];
 export type IssueFieldChanges = { [Field in IssueTextField]?: string } & {
   /** 0(긴급)부터 4(백로그)까지입니다. */
   priority?: number;
+  /** 마감 시각입니다. Date.prototype.toISOString()이 만드는 UTC 시각 형식만 받고, 빈 문자열은 마감일을 지웁니다. */
+  dueAt?: string;
 };
 
 const FIELD_FLAGS: Record<keyof IssueFieldChanges, string> = {
@@ -83,7 +85,20 @@ const FIELD_FLAGS: Record<keyof IssueFieldChanges, string> = {
   notes: "--notes",
   priority: "--priority",
   assignee: "--assignee",
+  dueAt: "--due",
 };
+
+// bd --due는 2026-11-05 15:30이나 2026/11/05를 거부하지 않고 다른 시각으로 저장합니다.
+// 그래서 서버와 browser의 시간대와 관계없이 같은 순간을 가리키는 UTC 시각 형식만 넘깁니다.
+const DUE_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+/** 빈 값이거나, 달력에 있는 날짜와 시각을 toISOString() 형식으로 적은 값인지 확인합니다. */
+function isDueAt(value: string): boolean {
+  if (value === "") return true;
+  if (!DUE_AT.test(value) || !Number.isFinite(Date.parse(value))) return false;
+  // 2026-02-30처럼 달력에 없는 날짜는 다른 날로 넘어가므로, 다시 적은 값이 원래 값과 같아야 합니다.
+  return new Date(value).toISOString() === value;
+}
 
 export async function updateIssueFields(
   cwd: string,
@@ -92,6 +107,9 @@ export async function updateIssueFields(
 ): Promise<BdOutcome<null>> {
   if (changes.title !== undefined && changes.title.trim().length === 0) {
     return inputError("emptyTitle");
+  }
+  if (changes.dueAt !== undefined && !isDueAt(changes.dueAt)) {
+    return inputError("invalidDueAt");
   }
   const flags = (Object.keys(FIELD_FLAGS) as (keyof IssueFieldChanges)[])
     .filter((field) => changes[field] !== undefined)

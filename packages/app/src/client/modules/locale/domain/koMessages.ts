@@ -103,6 +103,7 @@ export const koMessages = {
     status: "상태",
     priority: "우선순위",
     assignee: "담당자",
+    dueAt: "마감일",
     labels: "라벨",
     dependencyCount: "의존",
     waiters: (count: number) => `${count}개 대기`,
@@ -260,6 +261,12 @@ export const koMessages = {
     reopen: "다시 열기",
     reopenHint: "보류 기한을 지우고 열림으로 바꿉니다",
   },
+  dueAt: {
+    date: "마감 날짜",
+    time: "마감 시각",
+    timeHint: "시각을 비우면 그날 0시로 정합니다",
+    clear: "지우기",
+  },
   dependencyList: {
     remove: (id: string) => `${id} 의존 관계 지우기`,
   },
@@ -343,6 +350,14 @@ export const koMessages = {
     readyEmpty: "바로 작업 가능한 이슈가 없습니다.",
     blockedEmpty: "막힌 이슈가 없습니다.",
     epicsEmpty: "진행 중이거나 열린 에픽이 없습니다.",
+    deadlines: {
+      title: "마감",
+      overdue: "기한 초과",
+      overdueBasis: "마감 시각이 지남",
+      dueToday: "오늘 마감",
+      dueSoon: (days: number) => `${days}일 이내`,
+      empty: "없음",
+    },
     stats: {
       title: "흐름",
       throughput: "최근 7일 처리량",
