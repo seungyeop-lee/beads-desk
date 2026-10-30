@@ -5,6 +5,7 @@ export {
   epicStatuses,
   exportedIssues,
   issueEvents,
+  lastIssueSnapshot,
   listIssues,
   readyIssues,
   showIssue,

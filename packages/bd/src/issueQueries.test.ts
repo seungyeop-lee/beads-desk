@@ -6,6 +6,7 @@ import {
   dependencyGraph,
   exportedIssues,
   issueEvents,
+  lastIssueSnapshot,
   listIssues,
   readyIssues,
   showIssue,
@@ -432,6 +433,31 @@ describe("issueEvents", () => {
       ok: false,
       error: { kind: "emptyIssueId", exitCode: null },
     });
+  });
+});
+
+describe("lastIssueSnapshot", () => {
+  test("bd history의 마지막 스냅샷 한 건에서 이슈를 읽는다", async () => {
+    await useFakeBd({
+      "history --json --limit 1 -- demo-1": {
+        stdout: JSON.stringify([
+          {
+            CommitHash: "h-1",
+            Issue: { id: "demo-1", title: "지운 작업", status: "open", issue_type: "bug" },
+          },
+        ]),
+      },
+    });
+
+    const result = await lastIssueSnapshot(fakeBd.workDir, " demo-1 ");
+
+    expect(result.ok && result.value).toMatchObject({ title: "지운 작업", issueType: "bug" });
+  });
+
+  test("기록이 없는 id이면 bd가 출력한 null대로 null을 돌려준다", async () => {
+    await useFakeBd({ "history --json --limit 1 -- demo-x": { stdout: "null" } });
+
+    expect(await lastIssueSnapshot(fakeBd.workDir, "demo-x")).toEqual({ ok: true, value: null });
   });
 });
 

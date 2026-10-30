@@ -42,7 +42,7 @@
 ### 자리를 비운 동안 생긴 일 보기
 
 - **활동** 화면은 workspace 전체에서 이슈를 만들고 닫고 댓글을 단 기록을 새것부터 보여 줍니다.
-- 이슈를 고친 기록(설명, 상태, 제목, 라벨 등)은 `bd config set events-journal true`로 bd의 events journal을 켜야 보입니다. 켠 뒤에 생긴 변경부터 기록됩니다.
+- 이슈를 고친 기록(설명, 상태, 제목, 라벨 등)과 지운 기록은 `bd config set events-journal true`로 bd의 events journal을 켜야 보입니다. 켠 뒤에 생긴 변경부터 기록됩니다.
 - **여기부터 지난번에 본 기록** 구분선이 지난번에 어디까지 봤는지 표시합니다.
 
 ![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/activity.png)

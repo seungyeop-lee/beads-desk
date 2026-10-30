@@ -1,11 +1,13 @@
 import { expect, test } from "vitest";
-import type { ExportedIssue } from "@beads-desk/bd/issue";
+import type { ExportedIssue, Issue } from "@beads-desk/bd/issue";
 import type { JournalRecord } from "@beads-desk/bd/types";
-import { exportedIssue } from "@/shared/domain/issues/issueFixture.testkit";
+import { exportedIssue, issue } from "@/shared/domain/issues/issueFixture.testkit";
 import type { ActivityFeedQuery } from "@/shared/contract/activityFeed";
-import { activityFeedPage } from "./activityFeed";
+import { activityFeedPage, deletionsWithoutSnapshot } from "./activityFeed";
 
 const ALL: ActivityFeedQuery = { since: null, until: null, limit: 100 };
+
+const NO_SNAPSHOTS: ReadonlyMap<number, Issue | null> = new Map();
 
 /** 이슈 t-1의 journal 레코드를 만듭니다. state는 그 레코드에 남은 수정 뒤의 이슈 상태입니다. */
 function record(
@@ -42,7 +44,7 @@ test("만들기, 닫기, 댓글 기록을 새것부터 놓고, 줄마다 시각�
     exportedIssue("t-2", { title: "문서 정리", createdAt: 2_000, createdBy: "bob" }),
   ];
 
-  expect(activityFeedPage(issues, null, ALL)).toEqual({
+  expect(activityFeedPage(issues, null, NO_SNAPSHOTS, ALL)).toEqual({
     entries: [
       {
         key: "t-1:closed",
@@ -102,9 +104,9 @@ test("gate를 만들고 닫은 기록과 gate에 달린 댓글은 피드에 넣�
     }),
   ];
 
-  expect(activityFeedPage(issues, null, ALL).entries.map((entry) => entry.key)).toEqual([
-    "t-1:created",
-  ]);
+  expect(
+    activityFeedPage(issues, null, NO_SNAPSHOTS, ALL).entries.map((entry) => entry.key),
+  ).toEqual(["t-1:created"]);
 });
 
 test("시각이 같으면 닫기, 댓글, 만들기 순서로 놓아 한 이슈의 기록이 일어난 순서의 역순이 된다", () => {
@@ -116,11 +118,9 @@ test("시각이 같으면 닫기, 댓글, 만들기 순서로 놓아 한 이슈�
     }),
   ];
 
-  expect(activityFeedPage(issues, null, ALL).entries.map((entry) => entry.kind)).toEqual([
-    "closed",
-    "commented",
-    "created",
-  ]);
+  expect(
+    activityFeedPage(issues, null, NO_SNAPSHOTS, ALL).entries.map((entry) => entry.kind),
+  ).toEqual(["closed", "commented", "created"]);
 });
 
 test("since 이상 until 미만인 기록만 남긴다", () => {
@@ -131,7 +131,11 @@ test("since 이상 until 미만인 기록만 남긴다", () => {
     exportedIssue("t-end", { createdAt: 2_000 }),
   ];
 
-  const page = activityFeedPage(issues, null, { since: 1_000, until: 2_000, limit: 100 });
+  const page = activityFeedPage(issues, null, NO_SNAPSHOTS, {
+    since: 1_000,
+    until: 2_000,
+    limit: 100,
+  });
 
   expect(page.entries.map((entry) => entry.issueId)).toEqual(["t-last", "t-start"]);
 });
@@ -139,8 +143,12 @@ test("since 이상 until 미만인 기록만 남긴다", () => {
 test("limit건까지만 돌려주고, 더 남은 기록이 있는지 알린다", () => {
   const issues = [1, 2, 3].map((n) => exportedIssue(`t-${n}`, { createdAt: n * 1_000 }));
 
-  const first = activityFeedPage(issues, null, { since: null, until: null, limit: 2 });
-  const all = activityFeedPage(issues, null, { since: null, until: null, limit: 3 });
+  const first = activityFeedPage(issues, null, NO_SNAPSHOTS, {
+    since: null,
+    until: null,
+    limit: 2,
+  });
+  const all = activityFeedPage(issues, null, NO_SNAPSHOTS, { since: null, until: null, limit: 3 });
 
   expect(first.entries.map((entry) => entry.issueId)).toEqual(["t-3", "t-2"]);
   expect(first.hasMore).toBe(true);
@@ -163,7 +171,7 @@ test("댓글과 닫은 사유는 줄바꿈을 한 칸으로 줄이고 긴 본문
   ];
 
   const byKey = new Map(
-    activityFeedPage(issues, null, ALL).entries.map((entry) => [entry.key, entry]),
+    activityFeedPage(issues, null, NO_SNAPSHOTS, ALL).entries.map((entry) => [entry.key, entry]),
   );
 
   expect(byKey.get("t-1:created")?.actor).toBeNull();
@@ -200,7 +208,7 @@ test("journal의 update 레코드는 같은 이슈의 바로 앞 레코드와 �
     }),
   ];
 
-  const updates = activityFeedPage(issues, journal, ALL).entries.filter(
+  const updates = activityFeedPage(issues, journal, NO_SNAPSHOTS, ALL).entries.filter(
     (entry) => entry.kind === "updated",
   );
 
@@ -239,7 +247,7 @@ test("journal을 켜기 전에 만든 이슈처럼 앞 레코드가 없는 첫 �
   const issues = [exportedIssue("t-1", { createdAt: 1_000 })];
   const journal = [record(1, "update", 2_000, { priority: 1 })];
 
-  expect(activityFeedPage(issues, journal, ALL).entries).toContainEqual(
+  expect(activityFeedPage(issues, journal, NO_SNAPSHOTS, ALL).entries).toContainEqual(
     expect.objectContaining({ key: "t-1:updated:1", kind: "updated", changes: [] }),
   );
 });
@@ -258,11 +266,9 @@ test("journal의 create, close, comment 레코드로는 기록을 만들지 않�
     record(3, "close", 3_000, { status: "closed" }),
   ];
 
-  expect(activityFeedPage(issues, journal, ALL).entries.map((entry) => entry.key)).toEqual([
-    "t-1:closed",
-    "t-1:comment:c-1",
-    "t-1:created",
-  ]);
+  expect(
+    activityFeedPage(issues, journal, NO_SNAPSHOTS, ALL).entries.map((entry) => entry.key),
+  ).toEqual(["t-1:closed", "t-1:comment:c-1", "t-1:created"]);
 });
 
 test("앞 레코드와 비교해 피드가 보이는 필드가 그대로이거나 상태가 닫힘으로 바뀌기만 했으면 수정 기록을 만들지 않는다", () => {
@@ -273,13 +279,12 @@ test("앞 레코드와 비교해 피드가 보이는 필드가 그대로이거�
     record(3, "update", 3_000, { status: "closed", closedAt: 3_000 }),
   ];
 
-  expect(activityFeedPage(issues, journal, ALL).entries.map((entry) => entry.kind)).toEqual([
-    "closed",
-    "created",
-  ]);
+  expect(
+    activityFeedPage(issues, journal, NO_SNAPSHOTS, ALL).entries.map((entry) => entry.kind),
+  ).toEqual(["closed", "created"]);
 });
 
-test("gate와 bd export에 없는 지운 이슈의 수정 기록은 넣지 않는다", () => {
+test("gate와 bd export에 없는 지운 이슈의 수정 기록은 넣지 않고, 지운 이슈는 삭제 기록만 남는다", () => {
   const issues = [exportedIssue("t-gate", { issueType: "gate", createdAt: 1_000 })];
   const journal = [
     record(1, "update", 2_000, { issueType: "gate", priority: 1 }, "t-gate"),
@@ -287,7 +292,9 @@ test("gate와 bd export에 없는 지운 이슈의 수정 기록은 넣지 않�
     record(3, "delete", 3_000, null, "t-gone"),
   ];
 
-  expect(activityFeedPage(issues, journal, ALL).entries).toEqual([]);
+  expect(
+    activityFeedPage(issues, journal, NO_SNAPSHOTS, ALL).entries.map((entry) => entry.key),
+  ).toEqual(["t-gone:deleted:3"]);
 });
 
 test("수정 기록에도 since 이상 until 미만과 limit을 적용하고, 같은 시각의 수정은 나중 레코드를 앞에 놓는다", () => {
@@ -299,7 +306,11 @@ test("수정 기록에도 since 이상 until 미만과 limit을 적용하고, �
     record(4, "update", 2_000, { priority: 4 }),
   ];
 
-  const page = activityFeedPage(issues, journal, { since: 1_000, until: 2_000, limit: 3 });
+  const page = activityFeedPage(issues, journal, NO_SNAPSHOTS, {
+    since: 1_000,
+    until: 2_000,
+    limit: 3,
+  });
 
   expect(page.entries.map((entry) => entry.key)).toEqual([
     "t-1:updated:3",
@@ -310,6 +321,102 @@ test("수정 기록에도 since 이상 until 미만과 limit을 적용하고, �
 });
 
 test("journal이 꺼져 있으면 null로 받아 응답에 꺼져 있다고 알리고, 켜져 있으면 레코드가 없어도 켜져 있다고 알린다", () => {
-  expect(activityFeedPage([], null, ALL).journalEnabled).toBe(false);
-  expect(activityFeedPage([], [], ALL).journalEnabled).toBe(true);
+  expect(activityFeedPage([], null, NO_SNAPSHOTS, ALL).journalEnabled).toBe(false);
+  expect(activityFeedPage([], [], NO_SNAPSHOTS, ALL).journalEnabled).toBe(true);
+});
+
+test("delete 레코드는 시각, 지운 사람, 같은 이슈의 앞 레코드에 남은 삭제 직전 제목을 담은 링크 대상 없는 삭제 기록이 된다", () => {
+  const journal = [
+    record(1, "create", 1_000, { title: "처음 제목" }, "t-gone"),
+    record(2, "update", 2_000, { title: "지우기 직전 제목" }, "t-gone"),
+    { ...record(3, "delete", 3_000, null, "t-gone"), actor: "agent-9" },
+  ];
+
+  expect(activityFeedPage([], journal, NO_SNAPSHOTS, ALL).entries).toEqual([
+    {
+      key: "t-gone:deleted:3",
+      kind: "deleted",
+      at: 3_000,
+      issueId: "t-gone",
+      title: "지우기 직전 제목",
+      actor: "agent-9",
+      text: null,
+      changes: [],
+    },
+  ]);
+});
+
+test("앞 레코드가 없는 삭제는 넘겨받은 스냅샷에서 제목을 읽고, 스냅샷도 없으면 빈 제목으로 기록한다", () => {
+  const journal = [
+    record(5, "delete", 3_000, null, "t-old"),
+    record(6, "delete", 3_000, null, "t-x"),
+  ];
+  const snapshots = new Map([
+    [5, issue("t-old", { title: "켜기 전에 만든 작업" })],
+    [6, null],
+  ]);
+
+  expect(
+    activityFeedPage([], journal, snapshots, ALL).entries.map(({ issueId, title }) => [
+      issueId,
+      title,
+    ]),
+  ).toEqual([
+    ["t-x", ""],
+    ["t-old", "켜기 전에 만든 작업"],
+  ]);
+});
+
+test("지운 gate는 앞 레코드나 스냅샷의 type으로 알아보고 삭제 기록을 만들지 않는다", () => {
+  const journal = [
+    record(1, "create", 1_000, { issueType: "gate" }, "t-gate"),
+    record(2, "delete", 2_000, null, "t-gate"),
+    record(3, "delete", 2_000, null, "t-old-gate"),
+  ];
+  const snapshots = new Map([[3, issue("t-old-gate", { issueType: "gate" })]]);
+
+  expect(activityFeedPage([], journal, snapshots, ALL).entries).toEqual([]);
+});
+
+test("삭제 기록에도 since 이상 until 미만과 limit을 적용하고, 같은 시각이면 닫은 기록보다 앞에 놓는다", () => {
+  const issues = [exportedIssue("t-1", { createdAt: 500, closedAt: 2_000 })];
+  const journal = [
+    record(1, "update", 900, { title: "a" }, "t-a"),
+    record(2, "delete", 1_000, null, "t-a"),
+    record(3, "update", 1_900, { title: "b" }, "t-b"),
+    record(4, "delete", 2_000, null, "t-b"),
+    record(5, "update", 2_900, { title: "c" }, "t-c"),
+    record(6, "delete", 3_000, null, "t-c"),
+  ];
+
+  const first = activityFeedPage(issues, journal, NO_SNAPSHOTS, {
+    since: 1_000,
+    until: 3_000,
+    limit: 2,
+  });
+  const rest = activityFeedPage(issues, journal, NO_SNAPSHOTS, {
+    since: 1_000,
+    until: 3_000,
+    limit: 3,
+  });
+
+  expect(first.entries.map((entry) => entry.key)).toEqual(["t-b:deleted:4", "t-1:closed"]);
+  expect(first.hasMore).toBe(true);
+  expect(rest.entries.map((entry) => entry.key)).toEqual([
+    "t-b:deleted:4",
+    "t-1:closed",
+    "t-a:deleted:2",
+  ]);
+  expect(rest.hasMore).toBe(false);
+});
+
+test("앞 레코드에서 삭제 직전 상태를 찾지 못한 delete 레코드만 스냅샷을 읽을 삭제로 고르고, 다시 만든 같은 id의 삭제는 따로 판단한다", () => {
+  const journal = [
+    record(4, "delete", 4_000, null, "t-1"),
+    record(1, "create", 1_000, {}, "t-1"),
+    record(2, "delete", 2_000, null, "t-1"),
+    record(3, "delete", 3_000, null, "t-2"),
+  ];
+
+  expect(deletionsWithoutSnapshot(journal).map((deletion) => deletion.seq)).toEqual([3, 4]);
 });

@@ -80,6 +80,22 @@ export async function issueEvents(cwd: string, issueId: string): Promise<BdOutco
 }
 
 /**
+ * 이슈의 마지막 커밋 스냅샷을 읽습니다. 지운 이슈도 삭제 직전의 상태를 돌려줍니다.
+ * 기록이 없는 id이면 bd가 성공 종료 코드와 함께 null을 출력하므로 null을 돌려줍니다.
+ */
+export async function lastIssueSnapshot(
+  cwd: string,
+  issueId: string,
+): Promise<BdOutcome<Issue | null>> {
+  const id = trimmedId(issueId, "emptyIssueId");
+  if (!id.ok) return id;
+  const result = await runBdJson(cwd, ["history", "--json", "--limit", "1", "--", id.value]);
+  if (!result.ok) return result;
+  const [latest] = recordsOf(result.value);
+  return { ok: true, value: parseIssue(latest?.Issue) };
+}
+
+/**
  * 이슈마다 본문 필드와 댓글까지 담은 레코드를 닫힌 이슈와 gate까지 모두 읽습니다.
  * bd 1.3.1의 export는 help 설명과 달리 `--all` 없이도 gate를 내놓습니다.
  * `--all`이나 `--include-memories`를 주면 bd가 민감한 에이전트 정보가 담길 수 있다며 기본 출력에서 뺀 memory도 함께 나오므로, 두 옵션을 주지 않습니다.

@@ -42,7 +42,7 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 ### See what happened while you were away
 
 - **Activity** lists the issues created, closed, and commented on across the workspace, newest first.
-- Issue edits (description, status, title, labels, and more) appear once you turn on bd's events journal with `bd config set events-journal true`. Only changes made after that are recorded.
+- Issue edits (description, status, title, labels, and more) and deletions appear once you turn on bd's events journal with `bd config set events-journal true`. Only changes made after that are recorded.
 - A **Seen on your last visit** divider marks where you left off.
 
 ![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/activity.png)

@@ -178,3 +178,18 @@ test("페이지 끝까지 스크롤해도 상단 머리글이 화면 위에 붙�
   expect(window.scrollY, "한 화면 높이보다 많이 스크롤함").toBeGreaterThan(600);
   expect(screen.getByRole("banner").element().getBoundingClientRect().top).toBe(0);
 });
+
+test("삭제 기록은 이슈 상세로 가는 링크 없이 ID와 삭제 직전 제목을 보이고, 다른 기록의 링크는 그대로 둔다", async () => {
+  tab.entries = [
+    { ...entry("t-gone", now - HOUR), kind: "deleted", title: "지운 작업" },
+    entry("t-kept", now - 2 * HOUR),
+  ];
+
+  const screen = await openScreen();
+
+  await expect.element(screen.getByText("지운 작업")).toBeVisible();
+  await expect.element(screen.getByText(messages.activityFeed.kinds.deleted)).toBeVisible();
+  await expect.element(screen.getByRole("button", { name: /t-gone/ })).toBeVisible();
+  expect(screen.getByRole("link", { name: /t-gone/ }).elements()).toHaveLength(0);
+  expect(feedShape()).toEqual(["t-kept"]);
+});

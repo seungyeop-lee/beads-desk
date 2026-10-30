@@ -12,6 +12,7 @@ import {
   closeIssue,
   createIssue,
   deferIssue,
+  deleteIssue,
   dependencyGraph,
   dismissHuman,
   exportedIssues,
@@ -20,6 +21,7 @@ import {
   humanDecisionIssues,
   humanGates,
   issueEvents,
+  lastIssueSnapshot,
   lintFindings,
   listIssues,
   openGates,
@@ -411,6 +413,19 @@ test("events journal을 켠 뒤의 수정은 update 레코드로, 수정 뒤의 
   expect(records[1]?.issue?.labels).toEqual(["journal"]);
   expect(records[2]?.issue?.status).toBe("closed");
   expect(records[3]?.issue?.status).toBe("open");
+});
+
+test("지운 이슈도 bd history에서 삭제 직전의 제목과 type을 읽는다", async () => {
+  const id = value(await createIssue(cwd, { title: "처음 제목", issueType: "bug" }));
+  value(await updateIssueFields(cwd, id, { title: "지우기 직전 제목" }));
+  value(await deleteIssue(cwd, id));
+
+  expect(value(await lastIssueSnapshot(cwd, id))).toMatchObject({
+    id,
+    title: "지우기 직전 제목",
+    issueType: "bug",
+  });
+  expect(value(await lastIssueSnapshot(cwd, "real-none"))).toBeNull();
 });
 
 test("셸에 BD_JSON_ENVELOPE, BD_JSON, BEADS_DIR가 있어도 지정한 workspace의 이슈를 읽는다", async () => {

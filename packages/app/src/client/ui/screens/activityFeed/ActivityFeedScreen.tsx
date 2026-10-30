@@ -27,14 +27,15 @@ const KIND_TONES: Record<ActivityKind, string> = {
   closed: "tone-sage",
   commented: "tone-none",
   updated: "tone-peach",
+  deleted: "tone-coral",
 };
 
 /** 닫은 사유, 댓글 본문, 바뀐 필드처럼 기록 줄 아래에 붙는 글입니다. */
 const DETAIL_TEXT = "line-clamp-2 text-xs sm:pl-15 wrap-anywhere text-emphasis-70";
 
 /**
- * workspace 전체에서 이슈를 만들고 고치고 닫고 댓글을 단 기록을 새것부터 날짜별로 보입니다. 줄을 누르면 이 화면 위에 이슈 상세가 열립니다.
- * 고친 기록은 events journal에서 읽으므로, journal이 꺼진 workspace에서는 켜는 방법을 목록 위에 안내합니다.
+ * workspace 전체에서 이슈를 만들고 고치고 닫고 댓글을 달고 지운 기록을 새것부터 날짜별로 보입니다. 줄을 누르면 이 화면 위에 이슈 상세가 열립니다.
+ * 고치고 지운 기록은 events journal에서 읽으므로, journal이 꺼진 workspace에서는 켜는 방법을 목록 위에 안내합니다.
  * 지난번에 이 화면을 연 뒤 생긴 기록과 그 전 기록 사이에 구분선을 긋습니다.
  * 이슈 상세 dialog와 주소의 날짜 범위가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
@@ -128,19 +129,38 @@ function FeedRow({ row }: { row: ActivityFeedRow }) {
   );
 }
 
+const ENTRY_ROW = "flex flex-col gap-1 px-4 py-2.5 text-sm";
+
+/** 지운 이슈는 상세 화면이 없으므로 삭제 기록은 이슈 링크 없이 그립니다. */
 function EntryRow({ entry }: { entry: ActivityEntry }) {
-  const locale = useLocale();
   const messages = useMessages();
   const issueHref = useIssueHref();
   const title = entry.title || messages.common.untitled;
+  if (entry.kind === "deleted") {
+    return (
+      <li className={ENTRY_ROW}>
+        <EntryContent entry={entry} title={title} />
+      </li>
+    );
+  }
   return (
     <CoveredIssueRow
       as="li"
-      className="flex flex-col gap-1 px-4 py-2.5 text-sm hover:bg-base-200/60"
+      className={`${ENTRY_ROW} hover:bg-base-200/60`}
       issueId={entry.issueId}
       title={title}
       cover={{ href: issueHref(entry.issueId) }}
     >
+      <EntryContent entry={entry} title={title} />
+    </CoveredIssueRow>
+  );
+}
+
+function EntryContent({ entry, title }: { entry: ActivityEntry; title: string }) {
+  const locale = useLocale();
+  const messages = useMessages();
+  return (
+    <>
       <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <time
           dateTime={new Date(entry.at).toISOString()}
@@ -168,6 +188,6 @@ function EntryRow({ entry }: { entry: ActivityEntry }) {
           {fieldChangeText(messages, locale, change)}
         </p>
       ))}
-    </CoveredIssueRow>
+    </>
   );
 }
