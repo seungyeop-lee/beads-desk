@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { useState } from "react";
-import { type Bottleneck, type DeadlineKind } from "@/client/modules/focus/domain/focusBottlenecks";
+import {
+  BOTTLENECK_ORDER,
+  type Bottleneck,
+  type DeadlineKind,
+} from "@/client/modules/focus/domain/focusBottlenecks";
 import { DUE_SOON_DAYS } from "@/client/modules/focus/domain/focusDeadlines";
 import { NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
 import { workState } from "@/client/modules/issues/domain/workState";
@@ -44,7 +48,7 @@ export function BottlenecksSection({ bottlenecks }: { bottlenecks: Bottleneck[] 
           </button>
         )}
       </GroupHeading>
-      <p className="px-1 text-xs text-emphasis-60">{text.order}</p>
+      <p className="px-1 text-xs text-emphasis-60">{text.order(BOTTLENECK_ORDER)}</p>
       {bottlenecks.length === 0 ? (
         <EmptyState message={text.empty} variant="compact" />
       ) : (

@@ -1,5 +1,6 @@
 import type { IssueStatus } from "@beads-desk/bd/issue";
 import type { EpicGroupKind } from "@/client/modules/epics/domain/epicGroups";
+import type { BottleneckOrderKey } from "@/client/modules/focus/domain/focusBottlenecks";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import type { RelationKind } from "@/client/modules/issues/domain/issueRelations";
 import type { ActivityKind } from "@/shared/contract/activityFeed";
@@ -10,6 +11,14 @@ import type { ThemeChoice } from "@/shared/contract/theme";
 const relationKindHints: Partial<Record<RelationKind, string>> = {
   blockedBy: "이 이슈보다 먼저 끝나야 함",
   blocks: "이 이슈가 끝나야 시작",
+};
+
+/** 병목 정렬 설명 문장이 뒤에 "으로"를 붙이므로, 기준마다 넣는 말은 모두 "순"으로 끝나야 합니다. */
+const bottleneckOrderPhrases: Record<BottleneckOrderKey, string> = {
+  waiters: "대기 수가 많은 순",
+  earliestDeadline: "마감 목록에 든 후속 이슈의 마감 시각이 이른 순",
+  unblocks: "닫으면 바로 작업 가능해지는 이슈가 많은 순",
+  priority: "우선순위 순",
 };
 
 /** 화면 문구의 기준 사전입니다. 다른 언어의 사전은 이 모양을 그대로 따릅니다. */
@@ -360,8 +369,10 @@ export const koMessages = {
     },
     bottlenecks: {
       title: "병목",
-      order:
-        "대기 수가 많은 순으로 두고, 같으면 마감 목록에 든 후속 이슈의 마감 시각이 이른 순, 닫으면 바로 작업 가능해지는 이슈가 많은 순, 우선순위 순으로 둡니다.",
+      order: (keys: readonly BottleneckOrderKey[]) => {
+        const [first, ...rest] = keys.map((key) => bottleneckOrderPhrases[key]);
+        return `${first}으로 두고, 같으면 ${rest.join(", ")}으로 둡니다.`;
+      },
       empty: "다른 이슈를 막고 있는 이슈가 없습니다.",
       unblocks: (count: number) => `닫으면 ${count}개 바로 작업 가능`,
       unblocksHint:

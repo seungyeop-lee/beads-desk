@@ -1,6 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
+import { BOTTLENECK_ORDER } from "@/client/modules/focus/domain/focusBottlenecks";
 import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
 import { enMessages } from "@/client/modules/locale/domain/enMessages";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
@@ -327,7 +328,7 @@ describe("병목", () => {
         (item) => item.querySelector("a")!.getAttribute("aria-label")!.split(" ")[0],
       );
 
-    await expect.element(section).toMatchTextContent(text.order);
+    await expect.element(section).toMatchTextContent(text.order(BOTTLENECK_ORDER));
     expect(order()).toEqual(["desk-base", "desk-other", "desk-undated-prior", "desk-fourth-prior"]);
 
     const base = row("기준 작업");
@@ -417,7 +418,7 @@ describe("병목", () => {
     const text = enMessages.focus.bottlenecks;
     const section = screen.getByRole("region", { name: text.title, exact: true });
 
-    await expect.element(section).toMatchTextContent(text.order);
+    await expect.element(section).toMatchTextContent(text.order(BOTTLENECK_ORDER));
     await expect.element(section).toMatchTextContent(enMessages.issue.waiters(2));
     await expect.element(section).toMatchTextContent(text.unblocks(1));
     await expect.element(section).toMatchTextContent(/→ Due today · desk-tonight/);

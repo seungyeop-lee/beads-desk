@@ -1,4 +1,12 @@
+import type { BottleneckOrderKey } from "@/client/modules/focus/domain/focusBottlenecks";
 import type { Messages } from "./koMessages";
+
+const bottleneckOrderPhrases: Record<BottleneckOrderKey, string> = {
+  waiters: "blocked count",
+  earliestDeadline: "the earliest due time among blocked issues listed in Due dates",
+  unblocks: "the most issues ready when closed",
+  priority: "priority",
+};
 
 export const enMessages: Messages = {
   common: {
@@ -350,8 +358,8 @@ export const enMessages: Messages = {
     },
     bottlenecks: {
       title: "Bottlenecks",
-      order:
-        "Sorted by blocked count, then the earliest due time among blocked issues listed in Due dates, then the most issues ready when closed, then priority.",
+      order: (keys) =>
+        `Sorted by ${keys.map((key) => bottleneckOrderPhrases[key]).join(", then ")}.`,
       empty: "No issues are blocking other issues.",
       unblocks: (count) => `${count} ready when closed`,
       unblocksHint:

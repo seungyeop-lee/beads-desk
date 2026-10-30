@@ -110,12 +110,16 @@ test("기한 초과, 오늘 마감, 3일 이내인 후속 이슈만 마감 근�
   expect(evidence(of("blocks-undated"))).toEqual([]);
 });
 
-test("후속 이슈 수가 같으면 후속 이슈의 마감 시각이 이른 후보를 앞에 두고, 같은 날 마감도 시각으로 가르며, 마감 근거가 없는 후보는 뒤에 둔다", () => {
+test("후속 이슈 수가 같으면 후속 이슈의 마감 시각이 이른 후보를 앞에 두고, 같은 날 마감도 시각으로 가르며, 마감 근거가 없는 후보는 바로 풀리는 이슈가 많아도 뒤에 둔다", () => {
   const issues = [
     issue("undated-blocker", { ready: true, priority: 0 }),
     issue("undated", { blockedBy: ["undated-blocker"] }),
     issue("evening-blocker", { ready: true }),
-    issue("evening", { blockedBy: ["evening-blocker"], dueAt: at(10, 30, 21, 0) }),
+    // 다른 선행 조건도 기다려 바로 풀리지 않지만, 마감 근거가 있어 마감 근거가 없는 후보보다 앞에 옵니다.
+    issue("evening", {
+      blockedBy: ["evening-blocker", "desk-gate"],
+      dueAt: at(10, 30, 21, 0),
+    }),
     issue("afternoon-blocker", { ready: true }),
     issue("afternoon", { blockedBy: ["afternoon-blocker"], dueAt: at(10, 30, 16, 0) }),
     issue("overdue-blocker", { ready: true }),
