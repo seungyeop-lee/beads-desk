@@ -4,6 +4,20 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-10-30
+
+### Added
+
+- **Now** screen: a **Due dates** section lists open issues with a due date in three groups, **Overdue**, **Due today**, and the next 3 days, each ordered by the earliest due time. Overdue follows the same rule as `bd list --overdue`.
+- Issue details show a **Due** field where you can set a due date and an optional time, or clear it. Leaving the time empty sets the due time to midnight.
+- **Now** screen: a **Bottlenecks** section lists issues that block other issues, sorted by blocked count, then the earliest due time among the blocked issues listed in **Due dates**, then how many issues become ready when the issue is closed, then priority. Each entry shows its current state, how many issues are ready when it is closed, and a link to its blocks chain graph. Blocked issues whose defer date has not come yet are not counted as ready when closed. The first 5 entries are shown, and **See all** expands the rest.
+- **Activity** screen and an issue's activity tab: due date changes are listed with the field name **Due** and the new date.
+- **Activity** screen: in a workspace where bd's events journal is on, issue deletions are listed as **Deleted** records. A deleted issue keeps only its deletion record.
+
+### Fixed
+
+- Molecule root issues created by `bd mol pour` are treated like epics: they no longer appear as ready or in-progress work on the **Now** screen and board, and are left out of throughput, cycle time, and stale issue counts.
+
 ## [0.9.0] - 2026-10-28
 
 ### Changed
