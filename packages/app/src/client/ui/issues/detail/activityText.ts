@@ -3,7 +3,7 @@ import type { ActivityLine } from "@/client/modules/issues/domain/issueActivity"
 import type { Messages } from "@/client/modules/locale/domain/messages";
 import type { Locale } from "@/shared/contract/locale";
 import { dependencyLabel, priorityLabel, statusLabel, typeLabel } from "../issueLabels";
-import { formatTime } from "../issueTime";
+import { dueAtLabel, formatTime } from "../issueTime";
 import { BODY_FIELDS } from "@/shared/domain/issues/bodyFields";
 
 /** 활동 기록의 한 줄을 화면 문장으로 바꿉니다. */
@@ -63,6 +63,7 @@ function fieldName(messages: Messages, field: string): string {
     assignee: messages.issue.assignee,
     labels: messages.issue.labels,
     deferUntil: messages.deferral.until,
+    dueAt: messages.issue.dueAt,
   };
   return names[field] ?? field;
 }
@@ -75,10 +76,12 @@ function fieldValue(messages: Messages, locale: Locale, field: string, raw: unkn
   if (field === "issueType" && typeof raw === "string") return typeLabel(messages, raw);
   if (field === "priority" && typeof raw === "number")
     return `P${raw} ${priorityLabel(messages, raw)}`;
-  if (field === "deferUntil") {
+  if (field === "deferUntil" || field === "dueAt") {
     // bd history는 ISO 문자열로, 활동 피드는 bd export와 같은 epoch ms로 담습니다.
     const at = typeof raw === "string" ? Date.parse(raw) : raw;
-    if (typeof at === "number" && Number.isFinite(at)) return formatTime(locale, at);
+    if (typeof at === "number" && Number.isFinite(at)) {
+      return field === "dueAt" ? dueAtLabel(locale, at) : formatTime(locale, at);
+    }
   }
   if (Array.isArray(raw)) return raw.join(", ");
   return typeof raw === "object" ? JSON.stringify(raw) : String(raw);

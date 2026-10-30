@@ -243,6 +243,26 @@ test("journal의 update 레코드는 같은 이슈의 바로 앞 레코드와 �
   ]);
 });
 
+test("마감일을 정하고 바꾸고 지운 수정은 마감 시각이 바뀐 수정 기록이 된다", () => {
+  const issues = [exportedIssue("t-1", { createdAt: 1_000 })];
+  const journal = [
+    record(1, "create", 1_000, {}),
+    record(2, "update", 2_000, { dueAt: 10_000 }),
+    record(3, "update", 3_000, { dueAt: 20_000 }),
+    record(4, "update", 4_000, { dueAt: null }),
+  ];
+
+  expect(
+    activityFeedPage(issues, journal, NO_SNAPSHOTS, ALL)
+      .entries.filter((entry) => entry.kind === "updated")
+      .map((entry) => entry.changes),
+  ).toEqual([
+    [{ field: "dueAt", before: 20_000, after: null }],
+    [{ field: "dueAt", before: 10_000, after: 20_000 }],
+    [{ field: "dueAt", before: null, after: 10_000 }],
+  ]);
+});
+
 test("journal을 켜기 전에 만든 이슈처럼 앞 레코드가 없는 첫 수정은 바뀐 필드 없이 수정 기록이 된다", () => {
   const issues = [exportedIssue("t-1", { createdAt: 1_000 })];
   const journal = [record(1, "update", 2_000, { priority: 1 })];

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { MESSAGES } from "@/client/modules/locale/domain/messages";
-import { formatTime } from "../issueTime";
+import { dueAtLabel, formatTime } from "../issueTime";
 import { activityLineText } from "./activityText";
 
 const ko = (line: Parameters<typeof activityLineText>[2]) =>
@@ -28,6 +28,22 @@ test("보류 기한은 시각으로, 라벨 목록은 쉼표로 이어 보이고
   expect(field("labels", ["a"], ["a", "b"])).toBe("라벨: a → a, b");
   expect(field("labels", [], ["a"])).toBe("라벨: 없음 → a");
   expect(field("customField", "x", "")).toBe("customField: x → 없음");
+});
+
+test("마감일은 날짜로 보이고, 현지 0시가 아닌 마감 시각만 시각을 붙인다", () => {
+  const dateOnly = new Date(2026, 10, 5).getTime();
+  const withTime = new Date(2026, 10, 7, 15, 30).getTime();
+
+  // bd history는 마감 시각을 ISO 문자열로 담습니다.
+  expect(field("dueAt", null, new Date(dateOnly).toISOString())).toBe(
+    `마감일: 없음 → ${dueAtLabel("ko", dateOnly)}`,
+  );
+  expect(field("dueAt", new Date(dateOnly).toISOString(), new Date(withTime).toISOString())).toBe(
+    `마감일: ${dueAtLabel("ko", dateOnly)} → ${dueAtLabel("ko", withTime)}`,
+  );
+  // 활동 피드는 bd export와 같은 epoch ms로 마감 시각을 담습니다.
+  expect(field("dueAt", withTime, null)).toBe(`마감일: ${dueAtLabel("ko", withTime)} → 없음`);
+  expect(dueAtLabel("ko", withTime)).not.toBe(dueAtLabel("ko", dateOnly));
 });
 
 test("설명처럼 긴 본문 필드는 값 없이 고쳤다는 사실만 보인다", () => {

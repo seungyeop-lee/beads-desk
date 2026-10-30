@@ -43,6 +43,7 @@ const UPDATE_FIELDS = [
   "assignee",
   "labels",
   "deferUntil",
+  "dueAt",
 ] as const satisfies readonly (keyof ExportedIssue)[];
 
 const BODY_FIELD_SET: ReadonlySet<string> = new Set(BODY_FIELDS);
