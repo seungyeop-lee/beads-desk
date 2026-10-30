@@ -75,6 +75,10 @@ test("관계를 고르고 키보드만으로 둘째 후보를 골라 연결하�
   await expect
     .poll(() => options.elements().map((option) => option.textContent))
     .toEqual([expect.stringContaining("desk-3"), expect.stringContaining("desk-4")]);
+  // 후보 줄은 목록이 닫혀(hidden) 있어도 DOM에 남으므로, 위 확인만으로는 목록이 열렸는지 알 수 없습니다.
+  // 닫힌 목록에서 누른 ArrowDown은 목록을 열기만 하고 후보를 옮기지 않으므로, 열린 것을 확인한 뒤에 누릅니다.
+  await expect.element(search).toHaveFocus();
+  await expect.element(search).toHaveAttribute("aria-expanded", "true");
 
   await userEvent.keyboard("{ArrowDown}");
   await expect.element(options.nth(1)).toHaveAttribute("aria-selected", "true");
