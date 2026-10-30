@@ -5,6 +5,7 @@ import type { Locale } from "@/shared/contract/locale";
 import { dependencyLabel, priorityLabel, statusLabel, typeLabel } from "../issueLabels";
 import { dueAtLabel, formatTime } from "../issueTime";
 import { BODY_FIELDS } from "@/shared/domain/issues/bodyFields";
+import { UPDATE_FIELDS, type UpdateField } from "@/shared/domain/issues/updateFields";
 
 /** 활동 기록의 한 줄을 화면 문장으로 바꿉니다. */
 export function activityLineText(messages: Messages, locale: Locale, line: ActivityLine): string {
@@ -55,8 +56,9 @@ export function fieldChangeText(
 }
 
 function fieldName(messages: Messages, field: string): string {
-  const names: Partial<Record<string, string>> = {
+  const names: Record<UpdateField, string> = {
     title: messages.issue.title,
+    ...messages.issue.bodyFields,
     status: messages.issue.status,
     priority: messages.issue.priority,
     issueType: messages.issue.type,
@@ -65,7 +67,8 @@ function fieldName(messages: Messages, field: string): string {
     deferUntil: messages.deferral.until,
     dueAt: messages.issue.dueAt,
   };
-  return names[field] ?? field;
+  const updateField = UPDATE_FIELDS.find((name) => name === field);
+  return updateField ? names[updateField] : field;
 }
 
 function fieldValue(messages: Messages, locale: Locale, field: string, raw: unknown): string {

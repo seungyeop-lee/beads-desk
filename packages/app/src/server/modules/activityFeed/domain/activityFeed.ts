@@ -7,6 +7,7 @@ import type {
   ActivityKind,
 } from "@/shared/contract/activityFeed";
 import { BODY_FIELDS } from "@/shared/domain/issues/bodyFields";
+import { UPDATE_FIELDS } from "@/shared/domain/issues/updateFields";
 
 /** 피드를 모으는 데 쓰는 이슈 내용입니다. `bd export` 레코드(ExportedIssue)가 이 모양을 채웁니다. 시각은 epoch ms입니다. */
 export type FeedSourceIssue = {
@@ -32,19 +33,6 @@ const KIND_ORDER: Record<ActivityKind, number> = {
   updated: 3,
   created: 4,
 };
-
-/** 수정 기록이 보이는 필드입니다. 이슈 상세의 활동 탭이 이름을 붙여 보이는 필드와 같습니다. */
-const UPDATE_FIELDS = [
-  "title",
-  ...BODY_FIELDS,
-  "status",
-  "priority",
-  "issueType",
-  "assignee",
-  "labels",
-  "deferUntil",
-  "dueAt",
-] as const satisfies readonly (keyof ExportedIssue)[];
 
 const BODY_FIELD_SET: ReadonlySet<string> = new Set(BODY_FIELDS);
 
