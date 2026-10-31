@@ -4,6 +4,19 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-11-01
+
+### Added
+
+- The web UI is available in Japanese. Choose 日本語 in the language picker. When no language has been chosen, the UI uses the browser's first preferred language if it is Korean, English, or Japanese, and English otherwise.
+- **Issues** screen: a **Bottlenecks** view tab lists the same issues as the **Now** screen's **Bottlenecks** section in the same order, narrowed by the type, label, date, and search filters. The tab shows the sort order above the table and adds an **Unblocks** column with how many issues become ready when each issue is closed. It comes last, after a divider that separates it from the work-state tabs, and has no color dot. **See all** in the **Now** screen's **Bottlenecks** section opens this tab.
+
+### Changed
+
+- **Now** screen layout: the counts are shown as one row of equal-width summary chips, followed by **Flow**, then two-column rows of **In progress** and **Ready** beside **Blocked**, and **Due dates** beside **Bottlenecks**, then **Epic progress**. Groups are separated by dividers. **Up next** is renamed **Ready**.
+- **Now** screen lists show their first 5 entries. **See all** opens the matching view tab on the **Issues** screen when there is one, and otherwise expands the list in place. In wide windows, each list cell grows with its content from one to five rows and scrolls within the cell beyond that, and the shorter column stretches to the height of the longer one. Empty lists show their message in a card, and **Due dates** says when no issues are overdue, due today, or due in the next 3 days.
+- **Now** screen: the **Bottlenecks** section no longer shows the sort order line, since the **Bottlenecks** tab shows it.
+
 ## [0.10.0] - 2026-10-30
 
 ### Added
