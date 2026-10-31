@@ -69,10 +69,10 @@ Next.js 16은 학습 데이터와 다른 API와 규칙이 많습니다. Next.js 
 - 서버 이벤트는 `client/infra/workspaceEvents`로만 구독합니다. 이 module이 탭 하나만 SSE를 열고 다른 탭에 알림을 전달합니다.
 - 화면 사이를 오가는 주소(`/issues?view=ready`, 그래프의 복귀 주소)는 workspace 없는 화면 경로로 만들고, 링크와 router에 넘길 때 `client/ui/address/workspaceAddress.ts`의 `useWorkspaceHref`로 workspace 주소로 바꿉니다. 지금 주소의 화면 경로는 `useScreenPathname`으로 읽습니다. browser에서만 실행되는 코드는 `documentWorkspace()`로 탭의 workspace 이름을 읽습니다.
 - `@beads-desk/bd`는 server에서만 import합니다. client, shared, `app/(client)`는 bd를 실행하지 않는 이슈 model(`@beads-desk/bd/issue`)과 type만 내보내는 `@beads-desk/bd/types`만 import합니다. bd 결과를 그대로 보내는 응답과 bd에 그대로 넘기는 쓰기 입력의 type은 `shared/contract`에 필드를 다시 적지 않고, `@beads-desk/bd/types`의 type을 다시 내보내거나 alias로 정의합니다.
-- 화면 문구는 `client/modules/locale/domain`의 `messageCatalog.ts`에 키를 먼저 정의하고, `koMessages.ts`와 `enMessages.ts`에 모두 넣습니다. 두 사전은 이 type을 따르므로 한쪽에만 넣으면 typecheck가 실패합니다. 영어 문구는 bd CLI 출력의 용어(`DEPENDS ON`, `BLOCKS`, `ready` 등)를 따릅니다.
-  - `client/ui`의 `.tsx`에서 JSX 글자나 `aria-label`, `title`, `placeholder`, `alt`에 문자열을 직접 쓰면 oxlint의 `react/jsx-no-literals`가 실패합니다. 두 언어에서 같은 글자인 식별자나 기호(`ID`, `·`)는 `.oxlintrc.json`의 `allowedStrings`에 넣습니다. `{"..."}`로 감싼 문자열은 이 규칙이 검사하지 않으므로, 감싸서 lint를 피하지 않습니다.
+- 화면 문구는 `client/modules/locale/domain`의 `messageCatalog.ts`에 키를 먼저 정의하고, `koMessages.ts`, `enMessages.ts`, `jaMessages.ts`에 모두 넣습니다. 세 사전은 이 type을 따르므로 한 사전에서라도 빠뜨리면 typecheck가 실패합니다. 영어 문구는 bd CLI 출력의 용어(`DEPENDS ON`, `BLOCKS`, `ready` 등)를 따릅니다. 한국어와 일본어 문구는 bd 명령과 `workspace`, `gate`, `blocks` 같은 bd 용어를 번역하지 않고 원문으로 둡니다.
+  - `client/ui`의 `.tsx`에서 JSX 글자나 `aria-label`, `title`, `placeholder`, `alt`에 문자열을 직접 쓰면 oxlint의 `react/jsx-no-literals`가 실패합니다. 모든 언어에서 같은 글자인 식별자나 기호(`ID`, `·`)는 `.oxlintrc.json`의 `allowedStrings`에 넣습니다. `{"..."}`로 감싼 문자열은 이 규칙이 검사하지 않으므로, 감싸서 lint를 피하지 않습니다.
   - 화면을 그리는 코드는 `useMessages()`로, 이벤트 처리처럼 browser에서만 실행되는 코드는 `documentMessages()`로 사전을 읽습니다.
-  - Server Action과 Route API가 화면에 보내는 오류 문구는 `server/web/locale/serverMessages.ts`에 두 언어로 넣습니다.
+  - Server Action과 Route API가 화면에 보내는 오류 문구는 `server/web/locale/serverMessages.ts`에 세 언어로 넣습니다.
 - 디렉터리는 함께 바뀌는 기능 이름으로 묶습니다. `utils`, `helpers`, `common` 같은 역할 이름 디렉터리는 만들지 않습니다.
 - 테스트에서만 쓰는 팩토리, fixture, 가짜 bd 같은 코드는 그 코드를 쓰는 테스트 가까이에 `*.testkit.ts`(component fixture는 `*.testkit.tsx`)로 둡니다. `packages/app/src`와 `packages/bd/src`에서 테스트가 아닌 파일은 `vitest`와 `*.testkit` 파일을 import하지 않습니다.
 
@@ -88,7 +88,7 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 - 한국어로 씁니다.
   - 코드 주석, 테스트 이름, 커밋 메시지, 모든 디렉터리의 `AGENTS.md`, `docs/`, `.claude/skills/`의 프로젝트 skill
   - `README.ko.md`와 `USAGE.ko.md`. 각각 `README.md`와 `USAGE.md`의 한국어 미러이므로, 영어 문서를 고치면 같은 내용으로 함께 고칩니다.
-- 한국어와 영어로 함께 씁니다.
+- 한국어, 영어, 일본어로 함께 씁니다.
   - 웹 UI 문구. Server Action, Route API, `packages/bd`가 화면에 전달하는 오류도 포함합니다. 문구를 넣을 사전은 "소스 구조" 절에 있습니다.
 
 커밋 메시지는 Conventional Commits 형식(`type(scope): 제목`)을 따릅니다.

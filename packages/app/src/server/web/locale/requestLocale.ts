@@ -7,10 +7,11 @@ export async function requestLocale(): Promise<Locale> {
   return pickLocale(cookieStore.get(LOCALE_COOKIE)?.value, headerStore.get("Accept-Language"));
 }
 
-/** 고른 언어가 없으면, 브라우저가 가장 먼저 원하는 언어가 한국어일 때만 한국어를 씁니다. */
+/** 고른 언어가 없으면 브라우저가 가장 먼저 원하는 언어를 쓰고, 그 언어를 지원하지 않으면 영어를 씁니다. */
 export function pickLocale(chosen: string | undefined, acceptLanguage: string | null): Locale {
   if (isLocale(chosen)) return chosen;
-  return primaryLanguage(acceptLanguage ?? "") === "ko" ? "ko" : "en";
+  const primary = primaryLanguage(acceptLanguage ?? "");
+  return isLocale(primary) ? primary : "en";
 }
 
 function primaryLanguage(acceptLanguage: string): string | undefined {

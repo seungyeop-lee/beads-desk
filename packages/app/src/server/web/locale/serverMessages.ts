@@ -82,7 +82,39 @@ const en: ServerMessages = {
   },
 };
 
-const MESSAGES: Record<Locale, ServerMessages> = { ko, en };
+const ja: ServerMessages = {
+  localFileForbidden: "許可された範囲外のファイルです。",
+  localFileNotFound: "ファイルが見つかりません。",
+  invalidRequest: "リクエストの形式が正しくありません。",
+  invalidIssueStatus: "照会するイシューの状態が正しくありません。",
+  invalidStaleDays: "長く放置されたイシューの基準日数が正しくありません。",
+  emptyTextSearch: "検索語が空です。",
+  invalidActivityFeedQuery: "アクティビティの照会範囲か件数が正しくありません。",
+  nonJsonBody: "JSON の本文だけを受け付けます。",
+  crossSiteForbidden: "別のサイトから送られたリクエストは受け付けません。",
+  unknownWorkspace: (root) =>
+    `登録されていない workspace です: ${root}。そのディレクトリで bd-desk start を実行して登録してください。`,
+  beadsWorkspaceNotFound: (path) => `beads workspace が見つかりませんでした: ${path}`,
+  bdErrors: {
+    emptyTitle: "タイトルが空です。",
+    noChanges: "変更する内容がありません。",
+    invalidDeferDate: "保留日は YYYY-MM-DD 形式でなければなりません。",
+    invalidDueAt: "締め切り時刻は UTC 時刻 (YYYY-MM-DDTHH:mm:ss.sssZ) 形式でなければなりません。",
+    emptyIssueId: "イシュー ID が空です。",
+    emptyTargetId: "対象のイシュー ID が空です。",
+    emptyGateId: "ゲート ID が空です。",
+    emptyComment: "コメントが空です。",
+    emptyResponse: "応答が空です。",
+    emptyLabel: "ラベルが空です。",
+    notAwaitingHumanDecision: "人の判断を待っているイシューではありません。",
+    invalidStaleDays: "基準日数は1以上の整数でなければなりません。",
+    unparsableOutput: "bd の出力を JSON として解釈できませんでした。",
+    missingCreatedIssueId: "bd create の出力にイシュー ID がありません。",
+    missingShownIssue: "bd show の出力にイシューがありません。",
+  },
+};
+
+const MESSAGES: Record<Locale, ServerMessages> = { ko, en, ja };
 
 /** 화면에 보낼 오류 문구를 요청한 브라우저의 언어로 돌려줍니다. bd가 낸 오류 문구는 번역하지 않습니다. */
 export async function serverMessages(): Promise<ServerMessages> {

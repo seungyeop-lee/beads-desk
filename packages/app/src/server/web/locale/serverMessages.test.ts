@@ -18,13 +18,14 @@ test.each<[Locale, BdError, string]>([
   ],
   ["ko", { kind: "unparsableOutput", exitCode: 0 }, "bd 출력을 JSON으로 해석하지 못했습니다."],
   ["en", { kind: "unparsableOutput", exitCode: 0 }, "Could not parse the bd output as JSON."],
+  ["ja", { kind: "emptyTitle", exitCode: null }, "タイトルが空です。"],
 ])("%s 요청에서는 adapter 오류 %j를 그 언어의 문구로 바꾼다", async (locale, error, message) => {
   vi.mocked(requestLocale).mockResolvedValue(locale);
 
   await expect(bdErrorMessage(error)).resolves.toBe(message);
 });
 
-test.each<Locale>(["ko", "en"])(
+test.each<Locale>(["ko", "en", "ja"])(
   "%s 요청에서도 bd가 남긴 실패 이유는 번역하지 않고 앞뒤 공백만 던다",
   async (locale) => {
     vi.mocked(requestLocale).mockResolvedValue(locale);

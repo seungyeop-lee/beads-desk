@@ -13,7 +13,9 @@ test.each([
   ["ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7", "ko"],
   ["ko", "ko"],
   ["en-US,en;q=0.9,ko;q=0.8", "en"],
-  ["ja-JP,ko;q=0.9", "en"],
+  ["ja-JP,ko;q=0.9", "ja"],
+  ["ja", "ja"],
+  ["fr-FR,ja;q=0.9", "en"],
   ["en;q=0.5,ko-KR;q=0.8", "ko"],
   ["ko;q=0,en", "en"],
   ["*", "en"],
@@ -29,6 +31,7 @@ test("Accept-Language가 없으면 영어로 정한다", () => {
 test("고른 언어가 있으면 브라우저 언어보다 앞선다", () => {
   expect(pickLocale("en", "ko-KR")).toBe("en");
   expect(pickLocale("ko", "en-US")).toBe("ko");
+  expect(pickLocale("ja", "ko-KR")).toBe("ja");
 });
 
 test("알 수 없는 언어를 골랐으면 브라우저 언어로 정한다", () => {

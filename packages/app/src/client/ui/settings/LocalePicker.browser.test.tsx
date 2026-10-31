@@ -30,3 +30,18 @@ test("지금 언어를 선택된 값으로 보이고, 언어를 고르면 서버
   expect(document.cookie).toContain(`${LOCALE_COOKIE}=ko`);
   expect(refresh).toHaveBeenCalledOnce();
 });
+
+test("일본어를 고르면 쿠키에 ja를 남긴다", async () => {
+  onTestFinished(() => {
+    document.cookie = `${LOCALE_COOKIE}=; path=/; max-age=0`;
+  });
+  const screen = await render(
+    <LocaleProvider locale="en">
+      <LocalePicker />
+    </LocaleProvider>,
+  );
+
+  await screen.getByRole("combobox", { name: messages.settings.language }).selectOptions("日本語");
+
+  expect(document.cookie).toContain(`${LOCALE_COOKIE}=ja`);
+});
