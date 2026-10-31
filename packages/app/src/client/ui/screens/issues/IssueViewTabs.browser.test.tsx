@@ -48,3 +48,55 @@ for (const { width, horizontal } of [
     expect(hit?.closest("a")).toBe(current);
   });
 }
+
+/** 글자 하나의 기준선 높이를 잽니다. 빈 inline-block의 아래 경계는 그 줄의 기준선에 놓입니다. */
+function baselineOf(text: Element) {
+  const probe = document.createElement("span");
+  probe.style.display = "inline-block";
+  text.append(probe);
+  const baseline = probe.getBoundingClientRect().bottom;
+  probe.remove();
+  return baseline;
+}
+
+test("병목은 작업 상태가 아니라서 상태 탭 뒤에 구분선을 두고 맨 끝에 오고, 탭 이름과 개수는 기준선이 맞는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <div style={{ width: 1440 }}>
+        <IssueViewTabs
+          view={null}
+          filters={{ dates: { field: "created", from: null, to: null }, types: [], labels: [] }}
+          groups={GROUPS}
+          bottleneckCount={3}
+        />
+      </div>
+    </LocaleProvider>,
+  );
+  const nav = screen.getByRole("navigation", { name: "보기" });
+  const links = nav.getByRole("link").elements();
+  expect(links.map((link) => link.textContent)).toEqual([
+    "전체2",
+    "진행 중1",
+    "바로 작업 가능0",
+    "막힘0",
+    "보류0",
+    "닫힘1",
+    "병목3",
+  ]);
+
+  // 구분선은 장식이라 이름이 없으므로, 병목 탭 바로 앞의 요소로 찾아 닫힘 탭과 병목 탭 사이에 놓였는지 잽니다.
+  const closed = links.at(-2)!.getBoundingClientRect();
+  const bottleneck = links.at(-1)!;
+  const divider = bottleneck.previousElementSibling!.getBoundingClientRect();
+  expect(divider.width).toBeGreaterThan(0);
+  expect(divider.left).toBeGreaterThanOrEqual(closed.right);
+  expect(divider.right).toBeLessThanOrEqual(bottleneck.getBoundingClientRect().left);
+
+  for (const link of links) {
+    const [label, count] = link.querySelectorAll(":scope > span:not(.tone-dot)");
+    expect(baselineOf(count!)).toBeCloseTo(baselineOf(label!), 0);
+  }
+  // 구분선은 탭 이름 글자와 세로 가운데가 맞아, 탭 줄 아래 선에 닿지 않습니다.
+  const label = bottleneck.querySelector(":scope > span:not(.tone-dot)")!.getBoundingClientRect();
+  expect(divider.top + divider.height / 2).toBeCloseTo(label.top + label.height / 2, 0);
+});

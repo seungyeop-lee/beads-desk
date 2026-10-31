@@ -6,14 +6,14 @@ export const BOTTLENECK_VIEW = "bottleneck";
 /** 이슈 목록의 보기 탭 하나가 보이는 목록입니다. 작업 상태 하나이거나 병목 후보입니다. */
 export type IssueView = WorkState | typeof BOTTLENECK_VIEW;
 
-/** 이슈 목록의 보기 탭을 보이는 순서입니다. 판단 기다림과 그 밖의 이슈는 전체 보기에서만 보입니다. */
+/** 이슈 목록의 보기 탭을 보이는 순서입니다. 작업 상태 탭 뒤에 병목 탭을 둡니다. 판단 기다림과 그 밖의 이슈는 전체 보기에서만 보입니다. */
 export const ISSUE_VIEWS: readonly IssueView[] = [
   "in_progress",
   "ready",
   "blocked",
-  BOTTLENECK_VIEW,
   "deferred",
   "closed",
+  BOTTLENECK_VIEW,
 ];
 
 /** 주소의 view 값을 보기 탭으로 읽습니다. 없거나 알 수 없는 값이면 전체 보기인 null입니다. */

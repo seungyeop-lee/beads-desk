@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import {
   BOTTLENECK_VIEW,
   ISSUE_VIEWS,
@@ -58,19 +59,25 @@ export function IssueViewTabs({ view, filters, groups, bottleneckCount }: Props)
         {tabs.map((tab) => {
           const current = tab.view === view;
           return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              scroll={false}
-              aria-current={current ? "page" : undefined}
-              className={`flex shrink-0 items-center whitespace-nowrap gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-emphasis-60 hover:text-base-content"}`}
-            >
-              {tab.tone && <span className={`tone-dot ${tab.tone}`} />}
-              {tab.label}
-              <span className="font-mono text-xs font-normal text-emphasis-50 tabular-nums">
-                {tab.count}
-              </span>
-            </Link>
+            <Fragment key={tab.href}>
+              {/* 병목은 작업 상태가 아니라서 상태 탭과 구분선으로 나눕니다.
+                  아래 여백은 탭의 아래 안쪽 여백과 밑줄 두께에 2px을 더한 값이라, 구분선이 탭 이름 글자와 세로 가운데가 맞습니다. */}
+              {tab.view === BOTTLENECK_VIEW && (
+                <span className="nav-tab-divider mb-3.5" aria-hidden="true" />
+              )}
+              <Link
+                href={tab.href}
+                scroll={false}
+                aria-current={current ? "page" : undefined}
+                className={`flex shrink-0 items-baseline whitespace-nowrap gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-emphasis-60 hover:text-base-content"}`}
+              >
+                {tab.tone && <span className={`tone-dot ${tab.tone} self-center`} />}
+                <span>{tab.label}</span>
+                <span className="font-mono text-xs font-normal text-emphasis-50 tabular-nums">
+                  {tab.count}
+                </span>
+              </Link>
+            </Fragment>
           );
         })}
       </div>
