@@ -31,6 +31,7 @@ export type DemoIssue = {
   closedAt?: number;
   closeReason?: string;
   deferUntil?: number;
+  dueAt?: number;
   comments?: { author: string; text: string; at: number }[];
 };
 
@@ -51,6 +52,10 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
   const startOfToday = new Date(now).setHours(0, 0, 0, 0);
   // 자정 직후에 seed를 실행해도 오늘 닫힌 것으로 보이도록, 자정과 지금 사이의 시각에 닫습니다.
   const earlierToday = startOfToday + (now - startOfToday) / 2;
+  // 지금 화면의 마감 목록에서 오늘 마감으로 보이도록, 지금과 다음 자정 사이의 시각을 마감으로 둡니다.
+  // 날짜만 둔 마감은 그날 자정이라 오늘 날짜로는 바로 기한 초과가 됩니다.
+  const laterToday = now + (startOfToday + DAY - now) / 2;
+  const dayFromToday = (days: number) => startOfToday + days * DAY;
   const qaFile = (name: string) => join(workspace, QA_DIRECTORY, name);
 
   return [
@@ -164,6 +169,7 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
       labels: ["backend", "email"],
       parent: "acme-k3v",
       blockedBy: ["acme-k3v.3", "acme-7qx"],
+      dueAt: laterToday,
       createdAt: ago(9),
     },
     {
@@ -177,6 +183,7 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
       labels: ["qa"],
       parent: "acme-k3v",
       blockedBy: ["acme-k3v.4"],
+      dueAt: dayFromToday(2),
       createdAt: ago(9),
     },
     {
@@ -299,6 +306,7 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
       labels: ["ops"],
       parent: "acme-p8d",
       blockedBy: ["acme-p8d.3", "acme-p8d.4"],
+      dueAt: dayFromToday(3),
       createdAt: ago(7),
     },
     {
@@ -386,6 +394,7 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
       acceptance: "- Both pages are linked from the signup form and the footer",
       labels: ["legal"],
       parent: "acme-w2n",
+      dueAt: dayFromToday(-1),
       createdAt: ago(5),
     },
     {
@@ -711,6 +720,7 @@ export function toImportRecord(issue: DemoIssue): Record<string, unknown> {
     closed_at: optionalRfc3339(issue.closedAt),
     close_reason: issue.closeReason,
     defer_until: optionalRfc3339(issue.deferUntil),
+    due_at: optionalRfc3339(issue.dueAt),
   };
 }
 

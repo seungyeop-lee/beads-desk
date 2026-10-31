@@ -66,7 +66,7 @@ test("동작 이름으로 적은 시각을 녹화의 동작 시각에서 센 시
   expect(resolved.clips).toEqual([{ fromMs: 0, toMs: 3100 }]);
   expect(resolved.focus[0]!.atMs).toBe(4300);
   expect(resolved.captions[0]!.atMs).toBe(3000);
-  expect(() => resolveTour(TOUR, [])).toThrow("open-plan");
+  expect(() => resolveTour(TOUR, [])).toThrow("open-issue");
 });
 
 describe("본편 규칙", () => {
@@ -135,8 +135,8 @@ describe("본편 규칙", () => {
     );
   });
 
-  test("영상이 30초를 넘으면 알린다", () => {
-    expect(findTourProblems(tour({ clips: [{ fromMs: 0, toMs: 29_000 }] }), [])).toEqual([
+  test("영상이 38초를 넘으면 알린다", () => {
+    expect(findTourProblems(tour({ clips: [{ fromMs: 0, toMs: 37_000 }] }), [])).toEqual([
       expect.stringContaining("영상 길이"),
     ]);
   });

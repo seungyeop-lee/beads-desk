@@ -23,8 +23,8 @@ export const SCREEN_CHANGE_MS = 500;
 /** 자막이 나타난 뒤 다음 클릭까지 비워 두는 최소 시간과, 자막을 읽는 속도(초당 글자 수)입니다. */
 export const CAPTION_MIN_MS = 1200;
 export const CAPTION_CHARS_PER_SECOND = 15;
-/** 소개 영상 길이의 범위(초)입니다. README GIF는 30초를 넘지 않게 합니다. */
-export const INTRO_SECONDS = { min: 25, max: 30 };
+/** 소개 영상 길이의 범위(초)입니다. GIF 용량은 길이에 비례해 늘어나므로, README GIF가 10MB 한도에 닿지 않게 38초를 넘지 않게 합니다. */
+export const INTRO_SECONDS = { min: 25, max: 38 };
 
 /** capture가 녹화하는 동안 남긴 동작과 그 녹화 시각입니다. `<녹화 이름>.events.json`에 녹화 순서로 저장합니다. */
 export type RecordingEvent = { name: string; kind: "click" | "scroll" | "mark"; atMs: number };
@@ -70,23 +70,25 @@ export type TourPlan = {
 const FULL: FocusArea = { x: 0, y: 0, width: RECORDING_SIZE.width };
 
 /**
- * 결제 epic 하나를 따라가는 소개 영상의 본편입니다. 동작 이름은 captureTargets.ts의 tour 녹화가 남깁니다.
+ * 지금 화면에서 오늘 마감인 이슈 하나를 열어 선행·후속 그래프로 따라가는 소개 영상의 본편입니다. 동작 이름은 captureTargets.ts의 tour 녹화가 남깁니다.
  * 클릭 뒤 화면을 불러오는 동안은 구간 사이에서 빼고, 확대 영역은 클릭 뒤 화면이 다 바뀐 다음에 옮깁니다.
  */
 export const TOUR: TourPlan = {
   recording: "tour",
   // 클릭하면 바로 다음 frame부터 화면이 바뀌므로, 구간은 클릭 한 frame 전에 끝내고 다음 화면을 다 그린 뒤에서 잇습니다.
   clips: [
-    { from: { ms: 0 }, to: { after: "open-plan", ms: -40 } },
-    { from: { after: "plan-shown", ms: 250 }, to: { after: "open-checkout", ms: -40 } },
-    { from: { after: "checkout-shown", ms: 150 }, to: { after: "open-decisions", ms: -40 } },
+    { from: { ms: 0 }, to: { after: "open-issue", ms: -40 } },
+    { from: { after: "issue-shown", ms: 250 }, to: { after: "open-graph", ms: -40 } },
+    { from: { after: "graph-shown", ms: 250 }, to: { after: "open-checkout", ms: -40 } },
+    // 그래프를 닫으면 이슈 상세로 돌아와 그 상세도 닫아야 하므로, 두 번 닫는 동안을 빼고 지금 화면으로 바로 잇습니다.
+    { from: { after: "checkout-shown", ms: 150 }, to: { after: "close-graph", ms: -40 } },
+    { from: { after: "issue-closed", ms: 100 }, to: { after: "open-decisions", ms: -40 } },
     { from: { after: "decisions-shown", ms: 200 }, to: { after: "open-replaced", ms: -40 } },
     { from: { after: "replaced-shown", ms: 100 }, to: { after: "replaced-shown", ms: 2700 } },
   ],
   focus: [
-    // 에픽 화면 전체에서 상단 탭과 열린 에픽 카드를 보인 뒤, 순서 보기의 단계 열로 들어갑니다.
+    // 지금 화면은 요약 칩부터 마감 목록과 병목 후보까지 한 화면의 배치를 보이도록 전체 화면으로 둡니다.
     { at: { ms: 0 }, ...FULL },
-    { at: { after: "plan-shown", ms: 800 }, x: 40, y: 150, width: 880 },
     // 결제 화면 이슈의 상세를 읽은 뒤, 그림을 확대하는 dialog는 앱이 크게 보여 주므로 전체 화면으로 물러나 둡니다.
     { at: { after: "checkout-shown", ms: 700 }, x: 396, y: 80, width: 860 },
     { at: { after: "checkout-shown", ms: 2100 }, ...FULL },
@@ -101,7 +103,8 @@ export const TOUR: TourPlan = {
     { at: { after: "decision-shown", ms: 200 }, ...FULL },
   ],
   captions: [
-    { at: { ms: 0 }, title: "Plan", text: "See each epic's plan, stage by stage" },
+    { at: { ms: 0 }, title: "Now", text: "See what's due and what's blocking" },
+    { at: { after: "open-graph", ms: 0 }, title: "Graph", text: "Follow what blocks each issue" },
     {
       at: { after: "open-checkout", ms: 0 },
       title: "Diagrams",

@@ -34,8 +34,12 @@ const PRESS_MARK =
   "width: 28px; height: 28px; border-radius: 50%; background: rgba(28, 25, 23, 0.1); box-shadow: 0 0 0 1.5px rgba(28, 25, 23, 0.3)";
 /** 장면을 시작할 때 포인터를 두는 곳입니다. 어느 화면에서나 제목 줄 오른쪽의 빈 곳이라 hover 표시가 생기지 않습니다. */
 const POINTER_REST = { x: 900, y: 90 };
-/** 휠 스크롤을 나누는 횟수와, 나눈 휠 입력 사이의 간격입니다. */
-const WHEEL_STEPS = 20;
+/**
+ * 휠 스크롤을 나누는 횟수와, 나눈 휠 입력 사이의 간격입니다.
+ * 스크롤하는 동안은 GIF의 frame마다 화면 전체가 바뀌어 용량이 크게 늘므로, 움직임이 보이는 만큼만 나눕니다.
+ * 20번으로 나누면 지금 화면을 맨 아래까지 내리는 스크롤 하나에 GIF가 1.4MB 들어 10MB 한도를 넘습니다.
+ */
+const WHEEL_STEPS = 10;
 const WHEEL_STEP_MS = 25;
 /** 휠 입력을 마친 뒤 스크롤이 멈췄는지 확인하는 간격입니다. */
 const SCROLL_SETTLE_POLL_MS = 50;

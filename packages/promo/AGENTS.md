@@ -25,7 +25,7 @@ README의 Hygiene 스크린샷은 다섯 카드가 한 화면에 들어와야 �
 
 `pnpm --filter promo run video`는 capture가 남긴 녹화로 Remotion을 실행해 소개 영상을 만듭니다. 먼저 capture를 실행합니다. 처음 실행할 때 Remotion이 렌더링용 Chrome Headless Shell(약 170MB)을 `packages/promo/node_modules/.remotion`에 내려받습니다. 명령이 끝나면 파일마다 길이, 해상도, frame rate, 용량을 출력합니다.
 
-- `packages/promo/out/beads-desk-intro.mp4`는 결제 epic 하나를 따라가며 순서 보기, 이슈에 붙인 Mermaid 그림과 스크린샷, 결정과 그 결정이 대체한 이전 결정을 차례로 보이고 설치 안내로 끝나는 영상입니다(H.264, 1440×900, 25fps). 녹화 하나(`tour`)를 잘라 이어 붙이고, 녹화를 줄이거나 키우지 않고 그대로 놓습니다.
+- `packages/promo/out/beads-desk-intro.mp4`는 지금 화면을 맨 위에서 마감 목록과 병목 후보까지 보인 뒤, 오늘 마감인 이슈 하나의 선행·후속 그래프, 그 그래프에서 연 결제 화면 이슈의 Mermaid 그림과 스크린샷, 결정과 그 결정이 대체한 이전 결정을 차례로 보이고 설치 안내로 끝나는 영상입니다(H.264, 1440×900, 25fps). 녹화 하나(`tour`)를 잘라 이어 붙이고, 녹화를 줄이거나 키우지 않고 그대로 놓습니다.
 - `packages/promo/out/beads-desk-intro.gif`는 README 맨 위에 두는, 같은 영상을 줄인 GIF입니다(880×550, 약 8.3fps). 줄인 크기에서도 글자를 읽을 수 있도록 장면마다 `focus` 영역을 확대합니다. GitHub 이미지 첨부 한도인 10MB를 넘으면 명령이 실패합니다.
 - `packages/promo/out/`은 저장소에 넣지 않습니다. README에 쓰려면 두 파일을 `docs/beads-desk-intro.gif`와 `docs/beads-desk-intro.mp4`로 복사해 commit합니다.
   - README는 GIF와 스크린샷을 commit SHA로 고정한 `raw.githubusercontent.com` 주소로 넣습니다. 그래야 npmjs.com에서도 이미지가 보입니다. 이미지를 commit한 뒤 README.md와 README.ko.md의 주소를 그 commit의 SHA로 바꿉니다.
@@ -37,5 +37,5 @@ video 명령은 렌더링하기 전에 아래를 검사하고, 어기면 그 시
 
 - 확대 영역이 클릭 뒤 0.5초 안에 움직이는지 봅니다. 화면이 바뀌는 모습과 카메라 이동이 겹치면 무엇이 열렸는지 알아보기 어렵습니다.
 - 자막이 나타난 뒤 `max(1.2초, 글자 수 ÷ 15)초` 안에 다음 클릭이나 스크롤이 있는지, 확대 영역이 두 번 넘게 움직이는지 봅니다.
-- 영상 길이가 25–30초인지 봅니다.
+- 영상 길이가 25–38초인지 봅니다.
 - 구간마다 첫 frame과 마지막 frame을 구간 안쪽 1초 동안의 frame과 비교하고, 화면이 크게 다르면 구간과 경계를 알립니다. 경계가 화면을 불러오는 동안에 걸렸거나 경계에서 1초 안에 장면의 동작이 있는 경우이므로, 녹화의 frame을 보고 그 경계를 옮깁니다. 목록이 빈 채로 1초 넘게 머물면, 빈 목록이 나타나고 얼마 지나지 않은 경계는 이 검사를 통과합니다.

@@ -28,6 +28,13 @@ describe.each([
     );
     expect(closedToday.length).toBeGreaterThan(0);
   });
+
+  test("지금 화면의 오늘 마감에 보이도록 지금 뒤로 오늘 안에 마감인 이슈가 있다", () => {
+    const dueLaterToday = issues.filter(
+      ({ dueAt }) => dueAt !== undefined && dueAt > now && localDay(dueAt) === localDay(now),
+    );
+    expect(dueLaterToday.length).toBeGreaterThan(0);
+  });
 });
 
 test("관계가 가리키는 이슈는 모두 데모 데이터에 있다", () => {

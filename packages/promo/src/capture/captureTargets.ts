@@ -44,7 +44,22 @@ export type CaptureTarget = {
   recording?: View & { play(scene: Scene): Promise<void> };
 };
 
-const NOW: View = { path: "/focus", shows: ["Checkout and billing ready for launch", "Flow"] };
+/** 지금 화면의 맨 위입니다. 요약 칩과 흐름 차트가 보입니다. */
+const NOW_TOP: View = {
+  path: "/focus",
+  shows: ["Set up Postmark for transactional email", "Due today", "Epic progress"],
+};
+/**
+ * 지금 화면은 마감 목록, 병목 후보, 에픽 진행률이 맨 아래 묶음에 있어 첫 화면에 들어오지 않습니다.
+ * 맨 아래까지 스크롤하고 viewport를 낮춰, 세 칸이 머리글 바로 아래부터 한 화면에 들어오게 합니다.
+ */
+const NOW: View = {
+  ...NOW_TOP,
+  height: 720,
+  async frame(page) {
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  },
+};
 const DECISIONS: View = { path: "/decisions", shows: ["Sign in with passwordless magic links"] };
 const HYGIENE: View = {
   path: "/hygiene",
@@ -72,7 +87,8 @@ const ACTIVITY: View = {
     });
   },
 };
-const CHECKOUT_EPIC_TITLE = "Checkout and billing ready for launch";
+const RECEIPT_ISSUE = "acme-k3v.4";
+const RECEIPT_TITLE = "Send a receipt email after a successful payment";
 const CHECKOUT_ISSUE = "acme-k3v.3";
 const CHECKOUT_TITLE = "Build the checkout page with card and Apple Pay";
 const STRIPE_DECISION = "Use Stripe as the only payment provider at launch";
@@ -106,13 +122,6 @@ const GRAPH: View = {
 /** 머리글의 화면 이동 링크입니다. 장면은 이 링크를 클릭해 다음 화면으로 넘어갑니다. */
 function navLink(page: Page, name: string): Locator {
   return page.getByRole("navigation", { name: "Screens" }).getByRole("link", { name });
-}
-
-/** 에픽 화면에서 제목이 `title`인 에픽 카드의 머리 줄입니다. 순서 보기 링크가 이 줄에 있습니다. */
-function epicHeader(page: Page, title: string): Locator {
-  return page
-    .locator("header")
-    .filter({ has: page.getByRole("link", { name: title, exact: true }) });
 }
 
 /** 이슈 상세입니다. 화면 위에 열면 dialog이고, 그래프 위에 열면 region입니다. */
@@ -179,28 +188,37 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
   { name: "hygiene", screenshot: HYGIENE },
   { name: "decisions", screenshot: DECISIONS },
   {
-    // 결제 epic 하나를 따라가며 순서 보기, 결제 화면 이슈의 Mermaid 그림과 스크린샷, 결제와 같은 주제의 결정과 그 결정이 대체한 이전 결정을 봅니다.
+    // 지금 화면을 맨 위에서부터 마감 목록과 병목 후보까지 내려 본 뒤, 오늘 마감인 영수증 메일 이슈를 열어 선행·후속 그래프로 들어갑니다.
+    // 그래프에서 선행인 결제 화면 이슈의 Mermaid 그림과 스크린샷을 보고, 결제와 같은 주제의 결정과 그 결정이 대체한 이전 결정을 봅니다.
     // 장면은 포인터의 클릭으로 이어지도록, dialog도 Escape가 아니라 닫기 버튼을 눌러 닫습니다.
     // 이슈에 붙인 녹화 링크는 누르지 않습니다. 탭이 브라우저의 동영상 화면으로 넘어가 beads-desk 밖으로 나가기 때문입니다.
     // pause 길이는 영상의 자막을 읽고 확대 영역이 옮겨 갈 시간이므로, 바꾸면 introTimeline.ts의 TOUR도 함께 확인합니다.
     name: "tour",
     recording: {
-      path: "/epics",
-      shows: [CHECKOUT_EPIC_TITLE, "View order"],
-      // 에픽 화면은 첫 에픽의 하위 이슈를 펼쳐 두어 결제 epic이 화면 아래로 밀려나므로, 접어서 열린 에픽 카드가 모두 보이게 합니다.
-      async frame(page) {
-        await page.getByRole("button", { name: "Collapse child issues of acme-p8d" }).click();
-      },
+      ...NOW_TOP,
       async play({ page, pause, click, scroll, mark }) {
-        await pause(2200);
-        await click(
-          epicHeader(page, CHECKOUT_EPIC_TITLE).getByRole("link", { name: "View order" }),
-          "open-plan",
+        await pause(2400);
+        // 나눈 휠 입력이 다 반영되지 않아 남은 거리만 주면 맨 아래에 닿기 전에 멈출 수 있으므로, 더 크게 주어 맨 아래까지 내립니다.
+        const bottom = await page.evaluate(
+          () => document.documentElement.scrollHeight - window.innerHeight - window.scrollY,
         );
-        const plan = page.getByRole("dialog", { name: `${CHECKOUT_EPIC_TITLE} · Order` });
-        const graph = plan.getByRole("region", { name: "Dependency graph" });
-        await graph.getByText("Stage 4", { exact: false }).waitFor();
-        mark("plan-shown");
+        await scroll(bottom * 1.5, page.getByRole("region", { name: "Flow" }), "scroll-to-due");
+        await pause(2000);
+
+        // 행 가운데에는 행 링크 위에 놓인 대기 수 표시가 있어, 제목 글자를 눌러 행 링크가 받게 합니다.
+        await click(
+          page.getByRole("region", { name: "Due dates" }).getByText(RECEIPT_TITLE, { exact: true }),
+          "open-issue",
+        );
+        const issue = issueDetail(page, RECEIPT_ISSUE);
+        await issue.getByRole("link", { name: "Blocks graph" }).waitFor();
+        mark("issue-shown");
+        await pause(600);
+        await click(issue.getByRole("link", { name: "Blocks graph" }), "open-graph");
+        const chain = page.getByRole("dialog", { name: `${RECEIPT_TITLE} · Blocks chain` });
+        const graph = chain.getByRole("region", { name: "Dependency graph" });
+        await graph.getByRole("link", { name: new RegExp(CHECKOUT_TITLE) }).waitFor();
+        mark("graph-shown");
         await pause(2200);
 
         await click(graph.getByRole("link", { name: new RegExp(CHECKOUT_TITLE) }), "open-checkout");
@@ -227,9 +245,18 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
         await scroll(link.y + link.height - 676, diagram, "scroll-to-screenshot");
         await pause(1700);
 
-        // 순서 보기 dialog의 머리글 닫기 버튼입니다. 상세의 닫기 버튼보다 앞에 있습니다.
-        await click(plan.getByRole("link", { name: "Close", exact: true }).first(), "close-plan");
-        await plan.waitFor({ state: "hidden" });
+        // 그래프 dialog의 머리글 닫기 버튼입니다. 상세의 닫기 버튼보다 앞에 있습니다.
+        await click(chain.getByRole("link", { name: "Close", exact: true }).first(), "close-graph");
+        await chain.waitFor({ state: "hidden" });
+        await pause(300);
+        // 그래프는 연 곳인 이슈 상세로 돌아오므로, 그 상세도 닫아야 머리글의 탭을 누를 수 있습니다.
+        // 영상은 그래프를 닫는 클릭부터 이슈 상세가 닫힐 때까지를 빼고 잇습니다.
+        await click(
+          issue.getByRole("button", { name: "Close", exact: true }).first(),
+          "close-issue",
+        );
+        await issue.waitFor({ state: "hidden" });
+        mark("issue-closed");
         await pause(300);
         await click(navLink(page, "Decisions"), "open-decisions");
         const stripe = page.getByRole("link", { name: STRIPE_DECISION });
