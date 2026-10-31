@@ -4,9 +4,18 @@ English | [한국어](https://github.com/seungyeop-lee/beads-desk/blob/main/READ
 
 A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for reviewing what your agents leave in the tracker: the plans they lay out, the decisions they record, the diagrams and screenshots they attach, and the questions they leave for you. Read and edit your issues in the browser while you and your agents keep using `bd` in the terminal.
 
-[![beads-desk demo following one checkout epic: its plan in stages, a sequence diagram enlarged from one of its issues, a screenshot attached to the same issue, and a payment decision with the earlier decision it replaced](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/beads-desk-intro.gif)](https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4)
+[![beads-desk demo starting at the top of the Now screen and moving down to its due dates and bottlenecks, then opening an issue due today: its blocks graph, a sequence diagram enlarged from the checkout issue it waits on, a screenshot attached to that issue, and a payment decision with the earlier decision it replaced](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/beads-desk-intro.gif)](https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4)
 
 ## Features
+
+### See what to unblock next
+
+- **Now** lists open issues with a due date in three groups: **Overdue**, **Due today**, and the next 3 days. Set or clear an issue's due date in its details.
+- **Bottlenecks** lists the issues that block other issues, sorted by how many issues wait on them. Each entry shows the waiting issues that have a due date and how many issues become ready once it is closed.
+- The full list is in the **Bottlenecks** view of the **Issues** screen.
+- The same screen also counts in-progress, ready, and blocked issues, charts the last 7 days, and shows epic progress.
+
+![Now screen with due dates grouped into overdue, due today, and the next 3 days, bottlenecks sorted by how many issues wait on them, and epic progress bars](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/now.png)
 
 ### Review the plan stage by stage
 
@@ -14,7 +23,7 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 - Human gates and blockers outside the epic appear in the same graph.
 - **Blocks graph** shows the chain of work before and after any issue.
 
-![View order for an epic arranging its issues into five stages, with a human gate holding the last stage](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/graph.png)
+![View order for an epic arranging its issues into five stages, with a human gate holding the last stage](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/graph.png)
 
 ### Read what agents attach
 
@@ -22,14 +31,14 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 - [Local file links](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#local-file-links-in-issues) open in the app: images show in the issue, and `.webm` and `.mp4` recordings play.
 - Links to `.diff`, `.patch`, `.md`, `.log`, and `.txt` files expand below the paragraph, so you can read them without leaving the issue. Diffs show line numbers and highlight the changed words; Markdown files show their source with syntax highlighting.
 
-![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and expanded previews of a Markdown note with syntax highlighting and of a diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/0ce5f2a40eb5083b756ed8106612155cfaac58a4/docs/screenshots/attachments.png)
+![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and expanded previews of a Markdown note with syntax highlighting and of a diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/attachments.png)
 
 ### Keep decisions on record
 
 - `decision` issues get their own screen, split into active and closed decisions.
 - Each decision links to the decisions it supersedes and the one that superseded it.
 
-![Decisions screen splitting active and closed decisions, with supersedes and superseded-by links](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/decisions.png)
+![Decisions screen splitting active and closed decisions, with supersedes and superseded-by links](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/decisions.png)
 
 ### Answer what your agents ask
 
@@ -37,7 +46,7 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 - Respond or dismiss in place. Closing a gate unblocks the work behind it.
 - Turn on [browser notifications](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#browser-notifications) to hear about new items while you work elsewhere.
 
-![Needs human screen with a response typed for the selected gate and the task that gate blocks](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/needs-human.png)
+![Needs human screen with a response typed for the selected gate and the task that gate blocks](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/needs-human.png)
 
 ### See what happened while you were away
 
@@ -45,30 +54,27 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 - Issue edits (description, status, title, labels, and more) and deletions appear once you turn on bd's events journal with `bd config set events-journal true`. Only changes made after that are recorded.
 - A **Seen on your last visit** divider marks where you left off.
 
-![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/activity.png)
+![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/activity.png)
 
 ### Keep the tracker tidy
 
 - **Hygiene** finds stale issues, open issues mentioned in commits, issues missing the sections `bd` recommends, possible duplicates, and epics ready to close.
 - Close a duplicate from the same screen.
 
-![Hygiene screen with stale issues, possible duplicates, missing sections, epics ready to close, and orphaned issues](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/hygiene.png)
+![Hygiene screen with stale issues, possible duplicates, missing sections, epics ready to close, and orphaned issues](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/hygiene.png)
 
 ### Also in beads-desk
 
-| Screen | What it shows                                                                   |
-| ------ | ------------------------------------------------------------------------------- |
-| Now    | What is in progress, up next, and blocked, with epic progress and a 7-day chart |
-| Issues | All issues by work state, with filters and search through bodies and comments   |
-| Epics  | Open and closed epics with their progress, searchable by ID or title            |
-| Board  | Cards you drag to change status                                                 |
+| Screen | What it shows                                                                 |
+| ------ | ----------------------------------------------------------------------------- |
+| Issues | All issues by work state, with filters and search through bodies and comments |
+| Epics  | Open and closed epics with their progress, searchable by ID or title          |
+| Board  | Cards you drag to change status                                               |
 
 - A side panel opens a linked issue beside the one you are reading.
 - Every read and change goes through the `bd` CLI, and changes made with `bd` show up in open tabs within seconds.
 - Each tab can show a different workspace.
 - English and Korean UI, light and dark themes, set in **Settings**.
-
-![Now screen showing counts of in-progress, ready, blocked, and needs-human issues, a 7-day created and closed chart, and the in-progress and blocked lists](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/a4a2a017124b6ffa24718cbdfc8736f740c89cc9/docs/screenshots/now.png)
 
 ## Requirements
 
