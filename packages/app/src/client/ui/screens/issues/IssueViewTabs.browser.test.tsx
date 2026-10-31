@@ -84,6 +84,9 @@ test("병목은 작업 상태가 아니라서 상태 탭 뒤에 구분선을 두
     "병목3",
   ]);
 
+  // 색 점은 bd가 정한 상태에만 붙이므로, 이 앱이 정한 병목 탭에는 없습니다.
+  expect(links.at(-1)!.querySelector(".tone-dot")).toBeNull();
+
   // 구분선은 장식이라 이름이 없으므로, 병목 탭 바로 앞의 요소로 찾아 닫힘 탭과 병목 탭 사이에 놓였는지 잽니다.
   const closed = links.at(-2)!.getBoundingClientRect();
   const bottleneck = links.at(-1)!;

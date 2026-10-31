@@ -28,9 +28,6 @@ export const READY_TONE = "tone-aqua";
 
 export const HUMAN_DECISION_TONE = "tone-lavender";
 
-/** 이슈 목록의 병목 탭 색입니다. 다른 보기 탭의 작업 상태 색과 겹치지 않게 고릅니다. */
-export const BOTTLENECK_TONE = "tone-blossom";
-
 /** 작업 상태의 색은 같은 이름의 저장 상태 색을 따르고, 바로 작업 가능은 READY_TONE, 판단 기다림은 HUMAN_DECISION_TONE입니다. 보드 열의 색과 같습니다. */
 const WORK_STATE_TONES: Record<WorkState, string> = {
   in_progress: STATUS_TONES.in_progress,

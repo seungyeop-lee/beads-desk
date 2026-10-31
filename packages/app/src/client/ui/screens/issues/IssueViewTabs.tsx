@@ -7,7 +7,7 @@ import {
 } from "@/client/modules/issues/domain/issueView";
 import type { WorkStateGroup } from "@/client/modules/issues/domain/workState";
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
-import { BOTTLENECK_TONE, workStateTone } from "@/client/ui/issues/issueLabels";
+import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { issueListHref, type IssueListAddress } from "@/client/ui/address/issueListAddress";
 
@@ -26,9 +26,10 @@ type Props = {
 export function IssueViewTabs({ view, filters, groups, bottleneckCount }: Props) {
   const messages = useMessages();
   const workspaceHref = useWorkspaceHref();
+  // 색 점은 bd가 정한 상태에만 붙입니다. 병목은 이 앱이 정한 개념이라 점을 붙이지 않습니다.
   const tabOf = (tabView: IssueView) =>
     tabView === BOTTLENECK_VIEW
-      ? { label: messages.focus.bottlenecks.title, tone: BOTTLENECK_TONE, count: bottleneckCount }
+      ? { label: messages.focus.bottlenecks.title, tone: null, count: bottleneckCount }
       : {
           label: messages.workStates.labels[tabView],
           tone: workStateTone(tabView),
