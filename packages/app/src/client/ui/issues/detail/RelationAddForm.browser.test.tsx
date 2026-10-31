@@ -97,3 +97,21 @@ test("관계를 고르고 키보드만으로 둘째 후보를 골라 연결하�
     .poll(() => screen.getByRole("status").element().textContent)
     .toBe(messages.relations.linked("desk-4", messages.relations.kinds.blocks));
 });
+
+test("영어 화면에서도 선행·후속 관계 선택지에 방향 설명이 붙는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="en">
+      <RelationAddForm issue={issueDetail("desk-1")} writes={WRITES} />
+    </LocaleProvider>,
+  );
+  const kinds = screen.getByRole("combobox", { name: "Relation to add" }).getByRole("option");
+
+  await expect
+    .poll(() => kinds.elements().map((option) => option.textContent))
+    .toEqual(
+      expect.arrayContaining([
+        "Blocked by (Must close before this issue)",
+        "Blocks (Starts after this issue closes)",
+      ]),
+    );
+});

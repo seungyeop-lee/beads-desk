@@ -1,17 +1,5 @@
-import type { IssueStatus } from "@beads-desk/bd/issue";
-import type { EpicGroupKind } from "@/client/modules/epics/domain/epicGroups";
 import type { BottleneckOrderKey } from "@/client/modules/focus/domain/focusBottlenecks";
-import type { WorkState } from "@/client/modules/issues/domain/workState";
-import type { RelationKind } from "@/client/modules/issues/domain/issueRelations";
-import type { ActivityKind } from "@/shared/contract/activityFeed";
-import type { Replacement } from "@/shared/contract/issueActions";
-import type { ThemeChoice } from "@/shared/contract/theme";
-
-/** 관계 이름만으로 방향이 헷갈리는 선택지에 붙이는 설명입니다. */
-const relationKindHints: Partial<Record<RelationKind, string>> = {
-  blockedBy: "이 이슈보다 먼저 끝나야 함",
-  blocks: "이 이슈가 끝나야 시작",
-};
+import type { Messages } from "./messageCatalog";
 
 /** 병목 정렬 설명 문장이 뒤에 "으로"를 붙이므로, 기준마다 넣는 말은 모두 "순"으로 끝나야 합니다. */
 const bottleneckOrderPhrases: Record<BottleneckOrderKey, string> = {
@@ -21,8 +9,7 @@ const bottleneckOrderPhrases: Record<BottleneckOrderKey, string> = {
   priority: "우선순위 순",
 };
 
-/** 화면 문구의 기준 사전입니다. 다른 언어의 사전은 이 모양을 그대로 따릅니다. */
-export const koMessages = {
+export const koMessages: Messages = {
   common: {
     untitled: "(제목 없음)",
     titlePlaceholder: "제목 없음",
@@ -39,8 +26,7 @@ export const koMessages = {
   shell: {
     screens: "화면",
     newIssue: "새 이슈",
-    /** 스크린 리더가 상단 탭 이름 뒤에 이어 읽는 개수입니다. 화면에는 숫자만 보입니다. */
-    awaitingCount: (count: number) => `${count}개`,
+    awaitingCount: (count) => `${count}개`,
     workspace: "이 탭의 workspace",
   },
   settings: {
@@ -50,7 +36,7 @@ export const koMessages = {
       system: "시스템 설정 따르기",
       light: "밝게",
       dark: "어둡게",
-    } satisfies Record<ThemeChoice, string>,
+    },
     language: "언어",
     notifications: "브라우저 알림",
     humanDecisionNotices: "판단 기다림이 생기면 알리기",
@@ -67,7 +53,7 @@ export const koMessages = {
       blocked: "막힘",
       deferred: "보류",
       closed: "닫힘",
-    } satisfies Record<IssueStatus, string>,
+    },
     ready: "바로 작업 가능",
     types: {
       bug: "버그",
@@ -82,7 +68,6 @@ export const koMessages = {
       gate: "게이트",
     },
     priorities: ["긴급", "높음", "보통", "낮음", "백로그"],
-    /** 의존 관계 유형을 보는 쪽에 맞춰 부릅니다. */
     dependencyTypes: {
       dependencies: {
         blocks: "선행",
@@ -115,25 +100,22 @@ export const koMessages = {
     dueAt: "마감일",
     labels: "라벨",
     dependencyCount: "의존",
-    waiters: (count: number) => `${count}개 대기`,
-    waitersHint: (count: number) =>
-      `이 이슈가 닫히기를 기다리는 닫히지 않은 이슈가 ${count}개 있습니다.`,
+    waiters: (count) => `${count}개 대기`,
+    waitersHint: (count) => `이 이슈가 닫히기를 기다리는 닫히지 않은 이슈가 ${count}개 있습니다.`,
   },
   issueTable: {
     empty: "조건에 맞는 이슈가 없습니다.",
-    statusOf: (id: string) => `${id} 상태`,
-    priorityOf: (id: string) => `${id} 우선순위`,
-    dependencyCounts: (dependencies: number, dependents: number) =>
-      `선행 ${dependencies}개 · 후속 ${dependents}개`,
-    toggleChildren: (id: string, expanded: boolean) =>
-      `${id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`,
-    childCount: (count: number) => `하위 ${count}개`,
+    statusOf: (id) => `${id} 상태`,
+    priorityOf: (id) => `${id} 우선순위`,
+    dependencyCounts: (dependencies, dependents) => `선행 ${dependencies}개 · 후속 ${dependents}개`,
+    toggleChildren: (id, expanded) => `${id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`,
+    childCount: (count) => `하위 ${count}개`,
     unblocks: "바로 풀림",
   },
   blocking: {
     chip: "막힘",
-    waitingOn: (id: string) => `${id}을(를) 기다리는 중`,
-    more: (count: number) => `외 ${count}개`,
+    waitingOn: (id) => `${id}을(를) 기다리는 중`,
+    more: (count) => `외 ${count}개`,
     bannerTitle: "먼저 끝나야 하는 이슈가 있습니다",
     bannerBody: "아래 이슈가 모두 닫히면 이 이슈는 바로 작업 가능 목록에 올라옵니다.",
   },
@@ -148,24 +130,24 @@ export const koMessages = {
     dismissReason: "닫는 사유",
     dismissReasonPlaceholder: "닫는 사유 (적지 않아도 됩니다)",
     confirmDismiss: "응답 없이 닫기",
-    responded: (id: string) => `${id}에 응답하고 닫았습니다`,
-    dismissed: (id: string) => `${id}을(를) 응답 없이 닫았습니다`,
+    responded: (id) => `${id}에 응답하고 닫았습니다`,
+    dismissed: (id) => `${id}을(를) 응답 없이 닫았습니다`,
   },
   humanGate: {
     waiting: "사람 확인 기다림",
-    waitingOn: (title: string) => `사람 확인 기다림: ${title}`,
+    waitingOn: (title) => `사람 확인 기다림: ${title}`,
     panelTitle: "사람의 확인을 기다리는 작업입니다",
     panelBody:
       "아래 gate에 응답하거나 응답 없이 닫으면 막힘이 풀립니다. 이 이슈는 닫히지 않습니다.",
     reason: "사유",
     blocks: "막고 있는 작업",
     noBlocks: "이 gate가 막고 있는 작업 이슈가 없습니다. 응답하거나 닫으면 gate만 닫힙니다.",
-    manyBlocks: (count: number) => `작업 ${count}개를 막고 있습니다. gate가 닫히면 모두 풀립니다.`,
-    previousRounds: (count: number) => `이전 게이트 라운드 ${count}개`,
+    manyBlocks: (count) => `작업 ${count}개를 막고 있습니다. gate가 닫히면 모두 풀립니다.`,
+    previousRounds: (count) => `이전 게이트 라운드 ${count}개`,
     previousFeedback: "이전 게이트 피드백",
     previousLoading: "이전 게이트 피드백을 불러오는 중",
-    previousLoadFailed: (error: string) => `이전 게이트 피드백을 불러오지 못했습니다: ${error}`,
-    roundClosed: (time: string) => `닫힘 ${time}`,
+    previousLoadFailed: (error) => `이전 게이트 피드백을 불러오지 못했습니다: ${error}`,
+    roundClosed: (time) => `닫힘 ${time}`,
     responseTitle: "응답",
     responseBody:
       "응답은 gate에 댓글로 남고, 응답하거나 응답 없이 닫으면 gate가 닫힙니다. 막혀 있던 작업 이슈는 닫히지 않습니다.",
@@ -173,17 +155,17 @@ export const koMessages = {
   },
   copyId: {
     label: "ID 복사",
-    labelOf: (id: string) => `${id} ID 복사`,
-    copied: (id: string) => `ID를 복사했습니다: ${id}`,
-    failed: (id: string) => `ID를 복사하지 못했습니다: ${id}`,
+    labelOf: (id) => `${id} ID 복사`,
+    copied: (id) => `ID를 복사했습니다: ${id}`,
+    failed: (id) => `ID를 복사하지 못했습니다: ${id}`,
   },
   claim: {
     label: "가져가기",
     hint: "담당자를 나로 정하고 진행 중으로 바꿉니다",
   },
   editable: {
-    editField: (label: string) => `${label} 편집`,
-    addField: (label: string) => `${label} 추가`,
+    editField: (label) => `${label} 편집`,
+    addField: (label) => `${label} 추가`,
     edit: "편집",
   },
   markdownEditor: {
@@ -193,20 +175,19 @@ export const koMessages = {
     hideCode: "코드 숨기기",
     enlargeDiagram: "그림 크게 보기",
     enlargedDiagram: "크게 본 그림",
-    filePreview: (name: string) => `${name} 미리보기`,
-    filePreviewContents: (name: string) => `${name} 내용`,
+    filePreview: (name) => `${name} 미리보기`,
+    filePreviewContents: (name) => `${name} 내용`,
     filePreviewLoading: "파일을 불러오는 중",
-    filePreviewTooLarge: (megabytes: number) =>
-      `파일이 ${megabytes} MB보다 커서 미리보기를 생략했습니다.`,
+    filePreviewTooLarge: (megabytes) => `파일이 ${megabytes} MB보다 커서 미리보기를 생략했습니다.`,
     openFile: "파일 열기",
-    openInNewTab: (name: string) => `${name} 새 탭에서 열기`,
+    openInNewTab: (name) => `${name} 새 탭에서 열기`,
     diffBadges: { new: "새 파일", deleted: "삭제", renamed: "이름 변경", binary: "바이너리" },
-    diffLineCounts: (added: number, deleted: number) => `추가 ${added}줄, 삭제 ${deleted}줄`,
+    diffLineCounts: (added, deleted) => `추가 ${added}줄, 삭제 ${deleted}줄`,
 
-    toolbar: (label: string) => `${label} 서식 도구`,
+    toolbar: (label) => `${label} 서식 도구`,
     blockType: "문단 형식",
     paragraph: "본문",
-    heading: (level: number) => `제목 ${level}`,
+    heading: (level) => `제목 ${level}`,
     bold: "굵게",
     italic: "기울임",
     strikethrough: "취소선",
@@ -233,21 +214,21 @@ export const koMessages = {
   },
   issueDetail: {
     loading: "이슈를 불러오는 중",
-    dialog: (id: string) => `${id} 이슈`,
-    backTo: (id: string) => `이전 이슈 ${id}로 돌아가기`,
+    dialog: (id) => `${id} 이슈`,
+    backTo: (id) => `이전 이슈 ${id}로 돌아가기`,
     working: "처리 중",
-    loadFailed: (error: string) => `이슈를 불러오지 못했습니다: ${error}`,
+    loadFailed: (error) => `이슈를 불러오지 못했습니다: ${error}`,
     closeReason: "닫은 사유",
     linkedIssues: "연결된 이슈",
     createdAt: "만든 시각",
     updatedAt: "고친 시각",
     closedAt: "닫은 시각",
     delete: "이슈 삭제",
-    confirmDelete: (id: string) => `${id} 이슈를 삭제할까요? 되돌릴 수 없습니다.`,
-    confirmRemoveDependency: (id: string) => `${id} 이슈와의 의존 관계를 지울까요?`,
-    confirmForceClose: (reason: string) =>
+    confirmDelete: (id) => `${id} 이슈를 삭제할까요? 되돌릴 수 없습니다.`,
+    confirmRemoveDependency: (id) => `${id} 이슈와의 의존 관계를 지울까요?`,
+    confirmForceClose: (reason) =>
       `열린 하위 이슈나 닫히지 않은 선행 이슈가 있어 bd가 닫기를 거부했습니다.\n\n${reason}\n\n그래도 닫을까요?`,
-    sidePanel: (id: string) => `${id} 이슈 옆 패널`,
+    sidePanel: (id) => `${id} 이슈 옆 패널`,
     openInMain: "이 이슈로 이동",
     closeSidePanel: "옆 패널 닫기",
   },
@@ -256,8 +237,8 @@ export const koMessages = {
     reason: "닫는 사유",
     reasonPlaceholder: "비워 두면 bd가 Closed로 남깁니다",
     submit: "이슈 닫기",
-    unblocked: (count: number) => `막힘이 풀려 바로 작업할 수 있게 된 이슈가 ${count}개 있습니다.`,
-    andMore: (count: number) => `외 ${count}개`,
+    unblocked: (count) => `막힘이 풀려 바로 작업할 수 있게 된 이슈가 ${count}개 있습니다.`,
+    andMore: (count) => `외 ${count}개`,
   },
   deferral: {
     title: "이슈 보류",
@@ -278,7 +259,7 @@ export const koMessages = {
     clear: "지우기",
   },
   dependencyList: {
-    remove: (id: string) => `${id} 의존 관계 지우기`,
+    remove: (id) => `${id} 의존 관계 지우기`,
   },
   relations: {
     title: "관계 맺기",
@@ -289,11 +270,14 @@ export const koMessages = {
       parent: "상위 이슈",
       child: "하위 이슈",
       related: "관련 이슈",
-    } satisfies Record<RelationKind, string>,
-    kindHints: relationKindHints,
+    },
+    kindHints: {
+      blockedBy: "이 이슈보다 먼저 끝나야 함",
+      blocks: "이 이슈가 끝나야 시작",
+    },
     search: "연결할 이슈 찾기",
     linkConfirm: "연결",
-    linked: (id: string, kind: string) => `${id}을(를) ${kind}로 연결했습니다.`,
+    linked: (id, kind) => `${id}을(를) ${kind}로 연결했습니다.`,
   },
   closeAsReplaced: {
     title: "대체·중복으로 닫기",
@@ -301,17 +285,16 @@ export const koMessages = {
     methods: {
       supersede: "다른 이슈로 대체",
       duplicate: "중복으로 닫기",
-    } satisfies Record<Replacement, string>,
+    },
     search: "대상 이슈 찾기",
     confirm: {
-      supersede: (id: string, target: string) => `${id}을(를) ${target}(으)로 대체하고 닫을까요?`,
-      duplicate: (id: string, target: string) =>
-        `${id}을(를) ${target}의 중복으로 표시하고 닫을까요?`,
-    } satisfies Record<Replacement, (id: string, target: string) => string>,
+      supersede: (id, target) => `${id}을(를) ${target}(으)로 대체하고 닫을까요?`,
+      duplicate: (id, target) => `${id}을(를) ${target}의 중복으로 표시하고 닫을까요?`,
+    },
     closed: {
-      supersede: (id: string, target: string) => `${id}을(를) ${target}(으)로 대체하고 닫았습니다.`,
-      duplicate: (id: string, target: string) => `${id}을(를) ${target}의 중복으로 닫았습니다.`,
-    } satisfies Record<Replacement, (id: string, target: string) => string>,
+      supersede: (id, target) => `${id}을(를) ${target}(으)로 대체하고 닫았습니다.`,
+      duplicate: (id, target) => `${id}을(를) ${target}의 중복으로 닫았습니다.`,
+    },
   },
   issuePicker: {
     placeholder: "제목이나 ID로 찾기",
@@ -319,7 +302,7 @@ export const koMessages = {
     clearSelection: "선택 취소",
   },
   labelEditor: {
-    remove: (label: string) => `${label} 라벨 지우기`,
+    remove: (label) => `${label} 라벨 지우기`,
     labelToAdd: "추가할 라벨",
     placeholder: "라벨",
     add: "라벨 추가",
@@ -335,30 +318,28 @@ export const koMessages = {
     title: "활동",
     tabs: "댓글과 활동",
     loading: "활동 기록을 불러오는 중",
-    loadFailed: (error: string) => `활동 기록을 불러오지 못했습니다: ${error}`,
+    loadFailed: (error) => `활동 기록을 불러오지 못했습니다: ${error}`,
     created: "이슈를 만들었습니다.",
     closed: "이슈를 닫았습니다.",
-    closedWithReason: (reason: string) => `이슈를 닫았습니다: ${reason}`,
+    closedWithReason: (reason) => `이슈를 닫았습니다: ${reason}`,
     reopened: "이슈를 다시 열었습니다.",
-    fieldChanged: (field: string, before: string, after: string) =>
-      `${field}: ${before} → ${after}`,
-    bodyChanged: (field: string) => `${field} 내용을 고쳤습니다.`,
-    dependencyAdded: (relation: string, issueId: string) =>
-      `${relation} 관계로 ${issueId}을(를) 연결했습니다.`,
-    dependencyRemoved: (issueId: string) => `${issueId}과(와)의 관계를 지웠습니다.`,
-    labelAdded: (label: string) => `라벨 ${label}을(를) 붙였습니다.`,
-    labelRemoved: (label: string) => `라벨 ${label}을(를) 뗐습니다.`,
+    fieldChanged: (field, before, after) => `${field}: ${before} → ${after}`,
+    bodyChanged: (field) => `${field} 내용을 고쳤습니다.`,
+    dependencyAdded: (relation, issueId) => `${relation} 관계로 ${issueId}을(를) 연결했습니다.`,
+    dependencyRemoved: (issueId) => `${issueId}과(와)의 관계를 지웠습니다.`,
+    labelAdded: (label) => `라벨 ${label}을(를) 붙였습니다.`,
+    labelRemoved: (label) => `라벨 ${label}을(를) 뗐습니다.`,
   },
   focus: {
     title: "지금",
     inProgress: "진행 중",
     summary: "개수 요약",
     list: {
-      seeAll: (count: number) => `${count}개 모두 보기`,
+      seeAll: (count) => `${count}개 모두 보기`,
       showFewer: "접기",
     },
     epicProgress: "에픽 진행률",
-    epicProgressOf: (title: string) => `${title} 진행률`,
+    epicProgressOf: (title) => `${title} 진행률`,
     inProgressEmpty: "진행 중인 이슈가 없습니다.",
     readyEmpty: "바로 작업 가능한 이슈가 없습니다.",
     blockedEmpty: "막힌 이슈가 없습니다.",
@@ -368,40 +349,39 @@ export const koMessages = {
       overdue: "기한 초과",
       overdueBasis: "마감 시각이 지남",
       dueToday: "오늘 마감",
-      dueSoon: (days: number) => `${days}일 이내`,
-      none: (days: number) => `기한 초과, 오늘 마감, ${days}일 이내 마감인 이슈가 없습니다.`,
-      noneBasis: (today: string, days: number, soon: string) =>
-        `오늘 ${today} · ${days}일 이내 ${soon}`,
+      dueSoon: (days) => `${days}일 이내`,
+      none: (days) => `기한 초과, 오늘 마감, ${days}일 이내 마감인 이슈가 없습니다.`,
+      noneBasis: (today, days, soon) => `오늘 ${today} · ${days}일 이내 ${soon}`,
     },
     bottlenecks: {
       title: "병목",
-      order: (keys: readonly BottleneckOrderKey[]) => {
+      order: (keys) => {
         const [first, ...rest] = keys.map((key) => bottleneckOrderPhrases[key]);
         return `${first}으로 두고, 같으면 ${rest.join(", ")}으로 둡니다.`;
       },
       empty: "다른 이슈를 막고 있는 이슈가 없습니다.",
-      unblocks: (count: number) => `닫으면 ${count}개 바로 작업 가능`,
+      unblocks: (count) => `닫으면 ${count}개 바로 작업 가능`,
       unblocksHint:
         "다른 선행 조건 없이 이 이슈만 기다리는 후속 이슈 가운데, 이 이슈를 닫으면 바로 작업 가능이나 진행 중이 되는 이슈 수입니다. 닫는다고 가정해 계산한 값이며, 이 이슈의 지금 상태는 앞쪽의 상태 표시가 bd 결과대로 보여 줍니다.",
-      state: (label: string) => `지금 상태: ${label}`,
-      openGraphOf: (id: string) => `${id}의 선행·후속 그래프 열기`,
+      state: (label) => `지금 상태: ${label}`,
+      openGraphOf: (id) => `${id}의 선행·후속 그래프 열기`,
     },
     stats: {
       title: "흐름",
       throughput: "최근 7일 처리량",
       series: { created: "만든 수", closed: "닫은 수" },
-      dayLabel: (month: number, date: number) => `${month}/${date}`,
+      dayLabel: (month, date) => `${month}/${date}`,
       today: "오늘",
-      openDay: (month: number, date: number, series: "created" | "closed", count: number) =>
+      openDay: (month, date, series, count) =>
         `${month}월 ${date}일에 ${series === "created" ? "만든" : "닫은"} 이슈 ${count}개 보기`,
       cycleTime: "착수 후 처리 시간",
       leadTime: "등록 후 처리 시간",
-      durationBasis: (count: number) => `중앙값 · ${count}개 기준`,
+      durationBasis: (count) => `중앙값 · ${count}개 기준`,
       noDuration: "최근 7일 동안 닫은 이슈가 없습니다",
       durations: {
-        minutes: (value: number) => `${value}분`,
-        hours: (value: number) => `${value}시간`,
-        days: (value: number) => `${value}일`,
+        minutes: (value) => `${value}분`,
+        hours: (value) => `${value}시간`,
+        days: (value) => `${value}일`,
       },
       openIssues: "열린 이슈 분포",
       closableEpics: "닫을 수 있는 에픽",
@@ -409,17 +389,16 @@ export const koMessages = {
   },
   issues: {
     title: "이슈",
-    loadFailed: (error: string) => `이슈 목록을 불러오지 못했습니다: ${error}`,
-    textSearchFailed: (error: string) =>
+    loadFailed: (error) => `이슈 목록을 불러오지 못했습니다: ${error}`,
+    textSearchFailed: (error) =>
       `본문과 댓글을 검색하지 못해 ID와 제목으로 찾은 이슈만 보입니다: ${error}`,
     allStatuses: "전체",
     allTypes: "전체",
-    typeCount: (count: number) => `${count}개`,
+    typeCount: (count) => `${count}개`,
     allLabels: "전체",
-    labelCount: (count: number) => `${count}개`,
+    labelCount: (count) => `${count}개`,
     noLabel: "라벨 없음",
     searchPlaceholder: "ID, 제목, 본문, 댓글 검색",
-    /** 검색어가 댓글에서 맞았을 때 발췌 앞에 붙이는 이름입니다. 본문 필드는 issue.bodyFields의 이름을 씁니다. */
     commentHit: "댓글",
     search: "검색",
     views: "보기",
@@ -429,10 +408,8 @@ export const koMessages = {
     dateFrom: "시작일",
     dateTo: "종료일",
     clearDates: "날짜 지우기",
-    toggleGroup: (label: string, expanded: boolean) =>
-      `${label} 묶음 ${expanded ? "접기" : "펼치기"}`,
+    toggleGroup: (label, expanded) => `${label} 묶음 ${expanded ? "접기" : "펼치기"}`,
   },
-  /** 저장 상태, 의존 관계, bd ready를 합친 작업 상태(workState)의 이름과 설명입니다. */
   workStates: {
     labels: {
       in_progress: "진행 중",
@@ -442,7 +419,7 @@ export const koMessages = {
       other: "그 밖의 이슈",
       deferred: "보류",
       closed: "닫힘",
-    } satisfies Record<WorkState, string>,
+    },
     hints: {
       in_progress: "지금 손대고 있는 이슈",
       ready: "막힌 것 없이 바로 시작할 수 있는 이슈",
@@ -451,30 +428,28 @@ export const koMessages = {
       other: "에픽처럼 직접 작업하지 않거나 바로 작업 가능에 들지 않는 이슈",
       deferred: "나중으로 미룬 이슈",
       closed: "끝난 이슈",
-    } satisfies Record<WorkState, string>,
+    },
   },
   epics: {
     title: "에픽",
-    loadFailed: (error: string) => `에픽을 불러오지 못했습니다: ${error}`,
+    loadFailed: (error) => `에픽을 불러오지 못했습니다: ${error}`,
     empty: "에픽이 없습니다.",
     search: "에픽 검색",
     searchPlaceholder: "ID, 제목 검색",
     noMatches: "검색어에 맞는 에픽이 없습니다.",
-    toggleChildren: (id: string, expanded: boolean) =>
-      `${id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`,
-    progress: (id: string) => `${id} 진행률`,
+    toggleChildren: (id, expanded) => `${id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`,
+    progress: (id) => `${id} 진행률`,
     childrenLoading: "하위 이슈를 불러오는 중",
-    childrenLoadFailed: (error: string) => `하위 이슈를 불러오지 못했습니다: ${error}`,
+    childrenLoadFailed: (error) => `하위 이슈를 불러오지 못했습니다: ${error}`,
     childrenEmpty: "하위 이슈가 없습니다.",
     newChild: "새 하위 이슈",
     addExistingChild: "기존 이슈를 하위로 넣기",
     addExistingChildPlaceholder: "하위로 넣을 기존 이슈 검색",
     addChildConfirm: "하위로 넣기",
-    childAdded: (id: string, epicId: string) => `${id}을(를) ${epicId}의 하위 이슈로 넣었습니다.`,
-    groups: { open: "열린 에픽", closed: "닫힌 에픽" } satisfies Record<EpicGroupKind, string>,
-    toggleGroup: (label: string, expanded: boolean) =>
-      `${label} 묶음 ${expanded ? "접기" : "펼치기"}`,
-    closedOn: (date: string) => `닫은 날 ${date}`,
+    childAdded: (id, epicId) => `${id}을(를) ${epicId}의 하위 이슈로 넣었습니다.`,
+    groups: { open: "열린 에픽", closed: "닫힌 에픽" },
+    toggleGroup: (label, expanded) => `${label} 묶음 ${expanded ? "접기" : "펼치기"}`,
+    closedOn: (date) => `닫은 날 ${date}`,
     closedChildCount: "닫힌 하위 이슈 수",
   },
   graph: {
@@ -484,9 +459,9 @@ export const koMessages = {
       center:
         "이 이슈의 앞뒤 blocks 사슬은 먼저 끝내야 하는 작업부터 왼쪽에 둡니다. gate는 작업 순서에 넣지 않고 그 gate를 기다리는 작업 아래에 대기 조건으로 두며, 굵은 실선 화살표가 저장된 blocks 방향대로 gate와 작업을 잇습니다. 기준 이슈에 직접 연결된 관련·발견 관계도 함께 표시하며, 이 관계는 실행 순서를 정하지 않습니다. 발견 화살표는 발견한 작업에서 발견한 이슈를 향합니다. 닫힌 이슈는 제목을 흐리게 표시합니다.",
     },
-    loadFailed: (error: string) => `그래프를 불러오지 못했습니다: ${error}`,
+    loadFailed: (error) => `그래프를 불러오지 못했습니다: ${error}`,
     canvas: "의존 그래프",
-    edgeLabel: (from: string, to: string) => `${from} 다음에 ${to}`,
+    edgeLabel: (from, to) => `${from} 다음에 ${to}`,
     legend: "관계 범례",
     edgeLegend: {
       blocks: "선행 → 후속",
@@ -505,9 +480,9 @@ export const koMessages = {
       discovered:
         "작업하다가 발견한 이슈를 향합니다. 순서나 차단을 뜻하지 않습니다. 기준 이슈에 직접 연결된 관계만 표시합니다.",
     },
-    conditionEdge: (from: string, to: string) => `${to}의 선행 조건: ${from} (blocks)`,
-    relatedEdge: (from: string, to: string) => `${from}와 ${to}: 관련`,
-    discoveredEdge: (from: string, to: string) =>
+    conditionEdge: (from, to) => `${to}의 선행 조건: ${from} (blocks)`,
+    relatedEdge: (from, to) => `${from}와 ${to}: 관련`,
+    discoveredEdge: (from, to) =>
       `${from}: 이 작업 중 발견한 이슈 ${to} (${to}: 이 이슈를 발견한 작업 ${from})`,
     controls: "그래프 보기 조작",
     zoomIn: "확대",
@@ -517,11 +492,11 @@ export const koMessages = {
     focusStage: "배율을 유지하고 진행 중 단계로 이동",
     focusLastStage: "배율을 유지하고 마지막 단계로 이동",
     minimap: "그래프 미니맵",
-    stage: (stage: number) => `${stage}단계`,
+    stage: (stage) => `${stage}단계`,
     stageDone: "완료",
     stageCurrent: "진행 중",
-    progress: (current: number, total: number) => `전체 ${total}단계 중 ${current}단계 진행 중`,
-    allStagesDone: (total: number) => `전체 ${total}단계를 모두 마쳤습니다.`,
+    progress: (current, total) => `전체 ${total}단계 중 ${current}단계 진행 중`,
+    allStagesDone: (total) => `전체 ${total}단계를 모두 마쳤습니다.`,
     outside: "에픽 밖",
     outsideHint: "이 에픽에 속하지 않지만 에픽의 이슈를 막고 있는 이슈입니다.",
     unordered: "선후 관계 없음",
@@ -543,7 +518,7 @@ export const koMessages = {
   board: {
     title: "보드",
     description: "카드를 바로 작업 가능, 진행 중, 닫힘 열에 끌어다 놓으면 그 열의 상태로 바뀝니다.",
-    loadFailed: (error: string) => `보드를 불러오지 못했습니다: ${error}`,
+    loadFailed: (error) => `보드를 불러오지 못했습니다: ${error}`,
     columns: {
       blocked: "막힘",
       ready: "바로 작업 가능",
@@ -557,7 +532,7 @@ export const koMessages = {
       "7d": "최근 7일",
       "30d": "최근 30일",
     },
-    stillBlocked: (id: string) =>
+    stillBlocked: (id) =>
       `${id}: 다른 이슈에 막혀 있어 막힘 열에 남습니다. 막고 있는 이슈를 먼저 닫아 주세요.`,
   },
   humanDecisions: {
@@ -569,16 +544,14 @@ export const koMessages = {
     questions: "질문",
     openDetail: "상세 열기",
     noDescription: "설명이 없습니다.",
-    /** 운영체제 알림의 제목입니다. 어느 workspace의 알림인지 먼저 보이게 합니다. */
-    noticeTitle: (workspace: string) => `${workspace}: 판단 기다림`,
-    noticeBody: (title: string, moreCount: number) =>
-      moreCount > 0 ? `${title} 외 ${moreCount}건` : title,
+    noticeTitle: (workspace) => `${workspace}: 판단 기다림`,
+    noticeBody: (title, moreCount) => (moreCount > 0 ? `${title} 외 ${moreCount}건` : title),
   },
   activityFeed: {
     title: "활동",
     description:
       "workspace 전체에서 이슈를 만들고 고치고 닫고 댓글을 달고 지운 기록을 새것부터 보여 줍니다. 고치고 지운 기록은 bd의 events journal이 켜져 있을 때만 보입니다. 지운 이슈는 삭제 기록만 남고, gate의 기록은 뺍니다.",
-    loadFailed: (error: string) => `활동 기록을 불러오지 못했습니다: ${error}`,
+    loadFailed: (error) => `활동 기록을 불러오지 못했습니다: ${error}`,
     entries: "활동 기록",
     empty: "아직 기록이 없습니다.",
     emptyInRange: "고른 기간에 남은 기록이 없습니다.",
@@ -588,8 +561,7 @@ export const koMessages = {
       commented: "댓글",
       updated: "수정함",
       deleted: "삭제함",
-    } satisfies Record<ActivityKind, string>,
-    /** events journal이 꺼진 workspace에서 피드 위에 보이는 안내입니다. command는 두 언어에서 같습니다. */
+    },
     journalOff: {
       message:
         "이슈를 고친 기록(설명, 상태, 제목 등)과 지운 기록을 보려면 이 workspace에서 아래 명령으로 bd의 events journal을 켜 주세요. 켠 뒤에 생긴 변경부터 기록됩니다.",
@@ -599,7 +571,6 @@ export const koMessages = {
     dateFrom: "시작일",
     dateTo: "종료일",
     clearDates: "날짜 지우기",
-    /** 마지막으로 본 시각의 구분선입니다. 이 선 아래의 기록은 지난번에 화면을 열었을 때 이미 있던 기록입니다. */
     seenBefore: "여기부터 지난번에 본 기록",
     showMore: "더 보기",
   },
@@ -608,13 +579,13 @@ export const koMessages = {
     selectDescription:
       "주소에 workspace 이름이 없습니다. 등록한 workspace가 여럿이라, 이 주소로 열 workspace를 골라 주세요.",
     notFoundTitle: "workspace를 찾지 못했습니다",
-    notFound: (name: string) =>
+    notFound: (name) =>
       `'${name}' 이름으로 등록한 workspace가 없습니다. 그 디렉터리에서 bd-desk start를 실행하면 등록되고 주소가 출력됩니다.`,
     showAll: "등록한 workspace 보기",
   },
   decisions: {
     title: "결정",
-    loadFailed: (error: string) => `결정을 불러오지 못했습니다: ${error}`,
+    loadFailed: (error) => `결정을 불러오지 못했습니다: ${error}`,
     current: "유효한 결정",
     currentEmpty: "유효한 결정이 없습니다.",
     retired: "닫힌 결정",
@@ -627,14 +598,13 @@ export const koMessages = {
   hygiene: {
     title: "정리",
     description: "bd가 권하는 정리 점검의 결과입니다.",
-    loadFailed: (error: string) => `정리 점검 결과를 불러오지 못했습니다: ${error}`,
+    loadFailed: (error) => `정리 점검 결과를 불러오지 못했습니다: ${error}`,
     stale: {
       title: "오래 방치된 이슈",
-      hint: (days: number) =>
-        `${days}일 넘게 바뀌지 않은 이슈입니다. 결정, 에픽, 마일스톤은 뺍니다.`,
-      empty: (days: number) => `${days}일 넘게 바뀌지 않은 이슈가 없습니다.`,
+      hint: (days) => `${days}일 넘게 바뀌지 않은 이슈입니다. 결정, 에픽, 마일스톤은 뺍니다.`,
+      empty: (days) => `${days}일 넘게 바뀌지 않은 이슈가 없습니다.`,
       days: "기준 일수",
-      dayOption: (days: number) => `${days}일`,
+      dayOption: (days) => `${days}일`,
     },
     orphans: {
       title: "커밋에 언급됐지만 열린 이슈",
@@ -645,13 +615,13 @@ export const koMessages = {
       title: "권장 섹션이 빠진 이슈",
       hint: "이슈 유형마다 bd가 권하는 섹션이 빠진 열린 이슈입니다.",
       empty: "권장 섹션이 빠진 이슈가 없습니다.",
-      missing: (sections: string) => `빠진 섹션: ${sections}`,
+      missing: (sections) => `빠진 섹션: ${sections}`,
     },
     duplicates: {
       title: "중복 후보",
       hint: "제목과 설명이 비슷한 닫히지 않은 이슈 쌍입니다.",
       empty: "중복 후보가 없습니다.",
-      closeAs: (id: string, target: string) => `${id}을(를) ${target}의 중복으로 닫기`,
+      closeAs: (id, target) => `${id}을(를) ${target}의 중복으로 닫기`,
     },
     closableEpics: {
       title: "닫을 수 있는 에픽",
@@ -660,5 +630,3 @@ export const koMessages = {
     },
   },
 };
-
-export type Messages = typeof koMessages;

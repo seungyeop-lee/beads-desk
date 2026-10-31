@@ -2,7 +2,23 @@ import type { BdError, BdErrorKind } from "@beads-desk/bd";
 import type { Locale } from "@/shared/contract/locale";
 import { requestLocale } from "./requestLocale";
 
-const ko = {
+/** 화면에 보낼 서버 오류 문구 사전의 모양입니다. 언어마다 사전 하나가 이 type을 따릅니다. */
+type ServerMessages = {
+  localFileForbidden: string;
+  localFileNotFound: string;
+  invalidRequest: string;
+  invalidIssueStatus: string;
+  invalidStaleDays: string;
+  emptyTextSearch: string;
+  invalidActivityFeedQuery: string;
+  nonJsonBody: string;
+  crossSiteForbidden: string;
+  unknownWorkspace: (root: string) => string;
+  beadsWorkspaceNotFound: (path: string) => string;
+  bdErrors: Record<BdErrorKind, string>;
+};
+
+const ko: ServerMessages = {
   localFileForbidden: "허용 범위 밖의 파일입니다.",
   localFileNotFound: "파일을 찾을 수 없습니다.",
   invalidRequest: "요청 형식이 올바르지 않습니다.",
@@ -12,9 +28,9 @@ const ko = {
   invalidActivityFeedQuery: "활동 기록의 조회 범위나 개수가 올바르지 않습니다.",
   nonJsonBody: "JSON 본문만 받습니다.",
   crossSiteForbidden: "다른 사이트에서 보낸 요청은 받지 않습니다.",
-  unknownWorkspace: (root: string) =>
+  unknownWorkspace: (root) =>
     `등록되지 않은 workspace입니다: ${root}. 그 디렉터리에서 bd-desk start를 실행해 등록해 주세요.`,
-  beadsWorkspaceNotFound: (path: string) => `beads workspace를 찾지 못했습니다: ${path}`,
+  beadsWorkspaceNotFound: (path) => `beads workspace를 찾지 못했습니다: ${path}`,
   bdErrors: {
     emptyTitle: "제목이 비어 있습니다.",
     noChanges: "바꿀 내용이 없습니다.",
@@ -31,46 +47,45 @@ const ko = {
     unparsableOutput: "bd 출력을 JSON으로 해석하지 못했습니다.",
     missingCreatedIssueId: "bd create 출력에 이슈 id가 없습니다.",
     missingShownIssue: "bd show 출력에 이슈가 없습니다.",
-  } satisfies Record<BdErrorKind, string>,
-};
-
-const MESSAGES: Record<Locale, typeof ko> = {
-  ko,
-  en: {
-    localFileForbidden: "This file is outside the allowed roots.",
-    localFileNotFound: "The file was not found.",
-    invalidRequest: "The request is malformed.",
-    invalidIssueStatus: "The requested issue status is not valid.",
-    invalidStaleDays: "The stale threshold in days is not valid.",
-    emptyTextSearch: "The search text is empty.",
-    invalidActivityFeedQuery: "The activity range or count is not valid.",
-    nonJsonBody: "Only JSON request bodies are accepted.",
-    crossSiteForbidden: "Cross-site requests are not accepted.",
-    unknownWorkspace: (root) =>
-      `This workspace is not registered: ${root}. Run bd-desk start in that directory to register it.`,
-    beadsWorkspaceNotFound: (path) => `No beads workspace found: ${path}`,
-    bdErrors: {
-      emptyTitle: "The title is empty.",
-      noChanges: "There is nothing to change.",
-      invalidDeferDate: "The defer date must be in YYYY-MM-DD format.",
-      invalidDueAt: "The due time must be a UTC time in YYYY-MM-DDTHH:mm:ss.sssZ format.",
-      emptyIssueId: "The issue ID is empty.",
-      emptyTargetId: "The target issue ID is empty.",
-      emptyGateId: "The gate ID is empty.",
-      emptyComment: "The comment is empty.",
-      emptyResponse: "The response is empty.",
-      emptyLabel: "The label is empty.",
-      notAwaitingHumanDecision: "This issue is not waiting for a human decision.",
-      invalidStaleDays: "The threshold in days must be an integer of 1 or more.",
-      unparsableOutput: "Could not parse the bd output as JSON.",
-      missingCreatedIssueId: "The bd create output has no issue ID.",
-      missingShownIssue: "The bd show output has no issue.",
-    },
   },
 };
 
+const en: ServerMessages = {
+  localFileForbidden: "This file is outside the allowed roots.",
+  localFileNotFound: "The file was not found.",
+  invalidRequest: "The request is malformed.",
+  invalidIssueStatus: "The requested issue status is not valid.",
+  invalidStaleDays: "The stale threshold in days is not valid.",
+  emptyTextSearch: "The search text is empty.",
+  invalidActivityFeedQuery: "The activity range or count is not valid.",
+  nonJsonBody: "Only JSON request bodies are accepted.",
+  crossSiteForbidden: "Cross-site requests are not accepted.",
+  unknownWorkspace: (root) =>
+    `This workspace is not registered: ${root}. Run bd-desk start in that directory to register it.`,
+  beadsWorkspaceNotFound: (path) => `No beads workspace found: ${path}`,
+  bdErrors: {
+    emptyTitle: "The title is empty.",
+    noChanges: "There is nothing to change.",
+    invalidDeferDate: "The defer date must be in YYYY-MM-DD format.",
+    invalidDueAt: "The due time must be a UTC time in YYYY-MM-DDTHH:mm:ss.sssZ format.",
+    emptyIssueId: "The issue ID is empty.",
+    emptyTargetId: "The target issue ID is empty.",
+    emptyGateId: "The gate ID is empty.",
+    emptyComment: "The comment is empty.",
+    emptyResponse: "The response is empty.",
+    emptyLabel: "The label is empty.",
+    notAwaitingHumanDecision: "This issue is not waiting for a human decision.",
+    invalidStaleDays: "The threshold in days must be an integer of 1 or more.",
+    unparsableOutput: "Could not parse the bd output as JSON.",
+    missingCreatedIssueId: "The bd create output has no issue ID.",
+    missingShownIssue: "The bd show output has no issue.",
+  },
+};
+
+const MESSAGES: Record<Locale, ServerMessages> = { ko, en };
+
 /** 화면에 보낼 오류 문구를 요청한 브라우저의 언어로 돌려줍니다. bd가 낸 오류 문구는 번역하지 않습니다. */
-export async function serverMessages(): Promise<typeof ko> {
+export async function serverMessages(): Promise<ServerMessages> {
   return MESSAGES[await requestLocale()];
 }
 

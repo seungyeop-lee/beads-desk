@@ -1,5 +1,5 @@
 import type { BottleneckOrderKey } from "@/client/modules/focus/domain/focusBottlenecks";
-import type { Messages } from "./koMessages";
+import type { Messages } from "./messageCatalog";
 
 const bottleneckOrderPhrases: Record<BottleneckOrderKey, string> = {
   waiters: "blocked count",
@@ -282,7 +282,10 @@ export const enMessages: Messages = {
       child: "Child",
       related: "Related",
     },
-    kindHints: {},
+    kindHints: {
+      blockedBy: "Must close before this issue",
+      blocks: "Starts after this issue closes",
+    },
     search: "Find an issue to link",
     linkConfirm: "Link",
     linked: (id, kind) => `Linked ${id}: ${kind}`,

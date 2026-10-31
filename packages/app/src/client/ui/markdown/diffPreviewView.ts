@@ -1,4 +1,4 @@
-import type { Messages } from "@/client/modules/locale/domain/koMessages";
+import type { Messages } from "@/client/modules/locale/domain/messages";
 import {
   type DiffFile,
   type DiffLine,

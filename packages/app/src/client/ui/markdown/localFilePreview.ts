@@ -19,7 +19,7 @@ import {
   type LocalTextFile,
   readLocalTextFile,
 } from "@/client/infra/localFiles/localFileApiClient";
-import type { Messages } from "@/client/modules/locale/domain/koMessages";
+import type { Messages } from "@/client/modules/locale/domain/messages";
 import {
   FILE_PREVIEW_MAX_BYTES,
   type FilePreviewFormat,
