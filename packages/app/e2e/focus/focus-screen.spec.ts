@@ -1,6 +1,6 @@
 import { expect, test } from "../support/bdWorkspace";
 
-test("첫 화면은 지금 화면이고, 개수 카드와 모두 보기는 이슈 목록의 같은 보기 탭을 열며, 병목 후보는 선행·후속 그래프를 열고 다른 workspace의 병목과 섞이지 않는다", async ({
+test("첫 화면은 지금 화면이고, 요약 칩과 모두 보기는 이슈 목록의 같은 보기 탭을 열며, 병목 후보는 선행·후속 그래프를 열고 다른 workspace의 병목과 섞이지 않는다", async ({
   page,
   context,
   appServerUrl,
@@ -42,7 +42,10 @@ test("첫 화면은 지금 화면이고, 개수 카드와 모두 보기는 이�
 
   await page.goBack();
   await expect(page).toHaveURL(/\/focus$/);
-  await page.getByRole("link", { name: "막힘 1", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "개수 요약" })
+    .getByRole("link", { name: "막힘 1", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/issues\?view=blocked$/);
   await expect(tabs.getByRole("link", { name: "막힘 1" })).toHaveAttribute("aria-current", "page");
 

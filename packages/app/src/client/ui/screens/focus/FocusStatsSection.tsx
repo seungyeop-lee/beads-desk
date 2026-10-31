@@ -1,5 +1,4 @@
 import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Bar,
@@ -27,42 +26,22 @@ import {
   priorityTone,
   typeLabel,
   typeTone,
-  workStateTone,
 } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
-import { issueViewHref } from "@/client/ui/address/issueListAddress";
-
-import { screenTone } from "@/client/ui/shell/screenTabs";
 import { FLOW_SERIES, flowBarHref, type FlowSeries } from "./flowBarAddress";
 
 /**
- * 개수 카드 아래에 두는 통계입니다. 지금 할 일을 보이는 개수 카드와 시선을 다투지 않도록 색 배경 없이 작게 보입니다.
+ * 요약 칩 아래에 두는 통계입니다. 지금 할 일을 보이는 요약 칩, 그 아래 목록과 시선을 다투지 않도록 색 배경 없이 작게 보입니다.
  * 카드 높이는 차트와 관계없이 정해지므로, 차트가 브라우저에서 크기를 잰 뒤에 그려져도 아래 목록이 밀리지 않습니다.
  * 창이 좁아 카드 글이 줄바꿈될 때만 카드가 최소 높이보다 커지고, 아래 목록도 그만큼 내려갑니다.
  */
 export function FocusStatsSection({ stats }: { stats: FocusStats }) {
-  const messages = useMessages();
-  const text = messages.focus.stats;
+  const text = useMessages().focus.stats;
 
   return (
     <section aria-label={text.title} className="flex flex-col gap-2">
-      <GroupHeading title={text.title}>
-        <span className="ml-auto flex gap-2">
-          <SignalLink
-            href={issueViewHref("deferred")}
-            tone={workStateTone("deferred")}
-            label={messages.workStates.labels.deferred}
-            count={stats.deferred}
-          />
-          <SignalLink
-            href="/hygiene"
-            tone={screenTone("/hygiene")}
-            label={text.closableEpics}
-            count={stats.closableEpics}
-          />
-        </span>
-      </GroupHeading>
+      <GroupHeading title={text.title} />
       <div className="grid min-h-44 grid-cols-2 gap-3 lg:grid-cols-4">
         <ThroughputChart daily={stats.daily} />
         <div className="surface flex flex-col justify-center gap-4 px-4 py-3">
@@ -72,28 +51,6 @@ export function FocusStatsSection({ stats }: { stats: FocusStats }) {
         <OpenDistribution openBy={stats.openBy} />
       </div>
     </section>
-  );
-}
-
-function SignalLink({
-  href,
-  tone,
-  label,
-  count,
-}: {
-  /** workspace 안의 화면 경로입니다. */
-  href: string;
-  tone: string;
-  label: string;
-  count: number;
-}) {
-  const workspaceHref = useWorkspaceHref();
-  return (
-    <Link href={workspaceHref(href)} className="chip bg-transparent font-medium hover:bg-base-200">
-      <span className={`tone-dot ${tone}`} />
-      {label}
-      <span className="font-mono tabular-nums">{count}</span>
-    </Link>
   );
 }
 

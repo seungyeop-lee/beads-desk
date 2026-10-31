@@ -1,16 +1,12 @@
 import Link from "next/link";
-import { useState } from "react";
 import {
   BOTTLENECK_ORDER,
   type Bottleneck,
   type DeadlineKind,
 } from "@/client/modules/focus/domain/focusBottlenecks";
 import { DUE_SOON_DAYS } from "@/client/modules/focus/domain/focusDeadlines";
-import { NEXT_UP_LIMIT } from "@/client/modules/focus/domain/focusView";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { useGraphHref } from "@/client/ui/address/useGraphHref";
-import { EmptyState } from "@/client/ui/designSystem/EmptyState";
-import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
 import { IssueChip, PriorityChip } from "@/client/ui/issues/IssueChip";
 import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
@@ -19,46 +15,32 @@ import { dueAtLabel } from "@/client/ui/issues/issueTime";
 import { IssueTypeTag } from "@/client/ui/issues/IssueTypeTag";
 import { WaiterCount } from "@/client/ui/issues/WaiterCount";
 import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
-
-/** 접어 둘 때 보이는 후보 수입니다. 같은 열의 다음에 할 일과 같은 길이로 맞춥니다. */
-const COLLAPSED_LIMIT = NEXT_UP_LIMIT;
+import { FocusListSection, type ListBox } from "./FocusList";
 
 /**
  * 다른 이슈를 막고 있는 이슈를 정렬 기준과 함께 보입니다. 행마다 지금 상태, 대기 수, 닫으면 바로 작업 가능해지는 이슈 수,
  * 마감 목록에 든 후속 이슈를 보이고, 선행·후속 그래프로 이동할 수 있습니다.
- * 후보가 COLLAPSED_LIMIT개보다 많으면 앞의 후보만 보이고, 모두 보기로 나머지를 펼칩니다.
+ * 이슈 목록에 병목 보기 탭이 없으므로, 후보가 많으면 앞의 일부만 보이고 나머지는 그 자리에서 펼칩니다.
  */
-export function BottlenecksSection({ bottlenecks }: { bottlenecks: Bottleneck[] }) {
-  const messages = useMessages();
-  const text = messages.focus.bottlenecks;
-  const [expanded, setExpanded] = useState(false);
-  const collapsible = bottlenecks.length > COLLAPSED_LIMIT;
-  const shown = expanded ? bottlenecks : bottlenecks.slice(0, COLLAPSED_LIMIT);
+export function BottlenecksSection({
+  bottlenecks,
+  box,
+}: {
+  bottlenecks: Bottleneck[];
+  box?: ListBox;
+}) {
+  const text = useMessages().focus.bottlenecks;
   return (
-    <section aria-label={text.title} className="flex flex-col gap-2">
-      <GroupHeading title={text.title} count={bottlenecks.length}>
-        {collapsible && (
-          <button
-            type="button"
-            className="ml-auto text-xs font-medium hover:underline"
-            aria-expanded={expanded}
-            onClick={() => setExpanded(!expanded)}
-          >
-            {expanded ? text.showFewer : text.showAll(bottlenecks.length)}
-          </button>
-        )}
-      </GroupHeading>
-      <p className="px-1 text-xs text-emphasis-60">{text.order(BOTTLENECK_ORDER)}</p>
-      {bottlenecks.length === 0 ? (
-        <EmptyState message={text.empty} variant="compact" />
-      ) : (
-        <ul className="surface flex flex-col divide-y divide-base-300">
-          {shown.map((bottleneck) => (
-            <BottleneckRow key={bottleneck.issue.id} bottleneck={bottleneck} />
-          ))}
-        </ul>
+    <FocusListSection
+      box={box}
+      title={text.title}
+      empty={text.empty}
+      items={bottlenecks}
+      note={<p className="px-1 text-xs text-emphasis-60">{text.order(BOTTLENECK_ORDER)}</p>}
+      renderItem={(bottleneck) => (
+        <BottleneckRow key={bottleneck.issue.id} bottleneck={bottleneck} />
       )}
-    </section>
+    />
   );
 }
 
@@ -95,6 +77,14 @@ function BottleneckRow({
         <span className="min-w-0 grow basis-[calc(100%-5rem)] truncate font-medium sm:basis-0">
           {title}
         </span>
+        <CoveredIssueIdButton
+          issueId={issue.id}
+          short
+          className="ml-auto min-w-8 shrink-0 rounded text-right text-xs whitespace-nowrap text-emphasis-50"
+        />
+      </span>
+      {/* 좁은 열에서 제목이 잘리지 않도록 상태와 우선순위는 제목 줄 대신 이 줄에 둡니다. */}
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-19 text-xs text-emphasis-60">
         {/* 닫는다고 가정한 계산과 섞이지 않도록, bd가 정한 지금 상태를 따로 보입니다. */}
         <IssueChip
           tone={workStateTone(state)}
@@ -104,13 +94,6 @@ function BottleneckRow({
           {stateLabel}
         </IssueChip>
         {issue.priority !== null && <PriorityChip priority={issue.priority} />}
-        <CoveredIssueIdButton
-          issueId={issue.id}
-          short
-          className="ml-auto min-w-8 shrink-0 rounded text-right text-xs whitespace-nowrap text-emphasis-50"
-        />
-      </span>
-      <span className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-19 text-xs text-emphasis-60">
         <WaiterCount count={waiters} className="relative" />
         <span className="relative tabular-nums" title={text.unblocksHint}>
           {text.unblocks(unblocks)}

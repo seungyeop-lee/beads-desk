@@ -352,7 +352,12 @@ export const koMessages = {
     title: "지금",
     inProgress: "진행 중",
     nextUp: "다음에 할 일",
-    seeAllReady: (count: number) => `바로 작업 가능 ${count}개 모두 보기`,
+    summary: "개수 요약",
+    zones: { work: "지금 할 일", unblock: "막힌 곳 풀기" },
+    list: {
+      seeAll: (count: number) => `${count}개 모두 보기`,
+      showFewer: "접기",
+    },
     epicProgress: "에픽 진행률",
     epicProgressOf: (title: string) => `${title} 진행률`,
     inProgressEmpty: "진행 중인 이슈가 없습니다.",
@@ -365,7 +370,9 @@ export const koMessages = {
       overdueBasis: "마감 시각이 지남",
       dueToday: "오늘 마감",
       dueSoon: (days: number) => `${days}일 이내`,
-      empty: "없음",
+      none: (days: number) => `기한 초과, 오늘 마감, ${days}일 이내 마감인 이슈가 없습니다.`,
+      noneBasis: (today: string, days: number, soon: string) =>
+        `오늘 ${today} · ${days}일 이내 ${soon}`,
     },
     bottlenecks: {
       title: "병목",
@@ -379,8 +386,6 @@ export const koMessages = {
         "다른 선행 조건 없이 이 이슈만 기다리는 후속 이슈 가운데, 이 이슈를 닫으면 바로 작업 가능이나 진행 중이 되는 이슈 수입니다. 닫는다고 가정해 계산한 값이며, 이 이슈의 지금 상태는 앞쪽의 상태 표시가 bd 결과대로 보여 줍니다.",
       state: (label: string) => `지금 상태: ${label}`,
       openGraphOf: (id: string) => `${id}의 선행·후속 그래프 열기`,
-      showAll: (count: number) => `병목 ${count}개 모두 보기`,
-      showFewer: "접기",
     },
     stats: {
       title: "흐름",

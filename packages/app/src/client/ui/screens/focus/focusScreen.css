@@ -1,0 +1,23 @@
+/*
+ * 지금 화면에서만 쓰는 시각 요소입니다. 여러 화면이 쓰게 되면 designSystem/styles/components.css로 옮깁니다.
+ * .surface의 바탕색을 덮어야 하므로 같은 components layer에 두고, index.css에서 components.css 뒤에 불러옵니다.
+ */
+
+@layer components {
+  /*
+   * 높이를 정해 두고 안에서 스크롤하는 목록 칸입니다. 위나 아래에 가려진 내용이 있을 때만 그쪽 가장자리에 옅은 그림자가 생깁니다.
+   * 스크롤바가 스크롤할 때만 나타나는 브라우저에서도 더 볼 내용이 있다는 것을 알 수 있게 합니다.
+   * 내용과 함께 움직이는 바탕색 띠(local)가 끝에 닿지 않은 쪽의 그림자(scroll)를 덮지 못하는 원리입니다.
+   */
+  .focus-scroll-shadow {
+    --scroll-shadow: color-mix(in oklab, var(--color-base-content) 14%, transparent);
+    background:
+      linear-gradient(var(--color-base-100) 30%, transparent) top / 100% 2.5rem no-repeat local,
+      linear-gradient(transparent, var(--color-base-100) 70%) bottom / 100% 2.5rem no-repeat local,
+      radial-gradient(farthest-side at 50% 0, var(--scroll-shadow), transparent) top / 100% 0.75rem
+        no-repeat scroll,
+      radial-gradient(farthest-side at 50% 100%, var(--scroll-shadow), transparent) bottom / 100%
+        0.75rem no-repeat scroll,
+      var(--color-base-100);
+  }
+}

@@ -1,5 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { BOTTLENECK_ORDER } from "@/client/modules/focus/domain/focusBottlenecks";
 import type { GateTitles } from "@/client/modules/gates/domain/humanGateBlockers";
@@ -112,7 +113,7 @@ test("다음에 할 일은 5개까지만 보이고, 바로 작업 가능한 이�
   const screen = await renderFocus();
   const nextUp = screen.getByRole("region", { name: messages.focus.nextUp, exact: true });
   const seeAll = nextUp.getByRole("link", {
-    name: `${messages.focus.seeAllReady(6)} →`,
+    name: `${messages.focus.list.seeAll(6)} →`,
     exact: true,
   });
 
@@ -253,12 +254,12 @@ describe("마감", () => {
 
     await vi.advanceTimersByTimeAsync(30 * 60 * 1000 + 1);
     await expect.element(overdue).toMatchTextContent("오늘 밤 마감");
-    await expect.element(today).toMatchTextContent(messages.focus.deadlines.empty);
+    await expect.element(today).not.toBeInTheDocument();
 
     await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
     await expect.element(today.getByRole("heading")).toHaveTextContent("오늘 마감10월 31일 (토)1");
     await expect.element(today).toMatchTextContent("내일 마감");
-    await expect.element(soon).toMatchTextContent(messages.focus.deadlines.empty);
+    await expect.element(soon).not.toBeInTheDocument();
   });
 
   test("영어 화면은 bd의 용어로 묶음 이름을 보이고 날짜 기준을 영어 날짜로 보인다", async () => {
@@ -388,12 +389,12 @@ describe("병목", () => {
     await expect.element(section.getByRole("listitem")).toHaveLength(5);
     expect(shownIds()).toEqual(firstFive);
     await expect.element(section.getByRole("heading")).toMatchTextContent("6");
-    await expect.element(seeAll).toHaveTextContent(text.showAll(6));
+    await expect.element(seeAll).toHaveTextContent(messages.focus.list.seeAll(6));
 
     await seeAll.click();
     await expect.element(section.getByRole("listitem")).toHaveLength(6);
     expect(shownIds()).toEqual([...firstFive, "desk-prior-5"]);
-    await expect.element(showFewer).toHaveTextContent(text.showFewer);
+    await expect.element(showFewer).toHaveTextContent(messages.focus.list.showFewer);
 
     await showFewer.click();
     await expect.element(section.getByRole("listitem")).toHaveLength(5);
@@ -435,3 +436,110 @@ describe("병목", () => {
     await expect.element(section).toMatchTextContent(text.empty);
   });
 });
+
+describe("두 열 높이", () => {
+  // lg(1024px) 이상에서 두 열로 나뉘고, 그보다 좁으면 한 열로 쌓입니다.
+  const WIDE = { width: 1440, height: 900 };
+  const NARROW = { width: 900, height: 900 };
+
+  afterEach(async () => {
+    await page.viewport(WIDE.width, WIDE.height);
+  });
+
+  // 진행 중 두 개가 막힘 다섯 개를 막아, 오른쪽 열(병목, 막힘)에 왼쪽 열보다 훨씬 많은 줄이 생깁니다. 바로 작업 가능과 마감은 비어 있습니다.
+  const BLOCKED_HEAVY = [
+    issue("desk-doing-1", { title: "진행 하나", status: "in_progress" }),
+    issue("desk-doing-2", { title: "진행 둘", status: "in_progress" }),
+    ...Array.from({ length: 5 }, (_, index) =>
+      issue(`desk-waiting-${index}`, {
+        title: `기다리는 작업 ${index}`,
+        blockedBy: ["desk-doing-1", "desk-doing-2"],
+      }),
+    ),
+  ];
+  // 오른쪽 열이 비고, 왼쪽 열의 다음에 할 일만 다섯 줄입니다.
+  const READY_HEAVY = Array.from({ length: 5 }, (_, index) =>
+    issue(`desk-ready-${index}`, { title: `바로 할 작업 ${index}`, ready: true }),
+  );
+
+  /** 구역 제목 아래에 놓인 목록 칸(목록, 빈 안내, 마감 안내)입니다. */
+  function listBox(screen: Awaited<ReturnType<typeof renderFocus>>, name: string): HTMLElement {
+    return screen.getByRole("region", { name, exact: true }).element()
+      .lastElementChild as HTMLElement;
+  }
+
+  test("넓은 창에서는 어느 쪽 열에 이슈가 몰려도 두 열의 마지막 목록 칸이 같은 높이에서 끝난다", async () => {
+    reads.epics = [];
+    for (const issues of [BLOCKED_HEAVY, READY_HEAVY]) {
+      reads.issues = issues;
+      const screen = await renderFocus();
+      const leftBottom = listBox(screen, messages.focus.deadlines.title).getBoundingClientRect()
+        .bottom;
+      const rightBottom = listBox(
+        screen,
+        messages.workStates.labels.blocked,
+      ).getBoundingClientRect().bottom;
+
+      expect(Math.abs(leftBottom - rightBottom)).toBeLessThanOrEqual(1);
+      await screen.unmount();
+    }
+  });
+
+  test("넓은 창에서 칸을 넘는 목록은 칸 안에서 스크롤하고, 빈 구역은 이슈가 있는 구역과 같은 칸 높이를 차지한다", async () => {
+    reads.issues = BLOCKED_HEAVY;
+    reads.epics = [];
+    const screen = await renderFocus();
+    const blocked = listBox(screen, messages.workStates.labels.blocked);
+    const emptyReady = listBox(screen, messages.focus.nextUp);
+    const inProgress = listBox(screen, messages.focus.inProgress);
+
+    expect(blocked.scrollHeight).toBeGreaterThan(blocked.clientHeight);
+    expect(emptyReady).toHaveTextContent(messages.focus.readyEmpty);
+    expect(emptyReady.getBoundingClientRect().height).toBe(
+      inProgress.getBoundingClientRect().height,
+    );
+  });
+
+  test("한 열로 쌓이는 좁은 창에서는 칸 높이를 고정하지 않고, 칸을 넘는 목록만 최대 높이 안에서 스크롤한다", async () => {
+    await page.viewport(NARROW.width, NARROW.height);
+    reads.issues = BLOCKED_HEAVY;
+    reads.epics = [];
+    const screen = await renderFocus();
+    const blocked = listBox(screen, messages.workStates.labels.blocked);
+    const emptyReady = listBox(screen, messages.focus.nextUp);
+    const inProgress = listBox(screen, messages.focus.inProgress);
+
+    expect(blocked.scrollHeight).toBeGreaterThan(blocked.clientHeight);
+    expect(blocked.getBoundingClientRect().height).toBeLessThan(blocked.scrollHeight);
+    expect(emptyReady.getBoundingClientRect().height).toBeLessThan(
+      inProgress.getBoundingClientRect().height,
+    );
+  });
+});
+
+test.each([
+  ["ko", messages],
+  ["en", enMessages],
+] as const)(
+  "%s 화면의 요약 칩은 모두 같은 너비이고, 세 자리 개수가 붙어도 어느 칩의 이름도 잘리거나 넘치지 않는다",
+  async (locale, text) => {
+    // 바로 작업 가능 120개로 세 자리 개수를 만듭니다.
+    reads.issues = Array.from({ length: 120 }, (_, index) =>
+      issue(`desk-ready-${index}`, { title: `바로 할 작업 ${index}`, ready: true }),
+    );
+    reads.epics = [];
+    const screen = await renderFocus(locale);
+    const summary = screen.getByRole("navigation", { name: text.focus.summary });
+    const chips = summary.getByRole("link").elements();
+
+    // 너비를 맞추려고 겹쳐 둔 다른 칩 이름은 접근 가능한 이름에 섞이지 않습니다.
+    await expect
+      .element(
+        summary.getByRole("link", { name: `${text.workStates.labels.ready} 120`, exact: true }),
+      )
+      .toBeVisible();
+    const widths = chips.map((chip) => chip.getBoundingClientRect().width);
+    for (const width of widths) expect(width).toBeCloseTo(widths[0]!, 0);
+    for (const chip of chips) expect(chip.scrollWidth).toBeLessThanOrEqual(chip.clientWidth);
+  },
+);

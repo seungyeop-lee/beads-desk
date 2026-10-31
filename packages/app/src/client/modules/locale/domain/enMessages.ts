@@ -341,7 +341,12 @@ export const enMessages: Messages = {
     title: "Now",
     inProgress: "In progress",
     nextUp: "Up next",
-    seeAllReady: (count) => `See all ${count} ready`,
+    summary: "Counts",
+    zones: { work: "Work now", unblock: "Unblock" },
+    list: {
+      seeAll: (count) => `See all ${count}`,
+      showFewer: "Show fewer",
+    },
     epicProgress: "Epic progress",
     epicProgressOf: (title) => `Progress of ${title}`,
     inProgressEmpty: "No issues in progress.",
@@ -354,7 +359,8 @@ export const enMessages: Messages = {
       overdueBasis: "Past the due time",
       dueToday: "Due today",
       dueSoon: (days) => `Next ${days} days`,
-      empty: "None",
+      none: (days) => `No issues overdue, due today, or due in the next ${days} days.`,
+      noneBasis: (today, days, soon) => `Today ${today} · Next ${days} days ${soon}`,
     },
     bottlenecks: {
       title: "Bottlenecks",
@@ -366,8 +372,6 @@ export const enMessages: Messages = {
         "Blocked issues that wait only on this issue and become ready or in progress once it is closed. This assumes the issue is closed; the state shown before it is the current state from bd.",
       state: (label) => `Current state: ${label}`,
       openGraphOf: (id) => `Open the blocks chain graph of ${id}`,
-      showAll: (count) => `See all ${count} bottlenecks`,
-      showFewer: "Show fewer",
     },
     stats: {
       title: "Flow",

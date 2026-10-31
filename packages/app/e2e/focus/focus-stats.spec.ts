@@ -24,7 +24,7 @@ test("이슈를 만들고 닫으면 흐름 통계의 오늘 막대가 바뀐다"
   ).toBeVisible();
 });
 
-test("오늘 막대, 보류 수, 닫을 수 있는 에픽 수를 누르면 오늘 닫거나 만든 이슈의 조건으로 연 이슈 목록, 보류 보기 탭, 그 에픽을 모은 정리 페이지를 연다", async ({
+test("흐름 통계의 오늘 막대와 요약 칩의 보류 수, 닫을 수 있는 에픽 수를 누르면 오늘 닫거나 만든 이슈의 조건으로 연 이슈 목록, 보류 보기 탭, 그 에픽을 모은 정리 페이지를 연다", async ({
   page,
   workspace,
 }) => {
@@ -48,12 +48,13 @@ test("오늘 막대, 보류 수, 닫을 수 있는 에픽 수를 누르면 오�
   await expect(page).toHaveURL(new RegExp(`/issues\\?from=${today}&to=${today}&type=`));
 
   await page.goBack();
-  await stats.getByRole("link", { name: /^보류/ }).click();
+  const summary = page.getByRole("navigation", { name: "개수 요약" });
+  await summary.getByRole("link", { name: /^보류/ }).click();
   await expect(page).toHaveURL(/\/issues\?view=deferred$/);
   await expect(page.getByRole("link", { name: "미룬 작업" })).toBeVisible();
 
   await page.goBack();
-  await stats.getByRole("link", { name: /^닫을 수 있는 에픽/ }).click();
+  await summary.getByRole("link", { name: /^닫을 수 있는 에픽/ }).click();
   await expect(page).toHaveURL(/\/hygiene$/);
   const closable = page.getByRole("region", { name: "닫을 수 있는 에픽" });
   await expect(closable.getByRole("listitem")).toHaveCount(1);

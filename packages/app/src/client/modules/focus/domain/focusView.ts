@@ -5,12 +5,12 @@ import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
 import { isNotDecision } from "@/client/modules/issues/domain/issueListView";
 import { groupByWorkState, type WorkState } from "@/client/modules/issues/domain/workState";
 
-/** 다음에 할 일에 보이는 바로 작업 가능 이슈의 개수입니다. 나머지는 이슈 목록의 바로 작업 가능 탭에서 봅니다. */
-export const NEXT_UP_LIMIT = 5;
+/** 지금 화면의 목록마다 처음에 보이는 항목 수입니다. */
+export const FOCUS_LIST_LIMIT = 5;
 
 export type FocusView = {
   inProgress: Issue[];
-  /** 우선순위, 대기 수가 많은 순, 만든 시각 순입니다. 다음에 할 일은 앞에서 NEXT_UP_LIMIT개만 보입니다. */
+  /** 우선순위, 대기 수가 많은 순, 만든 시각 순입니다. 다음에 할 일은 앞에서 FOCUS_LIST_LIMIT개만 보입니다. */
   ready: Issue[];
   blocked: Issue[];
   /** 이슈 id마다 대기 수입니다. 0이면 담지 않습니다. */
