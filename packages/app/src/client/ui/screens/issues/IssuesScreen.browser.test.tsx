@@ -1,7 +1,9 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import { expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { BOTTLENECK_ORDER, focusBottlenecks } from "@/client/modules/focus/domain/focusBottlenecks";
+import { focusDeadlines } from "@/client/modules/focus/domain/focusDeadlines";
 import type { IssueTextHits } from "@/client/modules/issues/domain/issueListView";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
@@ -100,4 +102,112 @@ test("본문·댓글 검색어를 넣으면 고른 보기 탭의 개수가 맞�
   await expect
     .element(screen.getByRole("link", { name: "로그인 오류", exact: true }))
     .toBeVisible();
+});
+
+describe("병목 탭", () => {
+  // 기반 작업은 후속 셋을 막아 대기 수가 가장 많고, 버그 수정과 가장 급한 작업은 대기 수가 같아 바로 풀리는 수로 갈립니다.
+  // 우선순위 순서(가장 급한 작업, 버그 수정, 기반 작업)와 반대로 놓여야 병목 순서를 따른 것입니다.
+  const BOTTLENECK_ISSUES = [
+    issue("desk-c", { title: "가장 급한 작업", priority: 1, ready: true, labels: ["ui"] }),
+    issue("desk-a", { title: "버그 수정", issueType: "bug", priority: 2, ready: true }),
+    issue("desk-b", { title: "기반 작업", priority: 3, ready: true }),
+    issue("desk-a-after", { title: "버그 후속", blockedBy: ["desk-a"] }),
+    issue("desk-b-after-1", { title: "기반 후속 1", blockedBy: ["desk-b"] }),
+    issue("desk-b-after-2", { title: "기반 후속 2", blockedBy: ["desk-b"] }),
+    issue("desk-joined", { title: "합류 후속", blockedBy: ["desk-b", "desk-c"] }),
+  ];
+
+  async function renderIssues(query: string) {
+    reads.issues = BOTTLENECK_ISSUES;
+    reads.textMatches = new Map();
+    reads.query = query;
+    const screen = await render(
+      <LocaleProvider locale="ko">
+        <IssuesScreen />
+      </LocaleProvider>,
+    );
+    const tabs = screen.getByRole("navigation", { name: messages.issues.views });
+    return {
+      screen,
+      bottleneckTab: tabs.getByRole("link", {
+        name: new RegExp(`^${messages.focus.bottlenecks.title} \\d+$`),
+      }),
+      /** 표의 행마다 제목과 맨 뒤 칸의 글자입니다. */
+      rows: () =>
+        [...screen.container.querySelectorAll("tbody tr")].map((row) => [
+          row.querySelector("td:nth-child(3) a")!.textContent,
+          row.querySelector("td:last-child")!.textContent,
+        ]),
+    };
+  }
+
+  test("주소의 view=bottleneck은 병목 탭을 고른 상태로 열고, 표 위에 정렬 설명을, 표에 지금 화면과 같은 순서와 닫으면 바로 풀리는 수를 보인다", async () => {
+    const { screen, bottleneckTab, rows } = await renderIssues("view=bottleneck");
+    const now = Date.now();
+    const focusOrder = focusBottlenecks(
+      BOTTLENECK_ISSUES,
+      focusDeadlines(BOTTLENECK_ISSUES, now),
+      now,
+    ).map(({ issue, unblocks }) => [issue.title, String(unblocks)]);
+
+    await expect.element(bottleneckTab).toHaveAttribute("aria-current", "page");
+    await expect
+      .element(bottleneckTab)
+      .toHaveAccessibleName(`${messages.focus.bottlenecks.title} 3`);
+    await expect
+      .element(screen.getByText(messages.focus.bottlenecks.order(BOTTLENECK_ORDER)))
+      .toBeVisible();
+    await expect
+      .element(screen.getByText(messages.issueTable.unblocks, { exact: true }))
+      .toBeInTheDocument();
+    expect(rows()).toEqual([
+      ["기반 작업", "2"],
+      ["버그 수정", "1"],
+      ["가장 급한 작업", "0"],
+    ]);
+    expect(rows()).toEqual(focusOrder);
+  });
+
+  for (const { condition, query, search, titles } of [
+    {
+      condition: "유형",
+      query: "view=bottleneck&type=task",
+      search: "",
+      titles: ["기반 작업", "가장 급한 작업"],
+    },
+    {
+      condition: "라벨",
+      query: "view=bottleneck&label=ui",
+      search: "",
+      titles: ["가장 급한 작업"],
+    },
+    { condition: "검색어", query: "view=bottleneck", search: "기반", titles: ["기반 작업"] },
+  ]) {
+    test(`병목 탭에서 ${condition} 조건으로 좁히면 표에 맞는 후보만 순서대로 남고, 탭의 개수가 표의 행 수와 같다`, async () => {
+      const { screen, bottleneckTab, rows } = await renderIssues(query);
+      if (search) {
+        await screen.getByRole("searchbox", { name: messages.issues.search }).fill(search);
+      }
+
+      await expect
+        .element(bottleneckTab)
+        .toHaveAccessibleName(`${messages.focus.bottlenecks.title} ${titles.length}`);
+      await expect.element(bottleneckTab).toHaveAttribute("aria-current", "page");
+      expect(rows().map(([title]) => title)).toEqual(titles);
+    });
+  }
+
+  test("작업 상태 탭의 표에는 닫으면 바로 풀리는 수 열과 정렬 설명이 없다", async () => {
+    const { screen } = await renderIssues("view=ready");
+
+    await expect
+      .element(screen.getByRole("link", { name: "가장 급한 작업", exact: true }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByText(messages.issueTable.unblocks, { exact: true }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(screen.getByText(messages.focus.bottlenecks.order(BOTTLENECK_ORDER)))
+      .not.toBeInTheDocument();
+  });
 });

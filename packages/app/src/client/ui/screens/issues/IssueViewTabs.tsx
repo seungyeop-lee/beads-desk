@@ -1,41 +1,50 @@
 import Link from "next/link";
 import {
-  VIEW_STATES,
-  type WorkState,
-  type WorkStateGroup,
-} from "@/client/modules/issues/domain/workState";
+  BOTTLENECK_VIEW,
+  ISSUE_VIEWS,
+  type IssueView,
+} from "@/client/modules/issues/domain/issueView";
+import type { WorkStateGroup } from "@/client/modules/issues/domain/workState";
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
-import { workStateTone } from "@/client/ui/issues/issueLabels";
+import { BOTTLENECK_TONE, workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { issueListHref, type IssueListAddress } from "@/client/ui/address/issueListAddress";
 
 type Props = {
   /** null이면 전체 보기입니다. */
-  view: WorkState | null;
+  view: IssueView | null;
   /** 탭을 바꿔도 유지하는 조건입니다. */
   filters: Omit<IssueListAddress, "view">;
-  /** 유형과 검색으로 좁힌 뒤의 묶음입니다. 탭의 개수는 이 묶음의 이슈 수입니다. */
+  /** 유형과 검색으로 좁힌 뒤의 묶음입니다. 작업 상태 탭의 개수는 이 묶음의 이슈 수입니다. */
   groups: WorkStateGroup[];
+  /** 같은 조건으로 좁힌 병목 후보 수입니다. */
+  bottleneckCount: number;
 };
 
-/** 작업 상태 하나를 골라 보는 탭입니다. 고른 탭은 주소에 남아 뒤로 가기와 새로고침에도 유지됩니다. */
-export function IssueViewTabs({ view, filters, groups }: Props) {
+/** 작업 상태 하나나 병목 후보를 골라 보는 탭입니다. 고른 탭은 주소에 남아 뒤로 가기와 새로고침에도 유지됩니다. */
+export function IssueViewTabs({ view, filters, groups, bottleneckCount }: Props) {
   const messages = useMessages();
   const workspaceHref = useWorkspaceHref();
-  const countOf = (state: WorkState) =>
-    groups.find((group) => group.state === state)?.issues.length ?? 0;
+  const tabOf = (tabView: IssueView) =>
+    tabView === BOTTLENECK_VIEW
+      ? { label: messages.focus.bottlenecks.title, tone: BOTTLENECK_TONE, count: bottleneckCount }
+      : {
+          label: messages.workStates.labels[tabView],
+          tone: workStateTone(tabView),
+          count: groups.find((group) => group.state === tabView)?.issues.length ?? 0,
+        };
   const tabs = [
     {
-      state: null,
+      view: null,
       label: messages.issues.allStatuses,
+      tone: null,
       count: groups.reduce((sum, group) => sum + group.issues.length, 0),
       href: workspaceHref(issueListHref(filters)),
     },
-    ...VIEW_STATES.map((state) => ({
-      state,
-      label: messages.workStates.labels[state],
-      count: countOf(state),
-      href: workspaceHref(issueListHref({ ...filters, view: state })),
+    ...ISSUE_VIEWS.map((tabView) => ({
+      view: tabView,
+      ...tabOf(tabView),
+      href: workspaceHref(issueListHref({ ...filters, view: tabView })),
     })),
   ];
 
@@ -47,7 +56,7 @@ export function IssueViewTabs({ view, filters, groups }: Props) {
     <nav className="overflow-x-auto" aria-label={messages.issues.views}>
       <div className="flex w-max min-w-full items-end gap-1 shadow-[inset_0_-1px_0_var(--color-base-300)]">
         {tabs.map((tab) => {
-          const current = tab.state === view;
+          const current = tab.view === view;
           return (
             <Link
               key={tab.href}
@@ -56,7 +65,7 @@ export function IssueViewTabs({ view, filters, groups }: Props) {
               aria-current={current ? "page" : undefined}
               className={`flex shrink-0 items-center whitespace-nowrap gap-2 border-b-2 px-3 pt-1 pb-2.5 text-sm font-medium transition-colors ${current ? "border-base-content text-base-content" : "border-transparent text-emphasis-60 hover:text-base-content"}`}
             >
-              {tab.state && <span className={`tone-dot ${workStateTone(tab.state)}`} />}
+              {tab.tone && <span className={`tone-dot ${tab.tone}`} />}
               {tab.label}
               <span className="font-mono text-xs font-normal text-emphasis-50 tabular-nums">
                 {tab.count}

@@ -262,6 +262,37 @@ describe("마감", () => {
     await expect.element(soon).not.toBeInTheDocument();
   });
 
+  test("마감 묶음은 앞의 5개만 보이고, 그보다 많으면 이슈 목록으로 가지 않고 그 자리에서 나머지를 펼치거나 다시 접는다", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 9, 30, 23, 0));
+    reads.issues = Array.from({ length: 6 }, (_, index) =>
+      issue(`desk-late-${index}`, {
+        title: `지난 마감 ${index}`,
+        dueAt: new Date(2026, 9, 20 + index).getTime(),
+      }),
+    );
+    reads.epics = [];
+    const screen = await renderFocus();
+    const overdue = screen
+      .getByRole("region", { name: messages.focus.deadlines.title, exact: true })
+      .getByRole("region", { name: messages.focus.deadlines.overdue, exact: true });
+    // 행마다 ID 복사 단추가 있으므로, 펼침 상태를 알리는 단추로 모두 보기를 찾습니다.
+    const seeAll = overdue.getByRole("button", { expanded: false });
+    const showFewer = overdue.getByRole("button", { expanded: true });
+
+    await expect.element(overdue.getByRole("listitem")).toHaveLength(5);
+    await expect.element(seeAll).toHaveTextContent(messages.focus.list.seeAll(6));
+    await expect.element(overdue.getByRole("link", { name: /모두 보기/ })).not.toBeInTheDocument();
+
+    await seeAll.click();
+    await expect.element(overdue.getByRole("listitem")).toHaveLength(6);
+    await expect.element(showFewer).toHaveTextContent(messages.focus.list.showFewer);
+
+    await showFewer.click();
+    await expect.element(overdue.getByRole("listitem")).toHaveLength(5);
+    await expect.element(seeAll).toBeVisible();
+  });
+
   test("영어 화면은 bd의 용어로 묶음 이름을 보이고 날짜 기준을 영어 날짜로 보인다", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 30, 23, 0));
@@ -314,7 +345,7 @@ describe("병목", () => {
     }),
   ];
 
-  test("후보마다 지금 상태와 닫는다고 가정한 계산을 나눠 보이고, 마감 목록과 같은 분류로 마감 근거를 붙이며, 자정이 지나면 근거와 순서를 다시 정한다", async () => {
+  test("후보마다 지금 상태와 닫는다고 가정한 계산을 나눠 보이되 정렬 설명은 보이지 않고, 마감 목록과 같은 분류로 마감 근거를 붙이며, 자정이 지나면 근거와 순서를 다시 정한다", async () => {
     vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
     vi.setSystemTime(new Date(2026, 9, 30, 23, 0));
     reads.issues = BOTTLENECK_ISSUES;
@@ -329,7 +360,8 @@ describe("병목", () => {
         (item) => item.querySelector("a")!.getAttribute("aria-label")!.split(" ")[0],
       );
 
-    await expect.element(section).toMatchTextContent(text.order(BOTTLENECK_ORDER));
+    // 정렬 설명은 이슈 목록의 병목 탭에만 둡니다.
+    await expect.element(section).not.toMatchTextContent(text.order(BOTTLENECK_ORDER));
     expect(order()).toEqual(["desk-base", "desk-other", "desk-undated-prior", "desk-fourth-prior"]);
 
     const base = row("기준 작업");
@@ -362,7 +394,7 @@ describe("병목", () => {
     expect(order()).toEqual(["desk-base", "desk-other", "desk-fourth-prior", "desk-undated-prior"]);
   });
 
-  test("후보는 정렬한 순서로 앞의 5개만 보이고, 그보다 많을 때만 모두 보기로 나머지를 펼치거나 다시 접는다", async () => {
+  test("후보는 정렬한 순서로 앞의 5개만 보이고, 그보다 많을 때만 이슈 목록의 병목 보기로 가는 모두 보기를 보인다", async () => {
     // 후보마다 후속 이슈를 하나씩 막아 다른 기준이 같으므로, 만든 시각 순으로 desk-prior-0부터 놓입니다.
     const blockingPairs = (count: number) =>
       Array.from({ length: count }, (_, index) => [
@@ -381,24 +413,15 @@ describe("병목", () => {
       [...section.getByRole("listitem").elements()].map(
         (item) => item.querySelector("a")!.getAttribute("aria-label")!.split(" ")[0],
       );
-    // 행마다 ID 복사 단추가 있으므로, 펼침 상태를 알리는 단추로 모두 보기를 찾습니다.
-    const seeAll = section.getByRole("button", { expanded: false });
-    const showFewer = section.getByRole("button", { expanded: true });
-    const firstFive = [0, 1, 2, 3, 4].map((index) => `desk-prior-${index}`);
+    const seeAll = section.getByRole("link", {
+      name: `${messages.focus.list.seeAll(6)} →`,
+      exact: true,
+    });
 
     await expect.element(section.getByRole("listitem")).toHaveLength(5);
-    expect(shownIds()).toEqual(firstFive);
+    expect(shownIds()).toEqual([0, 1, 2, 3, 4].map((index) => `desk-prior-${index}`));
     await expect.element(section.getByRole("heading")).toMatchTextContent("6");
-    await expect.element(seeAll).toHaveTextContent(messages.focus.list.seeAll(6));
-
-    await seeAll.click();
-    await expect.element(section.getByRole("listitem")).toHaveLength(6);
-    expect(shownIds()).toEqual([...firstFive, "desk-prior-5"]);
-    await expect.element(showFewer).toHaveTextContent(messages.focus.list.showFewer);
-
-    await showFewer.click();
-    await expect.element(section.getByRole("listitem")).toHaveLength(5);
-    await expect.element(seeAll).toBeVisible();
+    await expect.element(seeAll).toHaveAttribute("href", "/w/demo/issues?view=bottleneck");
 
     reads.issues = blockingPairs(5);
     await screen.rerender(
@@ -407,10 +430,10 @@ describe("병목", () => {
       </LocaleProvider>,
     );
     await expect.element(section.getByRole("listitem")).toHaveLength(5);
-    await expect.element(seeAll).not.toBeInTheDocument();
+    await expect.element(section.getByRole("link", { name: /모두 보기/ })).not.toBeInTheDocument();
   });
 
-  test("영어 화면은 정렬 기준과 계산 결과를 영어로 보이고, 막고 있는 이슈가 없으면 빈 안내를 보인다", async () => {
+  test("영어 화면은 계산 결과를 영어로 보이고, 막고 있는 이슈가 없으면 빈 안내를 보인다", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date(2026, 9, 30, 23, 0));
     reads.issues = BOTTLENECK_ISSUES;
@@ -419,7 +442,6 @@ describe("병목", () => {
     const text = enMessages.focus.bottlenecks;
     const section = screen.getByRole("region", { name: text.title, exact: true });
 
-    await expect.element(section).toMatchTextContent(text.order(BOTTLENECK_ORDER));
     await expect.element(section).toMatchTextContent(enMessages.issue.waiters(2));
     await expect.element(section).toMatchTextContent(text.unblocks(1));
     await expect.element(section).toMatchTextContent(/→ Due today · desk-tonight/);

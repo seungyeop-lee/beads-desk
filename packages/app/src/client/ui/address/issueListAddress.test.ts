@@ -20,6 +20,7 @@ describe("issueListHref", () => {
       }),
     ).toBe("/issues");
     expect(issueViewHref("ready")).toBe("/issues?view=ready");
+    expect(read(issueViewHref("bottleneck")).view).toBe("bottleneck");
   });
 
   test("보기 탭, 날짜, 유형 조건을 함께 담고, 주소에서 그대로 다시 읽는다", () => {

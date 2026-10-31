@@ -26,6 +26,7 @@ for (const { width, horizontal } of [
             view={null}
             filters={{ dates: { field: "created", from: null, to: null }, types: [], labels: [] }}
             groups={GROUPS}
+            bottleneckCount={0}
           />
         </div>
       </LocaleProvider>,

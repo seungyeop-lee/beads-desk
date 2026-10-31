@@ -128,6 +128,7 @@ export const koMessages = {
     toggleChildren: (id: string, expanded: boolean) =>
       `${id} 하위 이슈 ${expanded ? "접기" : "펼치기"}`,
     childCount: (count: number) => `하위 ${count}개`,
+    unblocks: "바로 풀림",
   },
   blocking: {
     chip: "막힘",

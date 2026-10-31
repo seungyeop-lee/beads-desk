@@ -39,12 +39,27 @@ const WRITES: IssueWrites = {
   run: (write) => write("demo"),
 };
 
-// 순서 보기 링크를 보이는 표는 의존 열이 넓어 표 폭 계산이 달라지므로 따로 검사합니다.
-for (const [width, epicOrder] of AREA_WIDTHS.flatMap((width) => [
-  [width, false] as const,
-  [width, true] as const,
-])) {
-  test(`표 영역 폭 ${width}px${epicOrder ? "의 순서 보기 링크를 보이는 표" : ""}에서 ID·유형·제목이 가로 스크롤 없이 표 영역 안에 다 보이고, 상태·우선순위 입력은 표 안에서 스크롤하면 영역 안에 다 보인다`, async () => {
+/** 표 폭 계산이 달라지는 표입니다. 순서 보기 링크를 보이는 표는 의존 열이 넓고, 병목 탭의 표는 닫으면 바로 풀리는 수 열이 더 있습니다. */
+type TableVariant = "dependencyCount" | "epicOrder" | "unblocks";
+
+const VARIANT_NAMES: Record<TableVariant, string> = {
+  dependencyCount: "",
+  epicOrder: "의 순서 보기 링크를 보이는 표",
+  unblocks: "의 닫으면 바로 풀리는 수 열을 더한 표",
+};
+
+function variantProps(variant: TableVariant) {
+  if (variant === "epicOrder") return { epicOrderHref: (id: string) => `/epics?epic=${id}` };
+  if (variant === "unblocks") return { unblocks: new Map([["desk-blocker", 1]]) };
+  return {};
+}
+
+for (const [width, variant] of AREA_WIDTHS.flatMap((width) =>
+  (["dependencyCount", "epicOrder", "unblocks"] as const).map(
+    (variant) => [width, variant] as const,
+  ),
+)) {
+  test(`표 영역 폭 ${width}px${VARIANT_NAMES[variant]}에서 ID·유형·제목이 가로 스크롤 없이 표 영역 안에 다 보이고, 상태·우선순위 입력은 표 안에서 스크롤하면 영역 안에 다 보인다`, async () => {
     const screen = await render(
       <LocaleProvider locale="ko">
         <div style={{ width }}>
@@ -53,7 +68,7 @@ for (const [width, epicOrder] of AREA_WIDTHS.flatMap((width) => [
             issueHref={(id) => `/issues?issue=${id}`}
             writes={WRITES}
             gateTitles={new Map()}
-            {...(epicOrder && { epicOrderHref: (id: string) => `/epics?epic=${id}` })}
+            {...variantProps(variant)}
           />
         </div>
       </LocaleProvider>,
@@ -105,22 +120,27 @@ for (const [width, epicOrder] of AREA_WIDTHS.flatMap((width) => [
   });
 }
 
-/** 열 이름 순서(ID, 유형, 제목, 상태, 우선순위, 라벨, 의존)대로 머리 칸의 폭(px)입니다. 제목 열은 남는 폭을 차지하므로 null입니다. */
-const COLUMN_WIDTHS = {
+/** 열 이름 순서(ID, 유형, 제목, 상태, 우선순위, 라벨, 의존, 바로 풀림)대로 머리 칸의 폭(px)입니다. 제목 열은 남는 폭을 차지하므로 null입니다. */
+const COLUMN_WIDTHS: Record<TableVariant, (number | null)[]> = {
   dependencyCount: [96, 104, null, 128, 128, 144, 80],
   epicOrder: [96, 104, null, 128, 128, 144, 112],
+  unblocks: [96, 104, null, 128, 128, 144, 80, 96],
 };
 
 // 표 영역은 좌우 테두리가 1px씩이라, 표가 차지할 수 있는 폭은 영역 폭보다 2px 좁습니다.
-for (const [width, epicOrder, tableWidth] of [
-  [377, false, 855],
-  [377, true, 887],
-  [704, false, 1024],
-  [704, true, 1024],
-  [1376, false, 1374],
-  [1376, true, 1374],
+// 넓은 표 영역에서는 열이 늘어도 표가 영역 폭에 맞고, 제목 열이 줄어듭니다.
+for (const [width, variant, tableWidth] of [
+  [377, "dependencyCount", 855],
+  [377, "epicOrder", 887],
+  [377, "unblocks", 951],
+  [704, "dependencyCount", 1024],
+  [704, "epicOrder", 1024],
+  [704, "unblocks", 1024],
+  [1376, "dependencyCount", 1374],
+  [1376, "epicOrder", 1374],
+  [1376, "unblocks", 1374],
 ] as const) {
-  test(`표 영역 폭 ${width}px${epicOrder ? "의 순서 보기 링크를 보이는 표" : ""}에서 열 폭과 표 폭은 ${tableWidth}px로 정해진다`, async () => {
+  test(`표 영역 폭 ${width}px${VARIANT_NAMES[variant]}에서 열 폭과 표 폭은 ${tableWidth}px로 정해진다`, async () => {
     const screen = await render(
       <LocaleProvider locale="ko">
         <div style={{ width }}>
@@ -129,7 +149,7 @@ for (const [width, epicOrder, tableWidth] of [
             issueHref={(id) => `/issues?issue=${id}`}
             writes={WRITES}
             gateTitles={new Map()}
-            {...(epicOrder && { epicOrderHref: (id: string) => `/epics?epic=${id}` })}
+            {...variantProps(variant)}
           />
         </div>
       </LocaleProvider>,
@@ -137,7 +157,8 @@ for (const [width, epicOrder, tableWidth] of [
 
     const table = screen.container.querySelector("table")!;
     expect(table.getBoundingClientRect().width, "표 폭").toBe(tableWidth);
-    const expected = COLUMN_WIDTHS[epicOrder ? "epicOrder" : "dependencyCount"];
+    const expected = COLUMN_WIDTHS[variant];
+    expect(table.tHead!.rows[0]!.cells.length, "열 수").toBe(expected.length);
     Array.from(table.tHead!.rows[0]!.cells).forEach((cell, index) => {
       const columnWidth = expected[index];
       // 좁은 표 영역에서 감춘 유형 열은 폭을 재지 않습니다.

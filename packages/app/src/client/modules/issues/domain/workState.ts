@@ -16,14 +16,6 @@ export const WORK_STATE_ORDER: WorkState[] = [
   "closed",
 ];
 
-/** 이슈 목록의 보기 탭에서 하나만 골라 볼 수 있는 작업 상태입니다. other는 전체 보기에서만 보입니다. */
-export const VIEW_STATES: WorkState[] = ["in_progress", "ready", "blocked", "deferred", "closed"];
-
-/** 주소의 view 값을 보기 탭의 작업 상태로 읽습니다. 없거나 알 수 없는 값이면 전체 보기인 null입니다. */
-export function parseViewState(value: string | null): WorkState | null {
-  return VIEW_STATES.find((state) => state === value) ?? null;
-}
-
 export type WorkStateGroup = { state: WorkState; issues: Issue[] };
 
 /**

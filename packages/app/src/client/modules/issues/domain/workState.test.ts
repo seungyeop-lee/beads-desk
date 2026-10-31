@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
-import { groupByWorkState, issueListGroups, parseViewState, workState } from "./workState";
+import { groupByWorkState, issueListGroups, workState } from "./workState";
 
 const NO_WAITERS: ReadonlyMap<string, number> = new Map();
 
@@ -169,11 +169,4 @@ test("이슈 목록에서 상위와 작업 상태가 다른 하위 이슈는 자
     ["in_progress", ["doing"]],
     ["ready", ["parent"]],
   ]);
-});
-
-test("주소의 view 값은 보기 탭의 작업 상태만 받고, 그 밖의 값은 전체 보기(null)로 읽는다", () => {
-  expect(parseViewState("blocked")).toBe("blocked");
-  expect(parseViewState("other")).toBeNull();
-  expect(parseViewState("bogus")).toBeNull();
-  expect(parseViewState(null)).toBeNull();
 });

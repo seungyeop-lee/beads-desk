@@ -1,10 +1,7 @@
 import Link from "next/link";
-import {
-  BOTTLENECK_ORDER,
-  type Bottleneck,
-  type DeadlineKind,
-} from "@/client/modules/focus/domain/focusBottlenecks";
+import { type Bottleneck, type DeadlineKind } from "@/client/modules/focus/domain/focusBottlenecks";
 import { DUE_SOON_DAYS } from "@/client/modules/focus/domain/focusDeadlines";
+import { BOTTLENECK_VIEW } from "@/client/modules/issues/domain/issueView";
 import { workState } from "@/client/modules/issues/domain/workState";
 import { useGraphHref } from "@/client/ui/address/useGraphHref";
 import { CoveredIssueIdButton, CoveredIssueRow } from "@/client/ui/issues/CoveredIssueRow";
@@ -18,9 +15,10 @@ import { useLocale, useMessages } from "@/client/ui/locale/LocaleProvider";
 import { FocusListSection } from "./FocusList";
 
 /**
- * 다른 이슈를 막고 있는 이슈를 정렬 기준과 함께 보입니다. 행마다 지금 상태, 대기 수, 닫으면 바로 작업 가능해지는 이슈 수,
+ * 다른 이슈를 막고 있는 이슈를 병목 순서대로 보입니다. 행마다 지금 상태, 대기 수, 닫으면 바로 작업 가능해지는 이슈 수,
  * 마감 목록에 든 후속 이슈를 보이고, 선행·후속 그래프로 이동할 수 있습니다.
- * 이슈 목록에 병목 보기 탭이 없으므로, 후보가 많으면 앞의 일부만 보이고 나머지는 그 자리에서 펼칩니다.
+ * 후보가 많으면 앞의 일부만 보이고, 모두 보기는 같은 후보를 같은 순서로 보이는 이슈 목록의 병목 탭을 엽니다.
+ * 정렬 설명은 그 병목 탭에만 둡니다.
  */
 export function BottlenecksSection({ bottlenecks }: { bottlenecks: Bottleneck[] }) {
   const text = useMessages().focus.bottlenecks;
@@ -28,9 +26,9 @@ export function BottlenecksSection({ bottlenecks }: { bottlenecks: Bottleneck[] 
     <FocusListSection
       inRow
       title={text.title}
+      seeAllView={BOTTLENECK_VIEW}
       empty={text.empty}
       items={bottlenecks}
-      note={<p className="px-1 text-xs text-emphasis-60">{text.order(BOTTLENECK_ORDER)}</p>}
       renderItem={(bottleneck) => (
         <BottleneckRow key={bottleneck.issue.id} bottleneck={bottleneck} />
       )}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { FOCUS_LIST_LIMIT } from "@/client/modules/focus/domain/focusView";
-import type { WorkState } from "@/client/modules/issues/domain/workState";
+import type { IssueView } from "@/client/modules/issues/domain/issueView";
 import { issueViewHref } from "@/client/ui/address/issueListAddress";
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
 import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
@@ -13,7 +13,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
  */
 export function useListLimit<T>(
   items: readonly T[],
-  seeAllView?: WorkState,
+  seeAllView?: IssueView,
 ): { shown: readonly T[]; action: ReactNode } {
   const messages = useMessages();
   const workspaceHref = useWorkspaceHref();
@@ -97,9 +97,7 @@ type FocusListSectionProps<T> = {
   empty: string;
   items: readonly T[];
   /** 이슈 목록에 같은 보기 탭이 있는 목록이면 그 탭입니다. */
-  seeAllView?: WorkState;
-  /** 제목 아래에 두는 설명입니다. */
-  note?: ReactNode;
+  seeAllView?: IssueView;
   /** 두 열 행 안에 놓이는 구역이면 listBoxClasses의 높이 규칙을 따릅니다. */
   inRow?: boolean;
   renderItem: (item: T) => ReactNode;
@@ -112,7 +110,6 @@ export function FocusListSection<T>({
   empty,
   items,
   seeAllView,
-  note,
   inRow = false,
   renderItem,
 }: FocusListSectionProps<T>) {
@@ -123,7 +120,6 @@ export function FocusListSection<T>({
       <GroupHeading title={title} tone={tone} count={items.length}>
         <span className="ml-auto font-normal">{action}</span>
       </GroupHeading>
-      {note}
       <div className={classes.frame}>
         {items.length === 0 ? (
           <FocusEmpty message={empty} className={classes.box} />

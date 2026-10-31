@@ -51,6 +51,8 @@ type Props = (
   gateTitles: GateTitles;
   /** 이슈 id마다 대기 수입니다. 없으면 대기 수를 보이지 않습니다. */
   waiters?: ReadonlyMap<string, number>;
+  /** 주면 맨 뒤에 이슈 id마다 닫으면 바로 풀리는 이슈 수(병목 후보의 unblocks) 열을 더합니다. */
+  unblocks?: ReadonlyMap<string, number> | undefined;
   /** 묶음마다 표를 나눠 보일 때, 첫 표가 아니면 열 이름을 감춥니다. 열 너비는 그대로 맞춥니다. */
   hideHeader?: boolean;
   /** 주면 유형이 epic인 행의 의존 칸에 의존 수 대신, 이 주소로 그 에픽의 순서 보기를 여는 링크를 보입니다. */
@@ -74,6 +76,7 @@ export const IssueTable = memo(function IssueTable({
   titleSource,
   gateTitles,
   waiters,
+  unblocks,
   hideHeader,
   epicOrderHref,
   epicProgress,
@@ -97,7 +100,7 @@ export const IssueTable = memo(function IssueTable({
     return <EmptyState message={emptyMessage ?? messages.issueTable.empty} />;
   }
   return (
-    <IssueDataTable variant="issues" epicOrder={!!epicOrderHref}>
+    <IssueDataTable variant="issues" epicOrder={!!epicOrderHref} unblocks={!!unblocks}>
       <thead className={hideHeader ? "invisible [&_th]:py-0 [&_th]:leading-[0]" : undefined}>
         <tr>
           <th className="w-(--id-column)">ID</th>
@@ -107,6 +110,14 @@ export const IssueTable = memo(function IssueTable({
           <th className="w-(--priority-column)">{messages.issue.priority}</th>
           <th className="w-(--labels-column)">{messages.issue.labels}</th>
           <th className="w-(--dependency-column) text-right">{messages.issue.dependencyCount}</th>
+          {unblocks && (
+            <th
+              className="w-(--unblocks-column) text-right"
+              title={messages.focus.bottlenecks.unblocksHint}
+            >
+              {messages.issueTable.unblocks}
+            </th>
+          )}
         </tr>
       </thead>
       <tbody>
@@ -128,6 +139,7 @@ export const IssueTable = memo(function IssueTable({
             titleOf={(id) => titles.get(id)}
             gateTitles={gateTitles}
             waiters={waiters?.get(row.issue.id) ?? 0}
+            unblocks={unblocks && (unblocks.get(row.issue.id) ?? 0)}
             writes={writes}
             epicOrderHref={epicOrderHref}
             epicProgress={epicProgress}
@@ -158,6 +170,8 @@ type RowProps = {
   titleOf: (issueId: string) => string | undefined;
   gateTitles: GateTitles;
   waiters: number;
+  /** undefined이면 닫으면 바로 풀리는 수 열을 그리지 않습니다. */
+  unblocks: number | undefined;
   writes: IssueWrites;
   epicOrderHref: ((epicId: string) => string) | undefined;
   epicProgress: ReadonlyMap<string, ChildProgress> | undefined;
@@ -172,6 +186,7 @@ function IssueRow({
   titleOf,
   gateTitles,
   waiters,
+  unblocks,
   writes,
   epicOrderHref,
   epicProgress,
@@ -263,6 +278,14 @@ function IssueRow({
           title={messages.issueTable.dependencyCounts(issue.dependencyCount, issue.dependentCount)}
         >
           {issue.dependencyCount} / {issue.dependentCount}
+        </td>
+      )}
+      {unblocks !== undefined && (
+        <td
+          className={`text-right font-mono text-xs tabular-nums ${unblocks === 0 ? "text-emphasis-30" : ""}`}
+          title={messages.focus.bottlenecks.unblocks(unblocks)}
+        >
+          {unblocks}
         </td>
       )}
     </tr>
