@@ -30,7 +30,7 @@ route 폴더를 옮기거나 지운 뒤 `pnpm run typecheck`나 `pnpm run build`
 
 ### 확인한 사실
 
-원인은 확인하지 못했습니다. 세 번 모두 Next.js 16.4.0에서 생겼습니다.
+원인은 확인하지 못했습니다. 2026-10-20까지의 세 번은 Next.js 16.4.0에서, 2026-10-31에는 16.4.3에서 생겼으므로 Next.js를 16.4.3으로 올려도 사라지지 않습니다.
 
 Next.js 서버는 브라우저가 구독할 때 보낸 `hmrVersion`이 서버의 값과 다르면 이 메시지를 보내 페이지를 다시 로드시킵니다(`node_modules/next/dist/server/dev/hot-reloader-turbopack.js`의 `turbopack-subscribe` 처리). 이 값은 연결된 모든 브라우저 탭이 함께 쓰고, 서버가 브라우저에 변경(Turbopack 업데이트나 server component 변경)을 알릴 때 올라갑니다.
 
@@ -59,6 +59,15 @@ Next.js 서버는 브라우저가 구독할 때 보낸 `hmrVersion`이 서버의
 - 새 headless 탭을 열어 `/_next/hmr` 메시지를 6초 동안 받자 `{"type":"reloadPage","data":"HMR hash mismatch"}`가 2번 왔고, 10월 14일 오후와 같은 chunk(`static/chunks/packages_app_1anvha4rlo79g._.js`)에 대한 Turbopack `restart` 업데이트가 반복됐습니다. 그동안 `hmrVersion`은 320에서 321로 올랐습니다.
 - `sync` 메시지의 `versionInfo`는 설치된 버전을 16.4.0, 기대 버전을 16.4.2(`stale-patch`)로 알렸습니다. 16.4.2에서도 생기는지는 확인하지 못했습니다.
 - 개발 서버를 끄고 `.next/dev`를 복사해 둔 뒤 지운 다음, 테스트 데이터 workspace는 그대로 둔 채(`--keep`) `pnpm playground`를 다시 시작했습니다. 같은 방법으로 받은 메시지에는 `reloadPage`가 없었습니다.
+
+#### 2026-10-31 오후 9시 무렵
+
+- `pnpm playground`로 새 테스트 데이터 workspace와 개발 서버를 시작한 직후, 첫 화면을 열기 전에 화면 파일 디렉터리(`packages/app/src/client/ui/screens/focus`)에 `oxfmt --write`를 실행했습니다. 이때 파일 내용이 실제로 바뀌었는지는 확인하지 못했습니다.
+- Playwright headless chromium 탭이 `/w/acme-web/focus`를 열자마자 다시 로드가 60초 넘게 반복됐습니다. 사람이 연 크롬 탭이 개발 서버에 연결돼 있었는지는 확인하지 못했습니다.
+- `.next/dev/logs/next-development.log`에는 서버 시작 후 2분 10초까지 브라우저의 React DevTools 안내 메시지와 서버의 `✓ Compiled in Nms`가 각각 670번 정도 찍혔습니다.
+- 새 headless 탭을 열어 `/_next/hmr` 메시지를 6초 동안 받자 `{"type":"reloadPage","data":"HMR hash mismatch"}`가 2번 왔고, 2026-10-14 오후와 2026-10-20에 본 것과 같은 chunk(`static/chunks/packages_app_1anvha4rlo79g._.js`)에 대한 Turbopack `restart` 업데이트가 왔습니다. `restart` 업데이트를 받은 횟수와 `hmrVersion`은 기록하지 않았습니다.
+- `sync` 메시지의 `versionInfo`는 설치된 버전을 16.4.3, staleness를 `fresh`로 알렸습니다.
+- 개발 서버를 끄고 `.next/dev`를 복사해 둔 뒤 지운 다음, 테스트 데이터 workspace는 그대로 둔 채(`--keep`) `pnpm playground`를 다시 시작했습니다. 같은 방법으로 받은 메시지에는 `reloadPage`도 `restart` 업데이트도 없었습니다.
 
 `experimental.turbopackFileSystemCacheForDev: false`로 개발 서버의 파일 cache를 끄는 방법도 있지만 쓰지 않았습니다. 복사해 둔 cache로 재현되지 않아 cache가 원인이라는 증거가 없고, cache를 끄면 개발 서버를 다시 시작할 때마다 처음부터 컴파일합니다.
 
