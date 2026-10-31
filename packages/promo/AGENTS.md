@@ -28,7 +28,7 @@ README의 Hygiene 스크린샷은 다섯 카드가 한 화면에 들어와야 �
 - `packages/promo/out/beads-desk-intro.mp4`는 지금 화면을 맨 위에서 마감 목록과 병목 후보까지 보인 뒤, 오늘 마감인 이슈 하나의 선행·후속 그래프, 그 그래프에서 연 결제 화면 이슈의 Mermaid 그림과 스크린샷, 결정과 그 결정이 대체한 이전 결정을 차례로 보이고 설치 안내로 끝나는 영상입니다(H.264, 1440×900, 25fps). 녹화 하나(`tour`)를 잘라 이어 붙이고, 녹화를 줄이거나 키우지 않고 그대로 놓습니다.
 - `packages/promo/out/beads-desk-intro.gif`는 README 맨 위에 두는, 같은 영상을 줄인 GIF입니다(880×550, 약 8.3fps). 줄인 크기에서도 글자를 읽을 수 있도록 장면마다 `focus` 영역을 확대합니다. GitHub 이미지 첨부 한도인 10MB를 넘으면 명령이 실패합니다.
 - `packages/promo/out/`은 저장소에 넣지 않습니다. README에 쓰려면 두 파일을 `docs/beads-desk-intro.gif`와 `docs/beads-desk-intro.mp4`로 복사해 commit합니다.
-  - README는 GIF와 스크린샷을 commit SHA로 고정한 `raw.githubusercontent.com` 주소로 넣습니다. 그래야 npmjs.com에서도 이미지가 보입니다. 이미지를 commit한 뒤 README.md와 README.ko.md의 주소를 그 commit의 SHA로 바꿉니다.
+  - README는 GIF와 스크린샷을 commit SHA로 고정한 `raw.githubusercontent.com` 주소로 넣습니다. 그래야 npmjs.com에서도 이미지가 보입니다. 이미지를 commit한 뒤 README.md, README.ko.md, README.ja.md의 주소를 그 commit의 SHA로 바꿉니다.
   - MP4는 main에 push하면 `.github/workflows/pages.yml`이 GitHub Pages에 배포합니다. 주소가 바뀌지 않으므로 README의 MP4 링크는 고치지 않습니다.
 
 자막, 녹화에서 잘라 쓰는 구간, GIF에서 확대할 영역은 `packages/promo/src/video/introTimeline.ts`의 `TOUR`에 있습니다. 시각은 `captureTargets.ts`의 `tour` 녹화가 남기는 동작 이름(`open-plan` 등)과 그 동작에서 지난 밀리초로 적고, video 명령이 `tour.events.json`으로 녹화 시각을 풉니다. 그래서 pause 길이나 화면을 불러오는 시간이 바뀌어도 시각을 다시 적지 않아도 됩니다. 동작 이름을 바꾸면 `TOUR`도 함께 바꿉니다. 영역의 좌표는 녹화의 CSS 픽셀이라, 화면 배치가 바뀌면 녹화 frame을 보고 고칩니다.

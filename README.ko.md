@@ -1,6 +1,6 @@
 # beads-desk
 
-[English](https://github.com/seungyeop-lee/beads-desk/blob/main/README.md) | 한국어
+🇺🇸 [English](https://github.com/seungyeop-lee/beads-desk/blob/main/README.md) | 🇰🇷 한국어 | 🇯🇵 [日本語](https://github.com/seungyeop-lee/beads-desk/blob/main/README.ja.md)
 
 에이전트가 [Beads](https://github.com/gastownhall/beads)(`bd`)에 남긴 기록을 검토하는 로컬 웹 UI입니다. 에이전트가 세운 계획, 기록한 결정, 첨부한 그림과 스크린샷, 사람에게 남긴 질문을 브라우저에서 읽을 수 있습니다. 사용자와 에이전트가 터미널에서 `bd`를 쓰는 동안에도, 같은 이슈를 브라우저에서 보고 고칠 수 있습니다.
 
@@ -74,7 +74,7 @@
 - 옆 패널로 보던 이슈 옆에 연결된 이슈를 열어 읽을 수 있습니다.
 - 모든 읽기와 변경은 `bd` CLI를 거치고, `bd`로 바꾼 내용은 몇 초 안에 열린 탭에 나타납니다.
 - 탭마다 다른 workspace를 볼 수 있습니다.
-- 화면은 영어와 한국어, 라이트와 다크 테마를 지원하며 **설정**에서 바꿉니다.
+- 화면은 영어, 한국어, 일본어와 라이트·다크 테마를 지원하며 **설정**에서 바꿉니다.
 
 ## 요구 사항
 

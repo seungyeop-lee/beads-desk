@@ -39,7 +39,7 @@ async function stagePackage() {
   }
 
   // README와 LICENSE는 저장소 루트에 있으므로 패키지에 따로 넣습니다.
-  for (const file of ["README.md", "README.ko.md", "LICENSE"]) {
+  for (const file of ["README.md", "README.ko.md", "README.ja.md", "LICENSE"]) {
     await cp(resolve(packageRoot, "..", "..", file), resolve(stageRoot, file));
   }
 

@@ -1,6 +1,6 @@
 # beads-desk 사용 안내
 
-[English](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md) | 한국어
+🇺🇸 [English](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md) | 🇰🇷 한국어 | 🇯🇵 [日本語](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md)
 
 설치 방법은 [README](https://github.com/seungyeop-lee/beads-desk/blob/main/README.ko.md#시작하기)에 있습니다.
 

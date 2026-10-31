@@ -1,6 +1,6 @@
 # beads-desk
 
-English | [한국어](https://github.com/seungyeop-lee/beads-desk/blob/main/README.ko.md)
+🇺🇸 English | 🇰🇷 [한국어](https://github.com/seungyeop-lee/beads-desk/blob/main/README.ko.md) | 🇯🇵 [日本語](https://github.com/seungyeop-lee/beads-desk/blob/main/README.ja.md)
 
 A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for reviewing what your agents leave in the tracker: the plans they lay out, the decisions they record, the diagrams and screenshots they attach, and the questions they leave for you. Read and edit your issues in the browser while you and your agents keep using `bd` in the terminal.
 
@@ -74,7 +74,7 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 - A side panel opens a linked issue beside the one you are reading.
 - Every read and change goes through the `bd` CLI, and changes made with `bd` show up in open tabs within seconds.
 - Each tab can show a different workspace.
-- English and Korean UI, light and dark themes, set in **Settings**.
+- English, Korean, and Japanese UI, light and dark themes, set in **Settings**.
 
 ## Requirements
 
