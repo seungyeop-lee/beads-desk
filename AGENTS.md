@@ -95,6 +95,8 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 영어 README나 USAGE를 고치면 한국어와 일본어 미러를 같은 내용으로 함께 고칩니다. 여섯 문서의 3번째 줄 언어 링크는 영어, 한국어, 일본어 순서로 쓰고, 언어 이름 앞에 국기 이모지(🇺🇸, 🇰🇷, 🇯🇵)를 붙입니다.
 
+`CHANGELOG.md`는 `versionup` skill로 버전업할 때만 고칩니다. 기능을 추가하거나 버그를 고치는 커밋에서는 CHANGELOG에 항목을 적지 않습니다. 버전업할 때 지난 릴리스 이후의 커밋을 모아 새 version 절에 한 번에 씁니다. CHANGELOG 머리말이 따르는 Keep a Changelog는 `## [Unreleased]` 절에 변경을 쌓아 두라고 권하지만, 이 저장소에서는 그 절을 만들지 않습니다.
+
 커밋 메시지는 Conventional Commits 형식(`type(scope): 제목`)을 따릅니다.
 
 코드 주석에는 bd 이슈 ID를 적지 않고, 지켜야 할 규칙이나 이유를 문장으로 적습니다. `.beads/`는 저장소에 들어가지 않아서, 저장소나 npm 패키지로 코드를 읽는 사람은 그 ID로 내용을 찾을 수 없습니다.

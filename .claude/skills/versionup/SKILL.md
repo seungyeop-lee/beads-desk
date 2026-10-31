@@ -72,9 +72,8 @@ npm view @seungyeop-lee/beads-desk@<새 version> version --prefer-online
 
 저장소 루트 `CHANGELOG.md`에 새 version의 절을 씁니다. 날짜는 `date +%F`의 오늘 날짜입니다.
 
-- `## [<새 version>] - Unreleased` 절이 이미 있으면 제목의 `Unreleased`를 오늘 날짜로 바꾸고, 그 절에 빠진 변경을 보탭니다.
-- 다른 version의 `Unreleased` 절이 있으면 어느 version으로 낼지 알 수 없으므로 멈추고 알립니다.
-- 둘 다 없으면 가장 최근 version 절(첫 번째 `## [` 제목) 바로 위에 `## [<새 version>] - <오늘 날짜>` 절을 추가합니다.
+- 가장 최근 version 절(첫 번째 `## [` 제목) 바로 위에 `## [<새 version>] - <오늘 날짜>` 절을 추가합니다.
+- 제목이 `Unreleased`로 끝나는 절(`## [Unreleased]`, `## [<version>] - Unreleased`)이 있으면 버전업 밖에서 CHANGELOG를 고친 것이므로, 아무것도 바꾸지 않고 멈춘 뒤 그 절을 사용자에게 알립니다. CHANGELOG는 버전업할 때만 고칩니다(루트 `AGENTS.md`).
 
 본문은 영어로, 파일 머리말의 Keep a Changelog 1.1.0 형식을 따라 씁니다.
 
@@ -115,10 +114,7 @@ git add CHANGELOG.md packages/app/package.json
 git commit -m "<메시지>"
 ```
 
-메시지는 Conventional Commits 형식의 한국어이고, 5단계에서 절을 어떻게 썼는지에 따라 고릅니다.
-
-- 새 절을 추가했으면 `chore(release): app version을 <새 version>(으)로 올리고 CHANGELOG에 <새 version> 절을 추가한다`
-- `Unreleased` 절에 날짜를 적었으면 `chore(release): app version을 <새 version>(으)로 올리고 CHANGELOG의 <새 version> 절에 릴리스 날짜를 적는다`
+메시지는 Conventional Commits 형식의 한국어로, `chore(release): app version을 <새 version>(으)로 올리고 CHANGELOG에 <새 version> 절을 추가한다`입니다.
 
 `(으)로`는 version의 마지막 숫자를 읽은 소리에 맞춥니다. 마지막 숫자가 0, 3, 6이면 `으로`, 그 밖에는 `로`를 씁니다(`0.2.0으로`, `0.1.1로`).
 

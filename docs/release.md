@@ -18,7 +18,7 @@
 
 - `release.yml`은 main push에서 실행한 `check.yml`의 결과로만 게시합니다. PR의 검사가 끝나도 게시하지 않습니다.
 - 검사가 하나라도 실패하면 `release.yml`의 job은 실행되지 않고 게시도 하지 않습니다. 고친 커밋을 push하면 version이 아직 npm에 없으므로 그 커밋의 검사가 성공한 뒤에 게시합니다.
-- `CHANGELOG.md`에 해당 절이 없거나 본문이 비어 있거나 제목이 날짜로 끝나지 않으면, workflow는 게시하기 전에 실패합니다(수동 실행은 날짜가 없으면 경고만 출력합니다). 날짜를 아직 정하지 않은 절은 `## [<version>] - Unreleased`로 적어 두고 version을 올릴 때 날짜로 바꿉니다. version이 `0.0.0`이 아니면 `pnpm run check`의 unit test(`packages/app/scripts/releaseNotes.test.ts`)도 같은 조건을 검사합니다.
+- `CHANGELOG.md`에 해당 절이 없거나 본문이 비어 있거나 제목이 날짜로 끝나지 않으면, workflow는 게시하기 전에 실패합니다(수동 실행은 날짜가 없으면 경고만 출력합니다). version이 `0.0.0`이 아니면 `pnpm run check`의 unit test(`packages/app/scripts/releaseNotes.test.ts`)도 같은 조건을 검사합니다.
 
 ## prerelease
 
