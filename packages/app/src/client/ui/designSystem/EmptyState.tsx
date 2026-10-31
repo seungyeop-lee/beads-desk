@@ -1,12 +1,11 @@
 type Props = {
   message: string;
-  variant?: "screen" | "compact" | "graph";
+  variant?: "screen" | "graph";
   className?: string;
 };
 
 const variants = {
   screen: "py-14 text-emphasis-50",
-  compact: "py-6 text-emphasis-50",
   graph: "px-6 py-10 text-emphasis-60",
 };
 

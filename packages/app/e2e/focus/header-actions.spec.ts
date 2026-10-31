@@ -13,7 +13,7 @@ test("좁은 창의 헤더에서 화면 탭으로 이동하고, workspace를 바
     },
     [["waiting", "next"]],
   );
-  const next = page.getByRole("region", { name: "다음에 할 일" });
+  const next = page.getByRole("region", { name: "바로 작업 가능", exact: true });
   const screens = page.getByRole("navigation", { name: "화면" });
   const picker = page.getByRole("combobox", { name: "이 탭의 workspace", exact: true });
   await page.setViewportSize({ width: 480, height: 1000 });

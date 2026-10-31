@@ -4,7 +4,6 @@ import { FOCUS_LIST_LIMIT } from "@/client/modules/focus/domain/focusView";
 import type { WorkState } from "@/client/modules/issues/domain/workState";
 import { issueViewHref } from "@/client/ui/address/issueListAddress";
 import { useWorkspaceHref } from "@/client/ui/address/workspaceAddress";
-import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -50,24 +49,45 @@ export function useListLimit<T>(
 }
 
 /**
- * 두 열의 높이가 데이터 양과 관계없이 맞도록 목록 칸의 높이를 정하는 방식입니다. 칸에 다 들어가지 않으면 칸 안에서 스크롤합니다.
- * - fixed: 한 줄짜리 행 다섯 개만큼의 높이로 고정합니다. 비어 있어도 이 높이를 차지합니다.
- * - fill: 열의 남은 높이를 같은 열의 다른 fill 구역과 똑같이 나눠 갖습니다. 열 높이는 상대 열이 정합니다(FocusScreen의 Zone).
- * 두 열이 한 열로 쌓이는 좁은 창에서는 높이를 고정하지 않고 최대 높이만 둡니다.
+ * 두 열로 놓이는 목록 칸의 높이 규칙입니다. 넓은 창에서 칸은 내용만큼 자라되 한 줄짜리 행 한 개와 다섯 개 높이 사이에 머물고,
+ * 넘치는 내용은 칸 안에서 스크롤합니다. 한 행의 높이는 두 열 가운데 더 긴 쪽이 정하고, 짧은 쪽 칸은 그 높이까지 늘어납니다.
+ *
+ * 칸의 max-height는 행 높이를 정할 때 내용의 몫을 다섯 줄로 줄이는 데만 쓰고, 늘어날 때는 막지 않아야 합니다.
+ * 그래서 칸을 frame으로 감싸 frame이 열의 남은 높이를 채우게 하고, 칸은 min-height: 100%로 frame을 채웁니다.
+ * min-height가 max-height보다 우선하고, 행 높이를 정하는 동안에는 frame 높이가 정해지지 않아 100%가 적용되지 않습니다.
+ * 두 열이 한 열로 쌓이는 좁은 창에서는 칸이 내용만큼 자라고 최대 높이만 둡니다.
  */
-export type ListBox = "fixed" | "fill";
-
-const LIST_BOX_CLASSES: Record<ListBox, { section: string; box: string }> = {
-  fixed: { section: "", box: "max-h-96 overflow-y-auto lg:h-57 lg:max-h-none" },
-  fill: {
-    section: "lg:min-h-0 lg:flex-1",
-    box: "max-h-96 overflow-y-auto lg:max-h-none lg:min-h-0 lg:flex-1",
-  },
+const ROW_BOX_CLASSES = {
+  section: "lg:grow",
+  frame: "lg:flex lg:min-h-[calc(14.25rem/5)] lg:grow lg:flex-col",
+  box: "max-h-96 overflow-y-auto lg:max-h-57 lg:min-h-full",
 };
 
-/** 구역과 목록 칸에 붙일 높이 class입니다. box가 없으면 내용만큼 자랍니다. */
-export function listBoxClasses(box: ListBox | undefined): { section: string; box: string } {
-  return box ? LIST_BOX_CLASSES[box] : { section: "", box: "" };
+const FREE_BOX_CLASSES = { section: "", frame: "", box: "" };
+
+/** 구역, 칸을 감싸는 frame, 목록 칸에 붙일 높이 class입니다. 두 열 행 밖의 구역은 내용만큼 자랍니다. */
+export function listBoxClasses(inRow: boolean): { section: string; frame: string; box: string } {
+  return inRow ? ROW_BOX_CLASSES : FREE_BOX_CLASSES;
+}
+
+type FocusEmptyProps = {
+  message: string;
+  /** 안내 아래에 옅게 덧붙이는 한 줄입니다. */
+  detail?: string;
+  /** 칸이 놓이는 자리와 높이(listBoxClasses의 box)만 정합니다. */
+  className?: string;
+};
+
+/** 지금 화면의 모든 구역이 보일 항목이 없을 때 같은 모양으로 보이는 안내 칸입니다. */
+export function FocusEmpty({ message, detail, className = "" }: FocusEmptyProps) {
+  return (
+    <p
+      className={`surface flex flex-col items-center justify-center gap-1 px-4 py-3 text-center text-xs text-emphasis-60 ${className}`}
+    >
+      {message}
+      {detail && <span className="text-emphasis-50">{detail}</span>}
+    </p>
+  );
 }
 
 type FocusListSectionProps<T> = {
@@ -80,7 +100,8 @@ type FocusListSectionProps<T> = {
   seeAllView?: WorkState;
   /** 제목 아래에 두는 설명입니다. */
   note?: ReactNode;
-  box?: ListBox;
+  /** 두 열 행 안에 놓이는 구역이면 listBoxClasses의 높이 규칙을 따릅니다. */
+  inRow?: boolean;
   renderItem: (item: T) => ReactNode;
 };
 
@@ -92,30 +113,28 @@ export function FocusListSection<T>({
   items,
   seeAllView,
   note,
-  box,
+  inRow = false,
   renderItem,
 }: FocusListSectionProps<T>) {
   const { shown, action } = useListLimit(items, seeAllView);
-  const classes = listBoxClasses(box);
+  const classes = listBoxClasses(inRow);
   return (
     <section aria-label={title} className={`flex flex-col gap-2 ${classes.section}`}>
       <GroupHeading title={title} tone={tone} count={items.length}>
         <span className="ml-auto font-normal">{action}</span>
       </GroupHeading>
       {note}
-      {items.length === 0 ? (
-        <EmptyState
-          message={empty}
-          variant="compact"
-          className={`flex items-center justify-center ${classes.box}`}
-        />
-      ) : (
-        <ul
-          className={`surface flex flex-col divide-y divide-base-300 ${box ? "focus-scroll-shadow" : ""} ${classes.box}`}
-        >
-          {shown.map(renderItem)}
-        </ul>
-      )}
+      <div className={classes.frame}>
+        {items.length === 0 ? (
+          <FocusEmpty message={empty} className={classes.box} />
+        ) : (
+          <ul
+            className={`surface flex flex-col divide-y divide-base-300 ${inRow ? "focus-scroll-shadow" : ""} ${classes.box}`}
+          >
+            {shown.map(renderItem)}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

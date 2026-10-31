@@ -7,7 +7,7 @@ test("첫 화면은 지금 화면이고, 요약 칩과 모두 보기는 이슈 �
   workspace,
   otherWorkspace,
 }) => {
-  // 모두 보기는 바로 작업 가능한 이슈가 다음에 할 일에 보이는 5개보다 많을 때만 생깁니다.
+  // 모두 보기는 바로 작업 가능한 이슈가 바로 작업 가능 구역에 보이는 5개보다 많을 때만 생깁니다.
   const { first } = await workspace.createIssues(
     {
       first: { title: "작업 하나", type: "task" },
@@ -31,9 +31,9 @@ test("첫 화면은 지금 화면이고, 요약 칩과 모두 보기는 이슈 �
   await page.goto(".");
   await expect(page).toHaveURL(/\/focus$/);
   await expect(page.getByRole("link", { name: "지금" })).toHaveAttribute("aria-current", "page");
-  const nextUp = page.getByRole("region", { name: "다음에 할 일" });
+  const ready = page.getByRole("region", { name: "바로 작업 가능", exact: true });
   const tabs = page.getByRole("navigation", { name: "보기" });
-  await nextUp.getByRole("link", { name: /모두 보기/ }).click();
+  await ready.getByRole("link", { name: /모두 보기/ }).click();
   await expect(page).toHaveURL(/\/issues\?view=ready$/);
   await expect(tabs.getByRole("link", { name: "바로 작업 가능 6" })).toHaveAttribute(
     "aria-current",

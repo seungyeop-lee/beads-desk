@@ -340,9 +340,7 @@ export const enMessages: Messages = {
   focus: {
     title: "Now",
     inProgress: "In progress",
-    nextUp: "Up next",
     summary: "Counts",
-    zones: { work: "Work now", unblock: "Unblock" },
     list: {
       seeAll: (count) => `See all ${count}`,
       showFewer: "Show fewer",

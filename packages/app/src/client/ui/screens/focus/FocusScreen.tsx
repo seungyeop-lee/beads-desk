@@ -4,7 +4,7 @@ import { GroupHeading } from "@/client/ui/designSystem/GroupHeading";
 import { ScreenFrame } from "@/client/ui/designSystem/ScreenFrame";
 import type { Issue } from "@beads-desk/bd/issue";
 import Link from "next/link";
-import { type CSSProperties, type ReactNode } from "react";
+import type { CSSProperties } from "react";
 import { useFocusView } from "@/client/modules/focus/application/useFocusView";
 import {
   DUE_SOON_DAYS,
@@ -37,7 +37,7 @@ import { dueAtLabel } from "@/client/ui/issues/issueTime";
 import type { Locale } from "@/shared/contract/locale";
 import { BottlenecksSection } from "./BottlenecksSection";
 import { FocusStatsSection } from "./FocusStatsSection";
-import { FocusListSection, listBoxClasses, useListLimit } from "./FocusList";
+import { FocusEmpty, FocusListSection, listBoxClasses, useListLimit } from "./FocusList";
 import { useMinuteClock } from "@/client/ui/designSystem/useMinuteClock";
 
 /** 요약 칩으로 개수를 보이는 작업 상태입니다. 누르면 이슈 목록의 같은 보기 탭으로 이동합니다. */
@@ -47,8 +47,8 @@ const CHIP_STATES = ["in_progress", "ready", "blocked"] as const satisfies WorkS
 const DEADLINES_ID = "focus-deadlines";
 
 /**
- * 첫 화면입니다. 위에서부터 개수 요약 칩 한 줄, 흐름 통계, 지금 할 일(진행 중, 다음에 할 일, 마감)과 막힌 곳 풀기(병목, 막힘) 두 열,
- * 에픽 진행률을 보입니다. 목록의 길이 규칙은 FocusList.tsx가 정합니다.
+ * 첫 화면입니다. 위에서부터 개수 요약 칩 한 줄, 흐름 통계, 진행 중·바로 작업 가능과 막힘 두 열, 마감과 병목 두 열,
+ * 에픽 진행률을 보이고, 흐름 아래의 세 묶음 사이에 분리 선을 둡니다. 목록의 길이 규칙은 FocusList.tsx가 정합니다.
  * 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function FocusScreen() {
@@ -86,16 +86,17 @@ export function FocusScreen() {
 
           {stats && <FocusStatsSection stats={stats} />}
 
-          {/* 두 열은 같은 높이로 늘어납니다. 높이는 칸 높이를 고정한 왼쪽 열이 정하고, 오른쪽 열은 그 높이를 나눠 씁니다. */}
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-            <Zone title={text.zones.work}>
+          <ZoneDivider />
+
+          <div className={TWO_COLUMNS}>
+            <div className={COLUMN}>
               <FocusListSection
                 tone={workStateTone("in_progress")}
                 title={text.inProgress}
                 empty={text.inProgressEmpty}
                 items={view.inProgress}
                 seeAllView="in_progress"
-                box="fixed"
+                inRow
                 renderItem={(issue) => (
                   <FocusRow
                     key={issue.id}
@@ -108,11 +109,11 @@ export function FocusScreen() {
               />
               <FocusListSection
                 tone={workStateTone("ready")}
-                title={text.nextUp}
+                title={messages.workStates.labels.ready}
                 empty={text.readyEmpty}
                 items={view.ready}
                 seeAllView="ready"
-                box="fixed"
+                inRow
                 renderItem={(issue) => (
                   <FocusRow
                     key={issue.id}
@@ -122,18 +123,15 @@ export function FocusScreen() {
                   />
                 )}
               />
-              {deadlines && <DeadlinesSection deadlines={deadlines} waiters={view.waiters} />}
-            </Zone>
-
-            <Zone title={text.zones.unblock} fill>
-              {bottlenecks && <BottlenecksSection bottlenecks={bottlenecks} box="fill" />}
+            </div>
+            <div className={COLUMN}>
               <FocusListSection
                 tone={workStateTone("blocked")}
                 title={messages.workStates.labels.blocked}
                 empty={text.blockedEmpty}
                 items={view.blocked}
                 seeAllView="blocked"
-                box="fill"
+                inRow
                 renderItem={(issue) => (
                   <FocusRow
                     key={issue.id}
@@ -147,17 +145,29 @@ export function FocusScreen() {
                   />
                 )}
               />
-            </Zone>
+            </div>
+          </div>
+
+          <ZoneDivider />
+
+          <div className={TWO_COLUMNS}>
+            {deadlines && <DeadlinesSection deadlines={deadlines} waiters={view.waiters} />}
+            {bottlenecks && <BottlenecksSection bottlenecks={bottlenecks} />}
           </div>
 
           {/* 에픽은 따로 읽으므로, 다 읽기 전에 "에픽이 없다"는 안내가 잠깐 보이지 않게 합니다. */}
           {epics.data && (
-            <FocusListSection
-              title={text.epicProgress}
-              empty={text.epicsEmpty}
-              items={view.openEpics}
-              renderItem={(summary) => <EpicProgressRow key={summary.epic.id} summary={summary} />}
-            />
+            <>
+              <ZoneDivider />
+              <FocusListSection
+                title={text.epicProgress}
+                empty={text.epicsEmpty}
+                items={view.openEpics}
+                renderItem={(summary) => (
+                  <EpicProgressRow key={summary.epic.id} summary={summary} />
+                )}
+              />
+            </>
           )}
         </>
       )}
@@ -167,23 +177,18 @@ export function FocusScreen() {
   );
 }
 
-type ZoneProps = {
-  title: string;
-  /** 넓은 창에서 내용과 관계없이 같은 행의 다른 열 높이에 맞춥니다. 안의 구역은 listBox "fill"로 그 높이를 나눠 씁니다. */
-  fill?: boolean;
-  children: ReactNode;
-};
+/**
+ * 넓은 창에서 두 열을 같은 폭으로 나란히 두고, 좁은 창에서는 한 열로 쌓습니다.
+ * 행 높이는 더 긴 열이 정하고, 다른 열은 grid의 기본 늘이기로 같은 높이가 됩니다. 칸이 그 높이를 채우는 방식은 FocusList.tsx의 listBoxClasses에 있습니다.
+ */
+const TWO_COLUMNS = "grid grid-cols-1 gap-8 lg:grid-cols-2";
 
-/** 화면을 나누는 큰 구역입니다. */
-function Zone({ title, fill, children }: ZoneProps) {
-  return (
-    <section aria-label={title} className={`min-w-0 ${fill ? "lg:relative" : ""}`}>
-      <div className={`flex flex-col gap-6 ${fill ? "lg:absolute lg:inset-0" : ""}`}>
-        <p className="px-1 text-xs font-semibold tracking-wide text-emphasis-60">{title}</p>
-        {children}
-      </div>
-    </section>
-  );
+/** 두 열 행에서 구역 여럿을 위아래로 쌓는 열입니다. */
+const COLUMN = "flex min-w-0 flex-col gap-6";
+
+/** 위아래 구역이 다른 묶음임을 보이는 가로 선입니다. */
+function ZoneDivider() {
+  return <hr className="my-2 border-base-content/20" />;
 }
 
 type SummaryChipsProps = {
@@ -373,26 +378,31 @@ function DeadlinesSection({ deadlines, waiters }: DeadlinesSectionProps) {
     { title: text.dueSoon(DUE_SOON_DAYS), basis: soon, issues: deadlines.dueSoon, overdue: false },
   ].filter(({ issues }) => issues.length > 0);
   const total = groups.reduce((sum, { issues }) => sum + issues.length, 0);
-  const { box } = listBoxClasses("fixed");
+  const classes = listBoxClasses(true);
   return (
-    <section id={DEADLINES_ID} aria-label={text.title} className="flex scroll-mt-4 flex-col gap-2">
+    <section
+      id={DEADLINES_ID}
+      aria-label={text.title}
+      className={`flex scroll-mt-4 flex-col gap-2 ${classes.section}`}
+    >
       <GroupHeading title={text.title} count={total} />
-      {groups.length === 0 ? (
-        <p
-          className={`surface flex flex-col items-center justify-center gap-1 px-4 py-3 text-center text-xs text-emphasis-60 ${box}`}
-        >
-          {text.none(DUE_SOON_DAYS)}
-          <span className="text-emphasis-50">{text.noneBasis(today, DUE_SOON_DAYS, soon)}</span>
-        </p>
-      ) : (
-        <div
-          className={`surface focus-scroll-shadow flex flex-col divide-y divide-base-300 ${box}`}
-        >
-          {groups.map((group) => (
-            <DeadlineGroupList key={group.title} group={group} waiters={waiters} />
-          ))}
-        </div>
-      )}
+      <div className={classes.frame}>
+        {groups.length === 0 ? (
+          <FocusEmpty
+            message={text.none(DUE_SOON_DAYS)}
+            detail={text.noneBasis(today, DUE_SOON_DAYS, soon)}
+            className={classes.box}
+          />
+        ) : (
+          <div
+            className={`surface focus-scroll-shadow flex flex-col divide-y divide-base-300 ${classes.box}`}
+          >
+            {groups.map((group) => (
+              <DeadlineGroupList key={group.title} group={group} waiters={waiters} />
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

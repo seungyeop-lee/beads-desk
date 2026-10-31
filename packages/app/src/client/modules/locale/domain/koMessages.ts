@@ -351,9 +351,7 @@ export const koMessages = {
   focus: {
     title: "지금",
     inProgress: "진행 중",
-    nextUp: "다음에 할 일",
     summary: "개수 요약",
-    zones: { work: "지금 할 일", unblock: "막힌 곳 풀기" },
     list: {
       seeAll: (count: number) => `${count}개 모두 보기`,
       showFewer: "접기",

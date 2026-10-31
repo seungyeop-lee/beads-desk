@@ -10,7 +10,7 @@ export const FOCUS_LIST_LIMIT = 5;
 
 export type FocusView = {
   inProgress: Issue[];
-  /** 우선순위, 대기 수가 많은 순, 만든 시각 순입니다. 다음에 할 일은 앞에서 FOCUS_LIST_LIMIT개만 보입니다. */
+  /** 우선순위, 대기 수가 많은 순, 만든 시각 순입니다. 바로 작업 가능 목록은 앞에서 FOCUS_LIST_LIMIT개만 보입니다. */
   ready: Issue[];
   blocked: Issue[];
   /** 이슈 id마다 대기 수입니다. 0이면 담지 않습니다. */
