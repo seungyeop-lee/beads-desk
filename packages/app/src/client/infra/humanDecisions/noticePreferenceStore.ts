@@ -28,3 +28,23 @@ export function subscribeNoticePreference(listener: () => void): () => void {
   window.addEventListener("storage", onStorage);
   return () => window.removeEventListener("storage", onStorage);
 }
+
+const SOUND_PREFERENCE_KEY = "beads-desk.human-decision-notice-sound";
+
+/** 판단 기다림 알림과 함께 알림음을 낼지입니다. 고르지 않았으면 켬이라서, 끈 표시만 남깁니다. */
+export function loadNoticeSoundPreference(): boolean {
+  try {
+    return localStorage.getItem(SOUND_PREFERENCE_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+export function saveNoticeSoundPreference(on: boolean) {
+  try {
+    if (on) localStorage.removeItem(SOUND_PREFERENCE_KEY);
+    else localStorage.setItem(SOUND_PREFERENCE_KEY, "off");
+  } catch {
+    // 저장소를 쓸 수 없으면 끈 표시를 남기지 못해 알림음이 계속 납니다.
+  }
+}

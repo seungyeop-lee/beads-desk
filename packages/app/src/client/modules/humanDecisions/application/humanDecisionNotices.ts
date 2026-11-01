@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { readHumanDecisionItems } from "@/client/infra/humanDecisions/humanDecisionItemsApiClient";
 import {
   loadNoticePreference,
+  loadNoticeSoundPreference,
   saveNoticePreference,
   subscribeNoticePreference,
 } from "@/client/infra/humanDecisions/noticePreferenceStore";
@@ -12,6 +13,7 @@ import {
   requestNotificationAccess,
   showBrowserNotification,
 } from "@/client/infra/notifications/browserNotifications";
+import { playNotificationSound } from "@/client/infra/notifications/notificationSound";
 import { subscribeWatchedWorkspaceChanges } from "@/client/infra/workspaceEvents/workspaceEventSource";
 import {
   attendedWorkspaces,
@@ -103,7 +105,7 @@ async function read(workspace: string) {
       // 읽는 동안 알림을 껐거나 연결이 그 workspace를 감시하지 않게 됐으면, 그 결과를 기준으로 남기지 않습니다.
       if (result.ok && humanDecisionNoticesEnabled() && watched.includes(workspace)) {
         const notice = tracker.observe(workspace, result.data, attended);
-        if (notice) show(notice);
+        if (notice) void show(notice);
       }
       return true;
     });
@@ -112,7 +114,12 @@ async function read(workspace: string) {
   }
 }
 
-function show(notice: HumanDecisionNotice) {
+/**
+ * 알림음을 켰으면 알림음을 먼저 재생하고 알림을 띄웁니다. 앱이 소리를 냈으면 운영체제 알림음을 꺼서 두 소리가 겹치지 않게 하고,
+ * 브라우저가 소리를 막았으면 운영체제 설정대로 알림음이 나게 둡니다.
+ */
+async function show(notice: HumanDecisionNotice) {
+  const chimed = loadNoticeSoundPreference() && (await playNotificationSound());
   const messages = documentMessages();
   showBrowserNotification({
     title: messages.humanDecisions.noticeTitle(notice.workspace),
@@ -121,5 +128,6 @@ function show(notice: HumanDecisionNotice) {
       notice.moreCount,
     ),
     url: workspaceHref(notice.workspace, "/human"),
+    silent: chimed,
   });
 }

@@ -20,7 +20,12 @@ class FakeNotification extends EventTarget {
   }
 }
 
-const notice = (body: string) => ({ title: "acme: 판단 기다림", body, url: "/w/acme/human" });
+const notice = (body: string, silent = false) => ({
+  title: "acme: 판단 기다림",
+  body,
+  url: "/w/acme/human",
+  silent,
+});
 
 beforeEach(() => {
   FakeNotification.created = [];
@@ -36,9 +41,15 @@ test("알림을 연달아 띄우면 앞 알림을 대체하지 않도록 tag 없
   showBrowserNotification(notice("어느 방식으로 할까요"));
 
   expect(FakeNotification.created.map(({ options }) => options)).toEqual([
-    { body: "배포 승인" },
-    { body: "어느 방식으로 할까요" },
+    { body: "배포 승인", silent: false },
+    { body: "어느 방식으로 할까요", silent: false },
   ]);
+});
+
+test("silent를 켜면 운영체제 알림음을 내지 않는 알림으로 만든다", () => {
+  showBrowserNotification(notice("배포 승인", true));
+
+  expect(FakeNotification.created[0]!.options).toEqual({ body: "배포 승인", silent: true });
 });
 
 test("알림을 클릭하면 보던 탭으로 focus를 옮기지 않고 url을 새 탭으로 열고 알림을 닫는다", () => {

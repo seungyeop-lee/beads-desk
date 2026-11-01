@@ -41,6 +41,9 @@ export const enMessages: Messages = {
     humanDecisionNotices: "Notify me about new Needs human items",
     humanDecisionNoticesHint:
       "Shows a system notification when a workspace open in a beads-desk tab gets a new Needs human item, even while you work in another window.",
+    humanDecisionNoticeSound: "Play a sound",
+    humanDecisionNoticeSoundHint:
+      "Plays a short chime with each Needs human notification. The browser may block the sound until you click a newly opened or reloaded beads-desk tab.",
     notificationsDenied:
       "The browser blocks notifications for this site. Allow them in the site settings next to the address bar to turn this on.",
     notificationsUnsupported: "This browser does not support notifications.",

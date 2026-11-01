@@ -54,6 +54,8 @@ export type Messages = {
     notifications: string;
     humanDecisionNotices: string;
     humanDecisionNoticesHint: string;
+    humanDecisionNoticeSound: string;
+    humanDecisionNoticeSoundHint: string;
     notificationsDenied: string;
     notificationsUnsupported: string;
   };

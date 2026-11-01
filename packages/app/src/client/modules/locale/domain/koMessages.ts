@@ -42,6 +42,9 @@ export const koMessages: Messages = {
     humanDecisionNotices: "판단 기다림이 생기면 알리기",
     humanDecisionNoticesHint:
       "beads-desk 탭에서 보고 있는 workspace에 판단 기다림이 새로 생기면, 다른 창에서 일하는 중에도 운영체제 알림으로 알립니다.",
+    humanDecisionNoticeSound: "알림음 내기",
+    humanDecisionNoticeSoundHint:
+      "판단 기다림 알림을 띄울 때 짧은 알림음을 함께 냅니다. 새로 열거나 새로고침한 beads-desk 탭을 한 번도 누르지 않았으면 브라우저가 소리를 막을 수 있습니다.",
     notificationsDenied:
       "브라우저가 이 사이트의 알림을 차단했습니다. 주소창 옆의 사이트 설정에서 알림을 허용하면 켤 수 있습니다.",
     notificationsUnsupported: "이 브라우저는 알림을 지원하지 않습니다.",

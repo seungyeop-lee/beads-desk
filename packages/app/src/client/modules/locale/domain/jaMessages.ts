@@ -44,6 +44,9 @@ export const jaMessages: Messages = {
     humanDecisionNotices: "判断待ちが発生したら通知する",
     humanDecisionNoticesHint:
       "beads-desk のタブで表示している workspace に新しい判断待ちが発生すると、別のウィンドウで作業中でも OS の通知でお知らせします。",
+    humanDecisionNoticeSound: "通知音を鳴らす",
+    humanDecisionNoticeSoundHint:
+      "判断待ちの通知を表示するときに短い通知音を鳴らします。新しく開いたり再読み込みしたりした beads-desk のタブを一度もクリックしていないと、ブラウザが音をブロックすることがあります。",
     notificationsDenied:
       "ブラウザがこのサイトの通知をブロックしています。アドレスバーの横にあるサイト設定で通知を許可すると、オンにできます。",
     notificationsUnsupported: "このブラウザは通知に対応していません。",

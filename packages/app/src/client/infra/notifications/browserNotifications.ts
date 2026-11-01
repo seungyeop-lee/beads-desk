@@ -18,12 +18,18 @@ export async function requestNotificationAccess(): Promise<NotificationAccess> {
  * 운영체제 알림 영역에 알림을 띄웁니다. 앞서 띄운 알림을 대체하지 않고 매번 새 알림으로 띄우도록 tag를 붙이지 않습니다.
  * macOS의 Chrome은 같은 tag의 알림을 대체할 때 renotify를 켜도 배너를 띄우지 않아, 사용자가 두 번째 알림부터 알아채지 못합니다.
  * 클릭하면 알림을 만든 탭으로 focus를 옮기는 기본 동작을 막고 url을 새 탭으로 열어, 보던 탭의 화면을 그대로 둡니다.
+ * silent를 켜면 운영체제 알림음을 내지 않습니다.
  */
-export function showBrowserNotification(notice: { title: string; body: string; url: string }) {
+export function showBrowserNotification(notice: {
+  title: string;
+  body: string;
+  url: string;
+  silent: boolean;
+}) {
   if (notificationAccess() !== "granted") return;
   let notification: Notification;
   try {
-    notification = new Notification(notice.title, { body: notice.body });
+    notification = new Notification(notice.title, { body: notice.body, silent: notice.silent });
   } catch {
     // Service Worker로만 알림을 띄울 수 있는 브라우저는 생성자가 실패합니다. 알림만 띄우지 않습니다.
     return;

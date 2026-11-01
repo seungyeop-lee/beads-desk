@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { readHumanDecisionItems } from "@/client/infra/humanDecisions/humanDecisionItemsApiClient";
 import {
   loadNoticePreference,
+  loadNoticeSoundPreference,
   saveNoticePreference,
   subscribeNoticePreference,
 } from "@/client/infra/humanDecisions/noticePreferenceStore";
@@ -11,6 +12,7 @@ import {
   requestNotificationAccess,
   showBrowserNotification,
 } from "@/client/infra/notifications/browserNotifications";
+import { playNotificationSound } from "@/client/infra/notifications/notificationSound";
 import {
   subscribeWatchedWorkspaceChanges,
   type WatchedWorkspaceChange,
@@ -28,6 +30,7 @@ vi.mock("@/client/infra/humanDecisions/humanDecisionItemsApiClient", () => ({
 }));
 vi.mock("@/client/infra/humanDecisions/noticePreferenceStore", () => ({
   loadNoticePreference: vi.fn<typeof loadNoticePreference>(),
+  loadNoticeSoundPreference: vi.fn<typeof loadNoticeSoundPreference>(),
   saveNoticePreference: vi.fn<typeof saveNoticePreference>(),
   subscribeNoticePreference: vi.fn<typeof subscribeNoticePreference>(() => () => {}),
 }));
@@ -35,6 +38,9 @@ vi.mock("@/client/infra/notifications/browserNotifications", () => ({
   notificationAccess: vi.fn<typeof notificationAccess>(),
   requestNotificationAccess: vi.fn<typeof requestNotificationAccess>(),
   showBrowserNotification: vi.fn<typeof showBrowserNotification>(),
+}));
+vi.mock("@/client/infra/notifications/notificationSound", () => ({
+  playNotificationSound: vi.fn<typeof playNotificationSound>(),
 }));
 vi.mock("@/client/infra/workspaceEvents/workspaceEventSource", () => ({
   subscribeWatchedWorkspaceChanges: vi.fn<typeof subscribeWatchedWorkspaceChanges>(),
@@ -71,6 +77,8 @@ beforeEach(() => {
   decisions.clear();
   vi.mocked(loadNoticePreference).mockReturnValue(false);
   vi.mocked(notificationAccess).mockReturnValue("default");
+  vi.mocked(loadNoticeSoundPreference).mockReturnValue(true);
+  vi.mocked(playNotificationSound).mockResolvedValue(true);
   vi.mocked(attendedWorkspaces).mockResolvedValue([]);
   vi.mocked(subscribeWatchedWorkspaceChanges).mockImplementation((listener) => {
     announce = listener;
@@ -97,6 +105,7 @@ test("알림을 켜지 않았으면 변경 알림을 받아도 판단 기다림�
   expect(readHumanDecisionItems).not.toHaveBeenCalled();
   expect(requestNotificationAccess).not.toHaveBeenCalled();
   expect(showBrowserNotification).not.toHaveBeenCalled();
+  expect(playNotificationSound).not.toHaveBeenCalled();
 });
 
 test("켠 표시가 있어도 권한이 허용 상태가 아니면 판단 기다림을 읽지 않는다", async () => {
@@ -129,6 +138,7 @@ test("바뀐 workspace를 지정해 읽고, 새로 생긴 판단 기다림을 �
     title: "b: 판단 기다림",
     body: "어느 방식으로 할까요 외 1건",
     url: "/w/b/human",
+    silent: true,
   });
 });
 
@@ -147,6 +157,46 @@ test("사용자가 어느 탭에서든 보고 있는 workspace는 알리지 않�
 
   expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({ url: "/w/b/human" }),
+  );
+  expect(playNotificationSound).toHaveBeenCalledOnce();
+});
+
+/** 알림을 켜고 기준을 둔 뒤 a에 판단 기다림을 하나 만들어, 알림이 한 번 뜨게 합니다. */
+async function notifyOnce() {
+  enable();
+  await startWatching();
+  announce({ watched: ["a"], changed: ["a"] });
+  await flush();
+  decisions.set("a", [{ id: "q-1", title: "어느 방식으로 할까요" }]);
+  announce({ watched: ["a"], changed: ["a"] });
+  await flush();
+}
+
+test("알림음을 켜 두면 알림과 함께 알림음을 재생하고, 운영체제 알림음은 꺼서 두 소리가 겹치지 않게 한다", async () => {
+  await notifyOnce();
+
+  expect(playNotificationSound).toHaveBeenCalledOnce();
+  expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ silent: true }),
+  );
+});
+
+test("알림음을 끄면 알림은 그대로 띄우고 알림음은 재생하지 않는다", async () => {
+  vi.mocked(loadNoticeSoundPreference).mockReturnValue(false);
+  await notifyOnce();
+
+  expect(playNotificationSound).not.toHaveBeenCalled();
+  expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ silent: false }),
+  );
+});
+
+test("브라우저가 알림음을 막아도 알림은 띄우고, 운영체제 알림음은 운영체제 설정대로 둔다", async () => {
+  vi.mocked(playNotificationSound).mockResolvedValue(false);
+  await notifyOnce();
+
+  expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ silent: false }),
   );
 });
 
