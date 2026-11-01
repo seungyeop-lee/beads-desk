@@ -4,6 +4,17 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-11-01
+
+### Added
+
+- **Browser notifications** in **Settings**: **Play a sound** plays a short chime with each **Needs human** notification, so you notice it even where the system notification makes no sound. It is on by default and can be changed only while **Notify me about new Needs human items** is on. When the chime plays, the system notification is shown silently so the two sounds do not overlap. Browsers block sound in a tab you have not clicked since opening or reloading it, so if the tab showing the notification cannot play sound, another beads-desk tab you have clicked plays the chime.
+- When a workspace has **Needs human** items, its browser tab title starts with their count, such as `(2) <workspace name> · beads-desk`, so you can see it from other tabs even when long titles are cut off.
+
+### Fixed
+
+- Each **Needs human** browser notification is shown as a new notification instead of replacing the previous one. Before, Chrome on macOS showed no banner from the second notification on.
+
 ## [0.11.0] - 2026-11-01
 
 ### Added
