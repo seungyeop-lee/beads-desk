@@ -128,7 +128,6 @@ test("바뀐 workspace를 지정해 읽고, 새로 생긴 판단 기다림을 �
   expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith({
     title: "b: 판단 기다림",
     body: "어느 방식으로 할까요 외 1건",
-    tag: "beads-desk.human-decisions:b",
     url: "/w/b/human",
   });
 });
@@ -147,7 +146,7 @@ test("사용자가 어느 탭에서든 보고 있는 workspace는 알리지 않�
   await flush();
 
   expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
-    expect.objectContaining({ tag: "beads-desk.human-decisions:b" }),
+    expect.objectContaining({ url: "/w/b/human" }),
   );
 });
 

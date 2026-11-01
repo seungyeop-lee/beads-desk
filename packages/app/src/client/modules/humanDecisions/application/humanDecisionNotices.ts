@@ -120,7 +120,6 @@ function show(notice: HumanDecisionNotice) {
       notice.firstTitle || messages.common.untitled,
       notice.moreCount,
     ),
-    tag: `beads-desk.human-decisions:${notice.workspace}`,
     url: workspaceHref(notice.workspace, "/human"),
   });
 }
