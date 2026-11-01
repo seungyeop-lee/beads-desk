@@ -109,9 +109,9 @@ async function openTab(workspace = "a"): Promise<WorkspaceEvents> {
   const events = await import("./workspaceEventSource");
   return {
     ...events,
-    subscribeWorkspaceInvalidation: (listener) => {
+    subscribeWorkspaceInvalidation: (listener, options) => {
       vi.stubGlobal("location", { pathname: `/w/${workspace}/issues` });
-      return events.subscribeWorkspaceInvalidation(listener);
+      return events.subscribeWorkspaceInvalidation(listener, options);
     },
   };
 }
@@ -285,6 +285,27 @@ test("가려진 탭은 알림을 미뤘다가 다시 보일 때 한 번만 반�
   unsubscribe();
 
   expect(listener).toHaveBeenCalledOnce();
+});
+
+test("whileHidden으로 구독하면 가려진 탭에서도 알림마다 바로 반영하고, 다시 보일 때는 그 구독만 다시 알리지 않는다", async () => {
+  const events = await openTab();
+  const whileHidden = vi.fn<() => void>();
+  const deferred = vi.fn<() => void>();
+  const stopWhileHidden = events.subscribeWorkspaceInvalidation(whileHidden, { whileHidden: true });
+  const stopDeferred = events.subscribeWorkspaceInvalidation(deferred);
+  await flush();
+
+  fakeDocument.setVisibility("hidden");
+  latestSource().emit("invalidate");
+  latestSource().emit("invalidate");
+  const whileHiddenCalls = whileHidden.mock.calls.length;
+  const deferredCalls = deferred.mock.calls.length;
+  fakeDocument.setVisibility("visible");
+  stopWhileHidden();
+  stopDeferred();
+
+  expect([whileHiddenCalls, deferredCalls]).toEqual([2, 0]);
+  expect([whileHidden.mock.calls.length, deferred.mock.calls.length]).toEqual([2, 1]);
 });
 
 test("연결을 주도하는 탭은 awaitFirstInvalidation을 첫 알림이 올 때까지 기다린다", async () => {

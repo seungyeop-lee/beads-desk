@@ -1,5 +1,6 @@
 import {
   awaitFirstInvalidation,
+  type InvalidationOptions,
   subscribeWorkspaceInvalidation,
 } from "@/client/infra/workspaceEvents/workspaceEventSource";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
@@ -12,6 +13,7 @@ import { createReadCoalescer } from "./readCoalescer";
 export function watchWorkspaceRead<T>(
   read: () => Promise<ApiResponse<T>>,
   onResult: (result: ApiResponse<T>) => void,
+  options?: InvalidationOptions,
 ): () => void {
   const coalescer = createReadCoalescer();
   let stopped = false;
@@ -29,7 +31,7 @@ export function watchWorkspaceRead<T>(
 
   const unsubscribe = subscribeWorkspaceInvalidation(() => {
     if (!waitingFirstNotice) void coalescer.run(readOnce);
-  });
+  }, options);
 
   void (async () => {
     await awaitFirstInvalidation();

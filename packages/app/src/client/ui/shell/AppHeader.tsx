@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Fragment, useState } from "react";
 import { useHumanDecisionNotices } from "@/client/modules/humanDecisions/application/humanDecisionNotices";
 import { useHumanDecisionCount } from "@/client/modules/humanDecisions/application/useHumanDecisionCount";
+import { useHumanDecisionTitle } from "@/client/modules/humanDecisions/application/useHumanDecisionTitle";
 import { useIssueCreation } from "@/client/modules/issues/application/useIssueCreation";
 import {
   useScreenPathname,
@@ -31,6 +32,7 @@ export function AppHeader() {
   useHumanDecisionNotices(useWorkspaceSlug());
   // 탭의 숫자는 판단할 일이 있다는 신호이므로, 0이거나 아직 읽지 못했거나 다시 읽다 실패하면 보이지 않습니다.
   const humanDecisionCount = humanDecisions.error ? 0 : (humanDecisions.data ?? 0);
+  useHumanDecisionTitle(humanDecisionCount);
   const newIssue = useIssueCreation((issueId) =>
     router.push(issueHref(issueId), { scroll: false }),
   );

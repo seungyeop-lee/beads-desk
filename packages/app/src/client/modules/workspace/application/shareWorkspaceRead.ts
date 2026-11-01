@@ -1,3 +1,4 @@
+import type { InvalidationOptions } from "@/client/infra/workspaceEvents/workspaceEventSource";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 import type { WorkspaceReadState } from "./useWorkspaceRead";
 import { watchWorkspaceRead } from "./watchWorkspaceRead";
@@ -16,7 +17,10 @@ const NOT_LOADED = { data: null, error: null, loading: true } as const;
  * 첫 구독자가 생기면 읽기 시작하고, 마지막 구독자가 떠나면 멈추고 결과를 버립니다.
  * 다시 읽다 실패하면 마지막으로 받은 데이터를 유지합니다.
  */
-export function shareWorkspaceRead<T>(read: () => Promise<ApiResponse<T>>): SharedWorkspaceRead<T> {
+export function shareWorkspaceRead<T>(
+  read: () => Promise<ApiResponse<T>>,
+  options?: InvalidationOptions,
+): SharedWorkspaceRead<T> {
   const listeners = new Set<() => void>();
   let state: WorkspaceReadState<T> = NOT_LOADED;
   let stop: (() => void) | null = null;
@@ -31,7 +35,7 @@ export function shareWorkspaceRead<T>(read: () => Promise<ApiResponse<T>>): Shar
   return {
     subscribe: (listener) => {
       listeners.add(listener);
-      stop ??= watchWorkspaceRead(read, publish);
+      stop ??= watchWorkspaceRead(read, publish, options);
       return () => {
         listeners.delete(listener);
         if (listeners.size > 0 || !stop) return;

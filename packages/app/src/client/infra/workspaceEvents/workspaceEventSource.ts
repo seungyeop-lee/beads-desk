@@ -14,6 +14,14 @@ export {
 
 type Listener = () => void;
 
+export type InvalidationOptions = {
+  /**
+   * 가려진 탭에서도 알림을 미루지 않고 바로 호출합니다. 탭 제목처럼 탭이 가려진 동안에도 사용자에게 보이는 데이터를 읽을 때 씁니다.
+   * 이 탭의 workspace가 바뀔 때마다 bd를 실행하게 되므로, 화면 안에서만 보이는 데이터에는 쓰지 않습니다.
+   */
+  whileHidden?: boolean;
+};
+
 /** 탭 사이에 주고받는 메시지입니다. views-changed는 어느 탭이 새 workspace를 보기 시작했다는 뜻입니다. */
 type ChannelMessage = { type: "invalidate"; notice: InvalidateNotice } | { type: "views-changed" };
 
@@ -22,7 +30,8 @@ type ChannelMessage = { type: "invalidate"; notice: InvalidateNotice } | { type:
 const CONNECTION_LOCK = "beads-desk.workspace-events";
 const CHANNEL_NAME = "beads-desk.workspace-events";
 
-const listeners = new Set<Listener>();
+/** 구독한 listener와, 그 listener가 가려진 탭에서도 바로 알림을 받는지입니다. */
+const listeners = new Map<Listener, boolean>();
 let channel: BroadcastChannel | null = null;
 let stopLeading: AbortController | null = null;
 /** 이 탭이 연결을 주도하는 동안, 감시할 workspace가 바뀌었는지 보고 바뀌었으면 다시 연결합니다. */
@@ -39,9 +48,13 @@ let initialNotice: PromiseWithResolvers<void> = Promise.withResolvers();
 /**
  * 이 탭이 보는 workspace의 데이터를 다시 조회해야 할 때 listener를 호출합니다. 다른 workspace의 변경은 알리지 않습니다.
  * 가려진 탭은 알림을 모아 두었다가 다시 보일 때 한 번 호출해, 보이지 않는 화면 때문에 bd 실행이 늘지 않게 합니다.
+ * `whileHidden`으로 구독한 listener는 가려진 탭에서도 바로 호출하고, 다시 보일 때는 호출하지 않습니다.
  */
-export function subscribeWorkspaceInvalidation(listener: Listener): () => void {
-  listeners.add(listener);
+export function subscribeWorkspaceInvalidation(
+  listener: Listener,
+  options: InvalidationOptions = {},
+): () => void {
+  listeners.set(listener, options.whileHidden ?? false);
   if (!channel) start();
   // 같은 탭에서 다른 workspace 주소로 이동하면 화면이 구독을 해제했다가 바로 다시 구독하므로, 구독할 때마다 주소를 다시 봅니다.
   viewWorkspace(documentWorkspace(), announceViewedWorkspace);
@@ -208,17 +221,23 @@ function concernsThisTab(notice: InvalidateNotice): boolean {
 
 function receive(notice: InvalidateNotice) {
   if (!concernsThisTab(notice)) return;
-  if (document.visibilityState === "visible") notify();
-  else stale = true;
+  if (document.visibilityState === "visible") {
+    notify(() => true);
+    return;
+  }
+  stale = true;
+  notify((whileHidden) => whileHidden);
 }
 
 function onVisibilityChange() {
   if (document.visibilityState === "visible" && stale) {
     stale = false;
-    notify();
+    notify((whileHidden) => !whileHidden);
   }
 }
 
-function notify() {
-  for (const listener of listeners) listener();
+function notify(includes: (whileHidden: boolean) => boolean) {
+  for (const [listener, whileHidden] of listeners) {
+    if (includes(whileHidden)) listener();
+  }
 }
