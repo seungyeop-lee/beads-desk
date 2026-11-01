@@ -12,7 +12,6 @@ import {
   requestNotificationAccess,
   showBrowserNotification,
 } from "@/client/infra/notifications/browserNotifications";
-import { playNotificationSound } from "@/client/infra/notifications/notificationSound";
 import {
   subscribeWatchedWorkspaceChanges,
   type WatchedWorkspaceChange,
@@ -24,6 +23,7 @@ import {
 import { MESSAGES } from "@/client/modules/locale/domain/messages";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 import type { HumanDecisionItem } from "@/shared/contract/humanDecisions";
+import { playNoticeSound } from "./noticeSound";
 
 vi.mock("@/client/infra/humanDecisions/humanDecisionItemsApiClient", () => ({
   readHumanDecisionItems: vi.fn<typeof readHumanDecisionItems>(),
@@ -39,8 +39,8 @@ vi.mock("@/client/infra/notifications/browserNotifications", () => ({
   requestNotificationAccess: vi.fn<typeof requestNotificationAccess>(),
   showBrowserNotification: vi.fn<typeof showBrowserNotification>(),
 }));
-vi.mock("@/client/infra/notifications/notificationSound", () => ({
-  playNotificationSound: vi.fn<typeof playNotificationSound>(),
+vi.mock("./noticeSound", () => ({
+  playNoticeSound: vi.fn<typeof playNoticeSound>(),
 }));
 vi.mock("@/client/infra/workspaceEvents/workspaceEventSource", () => ({
   subscribeWatchedWorkspaceChanges: vi.fn<typeof subscribeWatchedWorkspaceChanges>(),
@@ -78,7 +78,7 @@ beforeEach(() => {
   vi.mocked(loadNoticePreference).mockReturnValue(false);
   vi.mocked(notificationAccess).mockReturnValue("default");
   vi.mocked(loadNoticeSoundPreference).mockReturnValue(true);
-  vi.mocked(playNotificationSound).mockResolvedValue(true);
+  vi.mocked(playNoticeSound).mockResolvedValue(true);
   vi.mocked(attendedWorkspaces).mockResolvedValue([]);
   vi.mocked(subscribeWatchedWorkspaceChanges).mockImplementation((listener) => {
     announce = listener;
@@ -105,7 +105,7 @@ test("알림을 켜지 않았으면 변경 알림을 받아도 판단 기다림�
   expect(readHumanDecisionItems).not.toHaveBeenCalled();
   expect(requestNotificationAccess).not.toHaveBeenCalled();
   expect(showBrowserNotification).not.toHaveBeenCalled();
-  expect(playNotificationSound).not.toHaveBeenCalled();
+  expect(playNoticeSound).not.toHaveBeenCalled();
 });
 
 test("켠 표시가 있어도 권한이 허용 상태가 아니면 판단 기다림을 읽지 않는다", async () => {
@@ -158,7 +158,7 @@ test("사용자가 어느 탭에서든 보고 있는 workspace는 알리지 않�
   expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({ url: "/w/b/human" }),
   );
-  expect(playNotificationSound).toHaveBeenCalledOnce();
+  expect(playNoticeSound).toHaveBeenCalledOnce();
 });
 
 /** 알림을 켜고 기준을 둔 뒤 a에 판단 기다림을 하나 만들어, 알림이 한 번 뜨게 합니다. */
@@ -175,7 +175,7 @@ async function notifyOnce() {
 test("알림음을 켜 두면 알림과 함께 알림음을 재생하고, 운영체제 알림음은 꺼서 두 소리가 겹치지 않게 한다", async () => {
   await notifyOnce();
 
-  expect(playNotificationSound).toHaveBeenCalledOnce();
+  expect(playNoticeSound).toHaveBeenCalledOnce();
   expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({ silent: true }),
   );
@@ -185,14 +185,14 @@ test("알림음을 끄면 알림은 그대로 띄우고 알림음은 재생하�
   vi.mocked(loadNoticeSoundPreference).mockReturnValue(false);
   await notifyOnce();
 
-  expect(playNotificationSound).not.toHaveBeenCalled();
+  expect(playNoticeSound).not.toHaveBeenCalled();
   expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({ silent: false }),
   );
 });
 
-test("브라우저가 알림음을 막아도 알림은 띄우고, 운영체제 알림음은 운영체제 설정대로 둔다", async () => {
-  vi.mocked(playNotificationSound).mockResolvedValue(false);
+test("어느 탭도 알림음을 내지 못해도 알림은 띄우고, 운영체제 알림음은 운영체제 설정대로 둔다", async () => {
+  vi.mocked(playNoticeSound).mockResolvedValue(false);
   await notifyOnce();
 
   expect(showBrowserNotification).toHaveBeenCalledExactlyOnceWith(

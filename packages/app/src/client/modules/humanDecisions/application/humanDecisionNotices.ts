@@ -13,7 +13,7 @@ import {
   requestNotificationAccess,
   showBrowserNotification,
 } from "@/client/infra/notifications/browserNotifications";
-import { playNotificationSound } from "@/client/infra/notifications/notificationSound";
+import { offerNotificationSound } from "@/client/infra/notifications/notificationSoundRelay";
 import { subscribeWatchedWorkspaceChanges } from "@/client/infra/workspaceEvents/workspaceEventSource";
 import {
   attendedWorkspaces,
@@ -28,6 +28,7 @@ import {
   type ReadCoalescer,
 } from "@/client/modules/workspace/application/readCoalescer";
 import { workspaceHref } from "@/shared/contract/workspaces";
+import { playNoticeSound } from "./noticeSound";
 
 const tracker = createHumanDecisionTracker();
 /** 이 탭이 SSE 연결을 연 동안 그 연결이 감시하는 workspace입니다. 다른 탭이 연결을 열었으면 비어 있습니다. */
@@ -40,9 +41,11 @@ const readings = new Map<string, ReadCoalescer>();
  * 그 연결이 감시하는 workspace, 곧 열린 탭들이 보는 workspace를 모두 알립니다.
  * 상단 탭의 개수는 가려진 탭에서 갱신되지 않으므로 쓰지 않고, 변경 알림을 받을 때마다 그 workspace를 지정해 따로 읽습니다.
  * 연결을 연 탭이 다른 탭에서 보고 있는 workspace도 알리지 않도록, 탭마다 사용자가 이 탭의 workspace를 보고 있는지 표시합니다.
+ * 연결을 연 탭이 소리를 낼 수 없을 때 대신 알림음을 내도록, 탭마다 알림음 재생 부탁을 받습니다.
  */
 export function useHumanDecisionNotices(workspace: string) {
   useEffect(watchHumanDecisionNotices, []);
+  useEffect(offerNotificationSound, []);
   useEffect(() => holdWorkspaceAttention(workspace), [workspace]);
 }
 
@@ -115,11 +118,11 @@ async function read(workspace: string) {
 }
 
 /**
- * 알림음을 켰으면 알림음을 먼저 재생하고 알림을 띄웁니다. 앱이 소리를 냈으면 운영체제 알림음을 꺼서 두 소리가 겹치지 않게 하고,
- * 브라우저가 소리를 막았으면 운영체제 설정대로 알림음이 나게 둡니다.
+ * 알림음을 켰으면 알림음을 먼저 재생하고 알림을 띄웁니다. 어느 탭에서든 앱이 소리를 냈으면 운영체제 알림음을 꺼서 두 소리가
+ * 겹치지 않게 하고, 어느 탭도 소리를 내지 못했으면 운영체제 설정대로 알림음이 나게 둡니다.
  */
 async function show(notice: HumanDecisionNotice) {
-  const chimed = loadNoticeSoundPreference() && (await playNotificationSound());
+  const chimed = loadNoticeSoundPreference() && (await playNoticeSound());
   const messages = documentMessages();
   showBrowserNotification({
     title: messages.humanDecisions.noticeTitle(notice.workspace),
