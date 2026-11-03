@@ -126,9 +126,26 @@ test("인코딩을 겹친 경로로 허용 범위를 벗어날 수 없다", asyn
   expect(twice.status).toBe(400);
 });
 
-test("없는 파일과 디렉터리는 제공하지 않는다", async () => {
+test("허용 루트 안의 디렉터리는 끝의 / 유무와 관계없이 그 workspace의 폴더 화면으로 보낸다", async () => {
+  const folder = join(worktree, "보고서 폴더");
+  await mkdir(folder, { recursive: true });
+  for (const path of [folder, `${folder}/`, `${folder}/.`]) {
+    const response = await get(path);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe(
+      `/w/repo/files?${new URLSearchParams({ base: folder, path: folder })}`,
+    );
+  }
+});
+
+test("없는 파일과 디렉터리는 404로, 허용 밖 디렉터리는 403으로 답한다", async () => {
   expect((await get(join(root, "missing.md"))).status).toBe(404);
-  expect((await get(root)).status).toBe(404);
+  expect((await get(join(root, "missing"))).status).toBe(404);
+  for (const path of [join(parent, "repo-other"), join(root, "escape"), `${root}/../repo-other/`]) {
+    const response = await get(path);
+    expect(response.status).toBe(403);
+    expect(await response.text()).toBe("허용 범위 밖의 파일입니다.");
+  }
 });
 
 test.each(["", "relative.md", "bad\0path"])("잘못된 경로를 거부한다: %s", async (path) => {
@@ -254,10 +271,12 @@ test.each(["prefix", "traversal", "file-symlink", "directory-symlink"])(
   },
 );
 
-test("Range 요청도 없는 영상과 디렉터리는 제공하지 않는다", async () => {
+test("Range 요청도 없는 영상은 제공하지 않고, 영상 확장자의 디렉터리는 폴더 화면으로 보낸다", async () => {
   await mkdir(join(root, "폴더.webm"), { recursive: true });
-  for (const path of [join(root, "missing.webm"), join(root, "폴더.webm")])
-    expect((await get(path, { Range: "bytes=0-3" })).status).toBe(404);
+  expect((await get(join(root, "missing.webm"), { Range: "bytes=0-3" })).status).toBe(404);
+  const folder = await get(join(root, "폴더.webm"), { Range: "bytes=0-3" });
+  expect(folder.status).toBe(302);
+  expect(folder.headers.get("Location")).toContain("/w/repo/files?");
 });
 
 test("다른 사이트의 파일 요청을 거부한다", async () => {

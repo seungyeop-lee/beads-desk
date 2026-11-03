@@ -503,6 +503,18 @@ export type Messages = {
     supersededBy: string;
     supersedes: string;
   };
+  localFolder: {
+    trail: string;
+    entries: string;
+    name: string;
+    size: string;
+    modifiedAt: string;
+    blocked: string;
+    blockedHelp: string;
+    empty: string;
+    loadFailed: (error: string) => string;
+    showMore: string;
+  };
   hygiene: {
     title: string;
     description: string;

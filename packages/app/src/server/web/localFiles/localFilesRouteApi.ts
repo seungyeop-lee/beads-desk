@@ -1,12 +1,15 @@
-import { isAbsolute, extname } from "node:path";
+import { isAbsolute, extname, resolve } from "node:path";
 import {
   type ByteRange,
   readLocalFile,
   readLocalFileRange,
+  type Unopened,
 } from "@/server/infra/localFiles/readLocalFile";
 import { isCrossSiteRequest } from "@/server/web/http/crossSiteRequest";
 import { requestWorkspace } from "@/server/web/http/requestWorkspace";
 import { serverMessages } from "@/server/web/locale/serverMessages";
+import { localFolderScreenPath } from "@/shared/contract/localFiles";
+import { workspaceHref } from "@/shared/contract/workspaces";
 
 const IMAGE_TYPES: Record<string, string> = {
   ".png": "image/png",
@@ -36,6 +39,9 @@ const FILE_HEADERS: Record<string, string> = {
 
 type ServerMessages = Awaited<ReturnType<typeof serverMessages>>;
 
+/** 열지 않은 파일 경로에 보낼 응답을 만듭니다. */
+type UnopenedResponse = (status: Unopened["status"]) => Response;
+
 export async function handleLocalFileRequest(request: Request): Promise<Response> {
   const messages = await serverMessages();
 
@@ -47,12 +53,15 @@ export async function handleLocalFileRequest(request: Request): Promise<Response
   const { slug, workspace } = requestWorkspace(request);
   if (!workspace) return localFileResponse(messages.unknownWorkspace(slug), 404);
 
+  const unopened: UnopenedResponse = (status) =>
+    unopenedResponse(status, workspace.slug, path, messages);
+
   const extension = extname(path).toLowerCase();
   const videoType = VIDEO_TYPES[extension];
-  if (videoType) return videoResponse(request, workspace.root, path, videoType, messages);
+  if (videoType) return videoResponse(request, workspace.root, path, videoType, unopened);
 
   const file = await readLocalFile(workspace.root, path);
-  if (file.status !== 200) return deniedResponse(file.status, messages);
+  if (file.status !== 200) return unopened(file.status);
   // HTML·SVG·스크립트도 텍스트로 응답해 앱과 같은 origin에서 실행되지 않게 합니다.
   return localFileResponse(file.contents, 200, {
     "Content-Type": IMAGE_TYPES[extension] ?? TEXT_CONTENT_TYPE,
@@ -65,7 +74,7 @@ async function videoResponse(
   workspaceRoot: string,
   path: string,
   contentType: string,
-  messages: ServerMessages,
+  unopened: UnopenedResponse,
 ): Promise<Response> {
   const headers = {
     "Content-Type": contentType,
@@ -75,7 +84,7 @@ async function videoResponse(
   const rangeOf = requestedRange(request.headers.get("Range"));
   if (!rangeOf) {
     const file = await readLocalFile(workspaceRoot, path);
-    if (file.status !== 200) return deniedResponse(file.status, messages);
+    if (file.status !== 200) return unopened(file.status);
     return localFileResponse(file.contents, 200, headers);
   }
   const part = await readLocalFileRange(workspaceRoot, path, rangeOf);
@@ -92,7 +101,7 @@ async function videoResponse(
       "Content-Range": `bytes */${part.size}`,
     });
   }
-  return deniedResponse(part.status, messages);
+  return unopened(part.status);
 }
 
 /**
@@ -117,12 +126,27 @@ function requestedRange(header: string | null): ((size: number) => ByteRange | n
 }
 
 /** query에서 파일 경로를 얻습니다. 절대 경로가 아니거나 null 문자가 든 경로는 null을 돌려줍니다. */
-function requestedPath(request: Request): string | null {
+export function requestedPath(request: Request): string | null {
   const path = new URL(request.url).searchParams.get("path");
   return path !== null && isAbsolute(path) && !path.includes("\0") ? path : null;
 }
 
-function deniedResponse(status: 403 | 404, messages: ServerMessages): Response {
+/**
+ * 허용 루트 밖이거나 없는 경로에는 오류 문구를, 허용 루트 안의 디렉터리에는 그 workspace의 폴더 화면으로 보내는 redirect를 보냅니다.
+ * 폴더 화면의 경로 표시줄이 처음 링크한 폴더에서 시작하도록 base와 path에 같은 경로를 넣고,
+ * resolve로 끝의 구분자를 떼어 끝에 /가 있든 없든 같은 주소로 보냅니다.
+ */
+function unopenedResponse(
+  status: Unopened["status"],
+  workspaceSlug: string,
+  path: string,
+  messages: ServerMessages,
+): Response {
+  if (status === "directory") {
+    const folder = resolve(path);
+    const location = workspaceHref(workspaceSlug, localFolderScreenPath(folder, folder));
+    return localFileResponse(null, 302, { Location: location });
+  }
   const text = status === 403 ? messages.localFileForbidden : messages.localFileNotFound;
   return localFileResponse(text, status);
 }

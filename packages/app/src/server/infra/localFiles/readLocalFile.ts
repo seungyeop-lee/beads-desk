@@ -11,11 +11,13 @@ const execFileAsync = promisify(execFile);
 /** 파일 안의 byte 구간입니다. `end`도 구간에 포함합니다. */
 export type ByteRange = { start: number; end: number };
 
-type LocalFile = { status: 200; contents: Uint8Array<ArrayBuffer> } | { status: 403 | 404 };
+/** 파일을 열지 않은 결과입니다. directory는 경로가 허용 루트 안의 디렉터리라서 열지 않았다는 뜻입니다. */
+export type Unopened = { status: 403 | 404 | "directory" };
+type LocalFile = { status: 200; contents: Uint8Array<ArrayBuffer> } | Unopened;
 type LocalFilePart =
   | { status: 206; size: number; range: ByteRange; contents: ReadableStream<Uint8Array> }
   | { status: 416; size: number }
-  | { status: 403 | 404 };
+  | Unopened;
 
 export async function readLocalFile(workspace: string, path: string): Promise<LocalFile> {
   const opened = await openAllowedFile(workspace, path);
@@ -56,11 +58,11 @@ export async function readLocalFileRange(
   };
 }
 
-/** 허용 루트 안의 일반 파일만 엽니다. 연 파일은 호출한 쪽이 닫습니다. */
+/** 허용 루트 안의 일반 파일만 엽니다. 연 파일은 호출한 쪽이 닫습니다. 허용 루트 안의 디렉터리는 열어 두지 않고 directory를 돌려줍니다. */
 async function openAllowedFile(
   workspace: string,
   path: string,
-): Promise<{ status: 200; file: FileHandle; size: number } | { status: 403 | 404 }> {
+): Promise<{ status: 200; file: FileHandle; size: number } | Unopened> {
   const roots = await allowedRoots(workspace);
   let target: string;
   try {
@@ -80,7 +82,7 @@ async function openAllowedFile(
   const stat = await statIfStillAt(file, target);
   if (stat?.isFile()) return { status: 200, file, size: Number(stat.size) };
   await file.close();
-  return { status: 404 };
+  return { status: stat?.isDirectory() ? "directory" : 404 };
 }
 
 /**
@@ -97,7 +99,8 @@ async function statIfStillAt(file: FileHandle, target: string) {
   return opened.dev === current.dev && opened.ino === current.ino ? opened : null;
 }
 
-async function allowedRoots(workspace: string): Promise<string[]> {
+/** workspace에서 연 링크가 열 수 있는 파일과 폴더의 루트를 실제 경로로 돌려줍니다. */
+export async function allowedRoots(workspace: string): Promise<string[]> {
   const [workspaceRoots, configured] = await Promise.all([
     gitRoots(workspace),
     // Linux에서 `/tmp`와 `tmpdir()`이 겹칠 때는 `resolveExisting`이 realpath로 정규화한 뒤 중복을 걸러냅니다.
@@ -164,7 +167,8 @@ async function resolveExisting(paths: string[]): Promise<string[]> {
   return [...new Set(resolved.filter((path): path is string => path !== null))];
 }
 
-function contains(root: string, target: string): boolean {
+/** 실제 경로 target이 root 안에 있거나 root 자체이면 true입니다. */
+export function contains(root: string, target: string): boolean {
   if (!isAbsolute(target)) return false;
   const path = relative(root, target);
   return path === "" || (path !== ".." && !path.startsWith(`..${sep}`) && !isAbsolute(path));

@@ -607,6 +607,19 @@ export const enMessages: Messages = {
     supersededBy: "Superseded by",
     supersedes: "Supersedes",
   },
+  localFolder: {
+    trail: "Folder path",
+    entries: "Folder items",
+    name: "Name",
+    size: "Size",
+    modifiedAt: "Modified",
+    blocked: "Cannot open",
+    blockedHelp:
+      "This link points outside the allowed roots or to a missing target, so it cannot be opened.",
+    empty: "This folder is empty.",
+    loadFailed: (error) => `Could not load the folder: ${error}`,
+    showMore: "Show more",
+  },
   hygiene: {
     title: "Hygiene",
     description: "Results of the hygiene checks bd recommends.",

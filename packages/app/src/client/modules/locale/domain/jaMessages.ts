@@ -614,6 +614,18 @@ export const jaMessages: Messages = {
     supersededBy: "新しい決定",
     supersedes: "以前の決定",
   },
+  localFolder: {
+    trail: "フォルダのパス",
+    entries: "フォルダの項目",
+    name: "名前",
+    size: "サイズ",
+    modifiedAt: "更新日時",
+    blocked: "開けません",
+    blockedHelp: "許可された範囲外を指しているか、指す先がないリンクのため開けません。",
+    empty: "空のフォルダです。",
+    loadFailed: (error) => `フォルダの一覧を読み込めませんでした: ${error}`,
+    showMore: "さらに表示",
+  },
   hygiene: {
     title: "整理",
     description: "bd が推奨する整理チェックの結果です。",

@@ -598,6 +598,18 @@ export const koMessages: Messages = {
     supersededBy: "새 결정",
     supersedes: "이전 결정",
   },
+  localFolder: {
+    trail: "폴더 경로",
+    entries: "폴더 항목",
+    name: "이름",
+    size: "크기",
+    modifiedAt: "수정 시각",
+    blocked: "열 수 없음",
+    blockedHelp: "허용 범위 밖을 가리키거나 대상이 없는 링크라서 열 수 없습니다.",
+    empty: "빈 폴더입니다.",
+    loadFailed: (error) => `폴더 목록을 불러오지 못했습니다: ${error}`,
+    showMore: "더 보기",
+  },
   hygiene: {
     title: "정리",
     description: "bd가 권하는 정리 점검의 결과입니다.",

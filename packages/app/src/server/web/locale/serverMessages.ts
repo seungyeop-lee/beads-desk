@@ -6,6 +6,8 @@ import { requestLocale } from "./requestLocale";
 type ServerMessages = {
   localFileForbidden: string;
   localFileNotFound: string;
+  localFolderForbidden: string;
+  localFolderNotFound: string;
   invalidRequest: string;
   invalidIssueStatus: string;
   invalidStaleDays: string;
@@ -21,6 +23,8 @@ type ServerMessages = {
 const ko: ServerMessages = {
   localFileForbidden: "허용 범위 밖의 파일입니다.",
   localFileNotFound: "파일을 찾을 수 없습니다.",
+  localFolderForbidden: "허용 범위 밖의 폴더입니다.",
+  localFolderNotFound: "폴더를 찾을 수 없습니다.",
   invalidRequest: "요청 형식이 올바르지 않습니다.",
   invalidIssueStatus: "조회할 이슈 상태가 올바르지 않습니다.",
   invalidStaleDays: "오래 방치된 이슈의 기준 일수가 올바르지 않습니다.",
@@ -53,6 +57,8 @@ const ko: ServerMessages = {
 const en: ServerMessages = {
   localFileForbidden: "This file is outside the allowed roots.",
   localFileNotFound: "The file was not found.",
+  localFolderForbidden: "This folder is outside the allowed roots.",
+  localFolderNotFound: "The folder was not found.",
   invalidRequest: "The request is malformed.",
   invalidIssueStatus: "The requested issue status is not valid.",
   invalidStaleDays: "The stale threshold in days is not valid.",
@@ -85,6 +91,8 @@ const en: ServerMessages = {
 const ja: ServerMessages = {
   localFileForbidden: "許可された範囲外のファイルです。",
   localFileNotFound: "ファイルが見つかりません。",
+  localFolderForbidden: "許可された範囲外のフォルダです。",
+  localFolderNotFound: "フォルダが見つかりません。",
   invalidRequest: "リクエストの形式が正しくありません。",
   invalidIssueStatus: "照会するイシューの状態が正しくありません。",
   invalidStaleDays: "長く放置されたイシューの基準日数が正しくありません。",

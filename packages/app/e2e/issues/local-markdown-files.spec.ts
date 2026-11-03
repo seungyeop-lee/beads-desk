@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { copyFile, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Locator, Page } from "@playwright/test";
@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, diff와 큰 로그 파일을 칩으로 본문에 펼치며, 편집 후 원문 경로를 유지한다", async ({
+test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, diff와 큰 로그 파일을 칩으로 본문에 펼치며, 편집 후 원문 경로를 유지한다", async ({
   page,
   workspace,
 }) => {
@@ -26,6 +26,8 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
   const video = join(workspace.path, "화면 녹화.webm");
   const diff = join(workspace.path, "리뷰 변경.diff");
   const largeLog = join(workspace.path, "큰 실행 로그.log");
+  const folder = join(workspace.path, "리뷰 산출물");
+  const shot = join(folder, "화면", "결과.png");
   try {
     for (const [index, path] of paths.entries()) {
       await writeFile(path.md, `# 로컬 파일 ${index}\n\n브라우저에서 확인한 내용입니다.`);
@@ -37,6 +39,9 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     await copyFile(join(import.meta.dirname, "playwright-recording.webm"), video);
     await writeFile(diff, "@@ -1 +1 @@\n-이전 줄\n+바뀐 줄\n");
     await writeFile(largeLog, "a".repeat(1024 * 1024 + 1));
+    await mkdir(join(folder, "화면"), { recursive: true });
+    await writeFile(join(folder, "요약.md"), "# 요약");
+    await writeFile(shot, PNG);
     const markdown = [
       `![workspace PNG](<${paths[0]!.png}>) ![worktree PNG](<${paths[1]!.png}>)`,
       "",
@@ -45,6 +50,8 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
       `[workspace 문서](<${paths[0]!.md}>) [worktree 문서](<${paths[1]!.md}>) 편집할 문단`,
       "",
       `[리뷰 변경](<${diff}>) [큰 실행 로그](<${largeLog}>)`,
+      "",
+      `[리뷰 산출물](<${folder}/>)`,
     ].join("\n");
     const id = await workspace.createIssue("로컬 파일 표시", "--description", markdown);
     await page.goto(`issues?issue=${id}`);
@@ -81,6 +88,25 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     await expectPlayable(videoTab.locator("video"));
     expect(new URL(videoTab.url()).searchParams.get("path")).toBe(video);
     await videoTab.close();
+
+    // 폴더 링크는 파일 API가 폴더 화면으로 보냅니다. 링크 모양, 경로 표시줄, 더 보기는 LocalFolderScreen.browser.test.tsx가 확인합니다.
+    const folderTab = await openedTab(description.getByRole("link", { name: "리뷰 산출물" }));
+    await expect(folderTab).toHaveURL(
+      (url) =>
+        url.pathname === `/w/${workspace.slug}/files` &&
+        url.searchParams.get("base") === folder &&
+        url.searchParams.get("path") === folder,
+    );
+    const entries = folderTab.getByRole("table", { name: "폴더 항목" });
+    await expect(entries.getByRole("link", { name: "요약.md" })).toBeVisible();
+    await entries.getByRole("link", { name: "화면" }).click();
+    await expect
+      .poll(() => new URL(folderTab.url()).searchParams.get("path"))
+      .toBe(join(folder, "화면"));
+    const shotTab = await openedTab(entries.getByRole("link", { name: "결과.png" }));
+    expect(new URL(shotTab.url()).searchParams.get("path")).toBe(shot);
+    await shotTab.close();
+    await folderTab.close();
 
     await description.getByRole("link", { name: "에픽 화면" }).click();
     await expect(page).toHaveURL(new RegExp(`/w/${workspace.slug}/epics$`));
