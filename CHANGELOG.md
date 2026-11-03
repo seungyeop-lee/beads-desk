@@ -4,6 +4,12 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-11-03
+
+### Added
+
+- Links in issue text to a local folder in the allowed directories open a folder page in the app instead of showing "The file was not found.", whether or not the path ends with `/`. The page lists the folder's items with their names, sizes, and modified times, folders first and each group newest first, and leaves out items whose names start with `.`. It shows the total number of items and the first 200 items, and **Show more** loads the next 200. Clicking a file opens it in a new tab, and clicking a subfolder opens it on the same page. The path bar starts at the linked folder and has no links to the folders above it. Symlinks that point outside the allowed directories, or to a missing target, are listed without a link and marked **Cannot open**. The list does not update by itself; reload the page to see later changes.
+
 ## [0.12.0] - 2026-11-01
 
 ### Added
