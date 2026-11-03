@@ -8,6 +8,7 @@ import {
   formatFileSize,
   type FolderTrailStep,
 } from "@/client/modules/localFiles/domain/localFolderView";
+import { localFileLinkUrl } from "@/client/modules/markdown/domain/localMarkdownUrl";
 import { useWorkspaceHref, useWorkspaceSlug } from "@/client/ui/address/workspaceAddress";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { ErrorAlert } from "@/client/ui/designSystem/ErrorAlert";
@@ -25,7 +26,8 @@ import {
 const LINK = "decoration-base-content/30 underline-offset-4 hover:underline";
 
 /**
- * 이슈 본문의 폴더 링크로 연 폴더의 항목을 보여 줍니다. 파일은 새 탭에서 파일 API로 열고, 하위 폴더는 이 탭에서 옮겨 갑니다.
+ * 이슈 본문의 폴더 링크로 연 폴더의 항목을 보여 줍니다. 파일은 본문의 파일 링크처럼 새 탭에서 열고(.diff·.patch는 diff 화면),
+ * 하위 폴더는 이 탭에서 옮겨 갑니다.
  * 주소의 base는 처음 링크한 폴더로, 경로 표시줄은 base부터 보여 줍니다. 그보다 위로 가는 링크는 두지 않습니다.
  * 주소를 useSearchParams로 읽으므로 Suspense 안에서 렌더링합니다.
  */
@@ -159,7 +161,11 @@ function EntryName({ entry, base }: { entry: LocalFolderEntry; base: string }) {
     );
   }
   return (
-    <a className={LINK} href={localFileUrl(entry.path, workspace)} target="_blank">
+    <a
+      className={LINK}
+      href={localFileLinkUrl(localFileUrl(entry.path, workspace))}
+      target="_blank"
+    >
       {entry.name}
     </a>
   );

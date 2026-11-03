@@ -190,7 +190,6 @@ export const jaMessages: Messages = {
     filePreviewTooLarge: (megabytes) =>
       `ファイルが ${megabytes} MB を超えるため、プレビューを省略しました。`,
     openFile: "ファイルを開く",
-    openInNewTab: (name) => `${name} を新しいタブで開く`,
     diffBadges: { new: "新規ファイル", deleted: "削除", renamed: "名前変更", binary: "バイナリ" },
     diffLineCounts: (added, deleted) => `追加 ${added}行、削除 ${deleted}行`,
 

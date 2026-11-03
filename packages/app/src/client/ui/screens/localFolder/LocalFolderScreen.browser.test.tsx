@@ -65,24 +65,31 @@ async function openScreen() {
 
 const entriesTable = () => page.getByRole("table", { name: messages.localFolder.entries });
 
-test("파일은 새 탭에서 파일 API로, 하위 폴더는 이 탭의 폴더 화면으로 열고, 열 수 없는 링크는 링크 없이 표시한다", async () => {
+test("파일은 새 탭에서 파일 API로, diff 파일은 새 탭의 diff 화면으로, 하위 폴더는 이 탭의 폴더 화면으로 열고, 열 수 없는 링크는 링크 없이 표시한다", async () => {
   folder.entries = [
     { kind: "folder", name: "shots", path: `${FOLDER}/shots`, modifiedAt: MODIFIED_AT },
     file("review.diff"),
+    file("run.log"),
     { kind: "blocked", name: "outside", modifiedAt: MODIFIED_AT },
   ];
   await openScreen();
 
   const table = entriesTable();
   await expect
-    .element(table.getByRole("link", { name: "review.diff" }))
+    .element(table.getByRole("link", { name: "run.log" }))
     .toHaveAttribute(
       "href",
-      `/api/local-files?${new URLSearchParams({ path: `${FOLDER}/review.diff`, workspace: "demo" })}`,
+      `/api/local-files?${new URLSearchParams({ path: `${FOLDER}/run.log`, workspace: "demo" })}`,
     );
   await expect
     .element(table.getByRole("link", { name: "review.diff" }))
-    .toHaveAttribute("target", "_blank");
+    .toHaveAttribute(
+      "href",
+      `/w/demo/diff?${new URLSearchParams({ path: `${FOLDER}/review.diff` })}`,
+    );
+  for (const name of ["run.log", "review.diff"]) {
+    await expect.element(table.getByRole("link", { name })).toHaveAttribute("target", "_blank");
+  }
   await expect
     .element(table.getByRole("link", { name: "shots" }))
     .toHaveAttribute(

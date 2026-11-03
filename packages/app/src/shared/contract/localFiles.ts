@@ -7,11 +7,18 @@ export function localFileUrl(path: string, workspace: string): string {
   return `${LOCAL_FILES_PATH}?${new URLSearchParams({ path, [WORKSPACE_QUERY]: workspace })}`;
 }
 
-/** localFileUrl로 만든 주소이면 그 주소가 여는 파일 경로를, 아니면 null을 돌려줍니다. */
-export function localFilePathOf(url: string): string | null {
+/** localFileUrl로 만든 주소이면 그 주소가 여는 파일 경로와 workspace 이름을, 아니면 null을 돌려줍니다. */
+export function localFileOf(url: string): { path: string; workspace: string } | null {
   const queryStart = url.indexOf("?");
   if (queryStart < 0 || url.slice(0, queryStart) !== LOCAL_FILES_PATH) return null;
-  return new URLSearchParams(url.slice(queryStart + 1)).get("path");
+  const query = new URLSearchParams(url.slice(queryStart + 1));
+  const path = query.get("path");
+  return path === null ? null : { path, workspace: query.get(WORKSPACE_QUERY) ?? "" };
+}
+
+/** localFileUrl로 만든 주소이면 그 주소가 여는 파일 경로를, 아니면 null을 돌려줍니다. */
+export function localFilePathOf(url: string): string | null {
+  return localFileOf(url)?.path ?? null;
 }
 
 /** 폴더 화면의 workspace 안 경로입니다. 화면 경로 목록(SCREEN_PATHS)에 두지 않아서, 파일 API의 redirect로만 들어옵니다. */

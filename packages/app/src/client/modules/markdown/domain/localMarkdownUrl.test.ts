@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
-import { localFileUrl } from "@/shared/contract/localFiles";
-import { localMarkdownUrl, opensInNewTab } from "./localMarkdownUrl";
+import { localDiffScreenPath, localFileUrl } from "@/shared/contract/localFiles";
+import { localFileLinkUrl, localMarkdownUrl, opensInNewTab } from "./localMarkdownUrl";
 
 test.each([
   ["/epics", "/w/demo/epics"],
@@ -57,3 +57,21 @@ test.each(["/epics", "/issues?issue=abc", "/w/other/issues", "#heading", "mailto
     expect(opensInNewTab(localMarkdownUrl(url, "demo"))).toBe(false);
   },
 );
+
+test.each(["/tmp/r/리뷰 변경.diff", "/tmp/r/fix.PATCH", "C:\\r\\a.patch"])(
+  ".diff·.patch 파일 링크는 파일을 연 workspace의 diff 화면을 연다: %s",
+  (path) => {
+    expect(localFileLinkUrl(localFileUrl(path, "데모"))).toBe(
+      `/w/${encodeURIComponent("데모")}${localDiffScreenPath(path)}`,
+    );
+  },
+);
+
+test.each([
+  localFileUrl("/tmp/r/a.md", "demo"),
+  localFileUrl("/tmp/r/a.diff.log", "demo"),
+  "/w/demo/epics",
+  "https://example.com/a.diff",
+])("diff 파일이 아닌 링크는 주소를 바꾸지 않는다: %s", (address) => {
+  expect(localFileLinkUrl(address)).toBe(address);
+});

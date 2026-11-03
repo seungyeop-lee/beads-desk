@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, diff와 큰 로그 파일을 칩으로 본문에 펼치며, 편집 후 원문 경로를 유지하고, diff 화면에서 파일 트리로 파일 위치에 가고 원문을 내려받는다", async ({
+test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, diff 링크는 어떻게 눌러도 새 탭의 diff 화면으로 열고, diff와 큰 로그 파일을 펼치기 버튼으로 본문에 펼치며, 편집 후 원문 경로를 유지하고, diff 화면에서 파일 트리로 파일 위치에 가고 원문을 내려받는다", async ({
   page,
   workspace,
 }) => {
@@ -86,13 +86,25 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
       await expect(image).toBeVisible();
       await expect(image).toHaveJSProperty("naturalWidth", 80);
       const opened = await openedTab(
-        description.getByRole("link", { name: `${name} 문서 새 탭에서 열기` }),
+        description.getByRole("link", { name: `${name} 문서`, exact: true }),
       );
       await expect(opened.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
       expect(new URL(opened.url()).searchParams.get("path")).toBe(path.md);
       await opened.close();
     }
     await expect(dialog).toBeVisible();
+
+    // 브라우저가 새 탭을 여는 세 가지 클릭 모두 diff 화면을 엽니다. 화면 내용은 아래 patch 단계와 LocalDiffScreen.browser.test.tsx가 확인합니다.
+    const clicks: LinkClick[] = [{}, { modifiers: ["ControlOrMeta"] }, { button: "middle" }];
+    for (const click of clicks) {
+      const diffTab = await openedTab(description.getByRole("link", { name: "리뷰 변경" }), click);
+      await expect(diffTab).toHaveURL(
+        (url) =>
+          url.pathname === `/w/${workspace.slug}/diff` && url.searchParams.get("path") === diff,
+      );
+      await expect(diffTab.getByText("바뀐 줄", { exact: true })).toBeVisible();
+      await diffTab.close();
+    }
 
     // 펼친 내용은 서버의 파일 API 응답으로 채웁니다. 배치와 강조, 오류 문구는 localFilePreview.browser.test.tsx가 확인합니다.
     await description.getByRole("button", { name: "리뷰 변경 미리보기" }).click();
@@ -177,10 +189,15 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
   }
 });
 
-/** 본문 링크를 눌러 새 탭에 열린 page를 돌려줍니다. 링크를 연 탭은 이슈 화면에 그대로 남습니다. */
-async function openedTab(link: Locator): Promise<Page> {
-  const opened = link.page().waitForEvent("popup");
-  await link.click();
+type LinkClick = Parameters<Locator["click"]>[0];
+
+/**
+ * 본문 링크를 눌러 새 탭에 열린 page를 돌려줍니다. 링크를 연 탭은 이슈 화면에 그대로 남습니다.
+ * Cmd/Ctrl 클릭과 가운데 버튼 클릭으로 연 탭도 받도록 popup이 아니라 context의 새 page를 기다립니다.
+ */
+async function openedTab(link: Locator, click?: LinkClick): Promise<Page> {
+  const opened = link.page().context().waitForEvent("page");
+  await link.click(click);
   return opened;
 }
 

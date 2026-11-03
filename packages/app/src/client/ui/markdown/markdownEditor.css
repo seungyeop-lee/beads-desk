@@ -231,61 +231,39 @@
 }
 
 /*
- * 로컬 파일 링크를 그린 펼치기 칩과 그 오른쪽의 새 탭 아이콘 링크, 링크가 든 블록 아래에 펼친 파일 내용입니다(localFilePreview.ts).
- * 칩은 inline으로 두어 긴 파일 이름이 칩 안에서 줄을 넘깁니다. 아이콘은 줄 높이(1lh)의 상자를 줄 위쪽에 맞추고 그 가운데에
- * 그려, 글꼴의 x-height에 기대는 vertical-align: middle보다 정확하게 글자의 세로 중앙에 놓입니다.
+ * 로컬 파일 링크 바로 뒤의 펼치기 버튼과, 링크가 든 블록 아래에 펼친 파일 내용입니다(localFilePreview.ts).
+ * 버튼은 줄 높이(1lh)의 상자를 줄 위쪽에 맞추고 그 가운데에 chevron을 그려, 글꼴의 x-height에 기대는 vertical-align: middle보다
+ * 정확하게 링크 글자의 세로 중앙에 놓입니다.
  * 내용은 최대 높이 안에서 스크롤해, 긴 파일도 아래 본문을 멀리 밀어내지 않습니다.
  */
-.markdown-editor .milkdown .file-preview-chip {
-  padding: 1px 6px 1px 2px;
-  border-radius: var(--radius-selector);
-  /* 본문이 놓인 면(base-100, base-200)과 상관없이 보이도록 글자색을 섞어 칠합니다. */
-  background: color-mix(in oklab, var(--color-base-content) 8%, transparent);
-  color: var(--color-base-content);
-  text-decoration: none;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-}
-.markdown-editor .milkdown .file-preview-chip:is(:hover, .file-preview-chip-hover) {
-  background: color-mix(in oklab, var(--color-base-content) 14%, transparent);
-}
-.markdown-editor .milkdown :is(.file-preview-chip, .file-preview-open) svg {
+.markdown-editor .milkdown .file-preview-toggle {
   display: inline-block;
   vertical-align: top;
-  width: 14px;
   height: 1lh;
-}
-.markdown-editor .milkdown .file-preview-chip svg {
-  margin-inline-end: 2px;
+  margin-inline-start: 2px;
+  padding: 0 1px;
+  border-radius: var(--radius-selector);
   color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+  cursor: pointer;
+}
+.markdown-editor .milkdown .file-preview-toggle:hover {
+  /* 본문이 놓인 면(base-100, base-200)과 상관없이 보이도록 글자색을 섞어 칠합니다. */
+  background: color-mix(in oklab, var(--color-base-content) 10%, transparent);
+  color: var(--color-base-content);
+}
+/* Milkdown reset.css가 편집기 안의 포커스 외곽선을 모두 지우므로, Tab으로 옮긴 포커스는 base.css와 같은 외곽선으로 다시 그립니다. */
+[data-keyboard-focus] .markdown-editor .milkdown .file-preview-toggle:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--color-base-content) 35%, #0000);
+  outline-offset: 1px;
+}
+.markdown-editor .milkdown .file-preview-toggle svg {
+  display: block;
+  width: 14px;
+  height: 100%;
   transition: rotate 120ms;
 }
-.markdown-editor .milkdown .file-preview-chip[aria-expanded="true"] svg {
+.markdown-editor .milkdown .file-preview-toggle[aria-expanded="true"] svg {
   rotate: 90deg;
-}
-/*
- * 링크 글자 일부에 다른 서식이 있어 링크가 <a> 여러 개로 나뉘면, 맞닿는 쪽의 여백과 둥근 모서리를 없애 조각들을 칩 하나로 잇고
- * chevron은 첫 조각에만 보입니다.
- */
-.markdown-editor .milkdown .file-preview-chip-continues {
-  padding-inline-end: 0;
-  border-start-end-radius: 0;
-  border-end-end-radius: 0;
-}
-.markdown-editor .milkdown .file-preview-chip-continued {
-  padding-inline-start: 0;
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-}
-.markdown-editor .milkdown .file-preview-chip-continued svg {
-  display: none;
-}
-.markdown-editor .milkdown .file-preview-open {
-  margin-inline-start: 4px;
-  color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
-}
-.markdown-editor .milkdown .file-preview-open:hover {
-  color: var(--color-base-content);
 }
 .markdown-editor .milkdown .file-preview {
   margin-block: 4px 8px;
