@@ -13,13 +13,18 @@
 /*
  * 단추와 링크의 포커스 외곽선은 Tab으로 포커스를 옮겼을 때만 보입니다.
  * data-keyboard-focus는 KeyboardFocusMode가 켜고 끕니다.
+ * 본문 편집기 안의 키보드 포커스 규칙(markdownEditor.css)도 --keyboard-focus-outline을 읽으므로, 두께와 색은 이 변수에서만 바꿉니다.
  */
+:root {
+  --keyboard-focus-outline: 2px solid color-mix(in oklab, var(--color-base-content) 35%, #0000);
+}
+
 :root:not([data-keyboard-focus]) :focus-visible {
   outline: none;
 }
 
 [data-keyboard-focus] :focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--color-base-content) 35%, #0000);
+  outline: var(--keyboard-focus-outline);
   outline-offset: 2px;
 }
 

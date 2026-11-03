@@ -39,7 +39,7 @@
  * 글자를 입력하는 칸(contenteditable)에는 본문 밖의 입력 칸처럼 외곽선을 그리지 않습니다.
  */
 [data-keyboard-focus] .markdown-editor .milkdown :focus-visible:not([contenteditable="true"]) {
-  outline: 2px solid color-mix(in oklab, var(--color-base-content) 35%, #0000);
+  outline: var(--keyboard-focus-outline);
   outline-offset: 2px;
 }
 
@@ -156,7 +156,7 @@
   .markdown-editor[data-readonly]
   .milkdown
   .milkdown-code-block:has(.cm-content:focus-visible) {
-  outline: 2px solid color-mix(in oklab, var(--color-base-content) 35%, #0000);
+  outline: var(--keyboard-focus-outline);
   outline-offset: 2px;
 }
 
@@ -252,7 +252,7 @@
   .preview
   [data-mermaid-preview][role="button"]:focus-visible
   > svg {
-  outline: 2px solid color-mix(in oklab, var(--color-base-content) 35%, #0000);
+  outline: var(--keyboard-focus-outline);
   outline-offset: -2px;
 }
 
