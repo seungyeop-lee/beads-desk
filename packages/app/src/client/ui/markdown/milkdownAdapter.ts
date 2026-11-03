@@ -1,7 +1,7 @@
 import type { Ctx } from "@milkdown/kit/ctx";
 import type { MarkType, Node as ProseNode } from "@milkdown/kit/prose/model";
 import type { EditorState, PluginView } from "@milkdown/kit/prose/state";
-import type { DirectEditorProps, EditorView } from "@milkdown/kit/prose/view";
+import type { DirectEditorProps, EditorProps, EditorView } from "@milkdown/kit/prose/view";
 import { WINDOWS_DRIVE_PATH } from "@/client/modules/markdown/domain/drivePath";
 import { localFileLinkUrl, opensInNewTab } from "@/client/modules/markdown/domain/localMarkdownUrl";
 import {
@@ -220,6 +220,30 @@ export const refuseFileUpload: Pick<DirectEditorProps, "handlePaste" | "handleDr
     Boolean(event.clipboardData?.files.length) && !event.clipboardData?.getData("text/html"),
   handleDrop: (_view, event) => Boolean(event.dataTransfer?.files.length),
 };
+
+/** CodeMirror의 tab focus mode가 Escape 뒤에 Tab으로 focus를 옮기는 시간과 같게 둡니다. */
+const TAB_MOVES_FOCUS_MS = 2000;
+const MODIFIER_KEYS = ["Shift", "Control", "Alt", "Meta"];
+
+/**
+ * 편집 중 본문에서 Escape를 누른 뒤의 Tab과 Shift+Tab을 편집기에 넘기지 않아, 브라우저가 focus를 옮기게 하는 plugin 처리기입니다.
+ * 본문의 Tab은 들여쓰기, 목록 항목 들여쓰기, 표 셀 이동에 쓰여서, 그대로 두면 키보드로는 편집기 밖이나 코드 블록 도구 버튼으로 갈 수 없습니다.
+ * 코드 블록의 CodeMirror가 기본으로 따르는 규칙과 같게, Escape 뒤 2초 동안만 focus를 옮기고, 그 사이에 Tab, Escape, 보조 키(Shift 등)가 아닌 키를 누르면 끝냅니다.
+ * handleDOMEvents가 true를 돌려주면 ProseMirror는 keymap을 실행하지 않고 preventDefault도 부르지 않습니다.
+ */
+export function tabMovesFocusAfterEscape(): Pick<EditorProps, "handleDOMEvents"> {
+  let movesFocusUntil = 0;
+  return {
+    handleDOMEvents: {
+      keydown: (_view, event) => {
+        if (event.key === "Tab") return Date.now() <= movesFocusUntil;
+        if (event.key === "Escape") movesFocusUntil = Date.now() + TAB_MOVES_FOCUS_MS;
+        else if (!MODIFIER_KEYS.includes(event.key)) movesFocusUntil = 0;
+        return false;
+      },
+    },
+  };
+}
 
 /**
  * 본문과 커서가 바뀔 때마다 React에 알리는 plugin view의 update 처리기입니다.

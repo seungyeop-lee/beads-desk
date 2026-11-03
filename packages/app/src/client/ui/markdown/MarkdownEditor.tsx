@@ -21,6 +21,7 @@ import {
   milkdownAddress,
   previewAddressLinkTool,
   refuseFileUpload,
+  tabMovesFocusAfterEscape,
   windowsPathAddressConfig,
 } from "./milkdownAdapter";
 import { type FormatAction, MarkdownToolbar } from "./MarkdownToolbar";
@@ -154,6 +155,7 @@ export function MarkdownEditor({
               }),
           ),
           $prose(() => new Plugin({ view: (view) => previewAddressLinkTool(view, address) })),
+          $prose(() => new Plugin({ props: tabMovesFocusAfterEscape() })),
         ]);
       } else {
         // 편집 중에는 원문 보존(keepUnchangedBlocks)에 영향을 주지 않도록 읽기 전용에서만 붙입니다.

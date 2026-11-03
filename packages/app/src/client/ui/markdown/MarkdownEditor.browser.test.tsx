@@ -928,6 +928,92 @@ test("편집 중 Tab으로 코드 블록의 언어·복사 버튼에 들어가�
   await expect.poll(() => getComputedStyle(copy).opacity).toBe("0");
 });
 
+test("편집 중 본문과 코드 블록에서 Tab은 편집기 안에서 쓰고, Escape를 누른 바로 뒤의 Tab과 Shift+Tab은 focus를 코드 블록의 언어·복사 버튼과 편집기 밖으로 옮긴다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"문단\n\n```ts\nconst value = 1;\n```"}
+        label="설명"
+      />
+      <button type="button">저장</button>
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await expect.element(editor).toBeVisible();
+  const language = screen.container.querySelector<HTMLElement>(
+    milkdownDom.codeBlockLanguageButton,
+  )!;
+  const copy = screen.getByRole("button", { name: "Copy" });
+  const code = editor.element().querySelector<HTMLElement>(codeMirrorDom.content)!;
+  const paragraph = editor.element().querySelector("p")!;
+  await userEvent.click(paragraph);
+
+  await userEvent.keyboard("{Tab}");
+  await expect.element(editor).toHaveFocus();
+  await userEvent.keyboard("{Escape}a{Tab}");
+  await expect.element(editor).toHaveFocus();
+  await userEvent.keyboard("{Escape}{Tab}");
+  await expect.element(language).toHaveFocus();
+  await userEvent.keyboard("{Tab}");
+  await expect.element(copy).toHaveFocus();
+  await userEvent.keyboard("{Tab}");
+  await expect.element(code).toHaveFocus();
+  await userEvent.keyboard("{Tab}");
+  await expect.element(code).toHaveFocus();
+  await userEvent.keyboard("{Escape}{Tab}");
+  await expect.element(screen.getByRole("button", { name: "저장" })).toHaveFocus();
+
+  await userEvent.click(paragraph);
+  await userEvent.keyboard("{Escape}{Shift>}{Tab}{/Shift}");
+  expect(screen.getByRole("toolbar").element().contains(document.activeElement)).toBe(true);
+});
+
+test("편집 중 목록 항목에서 누른 Tab은 항목을 들여쓰고, 표 셀에서 누른 Tab은 다음 셀로 옮긴다", async () => {
+  const changed = vi.fn<(markdown: string) => void>();
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"- 첫 항목\n- 둘째 항목\n\n| 이름 | 값 |\n| --- | --- |\n| 가 | 나 |"}
+        label="설명"
+        onChange={changed}
+      />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await editor.getByText("둘째 항목").click();
+  await userEvent.keyboard("{Tab}");
+  await expect.poll(() => changed.mock.lastCall?.[0]).toMatch(/^\* 첫 항목\n {2}\* 둘째 항목/);
+
+  await editor.getByText("가", { exact: true }).click();
+  await userEvent.keyboard("{Tab}다");
+  await expect.poll(() => changed.mock.lastCall?.[0]).toMatch(/\| 가 +\| 다 +\|/);
+});
+
+test("읽기 전용 본문에서 Tab으로 코드 블록에 들어간 뒤 다시 Tab을 누르면 다음 요소로 나간다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <button type="button">앞</button>
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        readOnly
+        value={"문단\n\n```ts\nconst value = 1;\n```"}
+      />
+      <button type="button">뒤</button>
+    </LocaleProvider>,
+  );
+  await expect.element(screen.getByText("const value = 1;")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "앞" }));
+
+  await userEvent.keyboard("{Tab}");
+  await expect
+    .element(screen.container.querySelector<HTMLElement>(codeMirrorDom.content)!)
+    .toHaveFocus();
+  await userEvent.keyboard("{Tab}");
+  await expect.element(screen.getByRole("button", { name: "뒤" })).toHaveFocus();
+});
+
 test("편집기를 감싼 form과 dialog는 그림 dialog를 Esc, 닫기 단추, 바깥 클릭으로 닫아도 제출되거나 닫히지 않고, 입력한 글자가 남는다", async () => {
   const submitted = vi.fn<(event: FormEvent) => void>((event) => event.preventDefault());
   const cancelled = vi.fn<() => void>();
