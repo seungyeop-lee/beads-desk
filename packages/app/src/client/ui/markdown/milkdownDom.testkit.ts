@@ -4,6 +4,8 @@
  */
 export const milkdownDom = {
   codeBlock: ".milkdown-code-block",
+  /** 편집 중 코드 블록 도구 줄의 언어 고르기 버튼입니다. 접근 가능한 이름이 고른 언어라서 selector로 찾습니다. */
+  codeBlockLanguageButton: ".tools .language-button",
   /** 코드 블록 아래의 미리보기 영역입니다. 그릴 수 없는 코드 블록에는 없습니다. */
   previewPanel: ".preview-panel",
   preview: ".preview",

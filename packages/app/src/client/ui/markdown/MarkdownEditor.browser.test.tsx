@@ -874,6 +874,60 @@ test("Tab으로 옮긴 focus는 코드 블록의 복사 버튼에 외곽선을 �
   expect(`${outlineStyle} ${outlineWidth} ${outlineOffset}`).toBe("solid 2px -2px");
 });
 
+test("읽기 전용 본문에서 Tab으로 코드 블록에 들어가면 코드 블록 둘레에 외곽선을 그리고, 마우스로 누르면 그리지 않는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <KeyboardFocusMode />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        readOnly
+        value={"```ts\nconst value = 1;\n```"}
+      />
+    </LocaleProvider>,
+  );
+  await expect.element(screen.getByText("const value = 1;")).toBeVisible();
+  const block = screen.container.querySelector(milkdownDom.codeBlock)!;
+  const code = block.querySelector(codeMirrorDom.content)!;
+  const blockOutline = () => {
+    const { outlineStyle, outlineWidth, outlineOffset } = getComputedStyle(block);
+    return `${outlineStyle} ${outlineWidth} ${outlineOffset}`;
+  };
+  await userEvent.keyboard("{Tab}");
+
+  expect(keyboardOutline(code)).toMatch(/^none /);
+  expect(blockOutline()).toBe("solid 2px 2px");
+
+  await userEvent.click(code);
+  expect(blockOutline()).toMatch(/^none /);
+});
+
+test("편집 중 Tab으로 코드 블록의 언어·복사 버튼에 들어가면 hover하지 않아도 버튼을 보이고 외곽선을 그리며, 본문 입력 영역으로 나가면 버튼을 다시 감추고 그 영역에는 외곽선을 그리지 않는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <KeyboardFocusMode />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"문단\n\n```ts\nconst value = 1;\n```"}
+        label="설명"
+      />
+    </LocaleProvider>,
+  );
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await expect.element(editor).toBeVisible();
+  const copy = screen.getByRole("button", { name: "Copy" }).element();
+  const language = screen.container.querySelector(milkdownDom.codeBlockLanguageButton)!;
+  expect(getComputedStyle(copy).opacity).toBe("0");
+  expect(getComputedStyle(language).opacity).toBe("0");
+  await userEvent.keyboard("{Tab}");
+
+  expect(keyboardOutline(language)).toBe("solid 2px 2px");
+  await expect.poll(() => getComputedStyle(language).opacity).toBe("1");
+  await expect.poll(() => getComputedStyle(copy).opacity).toBe("1");
+  expect(keyboardOutline(copy)).toBe("solid 2px 2px");
+  expect(keyboardOutline(editor.element())).toMatch(/^none /);
+  await expect.poll(() => getComputedStyle(copy).opacity).toBe("0");
+});
+
 test("편집기를 감싼 form과 dialog는 그림 dialog를 Esc, 닫기 단추, 바깥 클릭으로 닫아도 제출되거나 닫히지 않고, 입력한 글자가 남는다", async () => {
   const submitted = vi.fn<(event: FormEvent) => void>((event) => event.preventDefault());
   const cancelled = vi.fn<() => void>();

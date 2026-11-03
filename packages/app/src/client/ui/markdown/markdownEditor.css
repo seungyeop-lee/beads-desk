@@ -148,6 +148,28 @@
   background: transparent;
 }
 
+/*
+ * 코드 블록의 글자 칸(.cm-content)은 읽기 전용에서도 contenteditable="true"라 편집기 공통 키보드 포커스 규칙이 외곽선을 그리지 않고,
+ * Crepe가 바깥 .cm-editor의 외곽선도 !important로 지웁니다. 그래서 읽기 전용 본문에서는 코드 블록 상자 둘레에 외곽선을 그립니다.
+ */
+[data-keyboard-focus]
+  .markdown-editor[data-readonly]
+  .milkdown
+  .milkdown-code-block:has(.cm-content:focus-visible) {
+  outline: 2px solid color-mix(in oklab, var(--color-base-content) 35%, #0000);
+  outline-offset: 2px;
+}
+
+/* Crepe는 코드 블록의 언어·복사 버튼을 hover할 때만 보입니다. Tab으로 도구 줄의 버튼에 들어와도 hover할 때처럼 모두 보입니다. */
+[data-keyboard-focus]
+  .markdown-editor
+  .milkdown
+  .milkdown-code-block
+  .tools:has(:focus-visible)
+  :is(.language-button, .tools-button-group > button) {
+  opacity: 1;
+}
+
 /* 순서 목록 번호와 글머리 기호는 본문보다 조금 옅게만 둡니다. */
 .markdown-editor .milkdown .milkdown-list-item-block li .label-wrapper,
 .markdown-editor .milkdown .milkdown-list-item-block li .label-wrapper .label {
