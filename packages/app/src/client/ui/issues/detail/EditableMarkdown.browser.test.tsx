@@ -83,6 +83,32 @@ test("상세 dialog 안에서 편집 중에 누른 Escape는 dialog를 닫지 �
   expect(onSave).not.toHaveBeenCalled();
 });
 
+// 글자를 입력한 직후의 Escape는 CodeMirror가 자동 완성을 닫는 데 쓰므로, 입력 없이 누른 Escape로 확인합니다.
+test("상세 dialog 안에서 편집 중 코드 블록에 누른 Escape도 dialog를 닫지 않고 코드 블록 편집을 잇는다", async () => {
+  const onSave = vi.fn<(value: string) => Promise<boolean>>(async () => true);
+  const closeStep = vi.fn<() => boolean>(() => false);
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <dialog {...escapeStepHandlers(closeStep)}>
+        <EditableMarkdown label="설명" value={"```ts\nconst a = 1;\n```"} onSave={onSave} />
+      </dialog>
+    </LocaleProvider>,
+  );
+  const dialog = screen.container.querySelector("dialog")!;
+  dialog.showModal();
+
+  await screen.getByRole("button", { name: "편집" }).click();
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await expect.poll(() => editor.element().querySelector(codeMirrorDom.content)).not.toBeNull();
+  const code = editor.element().querySelector<HTMLElement>(codeMirrorDom.content)!;
+  await userEvent.click(code);
+  await userEvent.keyboard("{Escape}");
+
+  await expect.element(code).toHaveFocus();
+  expect(dialog.open).toBe(true);
+  expect(closeStep).not.toHaveBeenCalled();
+});
+
 test("저장하는 동안에는 편집기가 입력을 받지 않고, 저장이 끝나면 고친 내용을 저장한 것으로 보인다", async () => {
   let finish: (saved: boolean) => void = () => {};
   const onSave = vi.fn<(value: string) => Promise<boolean>>(

@@ -216,6 +216,8 @@ export function MarkdownEditor({
 
   return (
     <>
+      {/* 이 div는 안쪽 편집기에서 올라오는 키만 받고, 스스로 focus나 조작을 받지 않습니다. */}
+      {/* oxlint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         className="markdown-editor"
         data-readonly={readOnly || undefined}
@@ -225,6 +227,11 @@ export function MarkdownEditor({
           event.preventDefault();
           event.stopPropagation();
           onSubmit();
+        }}
+        // 편집 중에 누른 Escape는 편집기 밖으로 보내지 않아, 감싼 dialog가 닫히지 않게 합니다.
+        // 본문의 Escape는 ProseMirror가 막지만, 코드 블록 안의 키는 ProseMirror가 처리하지 않고 CodeMirror도 쓸 곳이 없으면 막지 않습니다.
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && !readOnly) event.preventDefault();
         }}
       >
         {controls && (
