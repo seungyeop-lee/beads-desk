@@ -1,5 +1,10 @@
 import type { Locator, Page } from "playwright";
-import { CHECKOUT_DIFF, CHECKOUT_NOTES } from "../seed/checkoutAttachments.ts";
+import {
+  CHECKOUT_DIFF,
+  CHECKOUT_NOTES,
+  DECLINE_MESSAGES_PATCH,
+  DECLINE_MESSAGES_SUBJECT,
+} from "../seed/checkoutAttachments.ts";
 
 /**
  * 녹화하는 동안 장면이 쓰는 동작입니다. `pause`와 `mark` 말고는 모두 포인터가 대상으로 옮겨 가는 모습을 녹화에 남깁니다.
@@ -119,6 +124,31 @@ const GRAPH: View = {
   },
 };
 
+const DECLINE_ISSUE = "acme-k3v.6";
+
+/**
+ * 카드 거절 이슈의 본문에 걸린 patch 링크로 연 diff 화면입니다. 왼쪽에 커밋 메시지 제목과 여러 폴더의 파일 트리가, 오른쪽에 줄바꿈한 긴 줄이 보입니다.
+ * diff 화면 주소에는 데모 workspace의 절대 경로가 들어가므로, 링크를 눌러 새 탭에 열린 주소를 이 page에서 다시 엽니다.
+ */
+const DIFF: View = {
+  path: `/issues?issue=${DECLINE_ISSUE}`,
+  shows: [DECLINE_MESSAGES_PATCH],
+  async frame(page) {
+    const link = issueDetail(page, DECLINE_ISSUE).getByRole("link", {
+      name: DECLINE_MESSAGES_PATCH,
+      exact: true,
+    });
+    const [tab] = await Promise.all([page.context().waitForEvent("page"), link.click()]);
+    await tab.waitForURL(/\/diff\?/);
+    const address = tab.url();
+    await tab.close();
+    await page.goto(address);
+    await page.getByRole("button", { name: DECLINE_MESSAGES_SUBJECT }).waitFor();
+    await page.getByRole("region", { name: "Changes" }).getByText("insufficient_funds").waitFor();
+    await page.evaluate(() => document.fonts.ready);
+  },
+};
+
 /** 머리글의 화면 이동 링크입니다. 장면은 이 링크를 클릭해 다음 화면으로 넘어갑니다. */
 function navLink(page: Page, name: string): Locator {
   return page.getByRole("navigation", { name: "Screens" }).getByRole("link", { name });
@@ -185,6 +215,7 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
       },
     },
   },
+  { name: "diff", screenshot: DIFF },
   { name: "hygiene", screenshot: HYGIENE },
   { name: "decisions", screenshot: DECISIONS },
   {

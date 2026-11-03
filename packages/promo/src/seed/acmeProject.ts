@@ -5,6 +5,7 @@ import {
   CHECKOUT_NOTES,
   CHECKOUT_RECORDING,
   CHECKOUT_SCREENSHOT,
+  DECLINE_MESSAGES_PATCH,
   writeCheckoutAttachments,
 } from "./checkoutAttachments.ts";
 
@@ -191,8 +192,11 @@ export function acmeIssues(now: number, workspace: string): DemoIssue[] {
       title: "Show a clear message when a card is declined",
       type: "task",
       priority: 1,
-      description:
+      description: [
         'Map Stripe decline codes to messages a customer can act on, like "Your card has insufficient funds. Try another card."',
+        "",
+        `First pass for review: [${DECLINE_MESSAGES_PATCH}](<${qaFile(DECLINE_MESSAGES_PATCH)}>)`,
+      ].join("\n"),
       acceptance: "- Every decline code Stripe returns on staging shows a specific message",
       labels: ["frontend", "payments"],
       parent: "acme-k3v",

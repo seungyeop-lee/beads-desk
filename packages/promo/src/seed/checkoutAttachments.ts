@@ -6,13 +6,18 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 /**
- * 데모 이슈 본문이 로컬 파일 링크로 거는, 에이전트가 staging에서 결제 화면을 확인하고 남긴 스크린샷, 녹화, 확인 메모, 고친 코드의 diff입니다.
- * 이 파일을 직접 실행하면 `<디렉터리>`에 네 파일을 만듭니다.
+ * 데모 이슈 본문이 로컬 파일 링크로 거는, 에이전트가 staging에서 결제 화면을 확인하고 남긴 스크린샷, 녹화, 확인 메모, 고친 코드의 diff와,
+ * 카드 거절 안내를 고친 commit의 patch입니다. 이 파일을 직접 실행하면 `<디렉터리>`에 다섯 파일을 만듭니다.
  */
 export const CHECKOUT_SCREENSHOT = "checkout-staging.png";
 export const CHECKOUT_RECORDING = "checkout-test-payment.webm";
 export const CHECKOUT_NOTES = "staging-check-notes.md";
 export const CHECKOUT_DIFF = "inline-card-errors.diff";
+/** git format-patch가 commit 제목으로 짓는 파일 이름입니다. */
+export const DECLINE_MESSAGES_PATCH =
+  "0001-Show-a-specific-message-for-each-card-decline-code.patch";
+/** DECLINE_MESSAGES_PATCH의 commit 제목입니다. diff 화면은 이 제목을 파일 트리 위에 보입니다. */
+export const DECLINE_MESSAGES_SUBJECT = "Show a specific message for each card decline code";
 
 const SCREENSHOT_SIZE = { width: 1200, height: 600 };
 const RECORDING_SIZE = { width: 960, height: 576 };
@@ -29,6 +34,7 @@ async function render(dir: string): Promise<void> {
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, CHECKOUT_NOTES), STAGING_CHECK_NOTES);
   writeFileSync(join(dir, CHECKOUT_DIFF), INLINE_CARD_ERRORS_DIFF);
+  writeFileSync(join(dir, DECLINE_MESSAGES_PATCH), DECLINE_MESSAGES_FORMAT_PATCH);
   const browser = await chromium.launch();
   try {
     const shotPage = await browser.newPage({ viewport: SCREENSHOT_SIZE });
@@ -94,6 +100,99 @@ const INLINE_CARD_ERRORS_DIFF = `diff --git a/src/checkout/PaymentForm.tsx b/src
        return;
      }
      setStatus("paid");
+`;
+
+/**
+ * 카드 거절 코드마다 안내 문구를 보이도록 고친 commit을 git format-patch로 뽑은 patch입니다.
+ * diff 화면이 변경 파일 트리, 커밋 메시지 제목, 줄바꿈 표식을 보이도록 여러 폴더의 파일을 바꾸고, 안내 문구가 든 줄은 화면 폭보다 길게 둡니다.
+ */
+const DECLINE_MESSAGES_FORMAT_PATCH = `From 7c2e9b4a1f3d8e6c0b5a9d2f4e7c1a8b3d6f0e92 Mon Sep 17 00:00:00 2001
+From: Maya <maya@acme.example>
+Date: Mon, 2 Nov 2026 16:42:10 +0900
+Subject: [PATCH] ${DECLINE_MESSAGES_SUBJECT}
+
+Stripe returns a decline code with every declined card. Map the codes a
+customer can act on to a message that says what to do next, and count
+declines by code so support can see which ones come up most.
+---
+ src/checkout/PaymentForm.tsx    |  3 ++-
+ src/checkout/declineMessages.ts | 14 ++++++++++++++
+ src/server/billing/webhooks.ts  |  4 ++++
+ tests/e2e/checkout.spec.ts      |  5 +++++
+ 4 files changed, 25 insertions(+), 1 deletion(-)
+ create mode 100644 src/checkout/declineMessages.ts
+
+diff --git a/src/checkout/PaymentForm.tsx b/src/checkout/PaymentForm.tsx
+index 4c1e2d7..9a03b5f 100644
+--- a/src/checkout/PaymentForm.tsx
++++ b/src/checkout/PaymentForm.tsx
+@@ -1,6 +1,7 @@
+ import { useRef, useState } from "react";
+ import { useElements, useStripe } from "@stripe/react-stripe-js";
+ import { toast } from "../ui/toast";
++import { declineMessage } from "./declineMessages";
+ 
+ export function PaymentForm({ plan }: PaymentFormProps) {
+   const stripe = useStripe();
+@@ -42,7 +43,7 @@ export function PaymentForm({ plan }: PaymentFormProps) {
+     const { error } = await stripe.confirmPayment({ elements });
+     if (error) {
+-      setCardError(error.message ?? "Payment failed. Try again.");
++      setCardError(declineMessage(error.decline_code) ?? error.message ?? "Payment failed. Try again.");
+       setStatus("idle");
+       cardField.current?.focus();
+       return;
+     }
+diff --git a/src/checkout/declineMessages.ts b/src/checkout/declineMessages.ts
+new file mode 100644
+index 0000000..b7d41e2
+--- /dev/null
++++ b/src/checkout/declineMessages.ts
+@@ -0,0 +1,14 @@
++// Stripe sends a decline code with every declined card. Codes that are not listed here fall back to the message Stripe returns.
++const MESSAGES: Record<string, string> = {
++  insufficient_funds: "Your card has insufficient funds. Try another card, or ask your bank to raise the limit for online payments before you try again.",
++  expired_card: "Your card has expired. Check the expiry date on the card, or pay with another card.",
++  incorrect_cvc: "The security code does not match this card. Enter the three digits on the back of the card, or the four digits on the front for American Express.",
++  card_velocity_exceeded: "Your bank has paused payments on this card because of too many attempts. Wait a few minutes, or contact your bank to lift the pause.",
++  do_not_honor: "Your bank declined the payment without giving a reason. Contact your bank, or pay with another card.",
++  lost_card: "Your bank declined the payment. Contact your bank, or pay with another card.",
++  stolen_card: "Your bank declined the payment. Contact your bank, or pay with another card.",
++};
++
++export function declineMessage(code: string | undefined): string | undefined {
++  return code ? MESSAGES[code] : undefined;
++}
+diff --git a/src/server/billing/webhooks.ts b/src/server/billing/webhooks.ts
+index 2f8a9c4..61d0e3b 100644
+--- a/src/server/billing/webhooks.ts
++++ b/src/server/billing/webhooks.ts
+@@ -27,6 +27,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
+     case "payment_intent.succeeded":
+       await activateSubscription(event.data.object);
+       break;
++    case "payment_intent.payment_failed":
++      // Count declines by code so support can see which messages customers run into most.
++      metrics.increment("checkout.declined", { code: event.data.object.last_payment_error?.decline_code ?? "unknown" });
++      break;
+     default:
+       logger.debug("Ignored Stripe event", { type: event.type });
+   }
+diff --git a/tests/e2e/checkout.spec.ts b/tests/e2e/checkout.spec.ts
+index 8d5e7a1..c3f9b20 100644
+--- a/tests/e2e/checkout.spec.ts
++++ b/tests/e2e/checkout.spec.ts
+@@ -58,3 +58,8 @@ test("shows the Stripe error next to the card field", async ({ page }) => {
+   await page.getByRole("button", { name: "Pay $53.90" }).click();
+   await expect(page.getByRole("alert")).toBeVisible();
+ });
++
++test("tells the customer what to do when the card has insufficient funds", async ({ page }) => {
++  await payWithCard(page, "4000 0000 0000 9995");
++  await expect(page.getByRole("alert")).toHaveText("Your card has insufficient funds. Try another card, or ask your bank to raise the limit for online payments before you try again.");
++});
+-- 
+2.47.0
 `;
 
 /** staging의 결제 화면을 흉내 낸 page입니다. Pay를 누르면 잠시 처리 중을 보인 뒤 결제 완료 안내로 바뀝니다. */
