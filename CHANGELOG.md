@@ -4,6 +4,25 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-11-03
+
+### Added
+
+- A diff page shows `.diff` and `.patch` files in the allowed directories, opened from a link or directly at `/w/<workspace name>/diff?path=<absolute path of the file>`. The left side lists the changed files as a tree like the **Files changed** tree of a GitHub pull request, with single-child folders merged into one row and folders first, each sorted by name. Clicking a folder collapses or expands it, and clicking a file scrolls the diff on the right to that file. For a file made with `git format-patch`, the commit subject appears above the tree and expands to the rest of the message and the signature. Long lines wrap by default and each wrapped line is marked with ↪. Buttons at the top right show or hide the **File tree**, turn **Wrap lines** on or off, and **Download** the original file. The file tree starts hidden in narrow windows, and the line wrapping choice is kept in the browser. Files larger than 5 MB are not drawn but can still be downloaded.
+
+### Changed
+
+- Links in issue text to `.diff`, `.patch`, `.md`, `.log`, and `.txt` files are shown as ordinary links with a chevron button after the file name instead of chips. Clicking the link opens the file in a new tab, and clicking the chevron button, or pressing Enter or Space on it, expands or collapses the contents below the paragraph. The ↗ icon after the chip is removed.
+- Links to `.diff` and `.patch` files open the diff page instead of the raw text, from issue text, the **Open file** link shown for files larger than 1 MB, the link tool's preview, and folder pages.
+- The diff and folder pages show a header with only the app name, **Diff viewer** or **Folder viewer**, and the workspace name, without the screen tabs. Their browser tab title starts with the file or folder name, such as `<file name> · <workspace name> · beads-desk`.
+
+### Fixed
+
+- Keyboard focus moved with Tab is outlined inside issue text too: on links, expanded file contents and diff scroll areas, code block buttons, and code blocks in read-only text. The language and copy buttons of a code block become visible when they receive keyboard focus instead of only on hover.
+- Pressing Escape while editing a code block no longer closes the dialog around the editor.
+- While editing issue text, pressing Tab or Shift+Tab within 2 seconds after Escape moves focus out of the editor instead of indenting, the same as in code blocks, so you can leave the editor with the keyboard.
+- In narrow windows, the folder page table keeps room for the name column and scrolls the size and modified time columns sideways instead of squeezing the names.
+
 ## [0.13.0] - 2026-11-03
 
 ### Added
