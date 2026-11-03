@@ -29,9 +29,12 @@
 
 - 설명과 댓글의 Markdown과 Mermaid 그림을 그려 보여 줍니다. 그림을 누르면 크게 볼 수 있습니다.
 - [로컬 파일 링크](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#이슈-본문의-로컬-파일-링크)는 앱 안에서 열립니다. 이미지는 이슈 안에 보이고, `.webm`과 `.mp4` 녹화는 재생됩니다.
-- `.diff`, `.patch`, `.md`, `.log`, `.txt` 파일 링크는 문단 아래에 펼쳐져서, 이슈를 떠나지 않고 내용을 읽을 수 있습니다. diff는 줄 번호와 함께 바뀐 단어를 강조해 보여 주고, Markdown 파일은 구문 강조를 입힌 원문으로 보여 줍니다.
+- `.diff`, `.patch`, `.md`, `.log`, `.txt` 파일 링크를 누르면 새 탭에서 파일이 열립니다. 링크 옆의 chevron 버튼을 누르면 문단 아래에 내용이 펼쳐져서, 이슈를 떠나지 않고 읽을 수 있습니다. 펼친 diff는 줄 번호와 함께 바뀐 단어를 강조해 보여 주고, Markdown 파일은 구문 강조를 입힌 원문으로 보여 줍니다.
+- `.diff`와 `.patch` 링크는 diff 화면으로 열립니다. 이 화면은 바뀐 파일을 트리로 보여 주고, `git format-patch` 파일이면 트리 위에 커밋 제목을 보여 주며, 긴 줄은 줄바꿈해 보여 줍니다. 원본 파일도 같은 화면에서 내려받을 수 있습니다.
 
-![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and expanded previews of a Markdown note with syntax highlighting and of a diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/attachments.png)
+![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
+
+![Diff page for a git format-patch file, with the commit subject and a tree of changed files on the left and the diff on the right, its long lines wrapped and marked](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/diff.png)
 
 ### 결정 기록 남기기
 

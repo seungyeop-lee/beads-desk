@@ -29,9 +29,12 @@
 
 - 説明とコメントの Markdown と Mermaid の図を描画します。図をクリックすると拡大できます。
 - [ローカルファイルへのリンク](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#イシュー本文のローカルファイルリンク)はアプリ内で開きます。画像はイシューの中に表示され、`.webm` と `.mp4` の録画は再生されます。
-- `.diff`、`.patch`、`.md`、`.log`、`.txt` ファイルへのリンクは段落の下に展開されるので、イシューを離れずに内容を読めます。diff は行番号とともに変更された単語を強調表示し、Markdown ファイルはシンタックスハイライトを付けたソースで表示します。
+- `.diff`、`.patch`、`.md`、`.log`、`.txt` ファイルへのリンクをクリックすると、新しいタブでファイルが開きます。リンクの横の chevron ボタンをクリックすると段落の下に内容が展開されるので、イシューを離れずに読めます。展開された diff は行番号とともに変更された単語を強調表示し、Markdown ファイルはシンタックスハイライトを付けたソースで表示します。
+- `.diff` と `.patch` へのリンクは diff 画面で開きます。この画面は変更されたファイルをツリーで表示し、`git format-patch` のファイルならツリーの上にコミットの件名を表示し、長い行は折り返して表示します。元のファイルも同じ画面からダウンロードできます。
 
-![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and expanded previews of a Markdown note with syntax highlighting and of a diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/attachments.png)
+![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
+
+![Diff page for a git format-patch file, with the commit subject and a tree of changed files on the left and the diff on the right, its long lines wrapped and marked](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/diff.png)
 
 ### 決定を記録に残す
 

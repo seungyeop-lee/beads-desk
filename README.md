@@ -29,9 +29,12 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 
 - Markdown and Mermaid diagrams render in descriptions and comments. Click a diagram to enlarge it.
 - [Local file links](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#local-file-links-in-issues) open in the app: images show in the issue, and `.webm` and `.mp4` recordings play.
-- Links to `.diff`, `.patch`, `.md`, `.log`, and `.txt` files expand below the paragraph, so you can read them without leaving the issue. Diffs show line numbers and highlight the changed words; Markdown files show their source with syntax highlighting.
+- Links to `.diff`, `.patch`, `.md`, `.log`, and `.txt` files open the file in a new tab. The chevron button next to each link expands the file below the paragraph instead, so you can read it without leaving the issue. Expanded diffs show line numbers and highlight the changed words; Markdown files show their source with syntax highlighting.
+- `.diff` and `.patch` links open on a diff page that lists the changed files as a tree, shows the commit subject of a `git format-patch` file above it, and wraps long lines. Download the original file from the same page.
 
-![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and expanded previews of a Markdown note with syntax highlighting and of a diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/attachments.png)
+![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
+
+![Diff page for a git format-patch file, with the commit subject and a tree of changed files on the left and the diff on the right, its long lines wrapped and marked](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/diff.png)
 
 ### Keep decisions on record
 
