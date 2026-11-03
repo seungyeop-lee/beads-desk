@@ -626,6 +626,17 @@ export const jaMessages: Messages = {
     loadFailed: (error) => `フォルダの一覧を読み込めませんでした: ${error}`,
     showMore: "さらに表示",
   },
+  localDiff: {
+    fileTree: "ファイルツリー",
+    files: "変更ファイル",
+    unnamedFile: "パスのない変更",
+    changes: "変更内容",
+    wrap: "自動折り返し",
+    download: "ダウンロード",
+    tooLarge: (megabytes) =>
+      `ファイルが ${megabytes} MB を超えるため、diff を表示しませんでした。ダウンロードして確認してください。`,
+    loadFailed: (error) => `diff ファイルを読み込めませんでした: ${error}`,
+  },
   hygiene: {
     title: "整理",
     description: "bd が推奨する整理チェックの結果です。",

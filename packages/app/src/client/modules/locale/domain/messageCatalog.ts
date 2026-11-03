@@ -515,6 +515,20 @@ export type Messages = {
     loadFailed: (error: string) => string;
     showMore: string;
   };
+  localDiff: {
+    /** 변경 파일 트리를 보이고 숨기는 버튼입니다. */
+    fileTree: string;
+    /** 변경 파일 트리 영역의 이름입니다. */
+    files: string;
+    /** 경로가 없는 파일 diff(hunk만 있는 diff)를 트리에 보일 이름입니다. */
+    unnamedFile: string;
+    /** 오른쪽 diff 영역의 이름입니다. */
+    changes: string;
+    wrap: string;
+    download: string;
+    tooLarge: (megabytes: number) => string;
+    loadFailed: (error: string) => string;
+  };
   hygiene: {
     title: string;
     description: string;

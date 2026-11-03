@@ -29,6 +29,17 @@ export function localFolderScreenPath(base: string, path: string): string {
   return `${LOCAL_FOLDER_SCREEN_PATH}?${query}`;
 }
 
+/** diff 화면의 workspace 안 경로입니다. 폴더 화면처럼 화면 경로 목록(SCREEN_PATHS)에 두지 않아서, 링크로만 들어옵니다. */
+export const LOCAL_DIFF_SCREEN_PATH = "/diff";
+
+/** diff 화면 주소의 query 이름입니다. path는 보여 줄 .diff·.patch 파일의 절대 경로입니다. */
+export const LOCAL_DIFF_QUERY = { path: "path" } as const;
+
+/** path의 .diff·.patch 파일을 보여 주는 diff 화면의 workspace 안 화면 경로를 만듭니다. */
+export function localDiffScreenPath(path: string): string {
+  return `${LOCAL_DIFF_SCREEN_PATH}?${new URLSearchParams({ [LOCAL_DIFF_QUERY.path]: path })}`;
+}
+
 export const LOCAL_FOLDER_PATH = "/api/local-folder";
 
 /** 폴더 목록을 한 번에 돌려주는 항목 수입니다. */

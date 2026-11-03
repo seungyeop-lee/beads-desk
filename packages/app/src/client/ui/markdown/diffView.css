@@ -1,0 +1,194 @@
+/*
+ * diff 보기입니다(diffPreviewView.ts). 본문 아래 펼친 diff와 diff 화면이 함께 쓰고, 본문 안에 놓일 때만 다른 값은 markdownEditor.css에 있습니다.
+ * 내용 전체가 한 영역에서 가로세로로 스크롤하고, 파일 머리 막대는 보이는 폭에 맞춰 위쪽과 왼쪽에 붙어 있습니다.
+ * 추가·삭제 색은 구문 강조 색(--code-*)과 따로 둡니다. line은 줄 바탕, strong은 번호·부호 칸과 바뀐 단어의 바탕,
+ * text는 부호, 줄 번호, 머리 막대의 추가·삭제 수와 배지의 글자색입니다. text는 strong 바탕과 머리 막대 바탕(base-300) 위에서
+ * 4.5:1 이상 대비됩니다.
+ * 본문 안에서는 Crepe의 초기화 규칙(`.milkdown *`의 margin·padding 0)이 나중에 불러와지므로, 그보다 우선하도록 안쪽 요소의 규칙을
+ * 모두 .file-preview-diff 아래로 씁니다.
+ */
+.file-preview-diff {
+  --diff-added-line: light-dark(#dafbe1, rgb(46 160 67 / 25%));
+  --diff-added-strong: light-dark(#aceebb, rgb(46 160 67 / 40%));
+  --diff-added-text: light-dark(#116329, #56d364);
+  --diff-deleted-line: light-dark(#ffebe9, rgb(248 81 73 / 25%));
+  --diff-deleted-strong: light-dark(#ffcecb, rgb(248 81 73 / 40%));
+  --diff-deleted-text: light-dark(#a40e26, #ffa198);
+  --diff-number-width: calc(var(--diff-number-digits) * 1ch + 16px);
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+}
+/*
+ * 이 요소는 스크롤 영역 안에서 보이는 폭(세로 스크롤바를 뺀 폭)을 그대로 가지므로, 머리 막대의 100cqi가 그 폭이 됩니다.
+ * 스크롤 영역 자체를 container로 두면 세로 스크롤바가 생겨도 100cqi가 스크롤바 폭만큼 줄지 않습니다.
+ * 파일들은 가장 긴 줄의 폭과 보이는 폭 중 큰 쪽에 맞춰 같은 폭으로 늘어나, 줄 배경이 오른쪽 끝까지 이어집니다.
+ */
+.file-preview-diff .file-preview-diff-content {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: max-content;
+}
+.file-preview-diff .file-preview-diff-content > * {
+  min-width: 100cqi;
+}
+.file-preview-diff .file-preview-diff-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  width: 100cqi;
+  padding: 8px 12px;
+  border-block: 1px solid var(--color-base-300);
+  background: var(--color-base-300);
+  box-shadow: 0 2px 3px color-mix(in oklab, var(--color-base-content) 10%, transparent);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+.file-preview-diff .file-preview-diff-content > :first-child .file-preview-diff-header {
+  border-top: none;
+}
+.file-preview-diff .file-preview-diff-path {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.file-preview-diff .file-preview-diff-path-from {
+  font-weight: 400;
+  color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+}
+.file-preview-diff .file-preview-diff-badge {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--code-meta);
+}
+.file-preview-diff .file-preview-diff-badge.new {
+  color: var(--diff-added-text);
+}
+.file-preview-diff .file-preview-diff-badge.deleted {
+  color: var(--diff-deleted-text);
+}
+.file-preview-diff .file-preview-diff-counts {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+@container (max-width: 480px) {
+  .file-preview-diff .file-preview-diff-path {
+    order: -1;
+    flex-basis: 100%;
+  }
+}
+.file-preview-diff .file-preview-diff-counts .added {
+  color: var(--diff-added-text);
+}
+.file-preview-diff .file-preview-diff-counts .deleted {
+  color: var(--diff-deleted-text);
+}
+.file-preview-diff table {
+  width: 100%;
+}
+.file-preview-diff td {
+  min-width: 0;
+  padding: 0 8px;
+  white-space: pre;
+  vertical-align: top;
+}
+/*
+ * 번호·부호 칸은 내용 폭으로 줄이고, 남는 폭은 줄 내용 칸이 모두 가집니다. 줄 내용 칸에 width: 100%를 주면
+ * Chromium이 파일들의 max-content 폭을 1,000,000px로 계산해, 짧은 diff에도 끝없는 가로 스크롤이 생깁니다.
+ */
+.file-preview-diff td:is(.number, .sign) {
+  width: 1px;
+}
+.file-preview-diff td.number {
+  min-width: var(--diff-number-width);
+  text-align: right;
+  color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  user-select: none;
+}
+.file-preview-diff td.sign {
+  padding: 0 5px;
+  font-weight: 700;
+  user-select: none;
+}
+.file-preview-diff td.text {
+  padding-inline-end: 12px;
+}
+.file-preview-diff tr.hunk td {
+  --diff-row-padding: 5px;
+  padding-block: var(--diff-row-padding);
+  border-block: 1px solid var(--color-base-300);
+  background: color-mix(in oklab, var(--code-meta) 12%, var(--color-base-200));
+  color: var(--code-meta);
+  font-size: 13px;
+  font-weight: 600;
+}
+.file-preview-diff tr.note td {
+  color: var(--code-meta);
+}
+.file-preview-diff tr.added {
+  --diff-line: var(--diff-added-line);
+  --diff-strong: var(--diff-added-strong);
+  --diff-text: var(--diff-added-text);
+}
+.file-preview-diff tr.deleted {
+  --diff-line: var(--diff-deleted-line);
+  --diff-strong: var(--diff-deleted-strong);
+  --diff-text: var(--diff-deleted-text);
+}
+.file-preview-diff tr:is(.added, .deleted) td {
+  background: var(--diff-line);
+}
+.file-preview-diff tr:is(.added, .deleted) td:is(.number, .sign) {
+  background: var(--diff-strong);
+  color: var(--diff-text);
+}
+.file-preview-diff mark {
+  border-radius: 2px;
+  background: var(--diff-strong);
+  color: inherit;
+  font-weight: 600;
+}
+
+/*
+ * 줄바꿈한 보기(DIFF_WRAP_CLASS)입니다. 파일들은 보이는 폭에 맞추고, 줄 내용이 그 폭을 넘으면 아무 글자에서나 줄을 바꿉니다.
+ * 줄바꿈으로 생긴 줄마다 부호 칸에 ↪ 표식을 그립니다. 표식은 칸의 둘째 줄(1lh 아래)부터 한 줄 높이 간격으로 반복하므로,
+ * 줄 높이가 모든 줄에서 같아야 표식이 줄과 맞습니다. 다른 글꼴로 그리는 한글이나 굵은 단어가 섞여도 줄 높이가 같은지는
+ * diff 화면의 컴포넌트 테스트가 확인합니다.
+ */
+.file-preview-diff-wrap > .file-preview-diff .file-preview-diff-content {
+  grid-template-columns: 100%;
+}
+.file-preview-diff-wrap > .file-preview-diff td {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.file-preview-diff-wrap > .file-preview-diff td.sign {
+  position: relative;
+}
+.file-preview-diff-wrap > .file-preview-diff td.sign::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--diff-row-padding, 0px) + 1lh) 0 var(--diff-row-padding, 0px);
+  background: currentColor;
+  opacity: 0.6;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 10 5 5-5 5'/%3E%3Cpath d='M4 4v7a4 4 0 0 0 4 4h12'/%3E%3C/svg%3E")
+    center top / 1ch 1lh repeat-y;
+}

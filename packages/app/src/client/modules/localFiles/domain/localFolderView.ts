@@ -8,12 +8,11 @@ const WINDOWS_SEPARATORS = { separator: /[/\\]/, name: /[^/\\]+/g };
 /**
  * 경로 표시줄에 보일 폴더를 base부터 path까지 순서대로 돌려줍니다. base보다 위의 폴더는 넣지 않습니다.
  * 주소를 직접 고쳐 path가 base 아래가 아니면 path 하나만 돌려줍니다.
- * 경로는 서버 OS의 형식이므로, `/`로 시작하면 macOS·Linux 경로로, 아니면 Windows 경로(`C:\...`)로 봅니다.
  */
 export function folderTrail(base: string, path: string): FolderTrailStep[] {
-  const { separator, name } = base.startsWith("/") ? POSIX_SEPARATORS : WINDOWS_SEPARATORS;
+  const { separator, name } = separatorsOf(base);
   const step = (stepPath: string): FolderTrailStep => ({
-    name: stepPath.split(separator).findLast((part) => part !== "") ?? stepPath,
+    name: pathName(stepPath),
     path: stepPath,
   });
   const rest = path.slice(base.length);
@@ -27,6 +26,16 @@ export function folderTrail(base: string, path: string): FolderTrailStep[] {
       step(path.slice(0, base.length + match.index + match[0].length)),
     ),
   ];
+}
+
+/** 경로의 마지막 이름(파일이나 폴더 이름)입니다. 루트처럼 이름이 없는 경로는 경로를 그대로 돌려줍니다. */
+export function pathName(path: string): string {
+  return path.split(separatorsOf(path).separator).findLast((part) => part !== "") ?? path;
+}
+
+/** 경로는 서버 OS의 형식이므로, `/`로 시작하면 macOS·Linux 경로로, 아니면 Windows 경로(`C:\...`)로 봅니다. */
+function separatorsOf(path: string) {
+  return path.startsWith("/") ? POSIX_SEPARATORS : WINDOWS_SEPARATORS;
 }
 
 const SIZE_UNITS = ["KB", "MB", "GB", "TB"];

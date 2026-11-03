@@ -620,6 +620,17 @@ export const enMessages: Messages = {
     loadFailed: (error) => `Could not load the folder: ${error}`,
     showMore: "Show more",
   },
+  localDiff: {
+    fileTree: "File tree",
+    files: "Changed files",
+    unnamedFile: "Change without a path",
+    changes: "Changes",
+    wrap: "Wrap lines",
+    download: "Download",
+    tooLarge: (megabytes) =>
+      `The diff is not shown because the file is larger than ${megabytes} MB. Download it to view.`,
+    loadFailed: (error) => `Could not load the diff file: ${error}`,
+  },
   hygiene: {
     title: "Hygiene",
     description: "Results of the hygiene checks bd recommends.",

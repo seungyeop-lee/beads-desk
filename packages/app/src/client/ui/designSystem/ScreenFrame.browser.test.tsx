@@ -12,7 +12,7 @@ vi.mock("next/navigation", async () =>
 );
 
 for (const width of [455, 2000]) {
-  for (const variant of ["default", "spacious", "board"] as const) {
+  for (const variant of ["default", "spacious", "board", "panes"] as const) {
     test(`폭 ${width}px에서 ${variant} 화면의 바깥 틀과 머리글이 같은 폭으로 정렬된다`, async () => {
       await page.viewport(width, 900);
       const screen = await render(
@@ -41,7 +41,7 @@ for (const width of [455, 2000]) {
       expect(document.documentElement.scrollWidth).toBe(document.documentElement.clientWidth);
       expect(getComputedStyle(main).gap).toBe(variant === "spacious" ? "24px" : "16px");
       expect(getComputedStyle(main).paddingBottom).toBe(
-        variant === "board" && width >= 768 ? "24px" : "64px",
+        variant === "panes" || (variant === "board" && width >= 768) ? "24px" : "64px",
       );
       const navBox = screen
         .getByRole("navigation", { name: "화면" })

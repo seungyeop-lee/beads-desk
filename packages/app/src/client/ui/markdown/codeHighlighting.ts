@@ -39,7 +39,7 @@ const codeTokenStyles: TagStyle[] = [
 export const codeHighlighting = syntaxHighlighting(HighlightStyle.define(codeTokenStyles));
 
 /**
- * 펼친 파일 미리보기(localFilePreview.ts)의 강조입니다. 코드 블록 강조에 더해, markdown 원문에서 인라인 코드·코드 블록 글자(monospace)와
+ * 펼친 파일 미리보기와 diff 화면이 원문에 입히는 강조(highlightedFileText.ts)입니다. 코드 블록 강조에 더해, markdown 원문에서 인라인 코드·코드 블록 글자(monospace)와
  * 표시 기호(#, -, *, `, >)를 본문 글자와 구분해 칠합니다. 이 둘은 XML의 `<?xml ?>` 같은 다른 언어 토큰에도 붙으므로 코드 블록에는 넣지 않습니다.
  * 편집기 밖에서 쓰므로, 생성된 class에 규칙이 붙으려면 `module`을 문서에 mount해야 합니다.
  */

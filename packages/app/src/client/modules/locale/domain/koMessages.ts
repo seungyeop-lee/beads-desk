@@ -610,6 +610,17 @@ export const koMessages: Messages = {
     loadFailed: (error) => `폴더 목록을 불러오지 못했습니다: ${error}`,
     showMore: "더 보기",
   },
+  localDiff: {
+    fileTree: "파일 트리",
+    files: "변경 파일",
+    unnamedFile: "경로 없는 변경",
+    changes: "변경 내용",
+    wrap: "자동 줄바꿈",
+    download: "내려받기",
+    tooLarge: (megabytes) =>
+      `파일이 ${megabytes} MB보다 커서 diff를 그리지 않았습니다. 내려받아서 확인하세요.`,
+    loadFailed: (error) => `diff 파일을 불러오지 못했습니다: ${error}`,
+  },
   hygiene: {
     title: "정리",
     description: "bd가 권하는 정리 점검의 결과입니다.",

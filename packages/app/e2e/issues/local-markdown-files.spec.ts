@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Locator, Page } from "@playwright/test";
@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, diff와 큰 로그 파일을 칩으로 본문에 펼치며, 편집 후 원문 경로를 유지한다", async ({
+test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, diff와 큰 로그 파일을 칩으로 본문에 펼치며, 편집 후 원문 경로를 유지하고, diff 화면에서 파일 트리로 파일 위치에 가고 원문을 내려받는다", async ({
   page,
   workspace,
 }) => {
@@ -25,6 +25,7 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
   }));
   const video = join(workspace.path, "화면 녹화.webm");
   const diff = join(workspace.path, "리뷰 변경.diff");
+  const patch = join(workspace.path, "리뷰 변경.patch");
   const largeLog = join(workspace.path, "큰 실행 로그.log");
   const folder = join(workspace.path, "리뷰 산출물");
   const shot = join(folder, "화면", "결과.png");
@@ -38,6 +39,27 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     // 재생 위치를 옮겨 보려면 영상이 2초보다 길어야 하므로, 다시 녹화할 때도 3초 안팎으로 녹화합니다.
     await copyFile(join(import.meta.dirname, "playwright-recording.webm"), video);
     await writeFile(diff, "@@ -1 +1 @@\n-이전 줄\n+바뀐 줄\n");
+    // 첫 파일을 길게 두어, diff 화면을 처음 열었을 때 둘째 파일이 보이는 영역 밖에 있게 합니다.
+    const patchText = [
+      "From 3f9c2a1 Mon Sep 17 00:00:00 2001",
+      "Subject: [PATCH] Show inline card errors",
+      "",
+      "diff --git a/src/checkout/PaymentForm.tsx b/src/checkout/PaymentForm.tsx",
+      "--- a/src/checkout/PaymentForm.tsx",
+      "+++ b/src/checkout/PaymentForm.tsx",
+      "@@ -0,0 +1,150 @@",
+      ...Array.from({ length: 150 }, (_, index) => `+const line${index} = ${index};`),
+      "diff --git a/src/checkout/CardField.tsx b/src/checkout/CardField.tsx",
+      "--- a/src/checkout/CardField.tsx",
+      "+++ b/src/checkout/CardField.tsx",
+      "@@ -1 +1 @@",
+      "-export const label = 1;",
+      "+export const label = 2;",
+      "-- ",
+      "2.47.0",
+      "",
+    ].join("\n");
+    await writeFile(patch, patchText);
     await writeFile(largeLog, "a".repeat(1024 * 1024 + 1));
     await mkdir(join(folder, "화면"), { recursive: true });
     await writeFile(join(folder, "요약.md"), "# 요약");
@@ -129,6 +151,26 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     const external = await openedTab(description.getByRole("link", { name: "외부 문서" }));
     await expect(external).toHaveURL("https://example.com/doc");
     await expect(external.getByText("외부 문서 화면")).toBeVisible();
+
+    // diff 화면은 파일 API가 보낸 원문으로 그립니다. 트리 모양, 커밋 메시지, 줄바꿈, 상한 안내는 LocalDiffScreen.browser.test.tsx가 확인합니다.
+    await page.goto(`diff?${new URLSearchParams({ path: patch })}`);
+    const changes = page.getByRole("region", { name: "변경 내용" });
+    const cardField = changes
+      .getByRole("group", { name: "src/checkout/CardField.tsx" })
+      .getByText("src/checkout/CardField.tsx", { exact: true });
+    await expect(changes.getByText("const line0 = 0;", { exact: true })).toBeVisible();
+    await expect(cardField).not.toBeInViewport();
+    await page
+      .getByRole("navigation", { name: "변경 파일" })
+      .getByRole("button", { name: "CardField.tsx" })
+      .click();
+    await expect(cardField).toBeInViewport();
+    // 파일 API 응답에는 sandbox CSP가 붙으므로, 그 응답이 내려받기로 저장되는지 실제 브라우저에서 확인합니다.
+    const downloading = page.waitForEvent("download");
+    await page.getByRole("link", { name: "내려받기" }).click();
+    const download = await downloading;
+    expect(download.suggestedFilename()).toBe("리뷰 변경.patch");
+    expect(await readFile(await download.path(), "utf8")).toBe(patchText);
   } finally {
     execFileSync("git", ["-C", workspace.path, "worktree", "remove", "--force", worktree]);
     await rm(outside, { recursive: true, force: true });
