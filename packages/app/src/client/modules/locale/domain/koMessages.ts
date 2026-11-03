@@ -28,6 +28,7 @@ export const koMessages: Messages = {
     newIssue: "새 이슈",
     awaitingCount: (count) => `${count}개`,
     workspace: "이 탭의 workspace",
+    viewers: { diff: "diff 뷰어", folder: "폴더 뷰어" },
   },
   settings: {
     title: "설정",

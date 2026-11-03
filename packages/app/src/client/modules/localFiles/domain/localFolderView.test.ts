@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { folderTrail, formatFileSize, pathName } from "./localFolderView";
+import { folderTrail, formatFileSize } from "./localFolderView";
 
 test("경로 표시줄은 base부터 path까지의 폴더만 담는다", () => {
   expect(folderTrail("/Users/me/reports", "/Users/me/reports/bd-x/shots")).toEqual([
@@ -50,11 +50,4 @@ test.each([
   [5 * 1024 ** 3, "5.0 GB"],
 ])("파일 크기 %d를 %s로 보인다", (bytes, text) => {
   expect(formatFileSize(bytes)).toBe(text);
-});
-
-test("경로의 마지막 이름을 macOS·Linux 경로와 Windows 경로에서 꺼낸다", () => {
-  expect(pathName("/Users/me/reports/review.diff")).toBe("review.diff");
-  expect(pathName("/Users/me/reports/")).toBe("reports");
-  expect(pathName("C:\\Users\\me\\review.patch")).toBe("review.patch");
-  expect(pathName("/")).toBe("/");
 });

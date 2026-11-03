@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, diff 링크는 어떻게 눌러도 새 탭의 diff 화면으로 열고, diff와 큰 로그 파일을 펼치기 버튼으로 본문에 펼치며, 편집 후 원문 경로를 유지하고, diff 화면에서 파일 트리로 파일 위치에 가고 원문을 내려받는다", async ({
+test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, 폴더 화면에서 하위 폴더로 옮기면 탭 제목이 그 폴더 이름으로 바뀌고, diff 링크는 어떻게 눌러도 새 탭의 diff 화면으로 열고, diff와 큰 로그 파일을 펼치기 버튼으로 본문에 펼치며, 편집 후 원문 경로를 유지하고, diff 화면에서 파일 트리로 파일 위치에 가고 원문을 내려받는다", async ({
   page,
   workspace,
 }) => {
@@ -137,6 +137,7 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     await expect
       .poll(() => new URL(folderTab.url()).searchParams.get("path"))
       .toBe(join(folder, "화면"));
+    await expect(folderTab).toHaveTitle(`화면 · ${workspace.slug} · beads-desk`);
     const shotTab = await openedTab(entries.getByRole("link", { name: "결과.png" }));
     expect(new URL(shotTab.url()).searchParams.get("path")).toBe(shot);
     await shotTab.close();

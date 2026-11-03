@@ -4,7 +4,7 @@ import { render } from "vitest-browser-react";
 import { saveDiffWrapPreference } from "@/client/infra/localFiles/diffWrapPreferenceStore";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
+import { ViewerLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
 import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { LocalDiffScreen } from "./LocalDiffScreen";
 
@@ -14,9 +14,6 @@ const PATH = "/data/reports/inline-card-errors.patch";
 // 주소의 path와 파일 API가 돌려줄 응답을 테스트마다 바꿉니다. 응답이 없는 경로는 404입니다.
 const screenState = vi.hoisted(() => ({ path: "", files: {} as Record<string, () => Response> }));
 
-vi.mock("@/client/ui/issues/IssueDetailRoute", async () =>
-  (await import("@/client/ui/address/screenAddressMocks.testkit")).issueDetailRouteMock("/diff"),
-);
 vi.mock("next/navigation", async () =>
   (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
     screenPath: "/diff",
@@ -82,9 +79,9 @@ function serve(contents: string, path = PATH) {
 function openScreen() {
   return render(
     <LocaleProvider locale="ko">
-      <AppLayoutFixture>
+      <ViewerLayoutFixture viewer="diff">
         <LocalDiffScreen />
-      </AppLayoutFixture>
+      </ViewerLayoutFixture>
     </LocaleProvider>,
   );
 }

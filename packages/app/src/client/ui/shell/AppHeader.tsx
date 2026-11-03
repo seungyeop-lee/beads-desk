@@ -17,7 +17,7 @@ import { useIssueHref } from "@/client/ui/issues/IssueDetailRoute";
 import { NewIssueDialog } from "@/client/ui/issues/NewIssueDialog";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { SettingsDialog } from "@/client/ui/settings/SettingsDialog";
-import { LOGO_BEADS } from "./logoBeads";
+import { AppLogo } from "./AppLogo";
 import { SCREEN_TAB_GROUPS } from "./screenTabs";
 import { WorkspacePicker } from "./WorkspacePicker";
 
@@ -42,8 +42,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-20 shrink-0 border-b border-base-300 bg-base-100/85 backdrop-blur">
       <div className="content-width flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-8 xl:h-14 xl:flex-nowrap xl:gap-6 xl:py-0">
         <Link href={workspaceHref()} className="flex shrink-0 items-center gap-2.5">
-          <BeadsMark />
-          <span className="text-body font-bold tracking-tight">beads-desk</span>
+          <AppLogo />
         </Link>
         <nav
           className="order-last flex w-full min-w-0 items-center gap-1 overflow-x-auto xl:order-none xl:w-auto"
@@ -104,15 +103,5 @@ export function AppHeader() {
         />
       )}
     </header>
-  );
-}
-
-function BeadsMark() {
-  return (
-    <span className="grid grid-cols-2 gap-0.5" aria-hidden="true">
-      {LOGO_BEADS.map(({ tone }) => (
-        <span key={tone} className={`tone-dot ${tone} size-2`} />
-      ))}
-    </span>
   );
 }

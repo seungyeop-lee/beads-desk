@@ -20,7 +20,7 @@ import {
   diffCommitMessage,
   diffFileTree,
 } from "@/client/modules/localFiles/domain/localDiffView";
-import { pathName } from "@/client/modules/localFiles/domain/localFolderView";
+import { pathName } from "@/shared/domain/localFiles/localPaths";
 import type { DiffPreview } from "@/client/modules/markdown/domain/diffPreview";
 import { useWorkspaceSlug } from "@/client/ui/address/workspaceAddress";
 import { EmptyState } from "@/client/ui/designSystem/EmptyState";

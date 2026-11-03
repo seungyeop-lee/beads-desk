@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { expect, test } from "../support/bdWorkspace";
 
 test("서로 다른 workspace를 연 두 탭은 각자의 workspace 이름으로 시작하는 제목과 각자의 이슈를 보이고, CLI로 바꾼 workspace를 연 탭만 다시 조회하며, 화면을 옮겨도 제목을 유지한다", async ({
@@ -47,7 +49,7 @@ test("서로 다른 workspace를 연 두 탭은 각자의 workspace 이름으로
   await expect(page).toHaveTitle(`${workspace.slug} · beads-desk`);
 });
 
-test("workspace 이름이 없는 예전 주소는 workspace를 고르게 하고 고르면 같은 화면과 조건으로 옮겨 가며, 등록하지 않은 workspace 이름의 주소는 안내를 보이고 탭 제목에 workspace 이름을 넣지 않는다", async ({
+test("workspace 이름이 없는 예전 주소는 workspace를 고르게 하고 고르면 같은 화면과 조건으로 옮겨 가며, 등록하지 않은 workspace 이름의 주소는 diff 화면 주소여도 안내를 보이고 탭 제목에 workspace 이름이나 파일 이름을 넣지 않는다", async ({
   page,
   appServerUrl,
   workspace,
@@ -67,5 +69,12 @@ test("workspace 이름이 없는 예전 주소는 workspace를 고르게 하고 
   await expect(
     page.getByText("'missing-workspace' 이름으로 등록한 workspace가 없습니다."),
   ).toBeVisible();
+  await expect(page).toHaveTitle("beads-desk");
+
+  // diff 화면은 path의 파일 이름을 제목에 넣지만, 등록하지 않은 workspace 주소에서는 넣지 않습니다.
+  await page.goto(
+    `${appServerUrl}/w/missing-workspace/diff?${new URLSearchParams({ path: join(tmpdir(), "리뷰 변경.diff") })}`,
+  );
+  await expect(page.getByRole("heading", { name: "workspace를 찾지 못했습니다" })).toBeVisible();
   await expect(page).toHaveTitle("beads-desk");
 });

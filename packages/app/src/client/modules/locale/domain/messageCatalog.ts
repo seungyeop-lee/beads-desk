@@ -45,6 +45,8 @@ export type Messages = {
     /** 스크린 리더가 상단 탭 이름 뒤에 이어 읽는 개수입니다. 화면에는 숫자만 보입니다. */
     awaitingCount: (count: number) => string;
     workspace: string;
+    /** 이슈 본문의 링크로 새 탭에 여는 화면의 머리글에 보이는 이름입니다. */
+    viewers: { diff: string; folder: string };
   };
   settings: {
     title: string;
