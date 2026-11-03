@@ -51,13 +51,18 @@ export function LocalFolderScreen() {
         (listing.entries.length === 0 ? (
           <EmptyState message={text.empty} />
         ) : (
-          <div className="surface min-w-0 overflow-x-auto">
-            <table aria-label={text.entries} className="table table-fixed">
+          // 이름 열은 남는 폭을 차지하되 20rem(표 영역이 더 좁으면 영역 폭)보다 좁아지지 않습니다.
+          // 그 폭을 남길 수 없는 좁은 영역에서는 표가 영역보다 넓어지고, 크기·수정 시각 열은 가로로 스크롤해서 봅니다.
+          <div className="@container surface min-w-0 overflow-x-auto">
+            <table
+              aria-label={text.entries}
+              className="table [--size-column:7rem] [--modified-at-column:13rem] w-[max(100cqw,min(100cqw,20rem)_+_var(--size-column)_+_var(--modified-at-column))] table-fixed"
+            >
               <thead>
                 <tr>
                   <th>{text.name}</th>
-                  <th className="w-28 text-right">{text.size}</th>
-                  <th className="w-52">{text.modifiedAt}</th>
+                  <th className="w-(--size-column) text-right">{text.size}</th>
+                  <th className="w-(--modified-at-column)">{text.modifiedAt}</th>
                 </tr>
               </thead>
               <tbody>
