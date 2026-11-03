@@ -12,6 +12,8 @@ import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
 import { codeMirrorDom } from "./codeMirrorDom.testkit";
 import { contrast } from "../designSystem/colorContrast.testkit";
 import { daisyDom } from "../daisyDom.testkit";
+import { keyboardOutline } from "../designSystem/keyboardFocus.testkit";
+import { KeyboardFocusMode } from "../designSystem/KeyboardFocusMode";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { milkdownDom } from "./milkdownDom.testkit";
 import { peleDom } from "../designSystem/peleDom.testkit";
@@ -839,6 +841,37 @@ test("그려진 그림만 눌러 크게 볼 수 있고, 크게 본 그림은 원
   const [dark] = colors();
   expect(dark).not.toBe(light);
   expect(colors()).toEqual([dark, dark]);
+});
+
+test("Tab으로 옮긴 focus는 코드 블록의 복사 버튼에 외곽선을 그리고, 글자를 입력하는 칸에는 그리지 않으며, 그림은 감싼 요소 대신 그림 안쪽에 그린다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <KeyboardFocusMode />
+      <MarkdownEditor openAddress={tabMarkdownUrl} readOnly value={DIAGRAM} />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        value={"문단\n\n```ts\nconst value = 1;\n```"}
+        label="설명"
+      />
+    </LocaleProvider>,
+  );
+  const diagram = screen.getByRole("button", { name: "그림 크게 보기" });
+  await expect.element(diagram).toBeVisible();
+  const editor = screen.getByRole("textbox", { name: "설명" });
+  await expect.element(editor).toBeVisible();
+  await userEvent.keyboard("{Tab}");
+
+  expect(keyboardOutline(screen.getByRole("button", { name: "Copy" }).element())).toBe(
+    "solid 2px 2px",
+  );
+  expect(keyboardOutline(editor.element())).toMatch(/^none /);
+  const code = editor.element().querySelector(codeMirrorDom.content)!;
+  expect(keyboardOutline(code)).toMatch(/^none /);
+  expect(keyboardOutline(diagram.element())).toMatch(/^none /);
+  const { outlineStyle, outlineWidth, outlineOffset } = getComputedStyle(
+    diagram.element().querySelector("svg")!,
+  );
+  expect(`${outlineStyle} ${outlineWidth} ${outlineOffset}`).toBe("solid 2px -2px");
 });
 
 test("편집기를 감싼 form과 dialog는 그림 dialog를 Esc, 닫기 단추, 바깥 클릭으로 닫아도 제출되거나 닫히지 않고, 입력한 글자가 남는다", async () => {

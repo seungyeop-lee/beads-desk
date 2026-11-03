@@ -6,6 +6,8 @@ import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { koMessages } from "@/client/modules/locale/domain/koMessages";
+import { KeyboardFocusMode } from "@/client/ui/designSystem/KeyboardFocusMode";
+import { keyboardOutline } from "@/client/ui/designSystem/keyboardFocus.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LOCAL_DIFF_SCREEN_PATH, LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
 import { codeMirrorDom } from "./codeMirrorDom.testkit";
@@ -797,6 +799,51 @@ test("1 MB를 넘는 파일을 펼치면 내용 대신 생략 문구와, 본문 
     expect(new URL(href, location.href).pathname.endsWith(screenPath)).toBe(true);
     await expect.element(open).toHaveAttribute("target", "_blank");
     expect(contents.element().querySelector("pre")).toBeNull();
+  }
+});
+
+test("Tab으로 옮긴 focus는 본문 링크, 파일 열기 링크, 펼친 원문과 diff 스크롤 영역, 펼치기 버튼에 외곽선을 그리고, 마우스로 누른 요소에는 그리지 않는다", async () => {
+  files = {
+    "/tmp/r/a.diff": () => new Response(DIFF),
+    "/tmp/r/a.log": () => new Response(LOG),
+    "/tmp/r/huge.log": () => new Response("a".repeat(1024 * 1024 + 1)),
+  };
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <KeyboardFocusMode />
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        readOnly
+        value="[참고 문서](https://example.com/doc) [변경 diff](/tmp/r/a.diff) [로그](/tmp/r/a.log) [큰 로그](/tmp/r/huge.log)"
+      />
+    </LocaleProvider>,
+  );
+  for (const name of ["변경 diff", "로그", "큰 로그"]) {
+    await userEvent.click(screen.getByRole("button", { name: labels.filePreview(name) }));
+  }
+  const contents = (name: string) =>
+    screen.getByRole("region", { name: labels.filePreviewContents(name) });
+  await expect.element(contents("변경 diff").getByText("const after = 2;")).toBeVisible();
+  await expect.element(contents("로그").getByText("두 번째 줄", { exact: false })).toBeVisible();
+  const openFile = contents("큰 로그").getByRole("link", { name: labels.openFile });
+  await expect.element(openFile).toBeVisible();
+
+  await userEvent.keyboard("{Tab}");
+  const targets = [
+    screen.getByRole("link", { name: "참고 문서" }).element(),
+    openFile.element(),
+    contents("로그").element().querySelector("pre")!,
+    contents("변경 diff").element().firstElementChild!,
+  ];
+  expect(targets.map(keyboardOutline)).toEqual(targets.map(() => "solid 2px 2px"));
+  // 펼치기 버튼은 외곽선 간격만 1px로 좁습니다.
+  const toggle = screen.getByRole("button", { name: labels.filePreview("로그") }).element();
+  expect(keyboardOutline(toggle)).toBe("solid 2px 1px");
+
+  for (const target of [contents("로그").element().querySelector("pre")!, toggle]) {
+    await userEvent.click(target);
+    expect(document.activeElement).toBe(target);
+    expect(getComputedStyle(target).outlineStyle).toBe("none");
   }
 });
 
