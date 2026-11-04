@@ -79,9 +79,15 @@ npm view @seungyeop-lee/beads-desk@<새 version> version --prefer-online
 
 - 3단계에서 센 커밋만 적습니다. 내부 변경은 적지 않습니다.
 - 변경을 `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security` 소제목(`### `) 아래 이 순서로 나누고, 항목이 없는 소제목은 넣지 않습니다.
-- 커밋 메시지는 한국어이므로 그대로 옮기지 않습니다. 제목만으로 무엇이 바뀌었는지 알 수 없으면 `git show <hash>`로 diff를 읽고, 사용자가 화면이나 CLI에서 겪는 변화를 영어 문장으로 다시 씁니다. 화면과 버튼 이름은 `packages/app/src/client/modules/locale/domain/enMessages.ts`의 영어 문구를 씁니다.
-- 같은 기능을 고친 여러 커밋은 항목 하나로 합칩니다. 커밋 hash와 bd 이슈 ID는 적지 않습니다.
-- 문장 형식은 이전 version 절을 따릅니다.
+- 커밋 메시지는 한국어이므로 그대로 옮기지 않습니다. 제목만으로 무엇이 바뀌었는지 알 수 없으면 `git show <hash>`로 diff를 읽습니다.
+- 항목 하나에는 사용자가 화면이나 CLI에서 겪는 변화 하나를 짧은 영어 한 문장으로 적습니다. 새 기능은 무엇을 할 수 있게 됐는지, 바뀐 동작은 무엇이 어떻게 달라졌는지, 고친 버그는 이제 어떻게 동작하는지만 적습니다. 문장이 25단어를 넘으면 세부 동작이 섞이지 않았는지 다시 봅니다.
+- 버튼마다의 동작, 정렬 순서, 크기 제한, 설정이 유지되는 방식 같은 세부 동작은 CHANGELOG에 적지 않습니다. 그 세부가 `USAGE.md`에 있으면 문장 뒤에 `See [<소제목>](https://github.com/seungyeop-lee/beads-desk/blob/v<새 version>/USAGE.md#<anchor>).`를 붙여, 세부가 적힌 가장 가까운 소제목으로 링크합니다. 항목에는 이 링크 문장 말고 다른 문장을 더하지 않습니다.
+  - `<anchor>`는 소제목을 소문자로 바꾸고, 영문자·숫자·공백·`-` 밖의 문자(`` ` ``도 포함)를 지운 뒤, 공백을 `-`로 바꾼 값입니다(``How changes made with `bd` appear`` → `how-changes-made-with-bd-appear`). 그 소제목이 지금 `USAGE.md`에 있는지 확인합니다.
+  - 주소에 `main` 대신 `v<새 version>` tag를 쓰면, 나중에 USAGE의 소제목이 바뀌어도 링크가 그 release의 설명을 가리킵니다. tag는 게시할 때 `release.yml`이 만듭니다.
+- 새 기능 하나는 항목 하나로 적고, 그 기능 안의 세부 동작을 항목으로 나누지 않습니다. 한 커밋이 기존 동작을 여러 곳에서 서로 다르게 바꿨으면 바뀐 동작마다 항목을 나눕니다.
+- 같은 변화를 만든 여러 커밋은 항목 하나로 합칩니다. 커밋 hash와 bd 이슈 ID는 적지 않습니다.
+- 화면과 버튼 이름은 `packages/app/src/client/modules/locale/domain/enMessages.ts`의 영어 문구를 `**`로 감싸 씁니다.
+- 0.14.0까지의 절은 한 항목에 세부 동작을 여러 문장으로 적었으므로, 그 절의 항목 길이와 문장 구성을 따르지 않습니다.
 
 ## 6. package.json 갱신
 
