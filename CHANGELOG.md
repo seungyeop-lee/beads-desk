@@ -4,6 +4,12 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-11-04
+
+### Added
+
+- The diff page's **File tree** now shows file change statuses and visually distinguishes folders from files. See [Diff page](https://github.com/seungyeop-lee/beads-desk/blob/v0.16.0/USAGE.md#diff-page).
+
 ## [0.15.0] - 2026-11-04
 
 ### Added
