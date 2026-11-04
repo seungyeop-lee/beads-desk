@@ -29,8 +29,9 @@
 
 - 설명과 댓글의 Markdown과 Mermaid 그림을 그려 보여 줍니다. 그림을 누르면 크게 볼 수 있습니다.
 - [로컬 파일 링크](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#이슈-본문의-로컬-파일-링크)는 앱 안에서 열립니다. 이미지는 이슈 안에 보이고, `.webm`과 `.mp4` 녹화는 재생됩니다.
-- `.diff`, `.patch`, `.md`, `.log`, `.txt` 파일 링크를 누르면 새 탭에서 파일이 열립니다. 링크 옆의 chevron 버튼을 누르면 문단 아래에 내용이 펼쳐져서, 이슈를 떠나지 않고 읽을 수 있습니다. 펼친 diff는 줄 번호와 함께 바뀐 단어를 강조해 보여 주고, Markdown 파일은 구문 강조를 입힌 원문으로 보여 줍니다.
-- `.diff`와 `.patch` 링크는 diff 화면으로 열립니다. 이 화면은 바뀐 파일을 트리로 보여 주고, `git format-patch` 파일이면 트리 위에 커밋 제목을 보여 주며, 긴 줄은 줄바꿈해 보여 줍니다. 원본 파일도 같은 화면에서 내려받을 수 있습니다.
+- `.md`, `.markdown`, `.txt`, `.log` 링크는 Markdown을 렌더링하고 텍스트와 로그 파일은 원문 그대로 보여 주는 [텍스트 화면](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#텍스트-화면)으로 열립니다.
+- `.diff`와 `.patch` 링크는 바뀐 파일을 트리로 보여 주고 긴 줄을 줄바꿈하는 [diff 화면](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#diff-화면)으로 열립니다.
+- 이 링크들 옆의 chevron 버튼을 누르면 이슈를 떠나지 않고 [문단 아래에 파일 내용이 펼쳐집니다](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#이슈-화면에서-파일-내용-펼치기).
 
 ![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
 
@@ -54,7 +55,7 @@
 ### 자리를 비운 동안 생긴 일 보기
 
 - **활동** 화면은 workspace 전체에서 이슈를 만들고 닫고 댓글을 단 기록을 새것부터 보여 줍니다.
-- 이슈를 고친 기록(설명, 상태, 제목, 라벨 등)과 지운 기록은 `bd config set events-journal true`로 bd의 events journal을 켜야 보입니다. 켠 뒤에 생긴 변경부터 기록됩니다.
+- 이슈를 고친 기록(설명, 상태, 제목, 라벨 등)과 지운 기록은 `bd config set events-journal true`로 bd의 events journal을 켜면, 켠 뒤에 생긴 변경부터 함께 보입니다.
 - **여기부터 지난번에 본 기록** 구분선이 지난번에 어디까지 봤는지 표시합니다.
 
 ![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/activity.png)
@@ -84,7 +85,7 @@
 - macOS, Linux 또는 Windows. `bd` 1.3.1로 macOS와 GitHub Actions의 `windows-latest` runner에서 테스트했습니다. Windows 테스트는 beads-desk를 npm으로 설치하고 embedded mode workspace를 씁니다.
 - Node.js 22 이상
 - `bd` CLI. `bd`가 `PATH`에 없으면 서버를 시작할 때 `BD_BIN` 환경 변수에 실행 파일 경로를 넣습니다.
-  - Windows에서 npm으로 설치한 `bd`(`npm install -g @beads/bd`)는 서버가 자동으로 찾습니다. 다른 방법으로 설치한 `bd`를 서버가 찾지 못하면, [문제 해결](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#문제-해결)에 나온 대로 `BD_BIN`에 `bd.exe`의 전체 경로를 지정합니다.
+  - Windows에서는 npm으로 설치한 `bd`(`npm install -g @beads/bd`)를 서버가 자동으로 찾고, 다른 방법으로 설치한 `bd`를 찾지 못하면 [문제 해결](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#문제-해결)에 나온 대로 `BD_BIN`을 지정합니다.
 - beads workspace: `bd init`을 실행한 디렉터리
 
 ## 시작하기

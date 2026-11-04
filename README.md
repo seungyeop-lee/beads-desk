@@ -29,8 +29,9 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 
 - Markdown and Mermaid diagrams render in descriptions and comments. Click a diagram to enlarge it.
 - [Local file links](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#local-file-links-in-issues) open in the app: images show in the issue, and `.webm` and `.mp4` recordings play.
-- Links to `.diff`, `.patch`, `.md`, `.log`, and `.txt` files open the file in a new tab. The chevron button next to each link expands the file below the paragraph instead, so you can read it without leaving the issue. Expanded diffs show line numbers and highlight the changed words; Markdown files show their source with syntax highlighting.
-- `.diff` and `.patch` links open on a diff page that lists the changed files as a tree, shows the commit subject of a `git format-patch` file above it, and wraps long lines. Download the original file from the same page.
+- `.md`, `.markdown`, `.txt`, and `.log` links open on a [text page](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#text-page) that renders Markdown and shows text and log files as they are.
+- `.diff` and `.patch` links open on a [diff page](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#diff-page) that lists the changed files as a tree and wraps long lines.
+- The chevron button next to these links [expands the file](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#expanding-files-in-an-issue) below the paragraph, without leaving the issue.
 
 ![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
 
@@ -54,7 +55,7 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 ### See what happened while you were away
 
 - **Activity** lists the issues created, closed, and commented on across the workspace, newest first.
-- Issue edits (description, status, title, labels, and more) and deletions appear once you turn on bd's events journal with `bd config set events-journal true`. Only changes made after that are recorded.
+- Issue edits (description, status, title, labels, and more) and deletions also appear once you turn on bd's events journal with `bd config set events-journal true`, starting from changes made after that.
 - A **Seen on your last visit** divider marks where you left off.
 
 ![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/activity.png)
@@ -84,7 +85,7 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 - macOS, Linux, or Windows. Tested with `bd` 1.3.1 on macOS and on the GitHub Actions `windows-latest` runner. The Windows tests install beads-desk with npm and use a workspace in embedded mode.
 - Node.js 22 or later
 - The `bd` CLI. If `bd` is not on your `PATH`, set the `BD_BIN` environment variable to the path of the executable when you start the server.
-  - On Windows, `bd` installed with npm (`npm install -g @beads/bd`) is found automatically. If you installed `bd` another way and the server cannot find it, set `BD_BIN` to the full path of `bd.exe`, as shown in [Troubleshooting](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#troubleshooting).
+  - On Windows, the server finds `bd` installed with npm (`npm install -g @beads/bd`) automatically; if it cannot find a `bd` installed another way, set `BD_BIN` as shown in [Troubleshooting](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#troubleshooting).
 - A beads workspace: a directory where you ran `bd init`
 
 ## Getting started

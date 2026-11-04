@@ -29,8 +29,9 @@
 
 - 説明とコメントの Markdown と Mermaid の図を描画します。図をクリックすると拡大できます。
 - [ローカルファイルへのリンク](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#イシュー本文のローカルファイルリンク)はアプリ内で開きます。画像はイシューの中に表示され、`.webm` と `.mp4` の録画は再生されます。
-- `.diff`、`.patch`、`.md`、`.log`、`.txt` ファイルへのリンクをクリックすると、新しいタブでファイルが開きます。リンクの横の chevron ボタンをクリックすると段落の下に内容が展開されるので、イシューを離れずに読めます。展開された diff は行番号とともに変更された単語を強調表示し、Markdown ファイルはシンタックスハイライトを付けたソースで表示します。
-- `.diff` と `.patch` へのリンクは diff 画面で開きます。この画面は変更されたファイルをツリーで表示し、`git format-patch` のファイルならツリーの上にコミットの件名を表示し、長い行は折り返して表示します。元のファイルも同じ画面からダウンロードできます。
+- `.md`、`.markdown`、`.txt`、`.log` へのリンクは、Markdown をレンダリングし、テキストとログのファイルはそのまま表示する[テキスト画面](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#テキスト画面)で開きます。
+- `.diff` と `.patch` へのリンクは、変更されたファイルをツリーで表示し長い行を折り返す [diff 画面](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#diff-画面)で開きます。
+- これらのリンクの横の chevron ボタンをクリックすると、イシューを離れずに[段落の下にファイルの内容が展開されます](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#イシュー画面でファイルの内容を展開する)。
 
 ![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
 
@@ -54,7 +55,7 @@
 ### 離れている間に起きたことを確認する
 
 - **アクティビティ** 画面は、workspace 全体でイシューを作成、クローズ、コメントした記録を新しい順に表示します。
-- イシューを編集した記録(説明、状態、タイトル、ラベルなど)と削除した記録は、`bd config set events-journal true` で bd の events journal をオンにすると表示されます。オンにした後の変更から記録されます。
+- イシューを編集した記録(説明、状態、タイトル、ラベルなど)と削除した記録も、`bd config set events-journal true` で bd の events journal をオンにすると、オンにした後の変更から表示されます。
 - **ここから前回見た記録** の区切り線が、前回どこまで見たかを示します。
 
 ![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/activity.png)
@@ -84,7 +85,7 @@
 - macOS、Linux、または Windows。`bd` 1.3.1 で、macOS と GitHub Actions の `windows-latest` runner でテストしています。Windows のテストでは beads-desk を npm でインストールし、embedded mode の workspace を使います。
 - Node.js 22 以降
 - `bd` CLI。`bd` が `PATH` にない場合は、サーバーを起動するときに `BD_BIN` 環境変数に実行ファイルのパスを設定します。
-  - Windows では、npm でインストールした `bd`(`npm install -g @beads/bd`)をサーバーが自動で見つけます。ほかの方法でインストールした `bd` をサーバーが見つけられない場合は、[トラブルシューティング](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#トラブルシューティング)のとおり `BD_BIN` に `bd.exe` のフルパスを設定します。
+  - Windows では npm でインストールした `bd`(`npm install -g @beads/bd`)をサーバーが自動で見つけ、ほかの方法でインストールした `bd` が見つからない場合は[トラブルシューティング](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#トラブルシューティング)のとおり `BD_BIN` を設定します。
 - beads workspace: `bd init` を実行したディレクトリ
 
 ## はじめに
