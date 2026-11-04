@@ -613,6 +613,7 @@ export const koMessages: Messages = {
   localDiff: {
     fileTree: "파일 트리",
     files: "변경 파일",
+    modified: "수정",
     unnamedFile: "경로 없는 변경",
     changes: "변경 내용",
     wrap: "자동 줄바꿈",

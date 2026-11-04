@@ -623,6 +623,7 @@ export const enMessages: Messages = {
   localDiff: {
     fileTree: "File tree",
     files: "Changed files",
+    modified: "modified",
     unnamedFile: "Change without a path",
     changes: "Changes",
     wrap: "Wrap lines",

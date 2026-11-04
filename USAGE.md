@@ -157,6 +157,8 @@ An opened file is shown according to its extension:
   - You can also open the page directly at `/w/<workspace name>/diff?path=<absolute path of the file>`.
 - File tree:
   - The left side lists the changed files as a tree, like the **Files changed** tree of a GitHub pull request.
+  - File icons show added files with a plus, modified files with a pencil, and deleted files with a trash can. Hover over a file for its status; screen readers also announce the status, including rename and binary information.
+  - Folder icons have a subtle tint and fill to distinguish them from files. Long file names wrap beside their status icons.
   - A folder whose only item is one subfolder is merged with it into one row such as `src/checkout`.
   - Within a folder, folders come first and names are sorted alphabetically.
   - Click a folder to collapse or expand it, and click a file to scroll the diff on the right to that file.

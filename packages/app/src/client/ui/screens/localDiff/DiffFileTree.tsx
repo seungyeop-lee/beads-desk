@@ -1,6 +1,13 @@
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useId, useState } from "react";
 import type { DiffTreeNode } from "@/client/modules/localFiles/domain/localDiffView";
-import { ChevronRightIcon, FileIcon, FolderIcon } from "@/client/ui/designSystem/icons";
+import type { DiffFile } from "@/client/modules/markdown/domain/diffPreview";
+import {
+  ChevronRightIcon,
+  FolderIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+} from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 // 깊이(--tree-depth)마다 들여 써서 어느 폴더 아래의 항목인지 보이게 합니다. 파일 줄은 폴더 줄의 chevron 폭만큼 더 들여 써,
@@ -13,9 +20,11 @@ const FILE_INDENT = "pl-[calc(var(--tree-depth)*0.75rem+1.875rem)]";
 /** 변경 파일 트리입니다. 폴더는 눌러서 접고 펼치고, 파일을 누르면 onOpen에 그 파일의 diff 순서를 넘깁니다. */
 export function DiffFileTree({
   nodes,
+  files,
   onOpen,
 }: {
   nodes: DiffTreeNode[];
+  files: DiffFile[];
   onOpen: (file: number) => void;
 }) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
@@ -26,24 +35,32 @@ export function DiffFileTree({
       return next;
     });
   return (
-    <TreeLevel nodes={nodes} depth={0} collapsed={collapsed} toggle={toggle} onOpen={onOpen} />
+    <TreeLevel
+      nodes={nodes}
+      files={files}
+      depth={0}
+      collapsed={collapsed}
+      toggle={toggle}
+      onOpen={onOpen}
+    />
   );
 }
 
 function TreeLevel({
   nodes,
+  files,
   depth,
   collapsed,
   toggle,
   onOpen,
 }: {
   nodes: DiffTreeNode[];
+  files: DiffFile[];
   depth: number;
   collapsed: ReadonlySet<string>;
   toggle: (path: string) => void;
   onOpen: (file: number) => void;
 }) {
-  const messages = useMessages();
   return (
     <ul className="flex flex-col" style={{ "--tree-depth": depth } as CSSProperties}>
       {nodes.map((node) =>
@@ -58,12 +75,13 @@ function TreeLevel({
               <ChevronRightIcon
                 className={`mt-0.5 shrink-0 text-emphasis-50 transition-transform ${collapsed.has(node.path) ? "" : "rotate-90"}`}
               />
-              <FolderIcon className="mt-0.5 shrink-0 text-emphasis-50" />
+              <FolderIcon className="mt-0.5 shrink-0 fill-primary/10 text-primary/70" />
               <span className="font-medium wrap-anywhere">{node.name}</span>
             </button>
             {!collapsed.has(node.path) && (
               <TreeLevel
                 nodes={node.children}
+                files={files}
                 depth={depth + 1}
                 collapsed={collapsed}
                 toggle={toggle}
@@ -73,17 +91,60 @@ function TreeLevel({
           </li>
         ) : (
           <li key={`file:${node.file}`}>
-            <button
-              type="button"
-              className={`${ROW} ${FILE_INDENT}`}
-              onClick={() => onOpen(node.file)}
-            >
-              <FileIcon className="mt-0.5 shrink-0 text-emphasis-50" />
-              <span className="wrap-anywhere">{node.name ?? messages.localDiff.unnamedFile}</span>
-            </button>
+            <FileRow file={files[node.file]!} name={node.name} onOpen={() => onOpen(node.file)} />
           </li>
         ),
       )}
     </ul>
+  );
+}
+
+function FileRow({
+  file,
+  name,
+  onOpen,
+}: {
+  file: DiffFile;
+  name: string | undefined;
+  onOpen: () => void;
+}) {
+  const messages = useMessages();
+  const descriptionId = useId();
+  const status = file.badges.includes("new")
+    ? "new"
+    : file.badges.includes("deleted")
+      ? "deleted"
+      : "modified";
+  const StatusIcon = status === "new" ? PlusIcon : status === "deleted" ? TrashIcon : PencilIcon;
+  const color =
+    status === "new"
+      ? "text-(--code-literal)"
+      : status === "deleted"
+        ? "text-error"
+        : "text-(--code-class)";
+  const description = [
+    status === "modified"
+      ? messages.localDiff.modified
+      : messages.markdownEditor.diffBadges[status],
+    ...file.badges
+      .filter((badge) => badge === "renamed" || badge === "binary")
+      .map((badge) => messages.markdownEditor.diffBadges[badge]),
+  ].join(", ");
+  return (
+    <>
+      <button
+        type="button"
+        className={`${ROW} ${FILE_INDENT}`}
+        aria-describedby={descriptionId}
+        title={description}
+        onClick={onOpen}
+      >
+        <StatusIcon className={`mt-0.5 shrink-0 ${color}`} />
+        <span className="min-w-0 wrap-anywhere">{name ?? messages.localDiff.unnamedFile}</span>
+      </button>
+      <span id={descriptionId} className="sr-only">
+        {description}
+      </span>
+    </>
   );
 }

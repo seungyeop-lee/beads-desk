@@ -153,6 +153,7 @@ function DiffPanes({
         {message && <CommitMessage message={message} />}
         <DiffFileTree
           nodes={tree}
+          files={preview.files}
           onOpen={(file) =>
             document.getElementById(fileId(file))?.scrollIntoView({ block: "start" })
           }

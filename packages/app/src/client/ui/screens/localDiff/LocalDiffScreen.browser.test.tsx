@@ -114,6 +114,88 @@ test("format-patch 파일의 변경 파일 트리는 하위 폴더 하나뿐인 
   await expect.element(tree.getByRole("button", { name: "CardField.tsx" })).toBeVisible();
 });
 
+test("파일 배지로 추가·삭제를 구분하고 한쪽 줄만 바뀐 기존 파일은 수정으로 보이며 이름 변경과 바이너리 정보도 유지한다", async () => {
+  serve(
+    [
+      "diff --git a/src/new.ts b/src/new.ts",
+      "new file mode 100644",
+      "--- /dev/null",
+      "+++ b/src/new.ts",
+      "@@ -0,0 +1 @@",
+      "+new",
+      "diff --git a/src/deleted.ts b/src/deleted.ts",
+      "deleted file mode 100644",
+      "--- a/src/deleted.ts",
+      "+++ /dev/null",
+      "@@ -1 +0,0 @@",
+      "-deleted",
+      ...fileDiff("src/modified.ts", ["-before", "+after"]),
+      ...fileDiff("src/only-added.ts", ["+added"]),
+      ...fileDiff("src/only-deleted.ts", ["-deleted"]),
+      "diff --git a/src/old.ts b/src/renamed.ts",
+      "similarity index 100%",
+      "rename from src/old.ts",
+      "rename to src/renamed.ts",
+      "diff --git a/src/image.png b/src/image.png",
+      "Binary files a/src/image.png and b/src/image.png differ",
+      "",
+    ].join("\n"),
+  );
+  await openScreen();
+
+  const badges = messages.markdownEditor.diffBadges;
+  for (const [name, description] of [
+    ["new.ts", badges.new],
+    ["deleted.ts", badges.deleted],
+    ["modified.ts", text.modified],
+    ["only-added.ts", text.modified],
+    ["only-deleted.ts", text.modified],
+    ["renamed.ts", `${text.modified}, ${badges.renamed}`],
+    ["image.png", `${text.modified}, ${badges.binary}`],
+  ]) {
+    await expect
+      .element(fileTree().getByRole("button", { name, exact: true }))
+      .toHaveAccessibleDescription(description);
+  }
+  await expect
+    .element(changes().getByRole("group", { name: "src/old.ts → src/renamed.ts" }))
+    .toBeVisible();
+  await expect.element(changes().getByText(badges.binary, { exact: true })).toBeVisible();
+});
+
+test("긴 파일 이름은 상태 아이콘 옆에서 줄바꿈하고 트리 폭을 넘지 않으며 파일을 누르면 해당 diff로 이동한다", async () => {
+  const name = `${"LongFileName".repeat(16)}.ts`;
+  serve(
+    [
+      ...fileDiff(
+        "src/first.ts",
+        Array.from({ length: 100 }, () => "+first"),
+      ),
+      ...fileDiff(`src/${name}`, ["-before", "+after"]),
+      "",
+    ].join("\n"),
+  );
+  await openScreen();
+
+  const tree = fileTree().element();
+  const file = fileTree().getByRole("button", { name, exact: true });
+  await expect.element(file).toBeVisible();
+  const button = file.element();
+  const icon = button.querySelector("svg")!.getBoundingClientRect();
+  const label = file.getByText(name).element().getBoundingClientRect();
+  expect(icon.right).toBeLessThanOrEqual(label.left);
+  expect(label.right).toBeLessThanOrEqual(button.getBoundingClientRect().right);
+  expect(label.height).toBeGreaterThan(icon.height);
+  expect(tree.scrollWidth).toBeLessThanOrEqual(tree.clientWidth);
+
+  await userEvent.click(file);
+  const target = changes().getByRole("group", { name: `src/${name}`, exact: true });
+  await expect
+    .poll(() => target.element().getBoundingClientRect().bottom)
+    .toBeLessThanOrEqual(changes().element().getBoundingClientRect().bottom);
+  expect(changes().element().firstElementChild!.scrollTop).toBeGreaterThan(0);
+});
+
 test("커밋 메시지 제목을 트리 위에 보이고, 누르면 나머지 본문과 서명을 펼친다", async () => {
   serve(FORMAT_PATCH);
   await openScreen();

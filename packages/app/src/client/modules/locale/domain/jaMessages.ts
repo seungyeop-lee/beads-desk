@@ -629,6 +629,7 @@ export const jaMessages: Messages = {
   localDiff: {
     fileTree: "ファイルツリー",
     files: "変更ファイル",
+    modified: "変更",
     unnamedFile: "パスのない変更",
     changes: "変更内容",
     wrap: "自動折り返し",
