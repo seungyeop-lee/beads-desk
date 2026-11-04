@@ -30,7 +30,7 @@ export const jaMessages: Messages = {
     newIssue: "新規イシュー",
     awaitingCount: (count) => `${count}件`,
     workspace: "このタブの workspace",
-    viewers: { diff: "diff ビューア", folder: "フォルダビューア" },
+    viewers: { diff: "diff ビューア", folder: "フォルダビューア", text: "テキストビューア" },
   },
   settings: {
     title: "設定",
@@ -636,6 +636,14 @@ export const jaMessages: Messages = {
     tooLarge: (megabytes) =>
       `ファイルが ${megabytes} MB を超えるため、diff を表示しませんでした。ダウンロードして確認してください。`,
     loadFailed: (error) => `diff ファイルを読み込めませんでした: ${error}`,
+  },
+  localText: {
+    contents: "ファイルの内容",
+    openRaw: "原文を開く",
+    empty: "空のファイルです。",
+    tooLarge: (megabytes) =>
+      `ファイルが ${megabytes} MB を超えるため、内容を表示しませんでした。原文を開いて確認してください。`,
+    loadFailed: (error) => `ファイルを読み込めませんでした: ${error}`,
   },
   hygiene: {
     title: "整理",

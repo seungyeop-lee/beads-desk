@@ -28,7 +28,7 @@ export const koMessages: Messages = {
     newIssue: "새 이슈",
     awaitingCount: (count) => `${count}개`,
     workspace: "이 탭의 workspace",
-    viewers: { diff: "diff 뷰어", folder: "폴더 뷰어" },
+    viewers: { diff: "diff 뷰어", folder: "폴더 뷰어", text: "텍스트 뷰어" },
   },
   settings: {
     title: "설정",
@@ -620,6 +620,14 @@ export const koMessages: Messages = {
     tooLarge: (megabytes) =>
       `파일이 ${megabytes} MB보다 커서 diff를 그리지 않았습니다. 내려받아서 확인하세요.`,
     loadFailed: (error) => `diff 파일을 불러오지 못했습니다: ${error}`,
+  },
+  localText: {
+    contents: "파일 내용",
+    openRaw: "원문 열기",
+    empty: "빈 파일입니다.",
+    tooLarge: (megabytes) =>
+      `파일이 ${megabytes} MB보다 커서 내용을 그리지 않았습니다. 원문을 열어서 확인하세요.`,
+    loadFailed: (error) => `파일을 불러오지 못했습니다: ${error}`,
   },
   hygiene: {
     title: "정리",

@@ -46,7 +46,7 @@ export type Messages = {
     awaitingCount: (count: number) => string;
     workspace: string;
     /** 이슈 본문의 링크로 새 탭에 여는 화면의 머리글에 보이는 이름입니다. */
-    viewers: { diff: string; folder: string };
+    viewers: { diff: string; folder: string; text: string };
   };
   settings: {
     title: string;
@@ -527,6 +527,15 @@ export type Messages = {
     changes: string;
     wrap: string;
     download: string;
+    tooLarge: (megabytes: number) => string;
+    loadFailed: (error: string) => string;
+  };
+  localText: {
+    /** 파일 내용을 그린 영역의 이름입니다. */
+    contents: string;
+    /** 파일 API가 보내는 원문을 새 탭에서 여는 링크입니다. */
+    openRaw: string;
+    empty: string;
     tooLarge: (megabytes: number) => string;
     loadFailed: (error: string) => string;
   };

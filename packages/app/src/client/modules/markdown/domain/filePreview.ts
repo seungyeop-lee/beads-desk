@@ -9,6 +9,7 @@ const FORMATS: ReadonlyMap<string, FilePreviewFormat> = new Map([
   ["diff", "diff"],
   ["patch", "diff"],
   ["md", "markdown"],
+  ["markdown", "markdown"],
   ["log", "plain"],
   ["txt", "plain"],
 ]);

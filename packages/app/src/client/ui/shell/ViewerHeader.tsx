@@ -6,7 +6,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { AppLogo } from "./AppLogo";
 
 /**
- * 이슈 본문의 링크로 새 탭에 여는 화면(diff, 폴더)의 머리글입니다. 이 탭이 어느 workspace의 어떤 viewer인지만 보여 줍니다.
+ * 이슈 본문의 링크로 새 탭에 여는 화면(diff, 폴더, 텍스트)의 머리글입니다. 이 탭이 어느 workspace의 어떤 viewer인지만 보여 줍니다.
  * 앱 화면으로 옮겨 가는 탭과 버튼을 두지 않고, 판단 기다림 알림과 탭 제목의 개수도 AppHeader를 쓰는 탭에만 맡깁니다.
  */
 export function ViewerHeader({ viewer }: { viewer: keyof Messages["shell"]["viewers"] }) {

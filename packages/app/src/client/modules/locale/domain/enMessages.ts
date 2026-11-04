@@ -27,7 +27,7 @@ export const enMessages: Messages = {
     newIssue: "New issue",
     awaitingCount: (count) => `${count} waiting`,
     workspace: "Workspace in this tab",
-    viewers: { diff: "Diff viewer", folder: "Folder viewer" },
+    viewers: { diff: "Diff viewer", folder: "Folder viewer", text: "Text viewer" },
   },
   settings: {
     title: "Settings",
@@ -630,6 +630,14 @@ export const enMessages: Messages = {
     tooLarge: (megabytes) =>
       `The diff is not shown because the file is larger than ${megabytes} MB. Download it to view.`,
     loadFailed: (error) => `Could not load the diff file: ${error}`,
+  },
+  localText: {
+    contents: "File contents",
+    openRaw: "Open raw file",
+    empty: "This file is empty.",
+    tooLarge: (megabytes) =>
+      `The contents are not shown because the file is larger than ${megabytes} MB. Open the raw file to view it.`,
+    loadFailed: (error) => `Could not load the file: ${error}`,
   },
   hygiene: {
     title: "Hygiene",

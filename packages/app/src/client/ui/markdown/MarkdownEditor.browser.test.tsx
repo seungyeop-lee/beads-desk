@@ -7,7 +7,7 @@ import { cdp, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { tabMarkdownUrl } from "@/client/modules/markdown/application/markdownAddress";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
+import { LOCAL_FILES_PATH, LOCAL_TEXT_SCREEN_PATH } from "@/shared/contract/localFiles";
 import { codeEditorTheme, codeHighlighting } from "./codeHighlighting";
 import { codeMirrorDom } from "./codeMirrorDom.testkit";
 import { contrast } from "../designSystem/colorContrast.testkit";
@@ -34,10 +34,12 @@ const TYPESCRIPT = [
 /** CodeMirror 기본 강조(defaultHighlightStyle)가 키워드에 쓰는 #708입니다. */
 const LIGHT_KEYWORD = "rgb(119, 0, 136)";
 
-/** 로컬 파일 API 주소이면 그 주소가 여는 경로를, 아니면 null을 돌려줍니다. */
+/** 링크나 그림 주소가 여는 로컬 파일 경로를, 로컬 파일 주소가 아니면 null을 돌려줍니다. 마크다운 파일 링크는 파일 API 대신 텍스트 화면을 엽니다. */
 function localPath(url: string | null) {
   const parsed = new URL(url ?? "", location.href);
-  return parsed.pathname === LOCAL_FILES_PATH ? parsed.searchParams.get("path") : null;
+  const opensFile =
+    parsed.pathname === LOCAL_FILES_PATH || parsed.pathname.endsWith(LOCAL_TEXT_SCREEN_PATH);
+  return opensFile ? parsed.searchParams.get("path") : null;
 }
 
 afterEach(() => {

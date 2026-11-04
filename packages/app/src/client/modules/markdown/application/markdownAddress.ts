@@ -1,4 +1,5 @@
 import { documentWorkspace } from "@/client/infra/workspaces/documentWorkspace";
+import { documentRelativeUrl } from "../domain/documentRelativeUrl";
 import { localMarkdownUrl } from "../domain/localMarkdownUrl";
 
 /**
@@ -7,4 +8,12 @@ import { localMarkdownUrl } from "../domain/localMarkdownUrl";
  */
 export function tabMarkdownUrl(url: string): string {
   return localMarkdownUrl(url, documentWorkspace() ?? "");
+}
+
+/**
+ * documentPath의 마크다운 파일을 그릴 때 쓰는 tabMarkdownUrl입니다. 상대 경로 주소는 그 파일이 든 폴더를 기준으로 먼저 풉니다.
+ * 이슈 본문처럼 파일이 아닌 마크다운에는 기준 폴더가 없으므로 tabMarkdownUrl을 그대로 씁니다.
+ */
+export function documentMarkdownUrl(documentPath: string): (url: string) => string {
+  return (url) => tabMarkdownUrl(documentRelativeUrl(url, documentPath));
 }

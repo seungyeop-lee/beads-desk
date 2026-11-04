@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { localDiffScreenPath, localFileUrl } from "@/shared/contract/localFiles";
+import {
+  localDiffScreenPath,
+  localFileUrl,
+  localTextScreenPath,
+} from "@/shared/contract/localFiles";
 import { localFileLinkUrl, localMarkdownUrl, opensInNewTab } from "./localMarkdownUrl";
 
 test.each([
@@ -68,10 +72,22 @@ test.each(["/tmp/r/리뷰 변경.diff", "/tmp/r/fix.PATCH", "C:\\r\\a.patch"])(
 );
 
 test.each([
-  localFileUrl("/tmp/r/a.md", "demo"),
-  localFileUrl("/tmp/r/a.diff.log", "demo"),
+  "/tmp/r/조사 결과.md",
+  "/tmp/r/README.markdown",
+  "/tmp/r/a.diff.log",
+  "C:\\r\\note.TXT",
+])("마크다운·텍스트 파일 링크는 파일을 연 workspace의 텍스트 화면을 연다: %s", (path) => {
+  expect(localFileLinkUrl(localFileUrl(path, "데모"))).toBe(
+    `/w/${encodeURIComponent("데모")}${localTextScreenPath(path)}`,
+  );
+});
+
+test.each([
+  localFileUrl("/tmp/r/a.png", "demo"),
+  localFileUrl("/tmp/r/a.json", "demo"),
   "/w/demo/epics",
   "https://example.com/a.diff",
-])("diff 파일이 아닌 링크는 주소를 바꾸지 않는다: %s", (address) => {
+  "https://example.com/a.md",
+])("화면으로 열 형식이 아닌 링크는 주소를 바꾸지 않는다: %s", (address) => {
   expect(localFileLinkUrl(address)).toBe(address);
 });

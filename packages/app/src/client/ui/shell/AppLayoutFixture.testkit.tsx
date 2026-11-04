@@ -17,7 +17,7 @@ export function AppLayoutFixture({ children }: { children: ReactNode }) {
   );
 }
 
-/** viewer 화면(diff, 폴더)을 앱처럼 ViewerHeader 아래에 그립니다. 테스트는 `next/navigation`의 `useParams`를 준비합니다. */
+/** viewer 화면(diff, 폴더, 텍스트)을 앱처럼 ViewerHeader 아래에 그립니다. 테스트는 `next/navigation`의 `useParams`를 준비합니다. */
 export function ViewerLayoutFixture({
   viewer,
   children,

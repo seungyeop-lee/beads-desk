@@ -5,6 +5,7 @@ import {
   localFileOf,
   localFilePathOf,
   localFileUrl,
+  localTextScreenPath,
 } from "@/shared/contract/localFiles";
 import { SCREEN_PATHS } from "@/shared/domain/screenPaths";
 import { workspaceHref } from "@/shared/contract/workspaces";
@@ -33,13 +34,17 @@ export function opensInNewTab(address: string): boolean {
 
 /**
  * 로컬 파일 링크를 눌렀을 때 여는 주소입니다. `address`는 localMarkdownUrl이나 localFileUrl이 만든 주소입니다.
- * .diff·.patch 파일은 원문 대신 주소에 담긴 workspace의 diff 화면을 열고, 그 밖의 주소는 그대로 돌려줍니다.
- * 본문에서 펼쳐 보기와 diff 화면의 내려받기는 같은 파일 API 주소로 원문을 읽으므로, 파일 API가 redirect하지 않고 링크 주소를 바꿉니다.
+ * 본문에서 펼쳐 볼 수 있는 형식(filePreviewFormat)의 파일은 원문 대신 주소에 담긴 workspace의 화면을 엽니다.
+ * .diff·.patch 파일은 diff 화면을, 마크다운과 일반 텍스트 파일은 텍스트 화면을 열고, 그 밖의 주소는 그대로 돌려줍니다.
+ * 본문에서 펼쳐 보기와 두 화면의 원문 링크는 같은 파일 API 주소로 원문을 읽으므로, 파일 API가 redirect하지 않고 링크 주소를 바꿉니다.
  */
 export function localFileLinkUrl(address: string): string {
   const file = localFileOf(address);
-  if (!file || filePreviewFormat(address) !== "diff") return address;
-  return workspaceHref(file.workspace, localDiffScreenPath(file.path));
+  const format = filePreviewFormat(address);
+  if (!file || !format) return address;
+  const screenPath =
+    format === "diff" ? localDiffScreenPath(file.path) : localTextScreenPath(file.path);
+  return workspaceHref(file.workspace, screenPath);
 }
 
 function decodedPath(url: string): string {

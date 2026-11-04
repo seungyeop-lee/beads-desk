@@ -10,20 +10,17 @@ test.each([
   ["/tmp/왜 실패?#1.log", "plain"],
   ["/tmp/review/report.MD", "markdown"],
   ["/tmp/a.diff.md", "markdown"],
+  ["/tmp/README.Markdown", "markdown"],
 ] as const)("로컬 파일 API 주소의 경로 확장자로 미리보기 형식을 정한다: %s", (path, format) => {
   expect(filePreviewFormat(localFileUrl(path, "demo"))).toBe(format);
 });
 
-test.each([
-  "/tmp/a.markdown",
-  "/tmp/a.png",
-  "/tmp/a.webm",
-  "/tmp/diff",
-  "/tmp/a.md.png",
-  "/tmp/a.constructor",
-])("펼쳐 볼 형식이 아닌 로컬 파일은 null이다: %s", (path) => {
-  expect(filePreviewFormat(localFileUrl(path, "demo"))).toBeNull();
-});
+test.each(["/tmp/a.png", "/tmp/a.webm", "/tmp/diff", "/tmp/a.md.png", "/tmp/a.constructor"])(
+  "펼쳐 볼 형식이 아닌 로컬 파일은 null이다: %s",
+  (path) => {
+    expect(filePreviewFormat(localFileUrl(path, "demo"))).toBeNull();
+  },
+);
 
 test.each([
   "https://example.com/a.diff",

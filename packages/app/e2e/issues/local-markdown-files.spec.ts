@@ -11,7 +11,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 파일 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, 폴더 화면에서 하위 폴더로 옮기면 탭 제목이 그 폴더 이름으로 바뀌고, diff 링크는 어떻게 눌러도 새 탭의 diff 화면으로 열고, diff와 큰 로그 파일을 펼치기 버튼으로 본문에 펼치며, 편집 후 원문 경로를 유지하고, diff 화면에서 파일 트리로 파일 위치에 가고 원문을 내려받는다", async ({
+test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 링크로 마크다운을 렌더링한 텍스트 화면, 폴더 화면, 재생되는 영상, 외부 주소를 새 탭에 열고 앱 화면은 지금 탭에서 열며, 폴더 화면에서 연 마크다운 파일의 상대 경로 그림과 링크를 그 파일의 폴더 기준으로 열고, 폴더 화면에서 하위 폴더로 옮기면 탭 제목이 그 폴더 이름으로 바뀌고, diff 링크는 어떻게 눌러도 새 탭의 diff 화면으로 열고, diff와 큰 로그 파일을 펼치기 버튼으로 본문에 펼치며, 편집 후 원문 경로를 유지하고, diff 화면에서 파일 트리로 파일 위치에 가고 원문을 내려받는다", async ({
   page,
   workspace,
 }) => {
@@ -62,7 +62,11 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     await writeFile(patch, patchText);
     await writeFile(largeLog, "a".repeat(1024 * 1024 + 1));
     await mkdir(join(folder, "화면"), { recursive: true });
-    await writeFile(join(folder, "요약.md"), "# 요약");
+    await writeFile(
+      join(folder, "요약.md"),
+      "# 요약\n\n![결과 화면](화면/결과.png)\n\n[실행 메모](./메모.txt)",
+    );
+    await writeFile(join(folder, "메모.txt"), "# 제목이 아닌 메모");
     await writeFile(shot, PNG);
     const markdown = [
       `![workspace PNG](<${paths[0]!.png}>) ![worktree PNG](<${paths[1]!.png}>)`,
@@ -88,7 +92,8 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
       const opened = await openedTab(
         description.getByRole("link", { name: `${name} 문서`, exact: true }),
       );
-      await expect(opened.getByText(`# 로컬 파일 ${index}`, { exact: false })).toBeVisible();
+      await expect(opened.getByRole("heading", { name: `로컬 파일 ${index}` })).toBeVisible();
+      expect(new URL(opened.url()).pathname).toBe(`/w/${workspace.slug}/text`);
       expect(new URL(opened.url()).searchParams.get("path")).toBe(path.md);
       await opened.close();
     }
@@ -132,7 +137,24 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
         url.searchParams.get("path") === folder,
     );
     const entries = folderTab.getByRole("table", { name: "폴더 항목" });
-    await expect(entries.getByRole("link", { name: "요약.md" })).toBeVisible();
+    // 상대 경로를 푸는 규칙, 텍스트 화면의 상한·빈 파일·오류 안내는 documentRelativeUrl.test.ts와 LocalTextScreen.browser.test.tsx가 확인합니다.
+    const summaryTab = await openedTab(entries.getByRole("link", { name: "요약.md" }));
+    await expect(summaryTab).toHaveTitle(`요약.md · ${workspace.slug} · beads-desk`);
+    const summary = summaryTab.getByRole("region", { name: "파일 내용" });
+    await expect(summary.getByRole("heading", { name: "요약" })).toBeVisible();
+    await expect(summary.getByRole("img", { name: "결과 화면" })).toHaveJSProperty(
+      "naturalWidth",
+      80,
+    );
+    const memoTab = await openedTab(summary.getByRole("link", { name: "실행 메모" }));
+    await expect(memoTab).toHaveURL(
+      (url) =>
+        url.pathname === `/w/${workspace.slug}/text` &&
+        url.searchParams.get("path") === join(folder, "메모.txt"),
+    );
+    await expect(memoTab.getByText("# 제목이 아닌 메모", { exact: true })).toBeVisible();
+    await memoTab.close();
+    await summaryTab.close();
     await entries.getByRole("link", { name: "화면" }).click();
     await expect
       .poll(() => new URL(folderTab.url()).searchParams.get("path"))

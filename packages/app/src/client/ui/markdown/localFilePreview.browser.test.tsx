@@ -9,7 +9,11 @@ import { koMessages } from "@/client/modules/locale/domain/koMessages";
 import { KeyboardFocusMode } from "@/client/ui/designSystem/KeyboardFocusMode";
 import { keyboardOutline } from "@/client/ui/designSystem/keyboardFocus.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
-import { LOCAL_DIFF_SCREEN_PATH, LOCAL_FILES_PATH } from "@/shared/contract/localFiles";
+import {
+  LOCAL_DIFF_SCREEN_PATH,
+  LOCAL_FILES_PATH,
+  LOCAL_TEXT_SCREEN_PATH,
+} from "@/shared/contract/localFiles";
 import { codeMirrorDom } from "./codeMirrorDom.testkit";
 import { localFilePreview } from "./localFilePreview";
 import { MarkdownEditor } from "./MarkdownEditor";
@@ -101,21 +105,22 @@ function renderReadOnly(value: string) {
   );
 }
 
-test("diff·patch·md·log·txt 로컬 파일 링크 뒤에만 접힌 펼치기 버튼을 두고, 링크는 새 탭에서 diff·patch는 diff 화면으로, 나머지는 파일 API로 열며, 펼치기 전에는 파일을 받지 않는다", async () => {
+test("diff·patch·md·markdown·log·txt 로컬 파일 링크 뒤에만 접힌 펼치기 버튼을 두고, 링크는 새 탭에서 diff·patch는 diff 화면으로, 나머지는 텍스트 화면으로 열며, 상대 경로 링크는 바꾸지 않고, 펼치기 전에는 파일을 받지 않는다", async () => {
   const screen = await renderReadOnly(
     [
-      "[변경 diff](/tmp/r/a.diff) [패치](/tmp/r/b.PATCH) [로그](</tmp/r/실행 기록.log>) [메모](C:\\r\\note.txt) [문서](/tmp/r/a.md)",
+      "[변경 diff](/tmp/r/a.diff) [패치](/tmp/r/b.PATCH) [로그](</tmp/r/실행 기록.log>) [메모](C:\\r\\note.txt) [문서](/tmp/r/a.md) [안내서](/tmp/r/README.markdown)",
       "",
-      "[그림](/tmp/r/a.png) [웹 diff](https://example.com/a.diff) [화면](/epics)",
+      "[그림](/tmp/r/a.png) [웹 diff](https://example.com/a.diff) [화면](/epics) [상대 문서](./b.md)",
     ].join("\n"),
   );
 
   for (const [name, path, screenPath] of [
     ["변경 diff", "/tmp/r/a.diff", LOCAL_DIFF_SCREEN_PATH],
     ["패치", "/tmp/r/b.PATCH", LOCAL_DIFF_SCREEN_PATH],
-    ["로그", "/tmp/r/실행 기록.log", LOCAL_FILES_PATH],
-    ["메모", "C:\\r\\note.txt", LOCAL_FILES_PATH],
-    ["문서", "/tmp/r/a.md", LOCAL_FILES_PATH],
+    ["로그", "/tmp/r/실행 기록.log", LOCAL_TEXT_SCREEN_PATH],
+    ["메모", "C:\\r\\note.txt", LOCAL_TEXT_SCREEN_PATH],
+    ["문서", "/tmp/r/a.md", LOCAL_TEXT_SCREEN_PATH],
+    ["안내서", "/tmp/r/README.markdown", LOCAL_TEXT_SCREEN_PATH],
   ]) {
     const toggle = screen.getByRole("button", { name: labels.filePreview(name!) });
     await expect.element(toggle).toHaveAttribute("aria-expanded", "false");
@@ -125,7 +130,7 @@ test("diff·patch·md·log·txt 로컬 파일 링크 뒤에만 접힌 펼치기 
     expect(opened.pathname.endsWith(screenPath!)).toBe(true);
     expect(opened.searchParams.get("path")).toBe(path);
   }
-  expect(screen.getByRole("button").elements()).toHaveLength(5);
+  expect(screen.getByRole("button").elements()).toHaveLength(6);
   // 펼칠 수 없는 링크도 로컬 파일과 외부 주소는 새 탭에서 열고, 앱 화면은 지금 탭에서 엽니다.
   for (const name of ["그림", "웹 diff"]) {
     await expect.element(screen.getByRole("link", { name })).toHaveAttribute("target", "_blank");
@@ -137,6 +142,10 @@ test("diff·patch·md·log·txt 로컬 파일 링크 뒤에만 접힌 펼치기 
     ).pathname,
   ).toBe(LOCAL_FILES_PATH);
   await expect.element(screen.getByRole("link", { name: "화면" })).not.toHaveAttribute("target");
+  // 이슈 본문에는 기준 폴더가 없으므로 상대 경로는 쓴 그대로 둡니다.
+  await expect
+    .element(screen.getByRole("link", { name: "상대 문서" }))
+    .toHaveAttribute("href", "./b.md");
   expect(screen.getByRole("region").elements()).toHaveLength(0);
   expect(requestedPaths).toEqual([]);
 });
@@ -778,13 +787,13 @@ test("허용 범위 밖이거나 없는 파일을 펼치면 서버가 보낸 오
   expect(new URL(href!, location.href).searchParams.get("path")).toBe("/etc/secret.log");
 });
 
-test("1 MB를 넘는 파일을 펼치면 내용 대신 생략 문구와, 본문 링크와 같은 주소(diff는 diff 화면)를 새 탭에서 여는 링크가 보인다", async () => {
+test("1 MB를 넘는 파일을 펼치면 내용 대신 생략 문구와, 본문 링크와 같은 주소(diff는 diff 화면, 로그는 텍스트 화면)를 새 탭에서 여는 링크가 보인다", async () => {
   const huge = () => new Response("a".repeat(1024 * 1024 + 1));
   files = { "/tmp/r/huge.log": huge, "/tmp/r/huge.diff": huge };
   const screen = await renderReadOnly("[큰 로그](/tmp/r/huge.log) [큰 diff](/tmp/r/huge.diff)");
 
   for (const [name, screenPath] of [
-    ["큰 로그", LOCAL_FILES_PATH],
+    ["큰 로그", LOCAL_TEXT_SCREEN_PATH],
     ["큰 diff", LOCAL_DIFF_SCREEN_PATH],
   ] as const) {
     await userEvent.click(screen.getByRole("button", { name: labels.filePreview(name) }));
