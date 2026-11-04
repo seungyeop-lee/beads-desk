@@ -4,6 +4,17 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-11-04
+
+### Added
+
+- A text page renders `.md` and `.markdown` files and shows `.txt` and `.log` files as they are. See [Text page](https://github.com/seungyeop-lee/beads-desk/blob/v0.15.0/USAGE.md#text-page).
+
+### Changed
+
+- Links to `.md`, `.markdown`, `.txt`, and `.log` files open the text page instead of the raw text. See [Text page](https://github.com/seungyeop-lee/beads-desk/blob/v0.15.0/USAGE.md#text-page).
+- Links to `.markdown` files in issue text get a chevron button that expands the file below the paragraph. See [Expanding files in an issue](https://github.com/seungyeop-lee/beads-desk/blob/v0.15.0/USAGE.md#expanding-files-in-an-issue).
+
 ## [0.14.0] - 2026-11-03
 
 ### Added
