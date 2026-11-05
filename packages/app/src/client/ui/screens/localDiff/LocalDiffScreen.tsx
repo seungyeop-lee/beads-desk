@@ -144,11 +144,13 @@ function DiffPanes({
 
   return (
     <div className="code-colors flex min-h-0 flex-1 flex-col gap-3 md:flex-row">
+      {/* 파일 줄의 sr-only 설명은 position: absolute라서, nav가 relative여야 nav의 스크롤 영역 안에서 잘립니다.
+          relative가 없으면 트리 아래쪽 설명이 문서 높이를 늘려, 파일을 누를 때 문서 전체가 함께 스크롤됩니다. */}
       <nav
         id={treeId}
         aria-label={text.files}
         hidden={!treeShown}
-        className="surface max-h-[40%] shrink-0 overflow-auto p-2 md:max-h-none md:w-72"
+        className="surface relative max-h-[40%] shrink-0 overflow-auto p-2 md:max-h-none md:w-72"
       >
         {message && <CommitMessage message={message} />}
         <DiffFileTree

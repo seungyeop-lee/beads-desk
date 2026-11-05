@@ -338,6 +338,59 @@ test("트리와 diff는 창 높이 안에서 각자 스크롤한다", async () =
   expect(document.documentElement.scrollHeight).toBe(document.documentElement.clientHeight);
 });
 
+/** 트리가 nav 높이를 넘칠 만큼 파일이 많은 diff입니다. 마지막 파일은 diff 영역 위쪽까지 스크롤될 수 있도록 길게 둡니다. */
+const MANY_FILES = [
+  ...Array.from({ length: 60 }, (_, index) =>
+    fileDiff(`src/file${String(index).padStart(2, "0")}.ts`, ["-before", "+after"]),
+  ).flat(),
+  ...fileDiff(
+    "src/last.ts",
+    Array.from({ length: 100 }, (_, index) => `+const line${index} = ${index};`),
+  ),
+  "",
+].join("\n");
+
+test("트리가 넘치는 diff에서도 문서는 창보다 길어지지 않고, 아래쪽 파일을 누르면 diff 영역만 그 파일 머리로 스크롤한다", async () => {
+  serve(MANY_FILES);
+  await openScreen();
+
+  const tree = fileTree();
+  const file = tree.getByRole("button", { name: "last.ts", exact: true });
+  await expect.element(file).toBeInTheDocument();
+  expect(tree.element().scrollHeight).toBeGreaterThan(tree.element().clientHeight);
+  expect(document.documentElement.scrollHeight).toBe(document.documentElement.clientHeight);
+
+  await userEvent.click(file);
+  const scroller = changes().element().firstElementChild as HTMLElement;
+  const target = changes().getByRole("group", { name: "src/last.ts", exact: true });
+  await expect
+    .poll(() =>
+      Math.abs(target.element().getBoundingClientRect().top - scroller.getBoundingClientRect().top),
+    )
+    .toBeLessThan(1);
+  expect(window.scrollY).toBe(0);
+});
+
+test("좁은 창에서 diff 위에 펼친 트리의 아래쪽 파일을 눌러도 문서는 스크롤되지 않는다", async () => {
+  serve(MANY_FILES);
+  await page.viewport(600, 800);
+  try {
+    await openScreen();
+    await userEvent.click(page.getByRole("button", { name: text.fileTree }));
+    const tree = fileTree();
+    const file = tree.getByRole("button", { name: "last.ts", exact: true });
+    await expect.element(file).toBeInTheDocument();
+    expect(tree.element().scrollHeight).toBeGreaterThan(tree.element().clientHeight);
+
+    await userEvent.click(file);
+    const scroller = changes().element().firstElementChild as HTMLElement;
+    await expect.poll(() => scroller.scrollTop).toBeGreaterThan(0);
+    expect(window.scrollY).toBe(0);
+  } finally {
+    await page.viewport(1440, 900);
+  }
+});
+
 test("1 MB보다 크고 5 MB 이하인 diff는 그리고, 5 MB를 넘는 diff는 상한 안내와 내려받기 버튼만 보인다", async () => {
   const line = `+${"a".repeat(1023)}`;
   const large = fileDiff(
