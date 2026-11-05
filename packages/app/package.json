@@ -1,13 +1,21 @@
 {
   "name": "@seungyeop-lee/beads-desk",
   "version": "0.16.0",
-  "description": "Local web UI for Beads (bd)",
+  "description": "Local web UI for the Beads (bd) issue tracker. Review the plans, decisions, Mermaid diagrams, screenshots, and questions your coding agents leave, with due dates, bottlenecks, and dependency graphs in the browser.",
   "keywords": [
+    "ai-agents",
     "bd",
     "beads",
+    "coding-agents",
+    "dependency-graph",
+    "developer-tools",
     "issue-tracker",
+    "issue-tracking",
     "kanban",
     "local-first",
+    "markdown",
+    "mermaid",
+    "project-management",
     "web-ui"
   ],
   "homepage": "https://github.com/seungyeop-lee/beads-desk#readme",
