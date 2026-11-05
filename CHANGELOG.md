@@ -4,6 +4,12 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] - 2026-11-05
+
+### Fixed
+
+- Clicking a file in the diff page's **File tree** scrolls only the diff, no longer scrolling the whole page along with it.
+
 ## [0.16.0] - 2026-11-04
 
 ### Added
