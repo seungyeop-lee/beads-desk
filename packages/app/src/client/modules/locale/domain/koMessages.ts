@@ -184,6 +184,10 @@ export const koMessages: Messages = {
     filePreviewLoading: "파일을 불러오는 중",
     filePreviewTooLarge: (megabytes) => `파일이 ${megabytes} MB보다 커서 미리보기를 생략했습니다.`,
     openFile: "파일 열기",
+    showRaw: "원문 보기",
+    showPretty: "Pretty 보기",
+    prettyUnavailable:
+      "올바른 JSON이 아니어서 Pretty를 적용할 수 없습니다. 이 내용은 원문으로 표시합니다.",
     diffBadges: { new: "새 파일", deleted: "삭제", renamed: "이름 변경", binary: "바이너리" },
     diffLineCounts: (added, deleted) => `추가 ${added}줄, 삭제 ${deleted}줄`,
 

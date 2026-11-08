@@ -29,6 +29,12 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
   const largeLog = join(workspace.path, "큰 실행 로그.log");
   const folder = join(workspace.path, "리뷰 산출물");
   const shot = join(folder, "화면", "결과.png");
+  const json = join(folder, "데이터.JsOn");
+  const jsonl = join(folder, "레코드.JSONL");
+  const jsonText =
+    String.raw` {"a":[9007199254740993123,true,null],"a":"\u0061\n<script>alert(1)</script>"} ` +
+    "\r\n";
+  const jsonlText = '{"a":[1]}\r\n[true,null]\r\n42\r\n bad \r\n';
   try {
     for (const [index, path] of paths.entries()) {
       await writeFile(path.md, `# 로컬 파일 ${index}\n\n브라우저에서 확인한 내용입니다.`);
@@ -64,10 +70,12 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     await mkdir(join(folder, "화면"), { recursive: true });
     await writeFile(
       join(folder, "요약.md"),
-      "# 요약\n\n![결과 화면](화면/결과.png)\n\n[실행 메모](./메모.txt)",
+      "# 요약\n\n![결과 화면](화면/결과.png)\n\n[실행 메모](./메모.txt) [상대 JSON](./데이터.JsOn) [상대 JSONL](./레코드.JSONL)",
     );
     await writeFile(join(folder, "메모.txt"), "# 제목이 아닌 메모");
     await writeFile(shot, PNG);
+    await writeFile(json, jsonText);
+    await writeFile(jsonl, jsonlText);
     const markdown = [
       `![workspace PNG](<${paths[0]!.png}>) ![worktree PNG](<${paths[1]!.png}>)`,
       "",
@@ -76,6 +84,8 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
       `[workspace 문서](<${paths[0]!.md}>) [worktree 문서](<${paths[1]!.md}>) 편집할 문단`,
       "",
       `[리뷰 변경](<${diff}>) [큰 실행 로그](<${largeLog}>)`,
+      "",
+      `[JSON](<${json}>) [JSONL](<${jsonl}>)`,
       "",
       `[리뷰 산출물](<${folder}/>)`,
     ].join("\n");
@@ -122,6 +132,32 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     const largeContents = description.getByRole("region", { name: "큰 실행 로그 내용" });
     await expect(largeContents).toContainText("파일이 1 MB보다 커서 미리보기를 생략했습니다.");
     await expect(largeContents.getByRole("link", { name: "파일 열기" })).toBeVisible();
+    for (const [name, path] of [
+      ["JSON", json],
+      ["JSONL", jsonl],
+    ]) {
+      const opened = await openedTab(description.getByRole("link", { name, exact: true }));
+      await expect(opened).toHaveURL(
+        (url) =>
+          url.pathname === `/w/${workspace.slug}/text` && url.searchParams.get("path") === path,
+      );
+      await expect(opened.getByRole("button", { name: "원문 보기", exact: true })).toBeVisible();
+      const raw = await openedTab(opened.getByRole("link", { name: "원문 열기", exact: true }));
+      await expect(raw).toHaveURL(
+        (url) => url.pathname === "/api/local-files" && url.searchParams.get("path") === path,
+      );
+      expect(await (await raw.request.get(raw.url())).text()).toBe(
+        path === json ? jsonText : jsonlText,
+      );
+      await raw.close();
+      await opened.close();
+      await description.getByRole("button", { name: `${name} 미리보기`, exact: true }).click();
+      await expect(
+        description
+          .getByRole("region", { name: `${name} 내용`, exact: true })
+          .getByRole("button", { name: "원문 보기", exact: true }),
+      ).toBeVisible();
+    }
 
     const videoTab = await openedTab(description.getByRole("link", { name: "화면 녹화" }));
     await expectPlayable(videoTab.locator("video"));
@@ -137,6 +173,12 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
         url.searchParams.get("path") === folder,
     );
     const entries = folderTab.getByRole("table", { name: "폴더 항목" });
+    for (const name of ["데이터.JsOn", "레코드.JSONL"]) {
+      const opened = await openedTab(entries.getByRole("link", { name, exact: true }));
+      await expect(opened.getByRole("button", { name: "원문 보기", exact: true })).toBeVisible();
+      expect(new URL(opened.url()).pathname).toBe(`/w/${workspace.slug}/text`);
+      await opened.close();
+    }
     // 상대 경로를 푸는 규칙, 텍스트 화면의 상한·빈 파일·오류 안내는 documentRelativeUrl.test.ts와 LocalTextScreen.browser.test.tsx가 확인합니다.
     const summaryTab = await openedTab(entries.getByRole("link", { name: "요약.md" }));
     await expect(summaryTab).toHaveTitle(`요약.md · ${workspace.slug} · beads-desk`);
@@ -154,6 +196,12 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     );
     await expect(memoTab.getByText("# 제목이 아닌 메모", { exact: true })).toBeVisible();
     await memoTab.close();
+    for (const name of ["상대 JSON", "상대 JSONL"]) {
+      const opened = await openedTab(summary.getByRole("link", { name, exact: true }));
+      await expect(opened.getByRole("button", { name: "원문 보기", exact: true })).toBeVisible();
+      expect(new URL(opened.url()).pathname).toBe(`/w/${workspace.slug}/text`);
+      await opened.close();
+    }
     await summaryTab.close();
     await entries.getByRole("link", { name: "화면" }).click();
     await expect
@@ -206,6 +254,8 @@ test("설명에서 workspace와 외부 worktree의 PNG를 불러오고, 본문 �
     const download = await downloading;
     expect(download.suggestedFilename()).toBe("리뷰 변경.patch");
     expect(await readFile(await download.path(), "utf8")).toBe(patchText);
+    expect(await readFile(json, "utf8")).toBe(jsonText);
+    expect(await readFile(jsonl, "utf8")).toBe(jsonlText);
   } finally {
     execFileSync("git", ["-C", workspace.path, "worktree", "remove", "--force", worktree]);
     await rm(outside, { recursive: true, force: true });

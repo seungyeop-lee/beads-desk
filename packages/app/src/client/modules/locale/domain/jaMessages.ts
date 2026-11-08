@@ -191,6 +191,10 @@ export const jaMessages: Messages = {
     filePreviewTooLarge: (megabytes) =>
       `ファイルが ${megabytes} MB を超えるため、プレビューを省略しました。`,
     openFile: "ファイルを開く",
+    showRaw: "原文を表示",
+    showPretty: "Pretty を表示",
+    prettyUnavailable:
+      "正しい JSON ではないため Pretty を適用できません。この内容は原文で表示します。",
     diffBadges: { new: "新規ファイル", deleted: "削除", renamed: "名前変更", binary: "バイナリ" },
     diffLineCounts: (added, deleted) => `追加 ${added}行、削除 ${deleted}行`,
 

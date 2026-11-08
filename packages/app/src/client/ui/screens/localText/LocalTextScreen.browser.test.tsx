@@ -36,6 +36,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  document.documentElement.removeAttribute("data-theme");
 });
 
 function serve(path: string, contents: string) {
@@ -149,3 +150,53 @@ test("허용 범위 밖이거나 없는 파일은 서버의 오류 문구를 화
   await expect.element(contents()).not.toBeInTheDocument();
   await expectOpenRaw(GUIDE);
 });
+
+test.each(["json", "JSONL"])(
+  "JSON 형식은 Pretty로 시작하고 두 보기에서 뒤쪽 토큰까지 강조하며 원문을 보존한다: %s",
+  async (extension) => {
+    const raw =
+      extension === "json"
+        ? String.raw` { "a":[9007199254740993123,true,null], "a":"<b>\u0061</b>" } ` + "\r\n"
+        : '{"a":[true,null]}\r\n[42,"뒤 레코드"]\r\nfalse\r\n bad \r\n';
+    const path = `/repo/data.${extension}`;
+    serve(path, raw);
+    await openScreen(path);
+    await expect.poll(() => contents().element().querySelector("pre")?.textContent).toContain("\n");
+    await expect
+      .poll(() => contents().element().querySelectorAll("pre span").length)
+      .toBeGreaterThan(3);
+    const expectColors = async () => {
+      for (const theme of ["desk", "desk-dark"]) {
+        document.documentElement.dataset.theme = theme;
+        await expect
+          .poll(() => {
+            const spans = [...contents().element().querySelectorAll("pre span")];
+            const colors = [
+              '"a"',
+              extension === "json" ? "9007199254740993123" : "42",
+              "true",
+              "null",
+            ].map((token) => {
+              const span = spans.find((element) => element.textContent === token);
+              return span ? getComputedStyle(span).color : null;
+            });
+            return colors.every(
+              (color) => color !== null && color !== getComputedStyle(contents().element()).color,
+            );
+          })
+          .toBe(true);
+      }
+    };
+    await expectColors();
+    expect(contents().element().querySelector("b")).toBeNull();
+    await page.getByRole("button", { name: "원문 보기", exact: true }).click();
+    await expect.poll(() => contents().element().querySelector("pre")?.textContent).toBe(raw);
+    await expect
+      .poll(() => contents().element().querySelectorAll("pre span").length)
+      .toBeGreaterThan(3);
+    await expectColors();
+    await page.getByRole("button", { name: "Pretty 보기", exact: true }).click();
+    await expect.poll(() => contents().element().querySelector("pre")?.textContent).toContain("\n");
+    await expectOpenRaw(path);
+  },
+);

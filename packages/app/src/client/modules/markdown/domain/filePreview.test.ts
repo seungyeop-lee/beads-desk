@@ -11,6 +11,8 @@ test.each([
   ["/tmp/review/report.MD", "markdown"],
   ["/tmp/a.diff.md", "markdown"],
   ["/tmp/README.Markdown", "markdown"],
+  ["/tmp/data.JsOn", "json"],
+  ["/tmp/data.JSONL", "jsonl"],
 ] as const)("로컬 파일 API 주소의 경로 확장자로 미리보기 형식을 정한다: %s", (path, format) => {
   expect(filePreviewFormat(localFileUrl(path, "demo"))).toBe(format);
 });

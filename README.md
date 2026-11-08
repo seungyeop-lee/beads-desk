@@ -29,9 +29,9 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 
 - Markdown and Mermaid diagrams render in descriptions and comments. Click a diagram to enlarge it.
 - [Local file links](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#local-file-links-in-issues) open in the app: images show in the issue, and `.webm` and `.mp4` recordings play.
-- `.md`, `.markdown`, `.txt`, and `.log` links open on a [text page](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#text-page) that renders Markdown and shows text and log files as they are.
+- `.md`, `.markdown`, `.txt`, `.log`, `.json`, and `.jsonl` links open on a [text page](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#text-page): rendered Markdown, unchanged text and logs, or highlighted JSON and JSONL with Pretty/raw switching.
 - `.diff` and `.patch` links open on a [diff page](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#diff-page) that lists the changed files as a tree and wraps long lines.
-- The chevron button next to these links [expands the file](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#expanding-files-in-an-issue) below the paragraph, without leaving the issue.
+- The chevron button next to these links [expands the file](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.md#expanding-files-in-an-issue) below the paragraph; JSON and JSONL start in Pretty view and can switch to highlighted raw text and back.
 
 ![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
 

@@ -132,6 +132,7 @@ An opened file is shown according to its extension:
 
 - `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`: shown as an image.
 - `.webm`, `.mp4`: played as a video.
+- `.json`, `.jsonl`: opened on the text page with syntax highlighting and Pretty/raw switching.
 - Any other extension, including HTML, SVG, and script files: shown as plain text so that the file does not run in the app's origin.
 
 ### Folder page
@@ -175,11 +176,14 @@ An opened file is shown according to its extension:
 ### Text page
 
 - Opening:
-  - Clicking a link to a `.md`, `.markdown`, `.txt`, or `.log` file in the allowed directories, in an issue or on a folder page, opens the file on the app's text page in a new tab instead of as raw text.
+  - Clicking a link to a `.md`, `.markdown`, `.txt`, `.log`, `.json`, or `.jsonl` file in the allowed directories, in an issue or on a folder page, opens the file on the app's text page in a new tab instead of as raw text. Extensions are case-insensitive.
   - You can also open the page directly at `/w/<workspace name>/text?path=<absolute path of the file>`.
 - Display:
   - `.md` and `.markdown` files are rendered as Markdown.
   - `.txt` and `.log` files are shown as they are.
+  - `.json` and `.jsonl` start in Pretty view. **Show raw** preserves original whitespace and line breaks; **Show Pretty** switches back. Both views highlight keys, strings, numbers, booleans, and null in light and dark themes.
+  - Pretty changes only whitespace outside tokens, preserving large integers, duplicate keys, key order, and string escapes. JSONL records are indented independently, separated visually, and kept in order, not merged into an array.
+  - Invalid JSON or JSONL records remain unchanged with an inline notice; valid JSONL records still use Pretty. HTML-like strings remain text, and viewing never modifies the file.
 - Relative links: Relative links and images in a rendered Markdown file, such as `![](img/a.png)` or `[Next](../README.md)`, are resolved from the folder that holds the file and open like other local file links.
 - Raw file: **Open raw file** at the top right opens the original file in a new tab.
 - Large files: Files larger than 5 MB are not drawn: a message is shown instead, and **Open raw file** still works.
@@ -193,7 +197,7 @@ An opened file is shown according to its extension:
 ### Expanding files in an issue
 
 - Chevron button:
-  - Links to `.diff`, `.patch`, `.md`, `.markdown`, `.log`, and `.txt` files have a chevron button right after the file name.
+  - Links to `.diff`, `.patch`, `.md`, `.markdown`, `.log`, `.txt`, `.json`, and `.jsonl` files have a chevron button right after the file name.
   - The chevron button appears only while the body is not being edited; while editing, these links look like ordinary links.
 - Clicking the link: The link opens the file in a new tab like other local file links: `.diff` and `.patch` files on the diff page, and the others on the text page.
 - Expanding:
@@ -210,6 +214,7 @@ An opened file is shown according to its extension:
 - Text files:
   - `.md` and `.markdown` files are shown as Markdown source (not rendered) with headings, emphasis, links, list markers, and code highlighted, including code blocks in their own language.
   - `.log` and `.txt` files are shown as they are.
+  - `.json` and `.jsonl` use the same highlighting, default Pretty view, raw/Pretty switching, and per-record error handling as the [text page](#text-page).
 - Large files: Files larger than 1 MB are not loaded; a message and a link that opens the file in a new tab, on the same page as the file link, are shown instead.
 
 ## Updating and uninstalling

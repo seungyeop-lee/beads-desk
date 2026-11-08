@@ -29,9 +29,9 @@
 
 - 説明とコメントの Markdown と Mermaid の図を描画します。図をクリックすると拡大できます。
 - [ローカルファイルへのリンク](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#イシュー本文のローカルファイルリンク)はアプリ内で開きます。画像はイシューの中に表示され、`.webm` と `.mp4` の録画は再生されます。
-- `.md`、`.markdown`、`.txt`、`.log` へのリンクは、Markdown をレンダリングし、テキストとログのファイルはそのまま表示する[テキスト画面](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#テキスト画面)で開きます。
+- `.md`、`.markdown`、`.txt`、`.log`、`.json`、`.jsonl` へのリンクは[テキスト画面](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#テキスト画面)で開きます。Markdown はレンダリングし、テキストとログは原文で、JSON と JSONL は構文強調と Pretty/原文の切り替えで表示します。
 - `.diff` と `.patch` へのリンクは、変更されたファイルをツリーで表示し長い行を折り返す [diff 画面](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#diff-画面)で開きます。
-- これらのリンクの横の chevron ボタンをクリックすると、イシューを離れずに[段落の下にファイルの内容が展開されます](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#イシュー画面でファイルの内容を展開する)。
+- これらのリンクの横の chevron ボタンは[段落の下にファイルの内容を展開します](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#イシュー画面でファイルの内容を展開する)。JSON と JSONL は Pretty で始まり、強調した原文に切り替えたり戻したりできます。
 
 ![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
 

@@ -170,6 +170,9 @@ export type Messages = {
     filePreviewLoading: string;
     filePreviewTooLarge: (megabytes: number) => string;
     openFile: string;
+    showRaw: string;
+    showPretty: string;
+    prettyUnavailable: string;
     diffBadges: Record<DiffFileBadge, string>;
     diffLineCounts: (added: number, deleted: number) => string;
 

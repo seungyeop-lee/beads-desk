@@ -29,9 +29,9 @@
 
 - 설명과 댓글의 Markdown과 Mermaid 그림을 그려 보여 줍니다. 그림을 누르면 크게 볼 수 있습니다.
 - [로컬 파일 링크](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#이슈-본문의-로컬-파일-링크)는 앱 안에서 열립니다. 이미지는 이슈 안에 보이고, `.webm`과 `.mp4` 녹화는 재생됩니다.
-- `.md`, `.markdown`, `.txt`, `.log` 링크는 Markdown을 렌더링하고 텍스트와 로그 파일은 원문 그대로 보여 주는 [텍스트 화면](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#텍스트-화면)으로 열립니다.
+- `.md`, `.markdown`, `.txt`, `.log`, `.json`, `.jsonl` 링크는 [텍스트 화면](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#텍스트-화면)으로 열립니다. Markdown은 렌더링하고 텍스트와 로그는 원문으로, JSON과 JSONL은 구문 강조와 Pretty/원문 전환으로 보여 줍니다.
 - `.diff`와 `.patch` 링크는 바뀐 파일을 트리로 보여 주고 긴 줄을 줄바꿈하는 [diff 화면](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#diff-화면)으로 열립니다.
-- 이 링크들 옆의 chevron 버튼을 누르면 이슈를 떠나지 않고 [문단 아래에 파일 내용이 펼쳐집니다](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#이슈-화면에서-파일-내용-펼치기).
+- 이 링크들 옆의 chevron 버튼은 [문단 아래에 파일 내용을 펼칩니다](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#이슈-화면에서-파일-내용-펼치기). JSON과 JSONL은 Pretty로 시작하고 강조한 원문으로 전환하거나 다시 돌아올 수 있습니다.
 
 ![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
 

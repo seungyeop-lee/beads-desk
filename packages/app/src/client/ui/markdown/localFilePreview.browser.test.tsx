@@ -105,6 +105,28 @@ function renderReadOnly(value: string) {
   );
 }
 
+test("JSONL 본문은 정상 레코드만 Pretty로 표시하고 오류 줄과 HTML 모양 문자열을 그대로 남기며 두 보기로 전환한다", async () => {
+  const raw =
+    '{"a":[1,true,null]}\r\n bad \r\n["<img src=x onerror=alert(1)>",9007199254740993123]\r\nfalse\r\n';
+  files = { "/tmp/r/data.JSONL": () => new Response(raw) };
+  const screen = await renderReadOnly("[데이터](/tmp/r/data.JSONL)");
+  const toggle = screen.getByRole("button", { name: labels.filePreview("데이터") });
+  await toggle.click();
+  const region = screen.getByRole("region", { name: labels.filePreviewContents("데이터") });
+  await expect.poll(() => region.element().querySelectorAll("pre").length).toBe(4);
+  await expect.element(region.getByRole("alert")).toBeVisible();
+  expect(region.element().querySelector("img")).toBeNull();
+  await expect
+    .poll(() => region.element().querySelectorAll("pre")[2]?.querySelectorAll("span").length)
+    .toBeGreaterThan(1);
+  await region.getByRole("button", { name: "원문 보기", exact: true }).click();
+  await expect.poll(() => region.element().querySelector("pre")?.textContent).toBe(raw);
+  await region.getByRole("button", { name: "Pretty 보기", exact: true }).click();
+  await expect.poll(() => region.element().querySelectorAll("pre").length).toBe(4);
+  await toggle.click();
+  await expect.element(region).not.toBeInTheDocument();
+});
+
 test("diff·patch·md·markdown·log·txt 로컬 파일 링크 뒤에만 접힌 펼치기 버튼을 두고, 링크는 새 탭에서 diff·patch는 diff 화면으로, 나머지는 텍스트 화면으로 열며, 상대 경로 링크는 바꾸지 않고, 펼치기 전에는 파일을 받지 않는다", async () => {
   const screen = await renderReadOnly(
     [

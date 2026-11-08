@@ -10,29 +10,34 @@ export async function highlightedFileText(
   text: string,
   format: Exclude<FilePreviewFormat, "plain">,
 ): Promise<DocumentFragment> {
-  const mode = format === "diff" ? await diffMode() : await markdownMode(text);
+  const mode =
+    format === "markdown"
+      ? await markdownMode(text)
+      : (
+          await LanguageDescription.matchLanguageName(
+            languages,
+            format === "diff" ? "diff" : "json",
+          )!.load()
+        ).language;
   StyleModule.mount(document, filePreviewHighlightStyle.module!);
   const fragment = document.createDocumentFragment();
-  highlightCode(
-    text,
-    mode.parser.parse(text),
-    filePreviewHighlightStyle,
-    (part, classes) => {
-      if (!classes) return fragment.append(part);
-      const token = document.createElement("span");
-      token.className = classes;
-      token.textContent = part;
-      fragment.append(token);
-    },
-    () => fragment.append("\n"),
-  );
+  const records = format === "jsonl" ? text.split(/(?<=\n)/) : [text];
+  for (const record of records) {
+    highlightCode(
+      record,
+      mode.parser.parse(record),
+      filePreviewHighlightStyle,
+      (part, classes) => {
+        if (!classes) return fragment.append(part);
+        const token = document.createElement("span");
+        token.className = classes;
+        token.textContent = part;
+        fragment.append(token);
+      },
+      () => fragment.append("\n"),
+    );
+  }
   return fragment;
-}
-
-/** 코드 블록과 같은 @codemirror/language-data의 diff mode입니다. */
-async function diffMode(): Promise<Language> {
-  const diff = await LanguageDescription.matchLanguageName(languages, "diff")!.load();
-  return diff.language;
 }
 
 /**

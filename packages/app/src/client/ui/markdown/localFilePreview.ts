@@ -13,6 +13,7 @@ import {
 } from "@/client/modules/markdown/domain/filePreview";
 import { localFileLinkUrl } from "@/client/modules/markdown/domain/localMarkdownUrl";
 import { highlightedFileText } from "./highlightedFileText";
+import { jsonFileView } from "./jsonFileView";
 
 type Labels = Messages["markdownEditor"];
 
@@ -250,6 +251,8 @@ async function fileView(file: LocalTextFile, link: PreviewLink, labels: Labels):
       .catch(() => null);
     if (diff) return diff;
   }
+  if (link.format === "json" || link.format === "jsonl")
+    return jsonFileView(file.text, link.format, labels);
   const text = document.createElement("pre");
   // 키보드로도 넘친 내용을 스크롤할 수 있게 합니다.
   text.tabIndex = 0;

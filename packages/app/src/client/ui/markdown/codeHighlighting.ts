@@ -27,7 +27,7 @@ const codeTokenStyles: TagStyle[] = [
   { tag: [tags.typeName, tags.namespace], color: "var(--code-type)" },
   { tag: tags.className, color: "var(--code-class)" },
   { tag: [tags.special(tags.variableName), tags.macroName], color: "var(--code-special)" },
-  { tag: tags.definition(tags.propertyName), color: "var(--code-property)" },
+  { tag: tags.propertyName, color: "var(--code-property)" },
   { tag: tags.comment, color: "var(--code-comment)" },
   { tag: tags.invalid, color: "var(--code-invalid)" },
 ];

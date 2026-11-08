@@ -76,6 +76,8 @@ test.each([
   "/tmp/r/README.markdown",
   "/tmp/r/a.diff.log",
   "C:\\r\\note.TXT",
+  "/tmp/r/data.JsOn",
+  "/tmp/r/events.JSONL",
 ])("마크다운·텍스트 파일 링크는 파일을 연 workspace의 텍스트 화면을 연다: %s", (path) => {
   expect(localFileLinkUrl(localFileUrl(path, "데모"))).toBe(
     `/w/${encodeURIComponent("데모")}${localTextScreenPath(path)}`,
@@ -84,7 +86,6 @@ test.each([
 
 test.each([
   localFileUrl("/tmp/r/a.png", "demo"),
-  localFileUrl("/tmp/r/a.json", "demo"),
   "/w/demo/epics",
   "https://example.com/a.diff",
   "https://example.com/a.md",
