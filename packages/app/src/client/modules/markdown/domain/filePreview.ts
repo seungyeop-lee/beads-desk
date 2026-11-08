@@ -16,6 +16,11 @@ const FORMATS: ReadonlyMap<string, FilePreviewFormat> = new Map([
   ["jsonl", "jsonl"],
 ]);
 
+/** 생산 판정과 같은 데이터를 열거합니다. 각 항목을 바꿔도 판정 데이터는 바뀌지 않습니다. */
+export function filePreviewFormats(): IterableIterator<readonly [string, FilePreviewFormat]> {
+  return FORMATS.entries();
+}
+
 /**
  * 본문을 펼쳐 볼 수 있는 파일의 크기 상한입니다. 파일 API는 텍스트 파일을 언제나 전체로 보내므로,
  * 이보다 큰 파일은 받아 오지 않아 브라우저가 느려지지 않게 합니다.
