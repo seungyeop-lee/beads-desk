@@ -101,10 +101,12 @@ export function IssueFilterBar({
         </select>
       </DateRangeFields>
 
-      <label className="flex cursor-pointer items-center gap-2 text-sm">
+      <label
+        className={`btn btn-sm gap-2 rounded-full border-base-content/20 font-normal has-focus-visible:outline-2 has-focus-visible:outline-offset-2 ${noEpic ? "bg-base-300" : "bg-base-100"}`}
+      >
         <input
           type="checkbox"
-          className="checkbox checkbox-sm"
+          className="checkbox checkbox-xs"
           checked={noEpic}
           onChange={(event) => onNoEpicChange(event.target.checked)}
         />

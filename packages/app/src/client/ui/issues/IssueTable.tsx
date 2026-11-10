@@ -18,6 +18,7 @@ import type { IssueHref } from "./IssueDetailRoute";
 import { HumanDecisionChip } from "./HumanDecisionChip";
 import { LabelChip } from "./IssueChip";
 import { CopyIssueIdButton } from "./CopyIssueIdButton";
+import { EpicMembershipLink } from "./EpicMembershipLink";
 import { EpicProgress } from "./EpicProgress";
 import { DeferralLine } from "./DeferralLine";
 import { SearchHitLines } from "./SearchHitLines";
@@ -242,14 +243,7 @@ function IssueRow({
             )
           )}
           {ancestorEpic && (
-            <Link
-              href={issueHref(ancestorEpic.id)}
-              scroll={false}
-              aria-label={messages.issueTable.openEpic(ancestorEpic.title)}
-              className="mt-1 block text-xs wrap-anywhere text-emphasis-60 underline-offset-2 hover:underline"
-            >
-              {messages.issueTable.epicMembership(ancestorEpic.title || messages.common.untitled)}
-            </Link>
+            <EpicMembershipLink href={issueHref(ancestorEpic.id)} title={ancestorEpic.title} />
           )}
           {issue.blockedBy && (
             <BlockerLine

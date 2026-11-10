@@ -1,6 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
@@ -563,7 +563,7 @@ for (const [width, locale, catalog] of [
   [377, "ja", jaMessages],
   [1376, "ko", messages],
 ] as const) {
-  test(`${locale} 표 영역 ${width}px에서 긴 epic 소속 링크는 제목 아래에서 줄바꿈하고 상태 조작과 겹치지 않는다`, async () => {
+  test(`${locale} 표 영역 ${width}px에서 긴 epic 소속 칩은 한 줄로 줄이고 전문을 hover와 키보드로 보인다`, async () => {
     const epic = issue("parent-epic", { issueType: "epic", title: "로그인 개선 ".repeat(20) });
     const child = issue("child", { title: "원래 이슈 제목" });
     const nested = issue("nested-epic", { title: "중첩 epic", issueType: "epic" });
@@ -596,6 +596,26 @@ for (const [width, locale, catalog] of [
     expect(box.left).toBeGreaterThanOrEqual(cell.left);
     expect(box.right).toBeLessThanOrEqual(cell.right);
     expect(box.bottom).toBeLessThanOrEqual(cell.bottom);
+    expect(box.height).toBeLessThanOrEqual(20);
+    const text = membership.firstElementChild as HTMLElement;
+    expect(text.scrollWidth).toBeGreaterThan(text.clientWidth);
+    expect(getComputedStyle(text).textOverflow).toBe("ellipsis");
+    await userEvent.hover(page.elementLocator(membership));
+    const tooltip = page.getByRole("tooltip");
+    await expect
+      .element(tooltip)
+      .toHaveTextContent(catalog.issueTable.epicMembership(epic.title).trim());
+    await userEvent.unhover(page.elementLocator(membership));
+    await expect.element(tooltip).not.toBeInTheDocument();
+    title.focus();
+    await userEvent.tab();
+    await expect.element(page.elementLocator(membership)).toHaveFocus();
+    await expect.element(tooltip).toBeVisible();
+    const tooltipBox = tooltip.element().getBoundingClientRect();
+    expect(tooltipBox.left).toBeGreaterThanOrEqual(0);
+    expect(tooltipBox.right).toBeLessThanOrEqual(window.innerWidth);
+    await userEvent.keyboard("{Escape}");
+    await expect.element(tooltip).not.toBeInTheDocument();
     expect(box.right).toBeLessThanOrEqual(
       row
         .getByRole("combobox", { name: catalog.issueTable.statusOf(child.id) })

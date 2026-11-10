@@ -1,6 +1,6 @@
-import type { ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 import { expect, test, vi } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { NO_LABEL } from "@/client/modules/issues/domain/issueLabelFilter";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
@@ -109,10 +109,11 @@ for (const [locale, catalog] of [
   ["en", enMessages],
   ["ja", jaMessages],
 ] as const) {
-  test(`${locale} 미소속 체크박스는 선택을 바꿔 알린다`, async () => {
+  test(`${locale} 미소속 필터 칩은 키보드로 켜고 끄며 체크와 배경을 함께 바꾼다`, async () => {
     const onNoEpicChange = vi.fn<(checked: boolean) => void>();
-    const screen = await render(
-      <LocaleProvider locale={locale}>
+    function Filter() {
+      const [selected, setSelected] = useState(false);
+      return (
         <IssueFilterBar
           types={[]}
           onTypesChange={() => {}}
@@ -123,12 +124,31 @@ for (const [locale, catalog] of [
           onSearchChange={() => {}}
           dates={{ field: "created", from: null, to: null }}
           onDatesChange={() => {}}
-          noEpic={false}
-          onNoEpicChange={onNoEpicChange}
+          noEpic={selected}
+          onNoEpicChange={(value) => {
+            setSelected(value);
+            onNoEpicChange(value);
+          }}
         />
+      );
+    }
+    const screen = await render(
+      <LocaleProvider locale={locale}>
+        <Filter />
       </LocaleProvider>,
     );
-    await screen.getByRole("checkbox", { name: catalog.issues.noEpicOnly }).click();
-    expect(onNoEpicChange).toHaveBeenCalledWith(true);
+    const checkbox = screen.getByRole("checkbox", { name: catalog.issues.noEpicOnly });
+    const chip = checkbox.element().closest("label")!;
+    const background = getComputedStyle(chip).backgroundColor;
+    expect(parseFloat(getComputedStyle(chip).borderRadius)).toBeGreaterThan(8);
+    (checkbox.element() as HTMLInputElement).focus();
+    await userEvent.keyboard(" ");
+    await expect.element(checkbox).toBeChecked();
+    await expect.poll(() => getComputedStyle(chip).backgroundColor).not.toBe(background);
+    expect(onNoEpicChange).toHaveBeenLastCalledWith(true);
+    await userEvent.keyboard(" ");
+    await expect.element(checkbox).not.toBeChecked();
+    await expect.poll(() => getComputedStyle(chip).backgroundColor).toBe(background);
+    expect(onNoEpicChange).toHaveBeenLastCalledWith(false);
   });
 }
