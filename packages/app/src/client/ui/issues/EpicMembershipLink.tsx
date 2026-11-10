@@ -1,14 +1,48 @@
 import Link from "next/link";
-import { useId, useState, type FocusEvent, type MouseEvent } from "react";
+import { useEffect, useId, useRef, useState, type FocusEvent, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 export function EpicMembershipLink({ href, title }: { href: string; title: string }) {
   const messages = useMessages();
   const tooltipId = useId();
+  const textRef = useRef<HTMLSpanElement>(null);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const text = messages.issueTable.epicMembership(title || messages.common.untitled);
+  const visible = position !== null;
+
+  useEffect(() => {
+    if (!visible) return;
+    const close = () => setPosition(null);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    const text = textRef.current!;
+    const width = text.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (text.clientWidth !== width) close();
+    });
+    observer.observe(text);
+    // body portal은 목록의 DOM 자식이 아니며, 중첩 영역의 scroll은 bubble하지 않습니다.
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [visible]);
+
   function show(event: MouseEvent<HTMLAnchorElement> | FocusEvent<HTMLAnchorElement>) {
+    // dialog 종료가 돌려준 focus와 그 직후의 mouseenter는 새 탐색이 아닙니다.
+    if (event.relatedTarget instanceof Element && event.relatedTarget.closest("dialog")) return;
+    const label = textRef.current;
+    if (!label || label.scrollWidth <= label.clientWidth) {
+      setPosition(null);
+      return;
+    }
     const box = event.currentTarget.getBoundingClientRect();
     setPosition({
       left: Math.max(
@@ -28,16 +62,14 @@ export function EpicMembershipLink({ href, title }: { href: string; title: strin
         aria-describedby={position ? tooltipId : undefined}
         className="inline-flex h-5 max-w-full items-center rounded-full border border-base-content/20 px-2 text-[11px] text-emphasis-60 underline-offset-2 hover:border-base-content/40 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
         onMouseEnter={show}
-        onMouseLeave={(event) => {
-          if (document.activeElement !== event.currentTarget) setPosition(null);
-        }}
+        onMouseLeave={() => setPosition(null)}
         onFocus={show}
         onBlur={() => setPosition(null)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") setPosition(null);
-        }}
+        onClick={() => setPosition(null)}
       >
-        <span className="truncate">{text}</span>
+        <span ref={textRef} className="truncate">
+          {text}
+        </span>
       </Link>
       {position &&
         createPortal(

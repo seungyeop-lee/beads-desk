@@ -49,6 +49,7 @@ chromium은 `chromium.launch({ ignoreDefaultArgs: ["--hide-scrollbars"] })`로 �
 | 닫으면 다섯 이슈가 풀리는 이슈(해제 안내의 "외 N개")                                                 | `acme-f4n`                                                 |
 | Hygiene의 오래 방치된 이슈, 중복 후보, commit에 언급된 열린 이슈                                     | `acme-o3l`, `acme-u1p`·`acme-u2p`, `acme-o4l`              |
 | 긴 제목, 끊을 곳 없는 긴 낱말, 한국어 본문과 댓글, 라벨이 많은 이슈, 제목만 있는 이슈                | `acme-l1t`, `acme-l2t`, `acme-k1r`, `acme-k2r`, `acme-e0b` |
+| epic 칩의 긴·짧은 제목 툴팁, 창 너비별 잘림, 상세 모달 종료 후 focus 복귀                            | `acme-t1e.1`, `acme-t2e.1`                                 |
 | Markdown(mermaid, 표, 코드, 로컬 파일 그림과 403·404 링크), design·notes, 댓글 여섯 개               | `acme-m8d`                                                 |
 | 세 단계 supersede 사슬, 작업 이슈로 대체된 결정, 진행 중으로 바꾼 결정                               | `acme-dc1`–`acme-dc3`, `acme-dc4`, `acme-dc6`              |
 | 이전 회차가 둘인 gate, 이슈 둘을 막는 gate, 막는 열린 이슈가 없는 gate                               | `acme-h1g`, `acme-h2g`·`acme-h3g`, `acme-h4g`를 막던 gate  |

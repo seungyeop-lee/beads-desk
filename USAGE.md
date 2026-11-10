@@ -84,7 +84,7 @@ In a git worktree of a repository whose main checkout has `.beads`, the worktree
 ## Epic membership in the issue list
 
 - In Issues, `epic · <title>` links to the nearest ancestor epic, including through parents that are not epics. Closed epics still count as membership.
-- The epic link chip stays on one line. Hover over it or focus it with the keyboard to read a truncated title in full.
+- The epic link chip stays on one line. Only truncated titles show a tooltip when you hover over the chip or reach it with the keyboard. Opening the detail panel, scrolling the list, or pressing Esc closes the tooltip. Returning focus after closing the panel does not reopen it; hover again or leave and return with the keyboard to read the title.
 - An epic itself counts as a member, so **No epic only** excludes all epic rows as well as issues with an ancestor epic. An epic row never links to itself; if it has an ancestor epic, it links to the nearest one.
 - Select **No epic only** to combine this filter with the current view, type, label, date, and search filters. It is stored in the URL as `noEpic=1` only while enabled and is preserved when switching view tabs, reloading, or using browser Back. Opening the same URL in another browser tab preserves it too.
 - Click an issue title to open that issue's existing detail panel, or its epic link to open the epic's detail panel. Opening either keeps the list's scroll position; closing the panel preserves the list filters and position.

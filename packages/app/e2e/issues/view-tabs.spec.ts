@@ -5,6 +5,8 @@ test("epic 미소속 필터와 보기 탭은 주소를 따르고, epic과 원래
   page,
   workspace,
 }) => {
+  const rootTitle = "최상위 epic의 긴 제목 ".repeat(12).trim();
+  const rootLinkName = `${rootTitle} epic 열기`;
   const { waiting, root, nested } = await workspace.createIssues(
     {
       doing: { title: "진행하는 작업", type: "task", status: "in_progress" },
@@ -12,7 +14,7 @@ test("epic 미소속 필터와 보기 탭은 주소를 따르고, epic과 원래
       waiting: { title: "기다리는 작업", type: "task", labels: ["ui"] },
       later: { title: "미룬 작업", type: "task", status: "deferred" },
       done: { title: "끝난 작업", type: "task", status: "closed" },
-      root: { title: "최상위 epic", type: "epic" },
+      root: { title: rootTitle, type: "epic" },
       direct: { title: "회원 직접 작업", type: "task", parent: "root" },
       parent: { title: "회원 중간 작업", type: "task", parent: "root" },
       indirect: { title: "회원 간접 작업", type: "task", parent: "parent" },
@@ -43,9 +45,9 @@ test("epic 미소속 필터와 보기 탭은 주소를 따르고, epic과 원래
   const row = (title: string) =>
     page.getByRole("row").filter({ has: page.getByRole("link", { name: title, exact: true }) });
   await expect(tabs.getByRole("link", { name: "전체 39" })).toHaveAttribute("aria-current", "page");
-  await expect(row("최상위 epic").getByRole("link")).toHaveCount(1);
+  await expect(row(rootTitle).getByRole("link")).toHaveCount(1);
   for (const title of ["회원 직접 작업", "회원 중간 작업", "회원 간접 작업"]) {
-    await expect(row(title).getByRole("link", { name: "최상위 epic epic 열기" })).toHaveAttribute(
+    await expect(row(title).getByRole("link", { name: rootLinkName })).toHaveAttribute(
       "href",
       new RegExp(`[?&]issue=${root}$`),
     );
@@ -55,15 +57,16 @@ test("epic 미소속 필터와 보기 탭은 주소를 따르고, epic과 원래
   ).toHaveAttribute("href", new RegExp(`[?&]issue=${nested}$`));
   await expect(row("선행 작업").getByRole("link")).toHaveCount(1);
   await tabs.getByRole("link", { name: "닫힘 2" }).click();
-  await expect(
-    row("닫힌 하위 epic").getByRole("link", { name: "최상위 epic epic 열기" }),
-  ).toHaveAttribute("href", new RegExp(`[?&]issue=${root}$`));
+  await expect(row("닫힌 하위 epic").getByRole("link", { name: rootLinkName })).toHaveAttribute(
+    "href",
+    new RegExp(`[?&]issue=${root}$`),
+  );
   await tabs.getByRole("link", { name: "전체 39" }).click();
 
   await noEpic.check();
   await expect(page).toHaveURL(/[?&]noEpic=1$/);
   await expect(tabs.getByRole("link", { name: "전체 5" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: "최상위 epic", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: rootTitle, exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "닫힌 하위 epic", exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "회원 간접 작업", exact: true })).toHaveCount(0);
   await tabs.getByRole("link", { name: /^병목 / }).click();
@@ -127,7 +130,7 @@ test("epic 미소속 필터와 보기 탭은 주소를 따르고, epic과 원래
   const lastRow = page
     .getByRole("row")
     .filter({
-      has: page.getByRole("link", { name: "최상위 epic epic 열기" }),
+      has: page.getByRole("link", { name: rootLinkName }),
     })
     .last();
   await lastRow.scrollIntoViewIfNeeded();
@@ -140,13 +143,23 @@ test("epic 미소속 필터와 보기 탭은 주소를 따르고, epic과 원래
   const scrollY = await page.evaluate(() => window.scrollY);
   expect(scrollY).toBeGreaterThan(0);
 
-  await lastRow.getByRole("link", { name: "최상위 epic epic 열기" }).click();
+  const membership = lastRow.getByRole("link", { name: rootLinkName });
+  await membership.hover();
+  await expect(page.getByRole("tooltip")).toHaveText(`epic · ${rootTitle}`);
+  await membership.click();
   await expect(page.getByRole("dialog", { name: `${root} 이슈` })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`type=task&issue=${root}$`));
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(listAddress);
   await expect(search).toHaveValue("회원");
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollY);
+  await expect(membership).toBeFocused();
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await page.mouse.move(0, 0);
+  await page.evaluate(() => window.scrollBy(0, -40));
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await page.evaluate((y) => window.scrollTo(0, y), scrollY);
 
   await original.click();
   await expect(page.getByRole("dialog", { name: `${originalId} 이슈` })).toBeVisible();

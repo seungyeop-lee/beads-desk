@@ -17,6 +17,40 @@ export function edgeCaseIssues(now: number, workspace: string): DemoIssue[] {
   const ago = (days: number, hours = 0) => now - days * DAY - hours * HOUR;
 
   return [
+    {
+      id: "acme-t1e",
+      title: "Improve checkout, account recovery, and customer billing before the public launch",
+      type: "epic",
+      priority: 2,
+      description: "Check epic membership titles at narrow and wide window sizes.",
+      createdAt: ago(2),
+    },
+    {
+      id: "acme-t1e.1",
+      title: "Check truncated epic tooltip and detail focus return",
+      type: "task",
+      priority: 2,
+      description: "Hover the epic chip, open the detail panel, then close it with Escape.",
+      parent: "acme-t1e",
+      createdAt: ago(1),
+    },
+    {
+      id: "acme-t2e",
+      title: "Tools",
+      type: "epic",
+      priority: 2,
+      description: "A short epic title that fits in the membership chip.",
+      createdAt: ago(2),
+    },
+    {
+      id: "acme-t2e.1",
+      title: "Check fully visible epic chip",
+      type: "task",
+      priority: 2,
+      description: "Hover and tab to the epic chip; no duplicate tooltip should appear.",
+      parent: "acme-t2e",
+      createdAt: ago(1),
+    },
     // 큰 epic plan: 여덟 단계 blocks 사슬과 병렬 단계, 순서 없는 child, 안쪽 epic, epic 바깥 blocker(acme-q7s)가 있습니다.
     {
       id: "acme-r9d",
