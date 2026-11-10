@@ -4,6 +4,19 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.1] - 2026-11-10
+
+### Changed
+
+- The rich-text editor now uses the upper toolbar for formatting and inserting links instead of a floating selection toolbar. See [Hover and keyboard explanations](https://github.com/seungyeop-lee/beads-desk/blob/v0.18.1/USAGE.md#hover-and-keyboard-explanations).
+
+### Fixed
+
+- Help and control explanations now use consistent, accessible tooltips across the app. See [Hover and keyboard explanations](https://github.com/seungyeop-lee/beads-desk/blob/v0.18.1/USAGE.md#hover-and-keyboard-explanations).
+- Epic membership tooltips now appear only when needed and no longer reopen after closing issue details. See [Epic membership in the issue list](https://github.com/seungyeop-lee/beads-desk/blob/v0.18.1/USAGE.md#epic-membership-in-the-issue-list).
+- Chart tooltips now wrap long content without breaking dates or series values. See [Hover and keyboard explanations](https://github.com/seungyeop-lee/beads-desk/blob/v0.18.1/USAGE.md#hover-and-keyboard-explanations).
+- Link icons now use balanced proportions consistent with other toolbar icons.
+
 ## [0.18.0] - 2026-11-10
 
 ### Added
