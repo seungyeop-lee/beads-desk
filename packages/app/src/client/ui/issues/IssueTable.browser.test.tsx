@@ -653,3 +653,86 @@ test("소속 데이터를 주지 않은 공용 표에는 epic 링크를 추가�
     screen.getByRole("link", { name: messages.issueTable.openEpic("상위 epic") }).elements(),
   ).toHaveLength(0);
 });
+
+for (const width of [377, 1376]) {
+  test(`표 영역 ${width}px에서 제목 보조 정보의 실제 칩 경계 사이에 일정한 작은 간격이 있고 빈 행은 높아지지 않는다`, async () => {
+    const epic = issue("epic", { title: "상위 epic", issueType: "epic" });
+    const screen = await render(
+      <LocaleProvider locale="ko">
+        <div style={{ width }}>
+          <IssueTable
+            issues={[
+              issue("member", { title: "소속과 막힘", blockedBy: ["prior"] }),
+              issue("deferred", {
+                title: "막힘과 보류",
+                status: "deferred",
+                blockedBy: ["gate"],
+              }),
+              issue("plain", { title: "제목만 있는 행" }),
+              issue("empty", { title: "빈 보조 정보", blockedBy: [] }),
+            ]}
+            issueHref={(id) => `/issues?issue=${id}`}
+            writes={WRITES}
+            gateTitles={new Map([["gate", { title: "사람 확인", humanGate: true }]])}
+            epicAncestors={{ member: epic }}
+            searchHits={
+              new Map([
+                [
+                  "member",
+                  [
+                    { field: "comment", excerpt: "첫 검색 발췌" },
+                    { field: "notes", excerpt: "둘째 검색 발췌" },
+                  ],
+                ],
+                ["empty", []],
+              ])
+            }
+          />
+        </div>
+      </LocaleProvider>,
+    );
+    const member = page.elementLocator(
+      screen.getByRole("link", { name: "소속과 막힘", exact: true }).element().closest("td")!,
+    );
+    const deferred = page.elementLocator(
+      screen.getByRole("link", { name: "막힘과 보류", exact: true }).element().closest("td")!,
+    );
+    const gaps: number[] = [];
+    const checkLines = (elements: Element[]) => {
+      const boxes = elements.map((element) => element.getBoundingClientRect());
+      for (let index = 1; index < boxes.length; index++) {
+        const gap = boxes[index]!.top - boxes[index - 1]!.bottom;
+        expect(gap).toBeGreaterThanOrEqual(4);
+        expect(gap).toBeLessThanOrEqual(6);
+        expect(Math.abs(boxes[index]!.left - boxes[0]!.left)).toBeLessThanOrEqual(1);
+        gaps.push(gap);
+      }
+    };
+    checkLines([
+      member.getByRole("link", { name: messages.issueTable.openEpic(epic.title) }).element(),
+      member.getByText(messages.blocking.chip, { exact: true }).element(),
+      member.getByText(messages.issues.commentHit, { exact: true }).element(),
+      member.getByText(messages.issue.bodyFields.notes, { exact: true }).element(),
+    ]);
+    checkLines([
+      deferred.getByText(messages.humanGate.waiting, { exact: true }).element(),
+      deferred.getByText(messages.deferral.until, { exact: true }).element(),
+    ]);
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(1);
+    for (const title of ["제목만 있는 행", "빈 보조 정보"]) {
+      const link = screen.getByRole("link", { name: title, exact: true }).element();
+      const cell = link.closest("td")!;
+      const style = getComputedStyle(cell);
+      const contentHeight =
+        cell.getBoundingClientRect().height -
+        parseFloat(style.paddingTop) -
+        parseFloat(style.paddingBottom);
+      const controls = page.elementLocator(cell.closest("tr")!).getByRole("combobox").elements();
+      const expectedHeight = Math.max(
+        parseFloat(style.lineHeight),
+        ...controls.map((control) => control.getBoundingClientRect().height),
+      );
+      expect(contentHeight).toBeLessThanOrEqual(expectedHeight + 1);
+    }
+  });
+}

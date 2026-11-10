@@ -141,14 +141,50 @@ for (const [locale, catalog] of [
     const chip = checkbox.element().closest("label")!;
     const background = getComputedStyle(chip).backgroundColor;
     expect(parseFloat(getComputedStyle(chip).borderRadius)).toBeGreaterThan(8);
-    (checkbox.element() as HTMLInputElement).focus();
+    const icon = chip.querySelector("svg")!;
+    expect(icon).not.toBeNull();
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+    const text = screen.getByText(catalog.issues.noEpicOnly, { exact: true }).element();
+    const initialBox = chip.getBoundingClientRect();
+    const alignment = () => {
+      const iconBox = icon.getBoundingClientRect();
+      const textBox = text.getBoundingClientRect();
+      const chipBox = chip.getBoundingClientRect();
+      expect(
+        Math.abs(iconBox.top + iconBox.height / 2 - textBox.top - textBox.height / 2),
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(iconBox.top + iconBox.height / 2 - chipBox.top - chipBox.height / 2),
+      ).toBeLessThanOrEqual(1);
+      expect(iconBox.width).toBe(16);
+      expect(textBox.left - iconBox.right).toBeGreaterThanOrEqual(6);
+      expect(textBox.left - iconBox.right).toBeLessThanOrEqual(8);
+      expect(
+        Math.abs(iconBox.left - chipBox.left - (chipBox.right - textBox.right)),
+      ).toBeLessThanOrEqual(1);
+      expect(chipBox.width).toBe(initialBox.width);
+      expect(chipBox.height).toBe(initialBox.height);
+    };
+    alignment();
+    expect(getComputedStyle(icon).visibility).toBe("hidden");
+    const search = screen
+      .getByRole("searchbox", { name: catalog.issues.search })
+      .element() as HTMLInputElement;
+    search.focus();
+    await userEvent.tab({ shift: true });
+    await expect.element(checkbox).toHaveFocus();
+    expect(parseFloat(getComputedStyle(chip).outlineWidth)).toBeGreaterThan(0);
     await userEvent.keyboard(" ");
     await expect.element(checkbox).toBeChecked();
     await expect.poll(() => getComputedStyle(chip).backgroundColor).not.toBe(background);
     expect(onNoEpicChange).toHaveBeenLastCalledWith(true);
+    expect(getComputedStyle(icon).visibility).toBe("visible");
+    alignment();
     await userEvent.keyboard(" ");
     await expect.element(checkbox).not.toBeChecked();
     await expect.poll(() => getComputedStyle(chip).backgroundColor).toBe(background);
     expect(onNoEpicChange).toHaveBeenLastCalledWith(false);
+    expect(getComputedStyle(icon).visibility).toBe("hidden");
+    alignment();
   });
 }

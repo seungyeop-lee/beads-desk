@@ -242,20 +242,22 @@ function IssueRow({
               </span>
             )
           )}
-          {ancestorEpic && (
-            <EpicMembershipLink href={issueHref(ancestorEpic.id)} title={ancestorEpic.title} />
-          )}
-          {issue.blockedBy && (
-            <BlockerLine
-              issueId={issue.id}
-              blockedBy={issue.blockedBy}
-              titleOf={titleOf}
-              gateTitles={gateTitles}
-              issueHref={issueHref}
-            />
-          )}
-          <DeferralLine issue={issue} />
-          <SearchHitLines hits={searchHits} term={searchTerm ?? ""} />
+          <span className="mt-1 flex min-w-0 flex-col gap-1 empty:hidden">
+            {ancestorEpic && (
+              <EpicMembershipLink href={issueHref(ancestorEpic.id)} title={ancestorEpic.title} />
+            )}
+            {issue.blockedBy && (
+              <BlockerLine
+                issueId={issue.id}
+                blockedBy={issue.blockedBy}
+                titleOf={titleOf}
+                gateTitles={gateTitles}
+                issueHref={issueHref}
+              />
+            )}
+            <DeferralLine issue={issue} />
+            <SearchHitLines hits={searchHits} term={searchTerm ?? ""} />
+          </span>
         </TitleOutline>
       </td>
       <td>

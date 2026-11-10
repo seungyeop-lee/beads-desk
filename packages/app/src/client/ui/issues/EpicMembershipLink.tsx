@@ -20,7 +20,7 @@ export function EpicMembershipLink({ href, title }: { href: string; title: strin
   }
 
   return (
-    <span className="mt-1 block min-w-0">
+    <span className="flex min-w-0">
       <Link
         href={href}
         scroll={false}
