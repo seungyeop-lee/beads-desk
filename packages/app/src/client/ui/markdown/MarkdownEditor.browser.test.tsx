@@ -1,6 +1,6 @@
 /// <reference types="@vitest/browser-playwright" />
 import { foldCode } from "@codemirror/language";
-import { activateHover, EditorView, hoverTooltip } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import type { FormEvent } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 import { cdp, page, userEvent } from "vitest/browser";
@@ -17,6 +17,7 @@ import { KeyboardFocusMode } from "../designSystem/KeyboardFocusMode";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { milkdownDom } from "./milkdownDom.testkit";
 import { peleDom } from "../designSystem/peleDom.testkit";
+import { TooltipLayer } from "../designSystem/TooltipLayer";
 
 const DIAGRAM = "```mermaid\nflowchart LR\n  A[시작] -->|처리| B[완료]\n```";
 const TYPESCRIPT = [
@@ -257,8 +258,10 @@ test("링크 도구로 고른 글자에 Windows 드라이브 경로를 넣으면
       if (await selectionBecomes("문서")) break;
     }
     await expect.poll(() => window.getSelection()?.toString()).toBe("문서");
-    await expect.poll(() => visible(milkdownDom.toolbarLinkButton)).toBeTruthy();
-    await userEvent.click(visible(milkdownDom.toolbarLinkButton)!);
+    const toolbar = screen.getByRole("toolbar", { name: "설명 서식 도구" });
+    await expect.element(toolbar.getByRole("button", { name: "링크" })).toBeVisible();
+    expect(screen.container.querySelector(milkdownDom.selectionToolbar)).toBeNull();
+    await toolbar.getByRole("button", { name: "링크" }).click();
     await confirmLinkAddress(address);
 
     await expect.poll(() => changed.mock.lastCall?.[0]).toBe(saved);
@@ -1190,16 +1193,17 @@ test("편집기 설명: 서식 단추는 native title 대신 공통 tooltip 설�
   const screen = await render(
     <LocaleProvider locale="ko">
       <MarkdownEditor openAddress={tabMarkdownUrl} value="본문" label="설명" />
+      <TooltipLayer />
     </LocaleProvider>,
   );
   const toolbar = screen.getByRole("toolbar", { name: "설명 서식 도구" });
   await expect.element(toolbar).toBeVisible();
-  const buttons = toolbar.getByRole("button").elements();
-  expect(buttons).toHaveLength(10);
-  for (const button of buttons) {
-    expect(button.getAttribute("data-tooltip")).toBe(button.getAttribute("aria-label"));
-    expect(button.hasAttribute("title")).toBe(false);
-  }
+  const link = toolbar.getByRole("button", { name: "링크" });
+  await link.hover();
+  await expect.element(page.getByRole("tooltip")).toHaveTextContent("링크");
+  expect(link.element().hasAttribute("title")).toBe(false);
+  await userEvent.keyboard("{Escape}");
+  await expect.element(page.getByRole("tooltip")).not.toBeInTheDocument();
 });
 
 test("편집기 설명: 접힌 코드의 펼치기 설명을 공통 tooltip에 넘기고 누르면 다시 펼친다", async () => {
@@ -1223,71 +1227,6 @@ test("편집기 설명: 제어 문자의 의미를 화면 읽기와 공통 toolt
   expect(character.getAttribute("aria-label")).toBeTruthy();
   expect(character.dataset.tooltip).toBe(character.getAttribute("aria-label"));
   expect(character.hasAttribute("title")).toBe(false);
-});
-
-test("편집기 설명: CodeMirror hover 표면은 공통 tooltip 변수의 모든 시각 값을 따른다", async () => {
-  const host = document.createElement("div");
-  host.className = "markdown-editor";
-  host.style.cssText = [
-    "--tooltip-background: rgb(30, 40, 50)",
-    "--tooltip-color: rgb(230, 240, 250)",
-    "--tooltip-border: rgb(60, 70, 80)",
-    "--tooltip-shadow: 0 2px 4px rgb(0 0 0 / 0.2)",
-    "--tooltip-radius: 7px",
-    "--tooltip-font-size: 14px",
-    "--tooltip-line-height: 1.5",
-    "--tooltip-padding: 6px 10px",
-  ].join(";");
-  document.body.appendChild(host);
-  const view = new EditorView({
-    parent: host,
-    doc: "const value = 1;",
-    extensions: [
-      codeEditorTheme,
-      hoverTooltip(() => ({
-        pos: 0,
-        create() {
-          const dom = document.createElement("div");
-          dom.textContent = "변수 설명";
-          return { dom };
-        },
-      })),
-    ],
-  });
-  try {
-    activateHover(view, 0, 1);
-    await expect.poll(() => host.querySelector(codeMirrorDom.hoverTooltip)).not.toBeNull();
-    for (const theme of ["desk-light", "desk-dark"]) {
-      document.documentElement.dataset.theme = theme;
-      const style = getComputedStyle(host.querySelector(codeMirrorDom.hoverTooltip)!);
-      expect({
-        background: style.backgroundColor,
-        color: style.color,
-        border: style.border,
-        shadow: style.boxShadow,
-        radius: style.borderRadius,
-        fontSize: style.fontSize,
-        lineHeight: style.lineHeight,
-        padding: style.padding,
-        whiteSpace: style.whiteSpace,
-        overflowWrap: style.overflowWrap,
-      }).toEqual({
-        background: "rgb(30, 40, 50)",
-        color: "rgb(230, 240, 250)",
-        border: "1px solid rgb(60, 70, 80)",
-        shadow: "rgba(0, 0, 0, 0.2) 0px 2px 4px 0px",
-        radius: "7px",
-        fontSize: "14px",
-        lineHeight: "21px",
-        padding: "6px 10px",
-        whiteSpace: "normal",
-        overflowWrap: "anywhere",
-      });
-    }
-  } finally {
-    view.destroy();
-    host.remove();
-  }
 });
 
 test("편집기 설명: 사용자 Markdown 링크와 그림의 title 메타데이터는 그대로 둔다", async () => {

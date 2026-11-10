@@ -180,26 +180,6 @@
 }
 
 /*
- * 글자를 고르면 나오는 서식 도구 모음입니다. 모든 단추를 누를 수 있으므로 아이콘을 본문 색에 가깝게 칠하고,
- * 고른 글자에 이미 적용된 서식만 바탕을 칠해 구분합니다.
- */
-.markdown-editor .milkdown .milkdown-toolbar {
-  background: var(--color-base-100);
-  border: 1px solid var(--color-base-300);
-}
-.markdown-editor .milkdown .milkdown-toolbar .toolbar-item svg {
-  color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
-  fill: color-mix(in oklab, var(--color-base-content) 80%, transparent);
-}
-.markdown-editor .milkdown .milkdown-toolbar .toolbar-item.active {
-  background: var(--color-base-300);
-}
-.markdown-editor .milkdown .milkdown-toolbar .toolbar-item.active svg {
-  color: var(--color-base-content);
-  fill: var(--color-base-content);
-}
-
-/*
  * Mermaid 그림(pele)의 색과 글꼴입니다. 그림은 이 변수를 참조하므로, 테마가 바뀌면 다시 그리지 않아도 색이 따라 바뀝니다.
  * pele는 간선 라벨의 바탕을 --pele-bg로 칠하므로, 코드 블록 바탕(--crepe-color-surface)과 같은 base-200으로 둡니다.
  * mermaidPreview.ts가 편집기 root에서 --pele-font를 읽어 글자 폭을 재므로, 변수는 root를 감싸는 .markdown-editor에 둡니다.

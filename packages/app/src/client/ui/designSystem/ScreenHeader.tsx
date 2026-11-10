@@ -29,7 +29,6 @@ export function ScreenHeader({ title, tone, count, loading, help, children }: Pr
         >
           {title}
         </h1>
-        {/* 설명은 이 div 아래에 제목과 같은 왼쪽 끝부터 띄우고, 폭은 header(@container) 폭 이하로 줄입니다. */}
         {help && <HelpTooltip help={help} />}
         {count !== undefined && (
           <span id={countId} className="font-mono text-sm text-emphasis-50 tabular-nums">

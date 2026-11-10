@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { HelpTooltip } from "./HelpTooltip";
 import { TooltipLayer } from "./TooltipLayer";
 
 const LONG_DESCRIPTION =
@@ -140,4 +141,73 @@ test("dialog의 설명도 top layer에서 잘리지 않고 대상의 클릭을 �
   const tooltip = page.getByRole("tooltip").element();
   const dialog = screen.getByRole("dialog").element().getBoundingClientRect();
   expect(tooltip.getBoundingClientRect().width).toBeGreaterThan(dialog.width);
+});
+
+test("도움말 크기와 시작·끝 정렬을 유지하며 같은 안내 영역에서 마우스와 키보드를 지원한다", async () => {
+  await page.viewport(1280, 800);
+  const screen = await render(
+    <>
+      <div style={{ position: "fixed", left: 80, top: 80 }}>
+        <HelpTooltip help="작은 도움말" />
+      </div>
+      <div style={{ position: "fixed", right: 80, top: 160 }}>
+        <HelpTooltip help="머리글 끝 도움말" placement="header-end" />
+      </div>
+      <TooltipLayer />
+    </>,
+  );
+  const below = screen.getByRole("button", { name: "작은 도움말" });
+  const headerEnd = screen.getByRole("button", { name: "머리글 끝 도움말" });
+  const belowBox = below.element().getBoundingClientRect();
+  const endBox = headerEnd.element().getBoundingClientRect();
+  expect(belowBox.width).toBeLessThan(endBox.width);
+  expect(belowBox.height).toBeLessThan(endBox.height);
+
+  await userEvent.hover(below);
+  const tooltip = page.getByRole("tooltip");
+  await expect.element(tooltip).toHaveTextContent("작은 도움말");
+  expect(tooltip.element().getBoundingClientRect().left).toBeCloseTo(belowBox.left, 0);
+  await userEvent.unhover(below);
+  await expect.element(tooltip).not.toBeInTheDocument();
+  await userEvent.tab();
+  await expect.element(below).toHaveFocus();
+  await expect.element(tooltip).toHaveTextContent("작은 도움말");
+  await userEvent.tab();
+  await expect.element(headerEnd).toHaveFocus();
+  await expect.element(tooltip).toHaveTextContent("머리글 끝 도움말");
+  expect(page.getByRole("tooltip").elements()).toHaveLength(1);
+  expect(tooltip.element().getBoundingClientRect().right).toBeCloseTo(endBox.right, 0);
+  await userEvent.keyboard("{Escape}");
+  await expect.element(tooltip).not.toBeInTheDocument();
+});
+
+test("스크롤바 공간을 뺀 좁은 창에서도 긴 도움말이 양쪽 여백 안에 들어간다", async () => {
+  await page.viewport(400, 800);
+  const root = document.documentElement;
+  const originalGutter = root.style.scrollbarGutter;
+  const originalOverflow = root.style.overflowY;
+  root.style.scrollbarGutter = "stable";
+  root.style.overflowY = "scroll";
+  try {
+    const screen = await render(
+      <>
+        <button style={{ position: "fixed", right: 8, top: 8 }} data-tooltip={LONG_DESCRIPTION}>
+          스크롤바 옆 안내
+        </button>
+        <TooltipLayer />
+      </>,
+    );
+    expect(root.clientWidth).toBeLessThan(window.innerWidth);
+    await userEvent.hover(screen.getByRole("button", { name: "스크롤바 옆 안내" }));
+    const tooltip = page.getByRole("tooltip");
+    await expect.element(tooltip).toBeVisible();
+    const box = tooltip.element().getBoundingClientRect();
+    expect(box.left).toBeGreaterThanOrEqual(8);
+    expect(box.right).toBeLessThanOrEqual(root.clientWidth - 8);
+    expect(root.scrollWidth).toBe(root.clientWidth);
+    expect(tooltip.element().scrollHeight).toBeLessThanOrEqual(tooltip.element().clientHeight);
+  } finally {
+    root.style.scrollbarGutter = originalGutter;
+    root.style.overflowY = originalOverflow;
+  }
 });

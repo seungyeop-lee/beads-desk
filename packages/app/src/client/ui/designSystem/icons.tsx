@@ -195,6 +195,14 @@ export function CodeIcon(props: IconProps) {
   );
 }
 
+export function LinkIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m6 10 4-4M5 7 3.5 8.5a2.8 2.8 0 0 0 4 4L9 11M7 5l1.5-1.5a2.8 2.8 0 0 1 4 4L11 9" />
+    </Icon>
+  );
+}
+
 export function BulletListIcon(props: IconProps) {
   return (
     <Icon {...props}>

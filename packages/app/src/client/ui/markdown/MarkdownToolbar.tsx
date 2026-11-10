@@ -7,6 +7,7 @@ import {
   CodeIcon,
   DividerIcon,
   ItalicIcon,
+  LinkIcon,
   OrderedListIcon,
   QuoteIcon,
   StrikethroughIcon,
@@ -18,6 +19,7 @@ export type FormatAction =
   | "italic"
   | "strikethrough"
   | "inlineCode"
+  | "link"
   | "bulletList"
   | "orderedList"
   | "quote"
@@ -43,6 +45,7 @@ const BUTTON_GROUPS: { action: FormatAction; Icon: ComponentType<SVGProps<SVGSVG
     { action: "italic", Icon: ItalicIcon },
     { action: "strikethrough", Icon: StrikethroughIcon },
     { action: "inlineCode", Icon: CodeIcon },
+    { action: "link", Icon: LinkIcon },
   ],
   [
     { action: "bulletList", Icon: BulletListIcon },

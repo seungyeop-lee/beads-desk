@@ -3,6 +3,7 @@ import { page, userEvent, type Locator } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { ScreenHeader } from "./ScreenHeader";
+import { TooltipLayer } from "./TooltipLayer";
 
 const HELP =
   "화면 제목 아래에 설명 줄을 두지 않고 ? 아이콘으로만 보여 주는지 확인하는 설명 문장입니다.";
@@ -11,6 +12,7 @@ test("help가 있어도 제목 줄 높이는 help가 없을 때와 같다", asyn
   await page.viewport(1280, 800);
   const screen = await render(
     <LocaleProvider locale="ko">
+      <TooltipLayer />
       <ScreenHeader title="설명 없는 화면" tone="tone-issues" count={3} />
       <ScreenHeader title="설명 있는 화면" tone="tone-board" count={5} help={HELP} />
     </LocaleProvider>,
@@ -33,18 +35,19 @@ test("? 아이콘의 접근 가능한 이름은 설명이고, 마우스를 올�
   await page.viewport(1280, 800);
   const screen = await render(
     <LocaleProvider locale="ko">
+      <TooltipLayer />
       <ScreenHeader title="화면 제목" help={HELP} />
     </LocaleProvider>,
   );
   const button = screen.getByRole("button", { name: HELP });
-  const tooltip = screen.getByText(HELP);
-  await expect.element(tooltip).not.toBeVisible();
+  const tooltip = page.getByRole("tooltip");
+  await expect.element(tooltip).not.toBeInTheDocument();
 
   await userEvent.hover(button);
   await expectVisible(tooltip);
 
   await userEvent.unhover(button);
-  await expect.poll(() => getComputedStyle(tooltip.element()).visibility).toBe("hidden");
+  await expect.element(tooltip).not.toBeInTheDocument();
 
   await userEvent.tab();
   await expect.element(button).toHaveFocus();
@@ -58,6 +61,7 @@ test("제목이 길어 좁은 창에서 줄이 바뀌어도 가로로 넘치지 
   await page.viewport(NARROW_WIDTH, 900);
   const screen = await render(
     <LocaleProvider locale="ko">
+      <TooltipLayer />
       <ScreenHeader
         title="좁은 창에서 제목이 한 줄에 들어가지 않아 여러 줄로 늘어나도 화면을 가로로 넘기지 않는 화면"
         count={123}
@@ -71,8 +75,8 @@ test("제목이 길어 좁은 창에서 줄이 바뀌어도 가로로 넘치지 
   );
 
   await userEvent.hover(screen.getByRole("button", { name: HELP }));
-  await expectVisible(screen.getByText(HELP));
-  const box = screen.getByText(HELP).element().getBoundingClientRect();
+  await expectVisible(page.getByRole("tooltip"));
+  const box = page.getByRole("tooltip").element().getBoundingClientRect();
   expect(box.left).toBeGreaterThanOrEqual(0);
   expect(box.right).toBeLessThanOrEqual(NARROW_WIDTH);
 });
@@ -80,13 +84,16 @@ test("제목이 길어 좁은 창에서 줄이 바뀌어도 가로로 넘치지 
 test("화면 아래쪽 도움말은 대상을 가리지 않고 위로 열리며 Escape 후 재진입할 수 있다", async () => {
   await page.viewport(400, 300);
   const screen = await render(
-    <div style={{ position: "fixed", left: 8, right: 8, bottom: 8 }}>
-      <ScreenHeader title="아래쪽 화면" help={HELP} />
-    </div>,
+    <>
+      <TooltipLayer />
+      <div style={{ position: "fixed", left: 8, right: 8, bottom: 8 }}>
+        <ScreenHeader title="아래쪽 화면" help={HELP} />
+      </div>
+    </>,
   );
   const button = screen.getByRole("button", { name: HELP });
   await userEvent.hover(button);
-  const tooltip = screen.getByText(HELP);
+  const tooltip = page.getByRole("tooltip");
   await expectVisible(tooltip);
   const target = button.element().getBoundingClientRect();
   const box = tooltip.element().getBoundingClientRect();
@@ -94,12 +101,12 @@ test("화면 아래쪽 도움말은 대상을 가리지 않고 위로 열리며 
   expect(box.left).toBeGreaterThanOrEqual(8);
   expect(box.right).toBeLessThanOrEqual(392);
   await userEvent.keyboard("{Escape}");
-  await expect.element(tooltip).not.toBeVisible();
+  await expect.element(tooltip).not.toBeInTheDocument();
   await userEvent.unhover(button);
   await userEvent.hover(button);
   await expectVisible(tooltip);
 });
 
 function expectVisible(tooltip: Locator) {
-  return expect.poll(() => getComputedStyle(tooltip.element()).visibility).toBe("visible");
+  return expect.element(tooltip).toBeVisible();
 }

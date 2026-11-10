@@ -76,25 +76,25 @@ for (const width of [768, 480])
         ),
       );
       const button = screen.getByRole("button", { name: help });
-      const tooltip = screen.getByText(help);
-      await expect.element(tooltip).not.toBeVisible();
+      const tooltip = page.getByRole("tooltip");
+      await expect.element(tooltip).not.toBeInTheDocument();
 
       await userEvent.hover(button);
-      await expectInsideViewport(tooltip.element(), width, 800);
+      await expectInsideViewport(tooltip, width, 800);
 
       await userEvent.unhover(button);
-      await expect.element(tooltip).not.toBeVisible();
+      await expect.element(tooltip).not.toBeInTheDocument();
       (
         screen.getByRole("heading", { level: 1 }).getByRole("link").element() as HTMLElement
       ).focus();
       await userEvent.tab();
       await expect.element(button).toHaveFocus();
-      await expectInsideViewport(tooltip.element(), width, 800);
+      await expectInsideViewport(tooltip, width, 800);
     });
 
-async function expectInsideViewport(tooltip: Element, width: number, height: number) {
-  await expect.poll(() => getComputedStyle(tooltip).visibility).toBe("visible");
-  const box = tooltip.getBoundingClientRect();
+async function expectInsideViewport(tooltip: Locator, width: number, height: number) {
+  await expect.element(tooltip).toBeVisible();
+  const box = tooltip.element().getBoundingClientRect();
   expect(box.left).toBeGreaterThanOrEqual(0);
   expect(box.right).toBeLessThanOrEqual(width);
   expect(box.bottom).toBeLessThanOrEqual(height);
@@ -747,12 +747,12 @@ test("범례 항목의 ? 아이콘에 마우스를 올리면 그 항목의 설�
   await renderedEdges(screen, 8);
   for (const help of LEGEND_HELP) {
     const button = screen.getByRole("button", { name: help });
-    const tooltip = screen.getByText(help);
-    await expect.poll(() => getComputedStyle(tooltip.element()).visibility).toBe("hidden");
+    const tooltip = page.getByRole("tooltip");
+    await expect.element(tooltip).not.toBeInTheDocument();
     await userEvent.hover(button);
-    await expectInsideViewport(tooltip.element(), 1024, 800);
-    await userEvent.unhover(button);
-    await expect.poll(() => getComputedStyle(tooltip.element()).visibility).toBe("hidden");
+    await expectInsideViewport(tooltip, 1024, 800);
+    await userEvent.hover(screen.getByRole("heading", { level: 1 }));
+    await expect.element(tooltip).not.toBeInTheDocument();
   }
   expect(screen.getByText(/관련·발견 관계만 함께 표시합니다/).elements()).toHaveLength(0);
 });
@@ -765,7 +765,7 @@ test("범례 항목의 ? 아이콘에 키보드 초점을 두면 그 항목의 �
   for (let step = 0; step < 10 && document.activeElement !== button.element(); step++)
     await userEvent.tab();
   await expect.element(button).toHaveFocus();
-  await expectInsideViewport(screen.getByText(LEGEND_HELP[2]!).element(), 1440, 900);
+  await expectInsideViewport(page.getByRole("tooltip"), 1440, 900);
 });
 
 for (const theme of ["desk", "desk-dark"])

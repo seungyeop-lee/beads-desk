@@ -85,7 +85,8 @@ In a git worktree of a repository whose main checkout has `.beads`, the worktree
 
 - Hover over help icons, tools, and abbreviated information to read their explanations. Focusable controls also show their explanations when reached with the keyboard. Press Esc, move away, or use the control to dismiss an explanation.
 - Explanations follow the light or dark theme and wrap long text near the target. Chart explanations keep the date and each series value together; hovering does not change the chart's links.
-- Workspace selection keeps the browser's native menu. The closed selector explains the selected workspace path. The rich-text editor's selection-formatting toolbar keeps its built-in browser hints and keyboard shortcut labels.
+- Workspace selection keeps the browser's native menu. The closed selector explains the selected workspace path.
+- The rich-text editor uses the upper toolbar for formatting and inserting links; selecting text does not open a floating toolbar. Link address editing, copying, and deletion remain in the link panel.
 
 ## Epic membership in the issue list
 

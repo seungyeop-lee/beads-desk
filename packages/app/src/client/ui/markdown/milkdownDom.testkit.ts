@@ -11,7 +11,7 @@ export const milkdownDom = {
   preview: ".preview",
   /** 미리보기에 그린 Mermaid 그림입니다. */
   previewDiagram: ".preview svg",
-  toolbarLinkButton: '[data-toolbar-item="link"]',
+  selectionToolbar: ".milkdown-toolbar",
   linkEditButton: ".link-edit-button",
   linkInput: ".link-edit input",
   linkConfirmButton: ".link-edit .confirm",

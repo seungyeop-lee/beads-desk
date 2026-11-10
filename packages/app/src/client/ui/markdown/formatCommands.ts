@@ -1,3 +1,4 @@
+import type * as LinkCommands from "@milkdown/kit/component/link-tooltip";
 import type { CmdKey } from "@milkdown/kit/core";
 import type { FormatAction } from "./MarkdownToolbar";
 
@@ -14,6 +15,7 @@ type Run = <T>(command: { key: CmdKey<T> }, payload?: T) => void;
 export function markdownFormatControls(
   commonmark: Commonmark,
   gfm: Gfm,
+  linkCommands: typeof LinkCommands,
   run: Run,
 ): { format: (action: FormatAction) => void; setHeading: (level: number) => void } {
   const commands: Record<FormatAction, () => void> = {
@@ -21,6 +23,7 @@ export function markdownFormatControls(
     italic: () => run(commonmark.toggleEmphasisCommand),
     strikethrough: () => run(gfm.toggleStrikethroughCommand),
     inlineCode: () => run(commonmark.toggleInlineCodeCommand),
+    link: () => run(linkCommands.toggleLinkCommand),
     bulletList: () => run(commonmark.wrapInBulletListCommand),
     orderedList: () => run(commonmark.wrapInOrderedListCommand),
     quote: () => run(commonmark.wrapInBlockquoteCommand),

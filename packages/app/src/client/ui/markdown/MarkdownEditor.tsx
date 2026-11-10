@@ -7,7 +7,6 @@ import "@milkdown/crepe/theme/common/cursor.css";
 import "@milkdown/crepe/theme/common/link-tooltip.css";
 import "@milkdown/crepe/theme/common/list-item.css";
 import "@milkdown/crepe/theme/common/placeholder.css";
-import "@milkdown/crepe/theme/common/toolbar.css";
 import "@milkdown/crepe/theme/common/table.css";
 import type { CrepeBuilder } from "@milkdown/crepe/builder";
 import type { CmdKey } from "@milkdown/kit/core";
@@ -96,7 +95,7 @@ export function MarkdownEditor({
         { listItem },
         { placeholder: placeholderFeature },
         { table },
-        { toolbar },
+        linkCommands,
         { languages },
         { codeHighlighting, codeEditorTheme, codeEditorDescriptions },
         { localFilePreview },
@@ -113,7 +112,7 @@ export function MarkdownEditor({
         import("@milkdown/crepe/feature/list-item"),
         import("@milkdown/crepe/feature/placeholder"),
         import("@milkdown/crepe/feature/table"),
-        import("@milkdown/crepe/feature/toolbar"),
+        import("@milkdown/kit/component/link-tooltip"),
         import("@codemirror/language-data"),
         import("./codeHighlighting"),
         import("./localFilePreview"),
@@ -141,13 +140,7 @@ export function MarkdownEditor({
         });
       const address = milkdownAddress(commonmark, addressOf);
       if (!readOnly) {
-        crepe.addFeature(linkTooltip).addFeature(toolbar, {
-          boldLabel: labels.bold,
-          italicLabel: labels.italic,
-          strikethroughLabel: labels.strikethrough,
-          codeLabel: labels.inlineCode,
-          linkLabel: labels.link,
-        });
+        crepe.addFeature(linkTooltip);
         crepe.editor.use([
           $prose(
             (ctx) =>
@@ -201,7 +194,7 @@ export function MarkdownEditor({
         crepe.editor.action(callCommand(command.key, payload));
         view.focus();
       };
-      setControls({ crepe, ...markdownFormatControls(commonmark, gfm, run) });
+      setControls({ crepe, ...markdownFormatControls(commonmark, gfm, linkCommands, run) });
     })();
     return () => {
       disposed = true;

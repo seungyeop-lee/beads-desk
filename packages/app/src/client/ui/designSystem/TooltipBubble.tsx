@@ -23,7 +23,6 @@ export function TooltipBubble({ anchor, id, align = "start", children }: Props) 
     element.showPopover();
     const target = anchor.getBoundingClientRect();
     const viewport = document.documentElement;
-    element.style.maxWidth = `min(32rem, ${viewport.clientWidth - 16}px)`;
     const box = element.getBoundingClientRect();
     const left = Math.max(
       8,

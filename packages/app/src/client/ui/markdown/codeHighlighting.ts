@@ -84,7 +84,6 @@ export const codeEditorDescriptions = [
 /**
  * 코드 블록 편집기가 그리는 표시(현재 줄, 고른 글자, caret, 같은 낱말과 검색 결과 강조, 자동 완성 목록, 접힌 코드, snippet 입력 칸, 버튼)의 색입니다.
  * CodeMirror 기본 테마는 dark theme 확장이 없으면 밝은 바탕에 맞춘 색을 쓰므로, 색을 markdownEditor.css의 --code-* 변수로 바꿉니다.
- * 설명용 hover 표면만 앱 공통 --tooltip-* 변수를 쓰고, 자동 완성 목록은 기존 코드 편집기 색을 유지합니다.
  * EditorView.theme의 규칙은 기본 테마의 같은 규칙보다 우선합니다.
  */
 export const codeEditorTheme = EditorView.theme({
@@ -101,22 +100,6 @@ export const codeEditorTheme = EditorView.theme({
   ".cm-tooltip": {
     backgroundColor: "var(--code-tooltip)",
     borderColor: "var(--code-tooltip-border)",
-  },
-  ".cm-tooltip-hover": {
-    width: "max-content",
-    maxWidth: "min(32rem, calc(100vw - 1rem))",
-    backgroundColor: "var(--tooltip-background)",
-    color: "var(--tooltip-color)",
-    border: "1px solid var(--tooltip-border)",
-    boxShadow: "var(--tooltip-shadow)",
-    borderRadius: "var(--tooltip-radius)",
-    fontSize: "var(--tooltip-font-size)",
-    fontWeight: "400",
-    lineHeight: "var(--tooltip-line-height)",
-    padding: "var(--tooltip-padding)",
-    textAlign: "start",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
   },
   ".cm-foldPlaceholder": {
     backgroundColor: "var(--code-fold-placeholder)",
