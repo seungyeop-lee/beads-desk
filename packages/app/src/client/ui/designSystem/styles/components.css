@@ -17,7 +17,7 @@
 @layer components {
   .tooltip-surface {
     width: max-content;
-    max-width: min(32rem, calc(100% - 1rem));
+    max-width: min(32rem, calc(var(--tooltip-available-width, 100vw) - 1rem));
     border: 1px solid var(--tooltip-border);
     border-radius: var(--tooltip-radius);
     background: var(--tooltip-background);
@@ -33,6 +33,7 @@
   }
 
   .tooltip-bubble {
+    --tooltip-available-width: 100%;
     position: fixed;
     inset: auto;
     z-index: 100;

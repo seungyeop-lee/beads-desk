@@ -198,7 +198,7 @@ export function CodeIcon(props: IconProps) {
 export function LinkIcon(props: IconProps) {
   return (
     <Icon {...props}>
-      <path d="m6 10 4-4M5 7 3.5 8.5a2.8 2.8 0 0 0 4 4L9 11M7 5l1.5-1.5a2.8 2.8 0 0 1 4 4L11 9" />
+      <path d="m9 15 6-6M8 11l-3 3a3.5 3.5 0 0 0 5 5l3-3M11 8l3-3a3.5 3.5 0 0 1 5 5l-3 3" />
     </Icon>
   );
 }
