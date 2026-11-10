@@ -74,7 +74,8 @@ for (const width of [455, 500, 1440]) {
       const fraction = `${closedChildren}/${totalChildren}`;
       const card = screen.getByRole("article", { name: epic.title, exact: true });
       // 진행 개수는 분수 열과 퍼센트 열로 나뉩니다.
-      const count = card.getByTitle(messages.epics.closedChildCount, { exact: true }).element();
+      const count = card.getByText(fraction, { exact: true }).element().parentElement!;
+      expect(count.getAttribute("data-tooltip")).toBe(messages.epics.closedChildCount);
       const columns = [fraction, "·100%"].map((text) =>
         card.getByText(text, { exact: true }).element(),
       );
@@ -181,8 +182,7 @@ for (const width of [2000, 1280, 1100, 768]) {
         const fraction = card.getByText(`${closedChildren}/${totalChildren}`, { exact: true });
         record("분수 왼쪽", box(fraction).left);
         record("분수 오른쪽", box(fraction).right);
-        const count = card.getByTitle(MESSAGES[locale].epics.closedChildCount, { exact: true });
-        record("진행 개수 오른쪽", box(count).right);
+        record("진행 개수 오른쪽", fraction.element().parentElement!.getBoundingClientRect().right);
         const order = card.getByRole("link", { name: MESSAGES[locale].graph.epicOrder });
         record("순서 보기 왼쪽", box(order).left);
       }
@@ -414,7 +414,7 @@ test("에픽과 하위 이슈의 ID는 짧은 ID 복사 단추이고, 하위 이
 
   for (const id of ["desk-epic", "desk-epic.1", "desk-epic.2"]) {
     const copyButton = screen.getByRole("button", { name: messages.copyId.labelOf(id) });
-    expect(copyButton.element().textContent).toBe(shortIssueId(id));
+    expect((copyButton.element() as HTMLElement).innerText).toBe(shortIssueId(id));
   }
   const waitingRow = screen.getByRole("row", { name: /기다리는 작업/ });
   await expect
@@ -497,11 +497,11 @@ test("상위 이슈가 에픽인 에픽은 카드로 보이지 않고, 상위 �
       `/w/demo${graphHref({ kind: "epic", id: "desk-parent.1" }, "/epics?")}`,
     );
   await expect
-    .element(childEpicRow.getByTitle(messages.issueTable.dependencyCounts(0, 0), { exact: true }))
+    .element(childEpicRow.getByRole("cell", { name: "0 / 0", exact: true }))
     .not.toBeInTheDocument();
   const taskRow = screen.getByRole("row", { name: /하위 작업/ });
   await expect
-    .element(taskRow.getByTitle(messages.issueTable.dependencyCounts(1, 0), { exact: true }))
+    .element(taskRow.getByRole("cell", { name: "1 / 0", exact: true }))
     .toHaveTextContent("1 / 0");
 });
 

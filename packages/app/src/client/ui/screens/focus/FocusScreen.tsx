@@ -468,6 +468,9 @@ function FocusRow({ issue, href, waiters, showAssignee, due, waitingOn, stacked 
   const messages = useMessages();
   const locale = useLocale();
   const title = issue.title || messages.common.untitled;
+  const assigneeDescription = showAssignee
+    ? `${messages.issue.assignee}: ${issue.assignee ?? messages.common.none}`
+    : undefined;
   const idButton = (
     <CoveredIssueIdButton
       issueId={issue.id}
@@ -484,7 +487,8 @@ function FocusRow({ issue, href, waiters, showAssignee, due, waitingOn, stacked 
       {showAssignee && (
         <span
           className="relative flex max-w-36 shrink-0 items-center gap-0.5 text-xs text-emphasis-60"
-          title={`${messages.issue.assignee}: ${issue.assignee ?? messages.common.none}`}
+          data-tooltip={assigneeDescription}
+          aria-description={assigneeDescription}
         >
           <UserIcon className="size-3 shrink-0" />
           <span className="sr-only">{messages.issue.assignee}</span>

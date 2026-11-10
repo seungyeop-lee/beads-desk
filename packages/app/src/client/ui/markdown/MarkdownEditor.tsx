@@ -98,7 +98,7 @@ export function MarkdownEditor({
         { table },
         { toolbar },
         { languages },
-        { codeHighlighting, codeEditorTheme },
+        { codeHighlighting, codeEditorTheme, codeEditorDescriptions },
         { localFilePreview },
         core,
         { $prose, $remark, callCommand },
@@ -133,6 +133,7 @@ export function MarkdownEditor({
         .addFeature(codeMirror, {
           languages,
           theme: [codeHighlighting, codeEditorTheme],
+          extensions: codeEditorDescriptions,
           renderPreview: preview.renderPreview,
           previewLabel: labels.preview,
           previewLoading: labels.previewLoading,

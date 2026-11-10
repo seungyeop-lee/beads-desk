@@ -17,7 +17,7 @@ async function renderField(value: number | null) {
       </div>
     </LocaleProvider>,
   );
-  const open = () => screen.getByTitle(messages.editable.editField(messages.issue.dueAt)).click();
+  const open = () => screen.getByRole("button").click();
   return { screen, onSave, open };
 }
 
@@ -32,8 +32,8 @@ test("날짜만 고르면 그날 현지 0시를, 시각까지 고르면 그 현�
   await screen.getByRole("button", { name: messages.common.save }).click();
   expect(onSave).toHaveBeenLastCalledWith(new Date(2026, 10, 5).toISOString());
   await expect
-    .element(screen.getByTitle(messages.editable.editField(messages.issue.dueAt)))
-    .toHaveTextContent("2026. 11. 5.");
+    .poll(() => (screen.getByRole("button").element() as HTMLElement).innerText)
+    .toBe("2026. 11. 5.");
 
   await open();
   await screen.getByLabelText(messages.dueAt.time).fill("15:30");

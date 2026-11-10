@@ -77,6 +77,29 @@ test("제목이 길어 좁은 창에서 줄이 바뀌어도 가로로 넘치지 
   expect(box.right).toBeLessThanOrEqual(NARROW_WIDTH);
 });
 
+test("화면 아래쪽 도움말은 대상을 가리지 않고 위로 열리며 Escape 후 재진입할 수 있다", async () => {
+  await page.viewport(400, 300);
+  const screen = await render(
+    <div style={{ position: "fixed", left: 8, right: 8, bottom: 8 }}>
+      <ScreenHeader title="아래쪽 화면" help={HELP} />
+    </div>,
+  );
+  const button = screen.getByRole("button", { name: HELP });
+  await userEvent.hover(button);
+  const tooltip = screen.getByText(HELP);
+  await expectVisible(tooltip);
+  const target = button.element().getBoundingClientRect();
+  const box = tooltip.element().getBoundingClientRect();
+  expect(box.bottom).toBeLessThanOrEqual(target.top - 4);
+  expect(box.left).toBeGreaterThanOrEqual(8);
+  expect(box.right).toBeLessThanOrEqual(392);
+  await userEvent.keyboard("{Escape}");
+  await expect.element(tooltip).not.toBeVisible();
+  await userEvent.unhover(button);
+  await userEvent.hover(button);
+  await expectVisible(tooltip);
+});
+
 function expectVisible(tooltip: Locator) {
   return expect.poll(() => getComputedStyle(tooltip.element()).visibility).toBe("visible");
 }

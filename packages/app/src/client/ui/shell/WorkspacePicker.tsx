@@ -1,4 +1,5 @@
 import { useRouter } from "next/navigation";
+import { useId } from "react";
 import { useWorkspaces } from "@/client/modules/workspace/application/useWorkspaces";
 import { useScreenPathname, useWorkspaceSlug } from "@/client/ui/address/workspaceAddress";
 import { FolderIcon } from "@/client/ui/designSystem/icons";
@@ -6,7 +7,7 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { workspaceHref } from "@/shared/contract/workspaces";
 
 /**
- * 이 탭이 보는 workspace의 이름을 보여 주고, 여럿이면 고를 수 있게 합니다. 이름은 화면 주소에 쓰는 이름이고 전체 경로는 title로 보입니다.
+ * 이 탭이 보는 workspace의 이름을 보여 주고, 여럿이면 고를 수 있게 합니다. 이름은 화면 주소에 쓰는 이름이고 전체 경로는 도움말로 보입니다.
  * 고르면 이 탭만 다른 workspace의 같은 화면으로 이동합니다. 다른 탭은 보던 workspace를 그대로 봅니다.
  */
 export function WorkspacePicker() {
@@ -15,6 +16,7 @@ export function WorkspacePicker() {
   const screenPathname = useScreenPathname();
   const router = useRouter();
   const messages = useMessages();
+  const descriptionId = useId();
 
   const currentRoot = data?.workspaces.find((workspace) => workspace.slug === current)?.root;
   if (!data) return null;
@@ -22,7 +24,8 @@ export function WorkspacePicker() {
     return (
       <span
         className="flex min-w-0 max-w-48 items-center gap-1.5 text-sm text-emphasis-60"
-        title={currentRoot}
+        data-tooltip={currentRoot}
+        aria-description={currentRoot}
       >
         <FolderIcon width={15} height={15} className="shrink-0" />
         <span className="truncate">{current}</span>
@@ -35,16 +38,22 @@ export function WorkspacePicker() {
       <select
         className="ghost-select min-w-0 max-w-full pl-8"
         aria-label={messages.shell.workspace}
-        title={currentRoot}
+        data-tooltip={currentRoot}
+        aria-describedby={`${descriptionId}-${current}`}
         value={current}
         onChange={(event) => router.push(switchedHref(event.target.value, screenPathname))}
       >
-        {data.workspaces.map(({ root, slug }) => (
-          <option key={slug} value={slug} title={root}>
+        {data.workspaces.map(({ slug }) => (
+          <option key={slug} value={slug} aria-describedby={`${descriptionId}-${slug}`}>
             {slug}
           </option>
         ))}
       </select>
+      {data.workspaces.map(({ root, slug }) => (
+        <span key={slug} id={`${descriptionId}-${slug}`} hidden>
+          {root}
+        </span>
+      ))}
     </label>
   );
 }

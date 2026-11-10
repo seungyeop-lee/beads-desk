@@ -87,7 +87,7 @@ export function MarkdownToolbar({ label, headingLevel, disabled, onHeading, onFo
               key={action}
               type="button"
               className="btn btn-ghost btn-xs btn-square text-emphasis-80 hover:text-base-content"
-              title={labels[action]}
+              data-tooltip={labels[action]}
               aria-label={labels[action]}
               disabled={disabled}
               // 단추가 포커스를 가져가지 않아야 편집기의 커서와 선택 영역이 그대로 남습니다.

@@ -144,7 +144,7 @@ test("카드는 짧은 ID를 복사 단추로 보이고, 카드를 덮는 링크
 
   for (const id of ["desk-first", "desk-second"]) {
     const copyButton = screen.getByRole("button", { name: messages.copyId.labelOf(id) });
-    expect(copyButton.element().textContent).toBe(shortIssueId(id));
+    expect((copyButton.element() as HTMLElement).innerText).toBe(shortIssueId(id));
   }
   const card = screen.getByRole("link", { name: "desk-first 선행 작업" });
   expect(getComputedStyle(card.element()).cursor).toBe("grab");

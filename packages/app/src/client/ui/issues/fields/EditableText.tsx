@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { focusOnMount, useInlineEdit } from "./useInlineEdit";
 
@@ -27,16 +28,22 @@ export function EditableText({
     required,
   );
   const messages = useMessages();
+  const descriptionId = useId();
 
   if (draft === null) {
+    const description = messages.editable.editField(label);
     return (
       <button
         type="button"
-        title={messages.editable.editField(label)}
+        data-tooltip={description}
+        aria-describedby={descriptionId}
         className={`-mx-1.5 cursor-text rounded-md px-1.5 text-left hover:bg-base-content/6 ${className}`}
         onClick={edit}
       >
         {shown || <span className="text-emphasis-50">{placeholder}</span>}
+        <span id={descriptionId} hidden>
+          {description}
+        </span>
       </button>
     );
   }

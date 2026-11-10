@@ -1,6 +1,6 @@
 /// <reference types="@vitest/browser-playwright" />
 import { foldCode } from "@codemirror/language";
-import { EditorView } from "@codemirror/view";
+import { activateHover, EditorView, hoverTooltip } from "@codemirror/view";
 import type { FormEvent } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 import { cdp, page, userEvent } from "vitest/browser";
@@ -1184,6 +1184,128 @@ test("편집 중에 붙여 넣은 이미지 파일은 본문에 들어가지 않
 
   await expect.poll(() => changed.mock.lastCall?.[0]).toBe("저장할 문단 고침");
   expect(editor.element().querySelector("img")).toBeNull();
+});
+
+test("편집기 설명: 서식 단추는 native title 대신 공통 tooltip 설명을 제공한다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor openAddress={tabMarkdownUrl} value="본문" label="설명" />
+    </LocaleProvider>,
+  );
+  const toolbar = screen.getByRole("toolbar", { name: "설명 서식 도구" });
+  await expect.element(toolbar).toBeVisible();
+  const buttons = toolbar.getByRole("button").elements();
+  expect(buttons).toHaveLength(10);
+  for (const button of buttons) {
+    expect(button.getAttribute("data-tooltip")).toBe(button.getAttribute("aria-label"));
+    expect(button.hasAttribute("title")).toBe(false);
+  }
+});
+
+test("편집기 설명: 접힌 코드의 펼치기 설명을 공통 tooltip에 넘기고 누르면 다시 펼친다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  view.dispatch({ selection: { anchor: view.state.doc.line(3).from } });
+  expect(foldCode(view)).toBe(true);
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.foldPlaceholder)).not.toBeNull();
+  const folded = view.dom.querySelector<HTMLElement>(codeMirrorDom.foldPlaceholder)!;
+  expect(folded.dataset.tooltip).toBe(view.state.phrase("unfold"));
+  expect(folded.getAttribute("aria-label")).toBe(view.state.phrase("folded code"));
+  expect(folded.hasAttribute("title")).toBe(false);
+  await userEvent.click(folded);
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.foldPlaceholder)).toBeNull();
+});
+
+test("편집기 설명: 제어 문자의 의미를 화면 읽기와 공통 tooltip 양쪽에 보존한다", async () => {
+  const view = await renderCodeEditor(TYPESCRIPT);
+  view.dispatch({ changes: { from: view.state.doc.length, insert: "\n\u0007" } });
+  await expect.poll(() => view.dom.querySelector(codeMirrorDom.specialChar)).not.toBeNull();
+  const character = view.dom.querySelector<HTMLElement>(codeMirrorDom.specialChar)!;
+  expect(character.getAttribute("aria-label")).toBeTruthy();
+  expect(character.dataset.tooltip).toBe(character.getAttribute("aria-label"));
+  expect(character.hasAttribute("title")).toBe(false);
+});
+
+test("편집기 설명: CodeMirror hover 표면은 공통 tooltip 변수의 모든 시각 값을 따른다", async () => {
+  const host = document.createElement("div");
+  host.className = "markdown-editor";
+  host.style.cssText = [
+    "--tooltip-background: rgb(30, 40, 50)",
+    "--tooltip-color: rgb(230, 240, 250)",
+    "--tooltip-border: rgb(60, 70, 80)",
+    "--tooltip-shadow: 0 2px 4px rgb(0 0 0 / 0.2)",
+    "--tooltip-radius: 7px",
+    "--tooltip-font-size: 14px",
+    "--tooltip-line-height: 1.5",
+    "--tooltip-padding: 6px 10px",
+  ].join(";");
+  document.body.appendChild(host);
+  const view = new EditorView({
+    parent: host,
+    doc: "const value = 1;",
+    extensions: [
+      codeEditorTheme,
+      hoverTooltip(() => ({
+        pos: 0,
+        create() {
+          const dom = document.createElement("div");
+          dom.textContent = "변수 설명";
+          return { dom };
+        },
+      })),
+    ],
+  });
+  try {
+    activateHover(view, 0, 1);
+    await expect.poll(() => host.querySelector(codeMirrorDom.hoverTooltip)).not.toBeNull();
+    for (const theme of ["desk-light", "desk-dark"]) {
+      document.documentElement.dataset.theme = theme;
+      const style = getComputedStyle(host.querySelector(codeMirrorDom.hoverTooltip)!);
+      expect({
+        background: style.backgroundColor,
+        color: style.color,
+        border: style.border,
+        shadow: style.boxShadow,
+        radius: style.borderRadius,
+        fontSize: style.fontSize,
+        lineHeight: style.lineHeight,
+        padding: style.padding,
+        whiteSpace: style.whiteSpace,
+        overflowWrap: style.overflowWrap,
+      }).toEqual({
+        background: "rgb(30, 40, 50)",
+        color: "rgb(230, 240, 250)",
+        border: "1px solid rgb(60, 70, 80)",
+        shadow: "rgba(0, 0, 0, 0.2) 0px 2px 4px 0px",
+        radius: "7px",
+        fontSize: "14px",
+        lineHeight: "21px",
+        padding: "6px 10px",
+        whiteSpace: "normal",
+        overflowWrap: "anywhere",
+      });
+    }
+  } finally {
+    view.destroy();
+    host.remove();
+  }
+});
+
+test("편집기 설명: 사용자 Markdown 링크와 그림의 title 메타데이터는 그대로 둔다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <MarkdownEditor
+        openAddress={tabMarkdownUrl}
+        readOnly
+        value={'[문서](https://example.com "문서 제목") ![그림](/image.png "그림 제목")'}
+      />
+    </LocaleProvider>,
+  );
+  await expect
+    .element(screen.getByRole("link", { name: "문서" }))
+    .toHaveAttribute("title", "문서 제목");
+  await expect
+    .element(screen.getByRole("img", { name: "그림" }))
+    .toHaveAttribute("title", "그림 제목");
 });
 
 /** 사용자가 끌어서 고를 때처럼 문단 앞부분을 고르고, 편집기가 그 선택을 바로 읽게 selectionchange를 보냅니다. */

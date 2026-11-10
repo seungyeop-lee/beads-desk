@@ -1,7 +1,9 @@
 import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
+import { page, userEvent } from "vitest/browser";
 import { enMessages } from "@/client/modules/locale/domain/enMessages";
 import { koMessages } from "@/client/modules/locale/domain/koMessages";
+import { TooltipLayer } from "@/client/ui/designSystem/TooltipLayer";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { WorkspacePicker } from "./WorkspacePicker";
 
@@ -28,14 +30,27 @@ test.each([
   reads.workspaces = [FIRST, SECOND];
   const screen = await render(
     <LocaleProvider locale={locale}>
+      <TooltipLayer />
       <WorkspacePicker />
     </LocaleProvider>,
   );
 
   await expect.element(screen.getByRole("combobox", { name, exact: true })).toHaveValue("first");
+  const picker = screen.getByRole("combobox", { name, exact: true });
+  await expect.element(picker).toHaveAttribute("data-tooltip", FIRST.root);
+  await expect.element(picker).toHaveAccessibleDescription(FIRST.root);
+  await expect.element(picker).not.toHaveAttribute("title");
+  await userEvent.hover(picker);
+  await expect.element(page.getByRole("tooltip")).toHaveTextContent(FIRST.root);
+  await userEvent.unhover(picker);
+  for (const workspace of [FIRST, SECOND]) {
+    const option = screen.getByRole("option", { name: workspace.slug, exact: true });
+    await expect.element(option).toHaveAccessibleDescription(workspace.root);
+    await expect.element(option).not.toHaveAttribute("title");
+  }
 });
 
-test("등록한 workspace가 하나뿐이면 선택 상자 대신 이 탭의 workspace 이름을 보이고, 전체 경로는 title로 보인다", async () => {
+test("등록한 workspace가 하나뿐이면 선택 상자 대신 이 탭의 workspace 이름과 전체 경로 도움말을 보인다", async () => {
   reads.workspaces = [FIRST];
   const screen = await render(
     <LocaleProvider locale="ko">
@@ -43,7 +58,9 @@ test("등록한 workspace가 하나뿐이면 선택 상자 대신 이 탭의 wor
     </LocaleProvider>,
   );
 
-  await expect.element(screen.getByTitle(FIRST.root, { exact: true })).toHaveTextContent("first");
+  const workspace = screen.getByText("first", { exact: true }).element().parentElement!;
+  expect(workspace.getAttribute("data-tooltip")).toBe(FIRST.root);
+  expect(workspace.hasAttribute("title")).toBe(false);
   await expect
     .element(screen.getByRole("combobox", { name: koMessages.shell.workspace, exact: true }))
     .not.toBeInTheDocument();

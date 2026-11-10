@@ -12,9 +12,11 @@ import {
   type Node,
   type NodeProps,
   ViewportPortal,
+  useReactFlow,
+  useStore,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { type EdgeLook, auxiliaryEdgeLook } from "@/client/modules/graph/domain/edgeKind";
 import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
 import {
@@ -180,22 +182,73 @@ export function IssueGraph({ layout, edgeLooks, issueHref, plan, centerId, ready
           }}
         >
           {plan && <StageLabels stages={plan.stages} columns={layout.columns} />}
-          <Controls
-            showInteractive={false}
-            onZoomIn={preserveViewport}
-            onZoomOut={preserveViewport}
-            onFitView={preserveViewport}
-          >
+          <GraphControls preserveViewport={preserveViewport}>
             {focus && (
-              <ControlButton onClick={showFocus} title={focusLabel} aria-label={focusLabel}>
+              <ControlButton onClick={showFocus} data-tooltip={focusLabel} aria-label={focusLabel}>
                 <FocusIcon />
               </ControlButton>
             )}
-          </Controls>
+          </GraphControls>
           <MiniMap pannable zoomable maskStrokeWidth={2} nodeClassName={miniMapNodeClassName} />
         </ReactFlow>
       )}
     </section>
+  );
+}
+
+function GraphControls({
+  preserveViewport,
+  children,
+}: {
+  preserveViewport: () => void;
+  children: ReactNode;
+}) {
+  const text = useMessages().graph;
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const minZoomReached = useStore((state) => state.transform[2] <= state.minZoom);
+  const maxZoomReached = useStore((state) => state.transform[2] >= state.maxZoom);
+  return (
+    <Controls showZoom={false} showFitView={false} showInteractive={false}>
+      <ControlButton
+        aria-label={text.zoomIn}
+        data-tooltip={text.zoomIn}
+        disabled={maxZoomReached}
+        onClick={() => {
+          void zoomIn();
+          preserveViewport();
+        }}
+      >
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M32 18.133H18.133V32h-4.266V18.133H0v-4.266h13.867V0h4.266v13.867H32z" />
+        </svg>
+      </ControlButton>
+      <ControlButton
+        aria-label={text.zoomOut}
+        data-tooltip={text.zoomOut}
+        disabled={minZoomReached}
+        onClick={() => {
+          void zoomOut();
+          preserveViewport();
+        }}
+      >
+        <svg viewBox="0 0 32 5" aria-hidden="true">
+          <path d="M0 0h32v4.2H0z" />
+        </svg>
+      </ControlButton>
+      <ControlButton
+        aria-label={text.fitView}
+        data-tooltip={text.fitView}
+        onClick={() => {
+          void fitView();
+          preserveViewport();
+        }}
+      >
+        <svg viewBox="0 0 32 30" aria-hidden="true">
+          <path d="M3.692 4.63c0-.53.4-.938.939-.938h5.215V0H4.708C2.13 0 0 2.054 0 4.63v5.216h3.692V4.631zM27.354 0h-5.2v3.692h5.17c.53 0 .984.4.984.939v5.215H32V4.631A4.624 4.624 0 0027.354 0zm.954 24.83c0 .532-.4.94-.939.94h-5.215v3.768h5.215c2.577 0 4.631-2.13 4.631-4.707v-5.139h-3.692v5.139zm-23.677.94c-.531 0-.939-.4-.939-.94v-5.138H0v5.139c0 2.577 2.13 4.707 4.708 4.707h5.138V25.77H4.631z" />
+        </svg>
+      </ControlButton>
+      {children}
+    </Controls>
   );
 }
 

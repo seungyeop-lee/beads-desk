@@ -7,10 +7,12 @@ import { useMessages } from "@/client/ui/locale/LocaleProvider";
 export function WaiterCount({ count, className = "" }: { count: number; className?: string }) {
   const messages = useMessages();
   if (count === 0) return null;
+  const description = messages.issue.waitersHint(count);
   return (
     <span
       className={`shrink-0 font-mono text-xs text-emphasis-60 tabular-nums ${className}`}
-      title={messages.issue.waitersHint(count)}
+      data-tooltip={description}
+      aria-description={description}
     >
       {messages.issue.waiters(count)}
     </span>

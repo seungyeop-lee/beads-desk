@@ -136,7 +136,7 @@ function FileRow({
         type="button"
         className={`${ROW} ${FILE_INDENT}`}
         aria-describedby={descriptionId}
-        title={description}
+        data-tooltip={description}
         onClick={onOpen}
       >
         <StatusIcon className={`mt-0.5 shrink-0 ${color}`} />

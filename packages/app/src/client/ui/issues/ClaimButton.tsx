@@ -1,4 +1,5 @@
 import type { Issue } from "@beads-desk/bd/issue";
+import { useId } from "react";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
 import { canClaim } from "@/client/modules/issues/domain/issueClaim";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
@@ -13,16 +14,21 @@ export function ClaimButton({
   writes: Pick<IssueWrites, "pending" | "run">;
 }) {
   const messages = useMessages();
+  const descriptionId = useId();
   if (!canClaim(issue)) return null;
   return (
     <button
       type="button"
       className="btn btn-xs shrink-0"
-      title={messages.claim.hint}
+      data-tooltip={messages.claim.hint}
+      aria-describedby={descriptionId}
       disabled={writes.pending}
       onClick={() => void writes.run((workspace) => claimIssueAction(workspace, issue.id))}
     >
       {messages.claim.label}
+      <span id={descriptionId} hidden>
+        {messages.claim.hint}
+      </span>
     </button>
   );
 }

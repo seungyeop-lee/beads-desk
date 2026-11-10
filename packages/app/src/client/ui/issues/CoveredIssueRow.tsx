@@ -45,7 +45,8 @@ export function CoveredIssueRow({
 }: Props) {
   const layer = {
     className: `absolute ${coverClassName}`,
-    title: coverTooltip,
+    "data-tooltip": coverTooltip,
+    "aria-description": coverTooltip,
     "aria-label": `${issueId} ${title}`,
     "aria-current": current ? ("true" as const) : undefined,
   };

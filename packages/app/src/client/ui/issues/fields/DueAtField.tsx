@@ -44,10 +44,12 @@ export function DueAtField({ value, onSave }: Props) {
   };
 
   if (draft === null) {
+    const description = messages.editable.editField(messages.issue.dueAt);
     return (
       <button
         type="button"
-        title={messages.editable.editField(messages.issue.dueAt)}
+        data-tooltip={description}
+        aria-describedby={timeHintId}
         className="-mx-1.5 cursor-text rounded-md px-1.5 text-left tabular-nums hover:bg-base-content/6"
         onClick={() =>
           setDraft(shown === null ? { day: localDayOf(Date.now()), time: "" } : dueAtInputOf(shown))
@@ -58,6 +60,9 @@ export function DueAtField({ value, onSave }: Props) {
         ) : (
           dueAtLabel(locale, shown)
         )}
+        <span id={timeHintId} hidden>
+          {description}
+        </span>
       </button>
     );
   }

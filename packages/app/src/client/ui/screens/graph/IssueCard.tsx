@@ -49,7 +49,11 @@ export function IssueCard({
       {plan && (
         <span className="mt-auto flex items-center gap-1.5 text-emphasis-60">
           {plan.outside && (
-            <span className="relative" title={messages.graph.outsideHint}>
+            <span
+              className="relative"
+              data-tooltip={messages.graph.outsideHint}
+              aria-description={messages.graph.outsideHint}
+            >
               {messages.graph.outside}
             </span>
           )}

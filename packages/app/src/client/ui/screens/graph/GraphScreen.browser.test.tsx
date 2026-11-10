@@ -3,8 +3,10 @@ import { type Locator, page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { VIEWPORT_MARGIN } from "@/client/modules/graph/domain/graphViewport";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
+import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
 import { daisyDom } from "@/client/ui/daisyDom.testkit";
 import { contrast, srgb } from "@/client/ui/designSystem/colorContrast.testkit";
+import { TooltipLayer } from "@/client/ui/designSystem/TooltipLayer";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import type { GraphData } from "@/shared/contract/graph";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
@@ -40,6 +42,7 @@ async function renderGraph(scope: "epic" | "center", id: string, data: GraphData
   const screen = await render(
     <LocaleProvider locale="ko">
       <GraphScreen />
+      <TooltipLayer />
     </LocaleProvider>,
   );
   // dialog는 작게 줄인 상태에서 커지며 열리므로, 좌표를 재기 전에 열림 효과가 끝나기를 기다립니다.
@@ -323,6 +326,54 @@ function graphZoom(screen: Awaited<ReturnType<typeof renderGraph>>) {
     .querySelector<HTMLElement>(reactFlowDom.viewport)!;
   return Number(/scale\(([^)]+)\)/.exec(viewport.style.transform)![1]);
 }
+
+test("그래프 조작 단추는 공통 도움말과 키보드 조작을 제공하고 확대·축소 경계와 전체 맞춤을 유지한다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph(
+    "center",
+    "desk-center",
+    graphData(
+      {
+        "desk-center": { title: "기준 작업" },
+        "desk-before": { title: "선행 작업" },
+      },
+      [["desk-center", "desk-before"]],
+    ),
+  );
+  const canvas = screen.getByRole("region", { name: messages.graph.canvas });
+  const zoomIn = canvas.getByRole("button", { name: messages.graph.zoomIn, exact: true });
+  const zoomOut = canvas.getByRole("button", { name: messages.graph.zoomOut, exact: true });
+  const fit = canvas.getByRole("button", { name: messages.graph.fitView, exact: true });
+  for (const [button, label] of [
+    [zoomIn, messages.graph.zoomIn],
+    [zoomOut, messages.graph.zoomOut],
+    [fit, messages.graph.fitView],
+  ] as const) {
+    await expect.element(button).not.toHaveAttribute("title");
+    await userEvent.hover(button);
+    await expect.element(page.getByRole("tooltip")).toHaveTextContent(label);
+    await userEvent.unhover(button);
+  }
+  await fit.click();
+  const fitted = graphZoom(screen);
+  (zoomIn.element() as HTMLButtonElement).focus();
+  await userEvent.keyboard("{Enter}");
+  await expect.poll(() => graphZoom(screen)).toBeGreaterThan(fitted);
+  for (let step = 0; step < 30 && !(zoomIn.element() as HTMLButtonElement).disabled; step++) {
+    await zoomIn.click();
+  }
+  await expect.element(zoomIn).toBeDisabled();
+  await expect.element(zoomOut).toBeEnabled();
+  for (let step = 0; step < 30 && !(zoomOut.element() as HTMLButtonElement).disabled; step++) {
+    await zoomOut.click();
+  }
+  await expect.element(zoomOut).toBeDisabled();
+  expect(graphZoom(screen)).toBeCloseTo(0.2);
+  await expect.element(zoomIn).toBeEnabled();
+  (fit.element() as HTMLButtonElement).focus();
+  await userEvent.keyboard(" ");
+  await expect.poll(() => graphZoom(screen)).toBeCloseTo(fitted);
+});
 
 test("선행·후속 보기에서 화면을 옮긴 뒤 기준 이슈로 이동 단추를 누르면, 배율은 그대로이고 기준 이슈 노드의 중심이 그래프 영역 중앙에 온다", async () => {
   await page.viewport(1440, 900);
@@ -1243,14 +1294,18 @@ test("선후 관계 없음 목록과 그래프 노드는 긴 제목을 끝까지
     cardOf(panel, LONG_PLAN_TITLE).getByText(LONG_PLAN_TITLE, { exact: true }).element(),
   );
   expect(cardText(panel, LONG_PLAN_TITLE)).toContain("1개 대기");
-  expect(copyButton(panel, "long-alone").element().textContent).toBe(shortIssueId("long-alone"));
+  expect((copyButton(panel, "long-alone").element() as HTMLElement).innerText).toBe(
+    shortIssueId("long-alone"),
+  );
   const closedRow = panel.getByRole("link", { name: /완료한 독립 작업/ }).element().parentElement!;
   expect(getComputedStyle(closedRow).opacity).toBe("0.5");
 
   const canvas = screen.getByRole("region", { name: "의존 그래프" });
   const node = canvas.getByRole("link", { name: new RegExp(LONG_PLAN_TITLE) });
   expect(getComputedStyle(node.element()).width).toBe("280px");
-  expect(copyButton(canvas, "long-second").element().textContent).toBe(shortIssueId("long-second"));
+  expect((copyButton(canvas, "long-second").element() as HTMLElement).innerText).toBe(
+    shortIssueId("long-second"),
+  );
   expectWholeTitle(
     cardOf(canvas, LONG_PLAN_TITLE).getByText(LONG_PLAN_TITLE, { exact: true }).element(),
   );

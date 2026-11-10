@@ -70,7 +70,7 @@ export function LocalDiffScreen() {
               type="button"
               className={`${ICON_BUTTON} ${treeShown ? PRESSED : ""}`}
               aria-label={text.fileTree}
-              title={text.fileTree}
+              data-tooltip={text.fileTree}
               aria-controls={treeId}
               aria-expanded={treeShown}
               onClick={() => setTreeChoice(!treeShown)}
@@ -81,7 +81,7 @@ export function LocalDiffScreen() {
               type="button"
               className={`${ICON_BUTTON} ${wrap ? PRESSED : ""}`}
               aria-label={text.wrap}
-              title={text.wrap}
+              data-tooltip={text.wrap}
               aria-pressed={wrap}
               onClick={() => setWrap(!wrap)}
             >
@@ -95,7 +95,7 @@ export function LocalDiffScreen() {
             href={url}
             download={name}
             aria-label={text.download}
-            title={text.download}
+            data-tooltip={text.download}
           >
             <DownloadIcon />
           </a>

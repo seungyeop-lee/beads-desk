@@ -9,6 +9,7 @@ import { koMessages as messages } from "@/client/modules/locale/domain/koMessage
 import { jaMessages } from "@/client/modules/locale/domain/jaMessages";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
+import { TooltipLayer } from "@/client/ui/designSystem/TooltipLayer";
 import { LabelEditor } from "./detail/LabelEditor";
 import { IssueTable } from "./IssueTable";
 
@@ -261,7 +262,7 @@ test("행은 짧은 ID를 복사 단추로 보이고, 표에서는 상태와 우
   const row = screen.getByRole("row", { name: /표에서 볼 작업/ });
 
   const copyButton = row.getByRole("button", { name: messages.copyId.labelOf("desk-row") });
-  expect(copyButton.element().textContent).toBe(shortIssueId("desk-row"));
+  expect((copyButton.element() as HTMLButtonElement).innerText).toBe(shortIssueId("desk-row"));
   // 제목과 라벨은 단추나 입력 칸이 아닌 글자로 보입니다.
   expect(row.getByRole("button").elements()).toEqual([copyButton.element()]);
   expect(row.getByRole("textbox").elements()).toHaveLength(0);
@@ -275,9 +276,13 @@ test("행은 짧은 ID를 복사 단추로 보이고, 표에서는 상태와 우
   await expect
     .element(row.getByRole("combobox", { name: messages.issueTable.priorityOf("desk-row") }))
     .toBeEnabled();
+  await expect.element(row.getByRole("cell", { name: "1 / 0", exact: true })).toBeVisible();
   await expect
-    .element(row.getByTitle(messages.issueTable.dependencyCounts(1, 0), { exact: true }))
-    .toBeVisible();
+    .element(row.getByRole("cell", { name: "1 / 0", exact: true }))
+    .toHaveAttribute("data-tooltip", messages.issueTable.dependencyCounts(1, 0));
+  await expect
+    .element(row.getByRole("cell", { name: "1 / 0", exact: true }))
+    .toHaveAccessibleDescription(messages.issueTable.dependencyCounts(1, 0));
 });
 
 test("판단을 기다리는 이슈의 행에만 판단 기다림 표시가 붙는다", async () => {
@@ -365,6 +370,7 @@ function labelCell(screen: Awaited<ReturnType<typeof render>>, title: string) {
 test("라벨 열은 human을 뺀 첫 라벨과 나머지 수(+N)를 보이고, 보일 라벨이 없으면 없음을 보인다", async () => {
   const screen = await render(
     <LocaleProvider locale="ko">
+      <TooltipLayer />
       <IssueTable
         issues={[
           issue("desk-none", { title: "라벨 없음" }),
@@ -389,9 +395,14 @@ test("라벨 열은 human을 뺀 첫 라벨과 나머지 수(+N)를 보이고, �
   expect(shown("라벨 셋")).toBe("frontend+2");
   expect(shown("human만")).toBe(messages.common.none);
   expect(shown("human과 둘")).toBe("backend+1");
-  // 칸에 마우스를 올리면 human을 뺀 모든 라벨 이름이 보입니다.
-  expect(labelCell(screen, "라벨 셋").title).toBe("frontend, backend, api");
-  expect(labelCell(screen, "human과 둘").title).toBe("backend, api");
+  await expect
+    .element(labelCell(screen, "라벨 셋"))
+    .toHaveAccessibleDescription("frontend, backend, api");
+  await userEvent.hover(labelCell(screen, "라벨 셋"));
+  await expect.element(page.getByRole("tooltip")).toHaveTextContent("frontend, backend, api");
+  await userEvent.unhover(labelCell(screen, "라벨 셋"));
+  await userEvent.hover(labelCell(screen, "human과 둘"));
+  await expect.element(page.getByRole("tooltip")).toHaveTextContent("backend, api");
 });
 
 test("라벨 열의 칩은 상세 라벨 편집기의 칩보다 낮고 글자도 작다", async () => {
@@ -475,7 +486,7 @@ test("epicOrderHref를 주지 않으면 에픽 행도 의존 칸에 의존 수�
   const row = screen.getByRole("row", { name: /목록의 에픽/ });
 
   await expect
-    .element(row.getByTitle(messages.issueTable.dependencyCounts(0, 2), { exact: true }))
+    .element(row.getByRole("cell", { name: "0 / 2", exact: true }))
     .toHaveTextContent("0 / 2");
   await expect
     .element(row.getByRole("link", { name: messages.graph.epicOrder }))
@@ -550,9 +561,7 @@ for (const locale of ["ko", "en"] as const) {
       .element(taskRow.getByRole("link", { name: localeMessages.graph.epicOrder }))
       .not.toBeInTheDocument();
     await expect
-      .element(
-        taskRow.getByTitle(localeMessages.issueTable.dependencyCounts(1, 0), { exact: true }),
-      )
+      .element(taskRow.getByRole("cell", { name: "1 / 0", exact: true }))
       .toHaveTextContent("1 / 0");
   });
 }

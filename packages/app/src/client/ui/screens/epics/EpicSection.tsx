@@ -159,7 +159,8 @@ function EpicCount({
   const messages = useMessages();
   return (
     <span
-      title={messages.epics.closedChildCount}
+      data-tooltip={messages.epics.closedChildCount}
+      aria-description={messages.epics.closedChildCount}
       className="flex shrink-0 gap-1.5 whitespace-nowrap font-mono text-xs text-emphasis-60 tabular-nums"
     >
       <span className="w-14 text-right">

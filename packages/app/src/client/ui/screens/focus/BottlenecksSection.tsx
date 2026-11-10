@@ -54,6 +54,7 @@ function BottleneckRow({
   const title = issue.title || messages.common.untitled;
   const state = workState(issue);
   const stateLabel = messages.workStates.labels[state];
+  const stateDescription = text.state(stateLabel);
   return (
     <CoveredIssueRow
       as="li"
@@ -81,13 +82,18 @@ function BottleneckRow({
         <IssueChip
           tone={workStateTone(state)}
           className="relative shrink-0"
-          title={text.state(stateLabel)}
+          data-tooltip={stateDescription}
+          aria-description={stateDescription}
         >
           {stateLabel}
         </IssueChip>
         {issue.priority !== null && <PriorityChip priority={issue.priority} />}
         <WaiterCount count={waiters} className="relative" />
-        <span className="relative tabular-nums" title={text.unblocksHint}>
+        <span
+          className="relative tabular-nums"
+          data-tooltip={text.unblocksHint}
+          aria-description={text.unblocksHint}
+        >
           {text.unblocks(unblocks)}
         </span>
         <Link

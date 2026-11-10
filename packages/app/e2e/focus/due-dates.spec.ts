@@ -34,6 +34,7 @@ test("상세에서 날짜만, 시각까지 정하거나 바꾸거나 지운 마�
   await otherWorkspace.createIssue("다른 workspace의 마감 지난 작업", "--due", "2020-01-01");
   const detail = page.getByRole("dialog", { name: `${id} 이슈`, exact: true });
   const dueForm = detail.getByRole("form", { name: "마감일", exact: true });
+  const dueButton = detail.getByRole("button").filter({ hasText: "마감일 편집" });
   const deadlines = page.getByRole("region", { name: "마감", exact: true });
   const group = (name: string) => deadlines.getByRole("region", { name, exact: true });
   const row = deadlines.getByRole("link", { name: `${id} 마감을 정할 작업`, exact: true });
@@ -43,7 +44,8 @@ test("상세에서 날짜만, 시각까지 정하거나 바꾸거나 지운 마�
   };
   const editDueAt = async (fields: { day?: string; time?: string }) => {
     await page.goto(`focus?issue=${id}`);
-    await detail.getByTitle("마감일 편집").click();
+    await expect(dueButton).toHaveAccessibleDescription("마감일 편집");
+    await dueButton.click();
     if (fields.day !== undefined) await dueForm.getByLabel("마감 날짜").fill(fields.day);
     if (fields.time !== undefined) await dueForm.getByLabel("마감 시각").fill(fields.time);
     await dueForm.getByRole("button", { name: "저장", exact: true }).click();
@@ -66,7 +68,7 @@ test("상세에서 날짜만, 시각까지 정하거나 바꾸거나 지운 마�
   await expect(group("기한 초과").getByRole("link", { name: /마감을 정할 작업/ })).toBeVisible();
 
   await page.goto(`focus?issue=${id}`);
-  await detail.getByTitle("마감일 편집").click();
+  await dueButton.click();
   await dueForm.getByRole("button", { name: "지우기", exact: true }).click();
   await expect.poll(savedDueAt, { timeout: SAVE_TIMEOUT }).toBeNull();
   await page.keyboard.press("Escape");

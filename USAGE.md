@@ -81,6 +81,12 @@ In a git worktree of a repository whose main checkout has `.beads`, the worktree
 - No notification is shown while you are looking at that workspace in a focused tab.
 - Clicking the notification opens that workspace's Needs human screen in a new tab.
 
+## Hover and keyboard explanations
+
+- Hover over help icons, tools, and abbreviated information to read their explanations. Focusable controls also show their explanations when reached with the keyboard. Press Esc, move away, or use the control to dismiss an explanation.
+- Explanations follow the light or dark theme and wrap long text near the target. Chart explanations keep the date and each series value together; hovering does not change the chart's links.
+- Workspace selection keeps the browser's native menu. The closed selector explains the selected workspace path. The rich-text editor's selection-formatting toolbar keeps its built-in browser hints and keyboard shortcut labels.
+
 ## Epic membership in the issue list
 
 - In Issues, `epic · <title>` links to the nearest ancestor epic, including through parents that are not epics. Closed epics still count as membership.

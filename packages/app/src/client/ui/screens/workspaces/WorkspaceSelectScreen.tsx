@@ -28,7 +28,11 @@ export function WorkspaceSelectScreen({ choices }: { choices: WorkspaceChoice[] 
             >
               <FolderIcon width={17} height={17} className="shrink-0 text-emphasis-60" />
               <span className="font-semibold">{slug}</span>
-              <span className="min-w-0 truncate text-sm text-emphasis-60" title={root}>
+              <span
+                className="min-w-0 truncate text-sm text-emphasis-60"
+                data-tooltip={root}
+                aria-description={root}
+              >
                 {root}
               </span>
             </Link>

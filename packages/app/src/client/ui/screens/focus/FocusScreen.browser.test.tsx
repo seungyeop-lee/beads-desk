@@ -366,8 +366,8 @@ describe("병목", () => {
 
     const base = row("기준 작업");
     await expect
-      .element(base.getByTitle(text.state(messages.workStates.labels.ready)))
-      .toHaveTextContent(messages.workStates.labels.ready);
+      .element(base.getByText(messages.workStates.labels.ready, { exact: true }))
+      .toHaveAttribute("data-tooltip", text.state(messages.workStates.labels.ready));
     await expect.element(base).toMatchTextContent(messages.issue.waiters(2));
     await expect.element(base).toMatchTextContent(text.unblocks(1));
     await expect.element(base).toMatchTextContent(/→ 오늘 마감 · desk-tonight 오늘 밤 후속 ·/);
@@ -378,8 +378,8 @@ describe("병목", () => {
 
     const other = row("다른 선행 작업");
     await expect
-      .element(other.getByTitle(text.state(messages.workStates.labels.in_progress)))
-      .toBeVisible();
+      .element(other.getByText(messages.workStates.labels.in_progress, { exact: true }))
+      .toHaveAttribute("data-tooltip", text.state(messages.workStates.labels.in_progress));
     await expect.element(other).toMatchTextContent(text.unblocks(0));
     await expect.element(other).toMatchTextContent(/→ 3일 이내 · desk-joined/);
     await expect.element(row("마감 없는 선행")).not.toMatchTextContent(DUE_EVIDENCE);

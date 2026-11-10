@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { documentMessages } from "@/client/infra/locale/documentLocale";
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { showToast } from "@/client/ui/designSystem/Toast";
@@ -17,15 +18,20 @@ type Props = {
  */
 export function CopyIssueIdButton({ issueId, short = false, className = "" }: Props) {
   const messages = useMessages();
+  const descriptionId = useId();
   return (
     <button
       type="button"
       className={`cursor-copy font-mono hover:text-base-content ${className}`}
-      title={messages.copyId.label}
+      data-tooltip={messages.copyId.label}
+      aria-describedby={descriptionId}
       aria-label={messages.copyId.labelOf(issueId)}
       onClick={() => void copyIssueId(issueId)}
     >
       {short ? shortIssueId(issueId) : issueId}
+      <span id={descriptionId} hidden>
+        {messages.copyId.label}
+      </span>
     </button>
   );
 }

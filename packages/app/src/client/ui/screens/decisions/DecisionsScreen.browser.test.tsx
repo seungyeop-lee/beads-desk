@@ -101,7 +101,7 @@ test("결정 행은 짧은 ID를 복사 단추로 보이고, 대체된 결정의
 
   for (const { decision } of DECISIONS) {
     const copyButton = screen.getByRole("button", { name: messages.copyId.labelOf(decision.id) });
-    expect(copyButton.element().textContent).toBe(shortIssueId(decision.id));
+    expect((copyButton.element() as HTMLElement).innerText).toBe(shortIssueId(decision.id));
   }
   const retired = screen.getByRole("row", { name: new RegExp(`이전 ${KOREAN}`) });
   await expect.element(retired).toMatchTextContent(messages.decisions.supersededBy);

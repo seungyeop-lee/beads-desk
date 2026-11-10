@@ -17,6 +17,8 @@ export const codeMirrorDom = {
   searchMatch: ".cm-searchMatch:not(.cm-searchMatch-selected)",
   currentSearchMatch: ".cm-searchMatch-selected",
   snippetField: ".cm-snippetField",
+  specialChar: ".cm-specialChar",
+  hoverTooltip: ".cm-tooltip-hover",
   completionList: ".cm-tooltip-autocomplete",
   completionOption: ".cm-tooltip-autocomplete li",
   unselectedCompletionOption: ".cm-tooltip-autocomplete li:not([aria-selected])",

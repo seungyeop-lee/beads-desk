@@ -118,7 +118,8 @@ export const IssueTable = memo(function IssueTable({
           {unblocks && (
             <th
               className="w-(--unblocks-column) text-right"
-              title={messages.focus.bottlenecks.unblocksHint}
+              data-tooltip={messages.focus.bottlenecks.unblocksHint}
+              aria-description={messages.focus.bottlenecks.unblocksHint}
             >
               {messages.issueTable.unblocks}
             </th>
@@ -204,6 +205,12 @@ function IssueRow({
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
   const messages = useMessages();
+  const dependencyDescription =
+    epicOrderHref && issue.issueType === "epic"
+      ? undefined
+      : messages.issueTable.dependencyCounts(issue.dependencyCount, issue.dependentCount);
+  const unblocksDescription =
+    unblocks === undefined ? undefined : messages.focus.bottlenecks.unblocks(unblocks);
   return (
     <tr className="group hover:bg-base-200/60">
       <td>
@@ -288,7 +295,8 @@ function IssueRow({
       ) : (
         <td
           className={`text-right font-mono text-xs tabular-nums ${issue.dependencyCount + issue.dependentCount === 0 ? "text-emphasis-30" : ""}`}
-          title={messages.issueTable.dependencyCounts(issue.dependencyCount, issue.dependentCount)}
+          data-tooltip={dependencyDescription}
+          aria-description={dependencyDescription}
         >
           {issue.dependencyCount} / {issue.dependentCount}
         </td>
@@ -296,7 +304,8 @@ function IssueRow({
       {unblocks !== undefined && (
         <td
           className={`text-right font-mono text-xs tabular-nums ${unblocks === 0 ? "text-emphasis-30" : ""}`}
-          title={messages.focus.bottlenecks.unblocks(unblocks)}
+          data-tooltip={unblocksDescription}
+          aria-description={unblocksDescription}
         >
           {unblocks}
         </td>
@@ -319,8 +328,9 @@ function LabelCell({ labels }: { labels: readonly string[] }) {
       </td>
     );
   }
+  const description = shown.join(", ");
   return (
-    <td title={shown.join(", ")}>
+    <td data-tooltip={description} aria-description={description}>
       <div className="flex items-center gap-1">
         {/* 칩은 기본으로 줄어들지 않으므로, 긴 라벨 이름이 +N을 칸 밖으로 밀지 않게 칩만 줄여 말줄임으로 보입니다. */}
         <LabelChip label={first} className="block min-w-0 shrink truncate leading-5" />

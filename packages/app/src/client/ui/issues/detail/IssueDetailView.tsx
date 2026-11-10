@@ -1,5 +1,6 @@
 import type { IssueDetail } from "@beads-desk/bd/issue";
 import Link from "next/link";
+import { useId } from "react";
 import type { GraphScope } from "@/client/modules/graph/domain/graphScope";
 import { issueEdits } from "@/client/modules/issues/application/issueEdits";
 import type { IssueWrites } from "@/client/modules/issues/application/useIssueWrites";
@@ -50,6 +51,7 @@ export function IssueDetailView({
   const { update, changeStatus } = edits;
   const locale = useLocale();
   const messages = useMessages();
+  const reopenHintId = useId();
 
   /*
    * 주 상세가 넓으면 본문 열과 속성 열을 나란히 둡니다. 옆 패널을 열어 좁아지면 두 열을 display: contents로 풀고,
@@ -114,11 +116,15 @@ export function IssueDetailView({
                   <button
                     type="button"
                     className="btn btn-xs shrink-0"
-                    title={messages.deferral.reopenHint}
+                    data-tooltip={messages.deferral.reopenHint}
+                    aria-describedby={reopenHintId}
                     disabled={pending}
                     onClick={() => void changeStatus("open", statusPrompts)}
                   >
                     {messages.deferral.reopen}
+                    <span id={reopenHintId} hidden>
+                      {messages.deferral.reopenHint}
+                    </span>
                   </button>
                 )}
               </dd>

@@ -148,7 +148,11 @@ function EntryName({ entry, base }: { entry: LocalFolderEntry; base: string }) {
     return (
       <span className="flex flex-wrap items-center gap-2 text-emphasis-60">
         {entry.name}
-        <span className="chip tone-none" title={messages.localFolder.blockedHelp}>
+        <span
+          className="chip tone-none"
+          data-tooltip={messages.localFolder.blockedHelp}
+          aria-description={messages.localFolder.blockedHelp}
+        >
           {messages.localFolder.blocked}
         </span>
       </span>

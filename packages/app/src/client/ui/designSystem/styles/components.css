@@ -3,7 +3,73 @@
  * components layer에 두어, 화면에서 Tailwind utility로 크기나 여백을 덮을 수 있게 합니다.
  */
 
+:root {
+  --tooltip-background: var(--color-base-100);
+  --tooltip-color: var(--color-base-content);
+  --tooltip-border: var(--color-base-300);
+  --tooltip-shadow: 0 2px 8px color-mix(in oklab, var(--color-base-content) 12%, transparent);
+  --tooltip-radius: 0.5rem;
+  --tooltip-font-size: 0.875rem;
+  --tooltip-line-height: 1.5;
+  --tooltip-padding: 0.5rem 0.75rem;
+}
+
 @layer components {
+  .tooltip-surface {
+    width: max-content;
+    max-width: min(32rem, calc(100vw - 1rem));
+    border: 1px solid var(--tooltip-border);
+    border-radius: var(--tooltip-radius);
+    background: var(--tooltip-background);
+    color: var(--tooltip-color);
+    padding: var(--tooltip-padding);
+    box-shadow: var(--tooltip-shadow);
+    font-size: var(--tooltip-font-size);
+    font-weight: 400;
+    line-height: var(--tooltip-line-height);
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .tooltip-bubble {
+    position: fixed;
+    inset: auto;
+    z-index: 100;
+    display: block;
+    visibility: hidden;
+    margin: 0;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .tooltip-bubble:popover-open {
+    visibility: visible;
+  }
+
+  .tooltip-bubble::after {
+    content: "";
+    position: absolute;
+    left: var(--tooltip-arrow-x);
+    width: 8px;
+    height: 8px;
+    background: var(--tooltip-background);
+    rotate: 45deg;
+    translate: -50%;
+  }
+
+  .tooltip-bubble[data-side="below"]::after {
+    top: -5px;
+    border-top: 1px solid var(--tooltip-border);
+    border-left: 1px solid var(--tooltip-border);
+  }
+
+  .tooltip-bubble[data-side="above"]::after {
+    bottom: -5px;
+    border-bottom: 1px solid var(--tooltip-border);
+    border-right: 1px solid var(--tooltip-border);
+  }
+
   /*
    * tone-*은 파스텔 하나를 고르고, chip·tone-dot·tone-bar·tone-fill이 그 색을 씁니다.
    * 라이트 모드는 파스텔 바탕에 잉크 글자, 다크 모드는 옅게 비친 바탕에 파스텔 글자로 그립니다.
