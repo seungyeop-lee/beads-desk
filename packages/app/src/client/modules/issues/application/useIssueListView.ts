@@ -7,7 +7,8 @@ import { refineIssues } from "@/client/modules/issues/domain/issueListView";
 import { BOTTLENECK_VIEW, type IssueView } from "@/client/modules/issues/domain/issueView";
 import { issueListGroups, type WorkStateGroup } from "@/client/modules/issues/domain/workState";
 import { waiterCounts } from "@/shared/domain/issues/waiterCounts";
-import { useIssueList } from "./useIssueList";
+import { useIssueListWithEpics } from "./useIssueList";
+import type { EpicAncestors } from "@/shared/domain/issues/epicMembership";
 import { useIssueTextMatches, type IssueTextMatches } from "./useIssueTextMatches";
 
 /** 이슈 목록 주소가 고른 조건으로, useIssueListAddress가 읽은 값입니다. */
@@ -17,10 +18,11 @@ export type IssueListFilters = {
   dates: IssueDateFilter;
   types: readonly string[];
   labels: readonly string[];
+  noEpic: boolean;
 };
 
 /**
- * 이슈 목록 화면이 보일 목록을 조립합니다. 날짜 조건으로 고른 목록을 유형, 라벨, 검색어로 좁히고 작업 상태로 묶으며, 병목 후보도 같은 조건으로 좁힙니다.
+ * 이슈 목록 화면이 보일 목록을 조립합니다. 날짜, 유형, 라벨, 검색어, epic 미소속 조건으로 좁히고 작업 상태로 묶으며, 병목 후보도 같은 조건으로 좁힙니다.
  * 검색어 입력은 화면이 갖고, 본문·댓글 검색 결과가 오면 목록을 다시 조립합니다.
  * now는 병목 후보가 쓰는 보류 기한 판정의 기준이 되는 현재 시각(epoch ms)입니다.
  */
@@ -32,6 +34,7 @@ export function useIssueListView(
   setSearch: (search: string) => void;
   /** 거르기 전의 전체 목록입니다. 화면이 제목과 라벨 선택지의 출처로 씁니다. */
   issues: Issue[] | null;
+  epicAncestors: EpicAncestors | undefined;
   error: string | null;
   loading: boolean;
   /** 본문·댓글 검색 결과와 그 검색어, 오류입니다. */
@@ -46,25 +49,29 @@ export function useIssueListView(
   viewIssues: Issue[];
 } {
   const [search, setSearch] = useState("");
-  const { data: issues, error, loading } = useIssueList();
+  const { data, error, loading } = useIssueListWithEpics();
+  const issues = data?.issues ?? null;
+  const epicAncestors = data?.epicAncestors;
   // 이슈가 수천 개면 표를 다시 그리는 데 시간이 걸려, 검색어 입력이 먼저 보이도록 표는 늦춰 갱신합니다.
   const deferredSearch = useDeferredValue(search);
   const textSearch = useIssueTextMatches(search);
   const textMatches = textSearch.matches;
   // 대기 수는 거르기 전의 전체 목록으로 세야, 걸러진 이슈를 거쳐 이어지는 사슬도 셉니다.
   const waiters = useMemo(() => waiterCounts(issues ?? []), [issues]);
-  const { dates, types, labels } = filters;
+  const { dates, types, labels, noEpic } = filters;
   const refined = useMemo(
     () =>
       issues
         ? refineIssues(filterByDate(issues, dates), {
             types,
             labels,
+            noEpic,
+            epicAncestors,
             search: deferredSearch,
             textMatches,
           })
         : [],
-    [issues, types, labels, deferredSearch, textMatches, dates],
+    [issues, types, labels, noEpic, epicAncestors, deferredSearch, textMatches, dates],
   );
   const groups = useMemo(() => issueListGroups(refined, waiters), [refined, waiters]);
   // 병목 후보와 대기 수는 지금 화면과 같도록 거르기 전의 전체 목록으로 계산하고, 그 뒤에 조건에 맞는 후보만 남깁니다.
@@ -87,6 +94,7 @@ export function useIssueListView(
     search,
     setSearch,
     issues,
+    epicAncestors,
     error,
     loading,
     textSearch,

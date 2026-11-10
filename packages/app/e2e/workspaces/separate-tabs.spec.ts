@@ -35,7 +35,7 @@ test("서로 다른 workspace를 연 두 탭은 각자의 workspace 이름으로
 
   let firstPageReads = 0;
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/api/issues") firstPageReads += 1;
+    if (new URL(request.url()).pathname === "/api/issue-list") firstPageReads += 1;
   });
   await otherWorkspace.createIssue("CLI로 만든 둘째 workspace의 작업");
   await expect(

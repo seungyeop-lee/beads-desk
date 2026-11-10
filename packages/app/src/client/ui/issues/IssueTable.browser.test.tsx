@@ -6,6 +6,7 @@ import type { IssueWrites } from "@/client/modules/issues/application/useIssueWr
 import { shortIssueId } from "@/client/modules/issues/domain/issueId";
 import { enMessages } from "@/client/modules/locale/domain/enMessages";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
+import { jaMessages } from "@/client/modules/locale/domain/jaMessages";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { LabelEditor } from "./detail/LabelEditor";
@@ -555,3 +556,80 @@ for (const locale of ["ko", "en"] as const) {
       .toHaveTextContent("1 / 0");
   });
 }
+
+for (const [width, locale, catalog] of [
+  [377, "ko", messages],
+  [377, "en", enMessages],
+  [377, "ja", jaMessages],
+  [1376, "ko", messages],
+] as const) {
+  test(`${locale} 표 영역 ${width}px에서 긴 epic 소속 링크는 제목 아래에서 줄바꿈하고 상태 조작과 겹치지 않는다`, async () => {
+    const epic = issue("parent-epic", { issueType: "epic", title: "로그인 개선 ".repeat(20) });
+    const child = issue("child", { title: "원래 이슈 제목" });
+    const nested = issue("nested-epic", { title: "중첩 epic", issueType: "epic" });
+    const screen = await render(
+      <LocaleProvider locale={locale}>
+        <div style={{ width }}>
+          <IssueTable
+            issues={[epic, child, nested]}
+            issueHref={(id) => `/issues?noEpic=1&issue=${id}`}
+            writes={WRITES}
+            gateTitles={new Map()}
+            epicAncestors={{ [child.id]: epic, [nested.id]: epic }}
+          />
+        </div>
+      </LocaleProvider>,
+    );
+    const links = screen.getByRole("link", { name: catalog.issueTable.openEpic(epic.title) });
+    expect(links.elements()).toHaveLength(2);
+    const row = screen.getByRole("row", { name: /원래 이슈 제목/ });
+    const title = row.getByRole("link", { name: child.title }).element();
+    const membership = row
+      .getByRole("link", { name: catalog.issueTable.openEpic(epic.title) })
+      .element();
+    expect(membership.getAttribute("href")).toBe("/issues?noEpic=1&issue=parent-epic");
+    expect(title.getAttribute("href")).toBe("/issues?noEpic=1&issue=child");
+    const box = membership.getBoundingClientRect();
+    const titleBox = title.getBoundingClientRect();
+    const cell = membership.closest("td")!.getBoundingClientRect();
+    expect(box.top).toBeGreaterThanOrEqual(titleBox.bottom);
+    expect(box.left).toBeGreaterThanOrEqual(cell.left);
+    expect(box.right).toBeLessThanOrEqual(cell.right);
+    expect(box.bottom).toBeLessThanOrEqual(cell.bottom);
+    expect(box.right).toBeLessThanOrEqual(
+      row
+        .getByRole("combobox", { name: catalog.issueTable.statusOf(child.id) })
+        .element()
+        .getBoundingClientRect().left,
+    );
+    const rootRow = screen
+      .getByRole("link", { name: epic.title, exact: true })
+      .element()
+      .closest("tr")!;
+    expect(
+      page
+        .elementLocator(rootRow)
+        .getByRole("link", { name: catalog.issueTable.openEpic(epic.title) })
+        .elements(),
+    ).toHaveLength(0);
+  });
+}
+
+test("소속 데이터를 주지 않은 공용 표에는 epic 링크를 추가하지 않는다", async () => {
+  const screen = await render(
+    <LocaleProvider locale="ko">
+      <IssueTable
+        issues={[
+          issue("epic", { title: "상위 epic", issueType: "epic" }),
+          issue("child", { parent: "epic" }),
+        ]}
+        issueHref={(id) => `/issues?issue=${id}`}
+        writes={WRITES}
+        gateTitles={new Map()}
+      />
+    </LocaleProvider>,
+  );
+  expect(
+    screen.getByRole("link", { name: messages.issueTable.openEpic("상위 epic") }).elements(),
+  ).toHaveLength(0);
+});

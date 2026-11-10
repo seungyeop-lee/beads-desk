@@ -4,6 +4,8 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { NO_LABEL } from "@/client/modules/issues/domain/issueLabelFilter";
 import { koMessages as messages } from "@/client/modules/locale/domain/koMessages";
+import { enMessages } from "@/client/modules/locale/domain/enMessages";
+import { jaMessages } from "@/client/modules/locale/domain/jaMessages";
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { IssueFilterBar } from "./IssueFilterBar";
 
@@ -20,6 +22,8 @@ test("유형 메뉴, 유형 체크박스, 날짜 기준은 pointer를, 검색 �
         onSearchChange={() => {}}
         dates={{ field: "created", from: null, to: null }}
         onDatesChange={() => {}}
+        noEpic={false}
+        onNoEpicChange={() => {}}
       />
     </LocaleProvider>,
   );
@@ -54,6 +58,8 @@ test("라벨 메뉴는 라벨 없음과 선택지의 라벨을 보이고, 고른
         onSearchChange={() => {}}
         dates={{ field: "created", from: null, to: null }}
         onDatesChange={() => {}}
+        noEpic={false}
+        onNoEpicChange={() => {}}
       />
     </LocaleProvider>,
   );
@@ -89,9 +95,40 @@ test("날짜 범위를 지워도 날짜 기준은 그대로 유지한다", async
         onSearchChange={() => {}}
         dates={{ field: "closed", from: "2026-01-01", to: "2026-02-01" }}
         onDatesChange={onDatesChange}
+        noEpic={false}
+        onNoEpicChange={() => {}}
       />
     </LocaleProvider>,
   );
   await screen.getByRole("button", { name: messages.issues.clearDates }).click();
   expect(onDatesChange).toHaveBeenCalledWith({ field: "closed", from: null, to: null });
 });
+
+for (const [locale, catalog] of [
+  ["ko", messages],
+  ["en", enMessages],
+  ["ja", jaMessages],
+] as const) {
+  test(`${locale} 미소속 체크박스는 선택을 바꿔 알린다`, async () => {
+    const onNoEpicChange = vi.fn<(checked: boolean) => void>();
+    const screen = await render(
+      <LocaleProvider locale={locale}>
+        <IssueFilterBar
+          types={[]}
+          onTypesChange={() => {}}
+          labels={[]}
+          labelChoices={[]}
+          onLabelsChange={() => {}}
+          search=""
+          onSearchChange={() => {}}
+          dates={{ field: "created", from: null, to: null }}
+          onDatesChange={() => {}}
+          noEpic={false}
+          onNoEpicChange={onNoEpicChange}
+        />
+      </LocaleProvider>,
+    );
+    await screen.getByRole("checkbox", { name: catalog.issues.noEpicOnly }).click();
+    expect(onNoEpicChange).toHaveBeenCalledWith(true);
+  });
+}

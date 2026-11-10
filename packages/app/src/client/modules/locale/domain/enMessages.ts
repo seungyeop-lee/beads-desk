@@ -109,6 +109,8 @@ export const enMessages: Messages = {
   },
   issueTable: {
     empty: "No issues match the filters.",
+    epicMembership: (title) => `epic · ${title}`,
+    openEpic: (title) => `Open epic: ${title}`,
     statusOf: (id) => `Status of ${id}`,
     priorityOf: (id) => `Priority of ${id}`,
     dependencyCounts: (dependencies, dependents) =>
@@ -413,6 +415,7 @@ export const enMessages: Messages = {
     allLabels: "All",
     labelCount: (count) => `${count}`,
     noLabel: "No labels",
+    noEpicOnly: "No epic only",
     searchPlaceholder: "Search ID, title, body, or comments",
     commentHit: "Comment",
     search: "Search",

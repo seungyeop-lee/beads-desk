@@ -24,7 +24,12 @@ for (const { width, horizontal } of [
         <div style={{ width }}>
           <IssueViewTabs
             view={null}
-            filters={{ dates: { field: "created", from: null, to: null }, types: [], labels: [] }}
+            filters={{
+              dates: { field: "created", from: null, to: null },
+              types: [],
+              labels: [],
+              noEpic: false,
+            }}
             groups={GROUPS}
             bottleneckCount={0}
           />
@@ -65,7 +70,12 @@ test("병목은 작업 상태가 아니라서 상태 탭 뒤에 구분선을 두
       <div style={{ width: 1440 }}>
         <IssueViewTabs
           view={null}
-          filters={{ dates: { field: "created", from: null, to: null }, types: [], labels: [] }}
+          filters={{
+            dates: { field: "created", from: null, to: null },
+            types: [],
+            labels: [],
+            noEpic: false,
+          }}
           groups={GROUPS}
           bottleneckCount={3}
         />

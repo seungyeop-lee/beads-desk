@@ -22,14 +22,14 @@ import { screenTone } from "@/client/ui/shell/screenTabs";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
 /**
- * 위쪽 보기 탭으로 작업 상태 하나나 병목 후보를 고르고, 유형, 라벨, 날짜, 검색으로 그 안을 좁힙니다.
+ * 위쪽 보기 탭으로 작업 상태 하나나 병목 후보를 고르고, 유형, 라벨, 날짜, 검색, epic 미소속 조건으로 그 안을 좁힙니다.
  * 병목 탭은 지금 화면의 병목 목록과 같은 순서로 보이고, 표에 닫으면 바로 풀리는 수 열을 더합니다.
- * 보기 탭, 유형, 라벨, 날짜 조건은 다른 화면에서 링크로 열 수 있도록 주소에 둡니다.
+ * 보기 탭, 유형, 라벨, 날짜, epic 미소속 조건은 다른 화면에서 링크로 열 수 있도록 주소에 둡니다.
  * 보기 탭과 이슈 상세 dialog가 useSearchParams를 쓰므로 Suspense 안에서 렌더링합니다.
  */
 export function IssuesScreen() {
   const { address, changeFilters } = useIssueListAddress();
-  const { view, dates, types, labels } = address;
+  const { view, dates, types, labels, noEpic } = address;
   const now = useMinuteClock();
   const {
     search,
@@ -42,6 +42,7 @@ export function IssuesScreen() {
     groups,
     bottlenecks,
     viewIssues,
+    epicAncestors,
   } = useIssueListView(address, now);
   const bottleneckView = view === BOTTLENECK_VIEW;
   const unblocks = useMemo(
@@ -63,7 +64,7 @@ export function IssuesScreen() {
 
       <IssueViewTabs
         view={view}
-        filters={{ dates, types, labels }}
+        filters={{ dates, types, labels, noEpic }}
         groups={groups}
         bottleneckCount={bottlenecks.length}
       />
@@ -78,6 +79,8 @@ export function IssuesScreen() {
         onSearchChange={setSearch}
         dates={dates}
         onDatesChange={(next) => changeFilters({ dates: next })}
+        noEpic={noEpic}
+        onNoEpicChange={(next) => changeFilters({ noEpic: next })}
       />
 
       {error && <ErrorAlert>{messages.issues.loadFailed(error)}</ErrorAlert>}
@@ -106,6 +109,7 @@ export function IssuesScreen() {
             unblocks={unblocks}
             searchHits={textMatches}
             searchTerm={textSearch.term}
+            epicAncestors={epicAncestors}
           />
         ) : (
           <IssueGroups
@@ -117,6 +121,7 @@ export function IssuesScreen() {
             writes={writes}
             searchHits={textMatches}
             searchTerm={textSearch.term}
+            epicAncestors={epicAncestors}
           />
         ))}
 

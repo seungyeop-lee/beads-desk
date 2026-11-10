@@ -109,6 +109,8 @@ export const koMessages: Messages = {
   },
   issueTable: {
     empty: "조건에 맞는 이슈가 없습니다.",
+    epicMembership: (title) => `epic · ${title}`,
+    openEpic: (title) => `${title} epic 열기`,
     statusOf: (id) => `${id} 상태`,
     priorityOf: (id) => `${id} 우선순위`,
     dependencyCounts: (dependencies, dependents) => `선행 ${dependencies}개 · 후속 ${dependents}개`,
@@ -405,6 +407,7 @@ export const koMessages: Messages = {
     allLabels: "전체",
     labelCount: (count) => `${count}개`,
     noLabel: "라벨 없음",
+    noEpicOnly: "epic 미소속만",
     searchPlaceholder: "ID, 제목, 본문, 댓글 검색",
     commentHit: "댓글",
     search: "검색",

@@ -9,6 +9,7 @@ import { koMessages as messages } from "@/client/modules/locale/domain/koMessage
 import { LocaleProvider } from "@/client/ui/locale/LocaleProvider";
 import { AppLayoutFixture } from "@/client/ui/shell/AppLayoutFixture.testkit";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
+import { nearestEpicAncestors } from "@/shared/domain/issues/epicMembership";
 import { IssuesScreen } from "./IssuesScreen";
 
 const ISSUES = Array.from({ length: 40 }, (_, index) =>
@@ -25,7 +26,11 @@ const reads = vi.hoisted(() => ({
 // 화면이 서버에서 읽는 목록·검색·쓰기와 주소를 읽어 상세 dialog를 여는 부분은 고정 값으로 바꿉니다.
 vi.mock("@/client/modules/issues/application/useIssueList", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/client/modules/issues/application/useIssueList")>()),
-  useIssueList: () => ({ data: reads.issues, error: null, loading: false }),
+  useIssueListWithEpics: () => ({
+    data: { issues: reads.issues, epicAncestors: nearestEpicAncestors(reads.issues) },
+    error: null,
+    loading: false,
+  }),
 }));
 vi.mock("@/client/modules/issues/application/useIssueTextMatches", () => ({
   useIssueTextMatches: (search: string) => ({
@@ -108,13 +113,20 @@ describe("병목 탭", () => {
   // 기반 작업은 후속 셋을 막아 대기 수가 가장 많고, 버그 수정과 가장 급한 작업은 대기 수가 같아 바로 풀리는 수로 갈립니다.
   // 우선순위 순서(가장 급한 작업, 버그 수정, 기반 작업)와 반대로 놓여야 병목 순서를 따른 것입니다.
   const BOTTLENECK_ISSUES = [
-    issue("desk-c", { title: "가장 급한 작업", priority: 1, ready: true, labels: ["ui"] }),
+    issue("desk-c", {
+      title: "가장 급한 작업",
+      priority: 1,
+      ready: true,
+      labels: ["ui"],
+      parent: "desk-epic",
+    }),
     issue("desk-a", { title: "버그 수정", issueType: "bug", priority: 2, ready: true }),
     issue("desk-b", { title: "기반 작업", priority: 3, ready: true }),
     issue("desk-a-after", { title: "버그 후속", blockedBy: ["desk-a"] }),
     issue("desk-b-after-1", { title: "기반 후속 1", blockedBy: ["desk-b"] }),
     issue("desk-b-after-2", { title: "기반 후속 2", blockedBy: ["desk-b"] }),
     issue("desk-joined", { title: "합류 후속", blockedBy: ["desk-b", "desk-c"] }),
+    issue("desk-epic", { title: "상위 epic", issueType: "epic" }),
   ];
 
   async function renderIssues(query: string) {
@@ -180,6 +192,12 @@ describe("병목 탭", () => {
       query: "view=bottleneck&label=ui",
       search: "",
       titles: ["가장 급한 작업"],
+    },
+    {
+      condition: "epic 미소속",
+      query: "view=bottleneck&type=task&noEpic=1",
+      search: "",
+      titles: ["기반 작업"],
     },
     { condition: "검색어", query: "view=bottleneck", search: "기반", titles: ["기반 작업"] },
   ]) {

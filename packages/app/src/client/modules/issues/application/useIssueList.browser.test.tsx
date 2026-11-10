@@ -1,6 +1,7 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
+import type * as IssueApi from "@/client/infra/issues/issueApiClient";
 import type { ApiResponse } from "@/shared/contract/apiResponse";
 import { ALL_STATUSES, type IssueListFilter } from "@/shared/contract/issueList";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
@@ -10,7 +11,10 @@ const readIssueList = vi.hoisted(() =>
   vi.fn<(filter: IssueListFilter) => Promise<ApiResponse<Issue[]>>>(),
 );
 
-vi.mock("@/client/infra/issues/issueApiClient", () => ({ readIssueList }));
+vi.mock("@/client/infra/issues/issueApiClient", async (importOriginal) => ({
+  ...(await importOriginal<typeof IssueApi>()),
+  readIssueList,
+}));
 vi.mock("@/client/infra/workspaceEvents/workspaceEventSource", () => ({
   awaitFirstInvalidation: () => Promise.resolve(),
   subscribeWorkspaceInvalidation: () => () => {},

@@ -110,6 +110,54 @@ describe("visibleTreeRows", () => {
 });
 
 describe("refineIssues", () => {
+  test("미소속은 epic 자신과 소속 이슈를 빼고 유형·라벨·검색과 함께 적용한다", () => {
+    const issues = [
+      issue("root", { issueType: "epic" }),
+      issue("nested", { issueType: "epic", parent: "root" }),
+      issue("member", { title: "Login member", issueType: "bug", labels: ["ui"] }),
+      issue("plain", { title: "Login plain", issueType: "bug", labels: ["ui"] }),
+      issue("other-type", { title: "Login task", labels: ["ui"] }),
+      issue("other-label", { title: "Login bug", issueType: "bug", labels: ["api"] }),
+    ];
+    const epicAncestors = {
+      nested: { id: "root", title: "Root" },
+      member: { id: "root", title: "Root" },
+    };
+    expect(
+      ids(
+        refineIssues(issues, {
+          types: [],
+          labels: [],
+          search: "",
+          noEpic: true,
+          epicAncestors,
+        }),
+      ),
+    ).toEqual(["plain", "other-type", "other-label"]);
+    expect(
+      ids(
+        refineIssues(issues, {
+          types: ["bug"],
+          labels: ["ui"],
+          search: "login",
+          noEpic: true,
+          epicAncestors,
+        }),
+      ),
+    ).toEqual(["plain"]);
+    expect(
+      ids(
+        refineIssues(issues, {
+          types: ["bug"],
+          labels: ["ui"],
+          search: "login",
+          noEpic: false,
+          epicAncestors,
+        }),
+      ),
+    ).toEqual(["member", "plain"]);
+  });
+
   test("유형과 검색어(id·제목, 대소문자 무시)로 거른다", () => {
     const issues = [
       issue("demo-1", { title: "Login bug", issueType: "bug" }),

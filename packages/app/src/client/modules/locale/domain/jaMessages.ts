@@ -112,6 +112,8 @@ export const jaMessages: Messages = {
   },
   issueTable: {
     empty: "条件に一致するイシューがありません。",
+    epicMembership: (title) => `epic · ${title}`,
+    openEpic: (title) => `epic を開く: ${title}`,
     statusOf: (id) => `${id} の状態`,
     priorityOf: (id) => `${id} の優先度`,
     dependencyCounts: (dependencies, dependents) => `先行 ${dependencies}件 · 後続 ${dependents}件`,
@@ -418,6 +420,7 @@ export const jaMessages: Messages = {
     allLabels: "すべて",
     labelCount: (count) => `${count}件`,
     noLabel: "ラベルなし",
+    noEpicOnly: "epic 未所属のみ",
     searchPlaceholder: "ID、タイトル、本文、コメントを検索",
     commentHit: "コメント",
     search: "検索",

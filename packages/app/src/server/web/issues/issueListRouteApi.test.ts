@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { fakeBdWorkspace } from "@beads-desk/bd/fakeBd.testkit";
 import { fakeBdRouteApiRequest } from "@/server/web/http/fakeBdRouteApi.testkit";
-import { handleIssueTextSearchRequest, handleIssueListRequest } from "./issueListRouteApi";
+import {
+  handleIssueTextSearchRequest,
+  handleIssueListRequest,
+  handleIssueListWithEpicsRequest,
+} from "./issueListRouteApi";
 
 // Next 요청 밖에서는 쿠키와 헤더를 읽을 수 없으므로 언어를 정해 둡니다.
 vi.mock("@/server/web/locale/requestLocale", () => ({
@@ -165,4 +169,24 @@ test("본문 검색어가 비어 있으면 bd를 실행하지 않고 400을 돌�
   expect(response.status).toBe(400);
   expect((await response.json()).ok).toBe(false);
   await expect(fakeBd.callsLog()).rejects.toThrow("ENOENT");
+});
+
+test("이슈 목록은 닫힌 gate를 건너 epic 소속을 찾되 gate 행은 보이지 않는다", async () => {
+  await useFakeBd("list --json --tree=false --all --limit 0 --include-gates", {
+    stdout: JSON.stringify([
+      { id: "outer", title: "닫힌 epic", issue_type: "epic", status: "closed" },
+      { id: "gate", issue_type: "gate", status: "closed", parent: "outer" },
+      { id: "child", issue_type: "task", parent: "gate" },
+    ]),
+  });
+  const response = await handleIssueListWithEpicsRequest(
+    fakeBdRouteApiRequest(fakeBd.workDir, "/api/issue-list"),
+  );
+  const body = await response.json();
+  expect(response.status).toBe(200);
+  expect(body.data.issues.map((issue: { id: string }) => issue.id)).toEqual(["outer", "child"]);
+  expect(body.data.epicAncestors).toEqual({
+    gate: { id: "outer", title: "닫힌 epic" },
+    child: { id: "outer", title: "닫힌 epic" },
+  });
 });

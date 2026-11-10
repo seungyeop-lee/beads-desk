@@ -29,6 +29,7 @@ describe("issueListHref", () => {
       dates: { field: "closed", from: "2026-10-14", to: "2026-10-15" },
       types: ["bug", "task"],
       labels: [],
+      noEpic: false,
     } as const;
     const href = issueListHref(address);
 
@@ -50,6 +51,15 @@ describe("issueListHref", () => {
     const href = issueListHref({ dates: { field: "closed", from: null, to: null } });
 
     expect(read(href).dates).toEqual({ field: "closed", from: null, to: null });
+  });
+
+  test("미소속 조건은 다른 목록 조건과 왕복하고 끄면 주소에서 빠진다", () => {
+    const href = issueListHref({ view: "ready", labels: ["ui"], noEpic: true });
+    expect(href).toBe("/issues?view=ready&label=ui&noEpic=1");
+    expect(read(href).noEpic).toBe(true);
+    expect(issueListHref({ ...read(href), noEpic: false })).toBe("/issues?view=ready&label=ui");
+    expect(read("/issues").noEpic).toBe(false);
+    expect(read("/issues?noEpic=false").noEpic).toBe(false);
   });
 });
 

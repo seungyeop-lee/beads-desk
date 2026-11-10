@@ -23,11 +23,13 @@ type Props = {
   onSearchChange: (search: string) => void;
   dates: IssueDateFilter;
   onDatesChange: (dates: IssueDateFilter) => void;
+  noEpic: boolean;
+  onNoEpicChange: (noEpic: boolean) => void;
 };
 
 const DATE_FIELDS: IssueDateField[] = ["created", "closed"];
 
-/** 고른 보기 탭 안에서 유형, 라벨, 날짜, 검색어로 결과를 좁힙니다. */
+/** 고른 보기 탭 안에서 유형, 라벨, 날짜, 검색어, epic 미소속 조건으로 결과를 좁힙니다. */
 export function IssueFilterBar({
   types,
   onTypesChange,
@@ -38,6 +40,8 @@ export function IssueFilterBar({
   onSearchChange,
   dates,
   onDatesChange,
+  noEpic,
+  onNoEpicChange,
 }: Props) {
   const messages = useMessages();
 
@@ -96,6 +100,16 @@ export function IssueFilterBar({
           ))}
         </select>
       </DateRangeFields>
+
+      <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="checkbox checkbox-sm"
+          checked={noEpic}
+          onChange={(event) => onNoEpicChange(event.target.checked)}
+        />
+        {messages.issues.noEpicOnly}
+      </label>
 
       <SearchField
         label={messages.issues.search}

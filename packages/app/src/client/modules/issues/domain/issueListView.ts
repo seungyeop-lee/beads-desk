@@ -1,5 +1,6 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import type { IssueTextHit } from "@/shared/contract/issueList";
+import type { EpicAncestors } from "@/shared/domain/issues/epicMembership";
 import { matchesLabels } from "./issueLabelFilter";
 import { matchesQuery, normalizeQuery } from "./issueSearch";
 
@@ -13,6 +14,8 @@ export type IssueListRefinement = {
   /** 비어 있으면 라벨로 거르지 않습니다. 규칙은 matchesLabels에 있습니다. */
   labels: readonly string[];
   search: string;
+  noEpic?: boolean;
+  epicAncestors?: EpicAncestors | undefined;
   /** 본문 필드나 댓글에 search가 든 이슈입니다. */
   textMatches?: IssueTextHits;
 };
@@ -24,6 +27,8 @@ export function refineIssues(issues: Issue[], refinement: IssueListRefinement): 
     (issue) =>
       (refinement.types.length === 0 || refinement.types.includes(issue.issueType)) &&
       matchesLabels(issue, refinement.labels) &&
+      (!refinement.noEpic ||
+        (issue.issueType !== "epic" && !refinement.epicAncestors?.[issue.id])) &&
       (search === "" ||
         matchesQuery(issue, search) ||
         (refinement.textMatches?.has(issue.id) ?? false)),

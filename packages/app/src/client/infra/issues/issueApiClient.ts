@@ -4,6 +4,8 @@ import type { ApiResponse } from "@/shared/contract/apiResponse";
 import { issueDetailPath, issueHistoryPath } from "@/shared/contract/issueDetail";
 import {
   ISSUE_LIST_PATH,
+  ISSUE_LIST_WITH_EPICS_PATH,
+  type IssueListWithEpics,
   issueListSearchParams,
   issueTextSearchPath,
   type IssueListFilter,
@@ -25,4 +27,8 @@ export function readIssueHistory(issueId: string): Promise<ApiResponse<IssueEven
 
 export function readIssueTextMatches(text: string): Promise<ApiResponse<IssueTextMatch[]>> {
   return readApi(issueTextSearchPath(text));
+}
+
+export function readIssueListWithEpics(): Promise<ApiResponse<IssueListWithEpics>> {
+  return readApi(ISSUE_LIST_WITH_EPICS_PATH);
 }

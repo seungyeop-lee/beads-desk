@@ -30,6 +30,7 @@ import { ChevronRightIcon } from "@/client/ui/designSystem/icons";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { IssueTypeTag } from "./IssueTypeTag";
 import { WaiterCount } from "./WaiterCount";
+import type { EpicAncestors } from "@/shared/domain/issues/epicMembership";
 
 type Props = (
   | { issues: Issue[]; tree?: never; initiallyExpanded?: never }
@@ -63,6 +64,8 @@ type Props = (
   searchHits?: IssueTextHits;
   /** searchHits를 찾은 검색어입니다. 발췌 안에서 이 검색어와 맞는 부분을 강조합니다. */
   searchTerm?: string | undefined;
+  /** 주면 제목 아래에 가장 가까운 상위 epic의 상세 링크를 보입니다. */
+  epicAncestors?: EpicAncestors | undefined;
 };
 
 /** ID를 누르면 전체 ID를 복사하고, 제목을 누르면 상세를 엽니다. 상태와 우선순위는 표에서 바로 고치고, 라벨과 담당자는 상세에서만 고칩니다. */
@@ -82,6 +85,7 @@ export const IssueTable = memo(function IssueTable({
   epicProgress,
   searchHits,
   searchTerm,
+  epicAncestors,
 }: Props) {
   const messages = useMessages();
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(initiallyExpanded ?? new Set());
@@ -145,6 +149,7 @@ export const IssueTable = memo(function IssueTable({
             epicProgress={epicProgress}
             searchHits={searchHits?.get(row.issue.id)}
             searchTerm={searchTerm}
+            ancestorEpic={epicAncestors?.[row.issue.id]}
           />
         ))}
       </tbody>
@@ -177,6 +182,7 @@ type RowProps = {
   epicProgress: ReadonlyMap<string, ChildProgress> | undefined;
   searchHits: readonly IssueTextHit[] | undefined;
   searchTerm: string | undefined;
+  ancestorEpic: Pick<Issue, "id" | "title"> | undefined;
 };
 
 function IssueRow({
@@ -192,6 +198,7 @@ function IssueRow({
   epicProgress,
   searchHits,
   searchTerm,
+  ancestorEpic,
 }: RowProps) {
   const { update, changeStatus } = issueEdits(writes, issue.id);
   const href = issueHref(issue.id);
@@ -233,6 +240,16 @@ function IssueRow({
                 {messages.issueTable.childCount(outline.childCount)}
               </span>
             )
+          )}
+          {ancestorEpic && (
+            <Link
+              href={issueHref(ancestorEpic.id)}
+              scroll={false}
+              aria-label={messages.issueTable.openEpic(ancestorEpic.title)}
+              className="mt-1 block text-xs wrap-anywhere text-emphasis-60 underline-offset-2 hover:underline"
+            >
+              {messages.issueTable.epicMembership(ancestorEpic.title || messages.common.untitled)}
+            </Link>
           )}
           {issue.blockedBy && (
             <BlockerLine

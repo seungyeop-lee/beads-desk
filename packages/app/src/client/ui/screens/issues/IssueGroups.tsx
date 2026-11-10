@@ -10,6 +10,7 @@ import { EmptyState } from "@/client/ui/designSystem/EmptyState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { IssueTable } from "@/client/ui/issues/IssueTable";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
+import type { EpicAncestors } from "@/shared/domain/issues/epicMembership";
 
 type Props = {
   groups: WorkStateGroup[];
@@ -23,6 +24,7 @@ type Props = {
   searchHits?: IssueTextHits | undefined;
   /** searchHits를 찾은 검색어입니다. 발췌 안에서 이 검색어와 맞는 부분을 강조합니다. */
   searchTerm?: string | undefined;
+  epicAncestors?: EpicAncestors | undefined;
 };
 
 /** 전체 보기에서 작업 상태 묶음마다 표를 나눠 보입니다. 처음에는 닫힘 묶음만 접어 둡니다. */
@@ -35,6 +37,7 @@ export function IssueGroups({
   writes,
   searchHits,
   searchTerm,
+  epicAncestors,
 }: Props) {
   const messages = useMessages();
   const [collapsed, setCollapsed] = useState<ReadonlySet<WorkState>>(new Set(["closed"]));
@@ -78,6 +81,7 @@ export function IssueGroups({
                 hideHeader={group.state !== headerGroup}
                 searchHits={searchHits}
                 searchTerm={searchTerm}
+                epicAncestors={epicAncestors}
               />
             )}
           </section>

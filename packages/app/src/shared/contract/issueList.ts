@@ -1,7 +1,11 @@
-import { ISSUE_STATUSES, type IssueStatus } from "@beads-desk/bd/issue";
+import type { EpicAncestors } from "@/shared/domain/issues/epicMembership";
+import { ISSUE_STATUSES, type Issue, type IssueStatus } from "@beads-desk/bd/issue";
 import type { BodyField } from "@/shared/domain/issues/bodyFields";
 
+export type IssueListWithEpics = { issues: Issue[]; epicAncestors: EpicAncestors };
+
 export const ISSUE_LIST_PATH = "/api/issues";
+export const ISSUE_LIST_WITH_EPICS_PATH = "/api/issue-list";
 
 /** 본문 필드나 댓글에 검색어가 든 이슈를 돌려주는 경로입니다. /api/issues/[id]와 겹치지 않도록 따로 둡니다. */
 const ISSUE_SEARCH_PATH = "/api/issue-search";

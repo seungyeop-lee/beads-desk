@@ -1,10 +1,11 @@
 import type { Issue } from "@beads-desk/bd/issue";
 import { useSyncExternalStore } from "react";
-import { readIssueList } from "@/client/infra/issues/issueApiClient";
+import { readIssueList, readIssueListWithEpics } from "@/client/infra/issues/issueApiClient";
 import { shareWorkspaceRead } from "@/client/modules/workspace/application/shareWorkspaceRead";
 import { useSharedWorkspaceRead } from "@/client/modules/workspace/application/useSharedWorkspaceRead";
 import type { WorkspaceReadState } from "@/client/modules/workspace/application/useWorkspaceRead";
 import { ALL_STATUSES } from "@/shared/contract/issueList";
+import type { IssueListWithEpics } from "@/shared/contract/issueList";
 
 // 이 hook을 쓰는 component가 한 화면에 여럿이어도 알림 한 번에 한 번만 읽도록 결과를 나눠 씁니다.
 const issueList = shareWorkspaceRead(() => readIssueList(ALL_STATUSES));
@@ -12,6 +13,12 @@ const issueList = shareWorkspaceRead(() => readIssueList(ALL_STATUSES));
 /** 모든 상태를 담은 이슈 목록입니다. 목록 화면과 이슈 찾기 후보가 같은 목록을 나눠 씁니다. */
 export function useIssueList(): WorkspaceReadState<Issue[]> {
   return useSharedWorkspaceRead(issueList);
+}
+
+const issueListWithEpics = shareWorkspaceRead(readIssueListWithEpics);
+
+export function useIssueListWithEpics(): WorkspaceReadState<IssueListWithEpics> {
+  return useSharedWorkspaceRead(issueListWithEpics);
 }
 
 // 입력을 처음 쓰기 전에는 조회를 구독하지도 않습니다.

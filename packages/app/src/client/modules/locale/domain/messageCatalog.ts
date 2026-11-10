@@ -97,6 +97,8 @@ export type Messages = {
   };
   issueTable: {
     empty: string;
+    epicMembership: (title: string) => string;
+    openEpic: (title: string) => string;
     statusOf: (id: string) => string;
     priorityOf: (id: string) => string;
     dependencyCounts: (dependencies: number, dependents: number) => string;
@@ -367,6 +369,7 @@ export type Messages = {
     allLabels: string;
     labelCount: (count: number) => string;
     noLabel: string;
+    noEpicOnly: string;
     searchPlaceholder: string;
     /** 검색어가 댓글에서 맞았을 때 발췌 앞에 붙이는 이름입니다. 본문 필드는 issue.bodyFields의 이름을 씁니다. */
     commentHit: string;
