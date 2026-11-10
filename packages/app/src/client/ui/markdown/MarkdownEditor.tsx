@@ -52,7 +52,7 @@ type Props = {
 };
 
 /**
- * markdown을 Milkdown Crepe로 보여 주고 고칩니다. 편집할 때는 위에 서식 도구 줄을 둡니다.
+ * markdown을 Milkdown Crepe로 보여 주고 고칩니다. 편집할 때만 변경·커서 상태를 관찰하고 서식 도구 줄을 둡니다.
  * Crepe는 브라우저에서만 만들 수 있어 mount된 뒤 불러오므로, 처음 그릴 때는 비어 있습니다.
  * Milkdown과 앱 규칙을 잇는 주소 정책과 schema는 milkdownAdapter에, 서식 명령은 formatCommands에 있습니다.
  */
@@ -156,6 +156,15 @@ export function MarkdownEditor({
           ),
           $prose(() => new Plugin({ view: (view) => previewAddressLinkTool(view, address) })),
           $prose(() => new Plugin({ props: tabMovesFocusAfterEscape() })),
+          // Crepe의 markdownUpdated는 200ms 늦게 오고 편집기를 닫으면 버려져, 바로 저장하면 마지막 입력이 빠집니다.
+          $prose(
+            (ctx) =>
+              new Plugin({
+                view: () => ({
+                  update: contentUpdateView(ctx.get(core.serializerCtx), changed, cursorMoved),
+                }),
+              }),
+          ),
         ]);
       } else {
         // 편집 중에는 원문 보존(keepUnchangedBlocks)에 영향을 주지 않도록 읽기 전용에서만 붙입니다.
@@ -180,17 +189,6 @@ export function MarkdownEditor({
       });
       crepe.editor.use($remark("windowsPathSource", () => remarkWindowsPathSource));
       crepe.setReadonly(readOnly);
-      // Crepe의 markdownUpdated는 200ms 늦게 오고 편집기를 닫으면 버려져, 바로 저장하면 마지막 입력이 빠집니다.
-      crepe.editor.use(
-        $prose(
-          (ctx) =>
-            new Plugin({
-              view: () => ({
-                update: contentUpdateView(ctx.get(core.serializerCtx), changed, cursorMoved),
-              }),
-            }),
-        ),
-      );
       const created = crepe.create();
       destroy = () => created.then(() => crepe.destroy());
       await created;

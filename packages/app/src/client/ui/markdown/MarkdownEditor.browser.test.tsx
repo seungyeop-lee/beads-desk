@@ -442,12 +442,19 @@ test("제목으로 시작하는 본문은 읽을 때도 편집할 때도 글자�
     );
     const heading = screen.getByRole("heading", { name: "배경" });
     await expect.element(heading).toBeVisible();
+    const formats = screen.getByRole("combobox", { name: "문단 형식" });
+    await expect
+      .poll(() => formats.elements().map((element) => (element as HTMLSelectElement).value))
+      .toEqual(readOnly ? [] : ["3"]);
     const before = heading.element().getBoundingClientRect().top;
 
     selectStartOf(screen.getByText("드래그해서 고를 문단입니다.").element());
     await nextFrame();
 
     expect(String(window.getSelection())).not.toBe("");
+    await expect
+      .poll(() => formats.elements().map((element) => (element as HTMLSelectElement).value))
+      .toEqual(readOnly ? [] : ["0"]);
     expect(heading.element().getBoundingClientRect().top).toBe(before);
     await screen.unmount();
   }
