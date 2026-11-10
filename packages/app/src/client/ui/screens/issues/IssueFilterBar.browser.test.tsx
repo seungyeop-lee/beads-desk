@@ -109,7 +109,7 @@ for (const [locale, catalog] of [
   ["en", enMessages],
   ["ja", jaMessages],
 ] as const) {
-  test(`${locale} 미소속 필터 칩은 키보드로 켜고 끄며 체크와 배경을 함께 바꾼다`, async () => {
+  test(`${locale} 미소속 텍스트 칩은 대칭 여백과 크기를 유지하며 투명 비활성·진한 활성과 키보드 선택을 보인다`, async () => {
     const onNoEpicChange = vi.fn<(checked: boolean) => void>();
     function Filter() {
       const [selected, setSelected] = useState(false);
@@ -140,33 +140,29 @@ for (const [locale, catalog] of [
     const checkbox = screen.getByRole("checkbox", { name: catalog.issues.noEpicOnly });
     const chip = checkbox.element().closest("label")!;
     const background = getComputedStyle(chip).backgroundColor;
+    expect(background).toBe("rgba(0, 0, 0, 0)");
+    expect(parseFloat(getComputedStyle(chip).borderTopWidth)).toBe(1);
     expect(parseFloat(getComputedStyle(chip).borderRadius)).toBeGreaterThan(8);
-    const icon = chip.querySelector("svg")!;
-    expect(icon).not.toBeNull();
-    expect(icon.getAttribute("aria-hidden")).toBe("true");
     const text = screen.getByText(catalog.issues.noEpicOnly, { exact: true }).element();
     const initialBox = chip.getBoundingClientRect();
     const alignment = () => {
-      const iconBox = icon.getBoundingClientRect();
+      const style = getComputedStyle(chip);
       const textBox = text.getBoundingClientRect();
       const chipBox = chip.getBoundingClientRect();
       expect(
-        Math.abs(iconBox.top + iconBox.height / 2 - textBox.top - textBox.height / 2),
+        Math.abs(textBox.top + textBox.height / 2 - chipBox.top - chipBox.height / 2),
       ).toBeLessThanOrEqual(1);
       expect(
-        Math.abs(iconBox.top + iconBox.height / 2 - chipBox.top - chipBox.height / 2),
+        Math.abs(textBox.left - chipBox.left - (chipBox.right - textBox.right)),
       ).toBeLessThanOrEqual(1);
-      expect(iconBox.width).toBe(16);
-      expect(textBox.left - iconBox.right).toBeGreaterThanOrEqual(6);
-      expect(textBox.left - iconBox.right).toBeLessThanOrEqual(8);
-      expect(
-        Math.abs(iconBox.left - chipBox.left - (chipBox.right - textBox.right)),
-      ).toBeLessThanOrEqual(1);
+      expect(textBox.left - chipBox.left).toBe(
+        parseFloat(style.paddingLeft) + parseFloat(style.borderLeftWidth),
+      );
+      expect(chipBox.width - textBox.width).toBeLessThanOrEqual(28);
       expect(chipBox.width).toBe(initialBox.width);
       expect(chipBox.height).toBe(initialBox.height);
     };
     alignment();
-    expect(getComputedStyle(icon).visibility).toBe("hidden");
     const search = screen
       .getByRole("searchbox", { name: catalog.issues.search })
       .element() as HTMLInputElement;
@@ -178,13 +174,27 @@ for (const [locale, catalog] of [
     await expect.element(checkbox).toBeChecked();
     await expect.poll(() => getComputedStyle(chip).backgroundColor).not.toBe(background);
     expect(onNoEpicChange).toHaveBeenLastCalledWith(true);
-    expect(getComputedStyle(icon).visibility).toBe("visible");
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d")!;
+    const luminance = (color: string) => {
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const channels = [...context.getImageData(0, 0, 1, 1).data].slice(0, 3).map((value) => {
+        const channel = value / 255;
+        return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+      });
+      return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722;
+    };
+    const activeStyle = getComputedStyle(chip);
+    const dark = luminance(activeStyle.backgroundColor);
+    const light = luminance(activeStyle.color);
+    expect(dark).toBeLessThan(0.2);
+    expect((light + 0.05) / (dark + 0.05)).toBeGreaterThanOrEqual(4.5);
     alignment();
     await userEvent.keyboard(" ");
     await expect.element(checkbox).not.toBeChecked();
     await expect.poll(() => getComputedStyle(chip).backgroundColor).toBe(background);
     expect(onNoEpicChange).toHaveBeenLastCalledWith(false);
-    expect(getComputedStyle(icon).visibility).toBe("hidden");
     alignment();
   });
 }

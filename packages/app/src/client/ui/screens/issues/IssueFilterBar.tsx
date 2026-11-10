@@ -7,7 +7,6 @@ import { NO_LABEL } from "@/client/modules/issues/domain/issueLabelFilter";
 import { ISSUE_TYPES } from "@/client/modules/issues/domain/issueTypes";
 import { CheckboxMenu } from "@/client/ui/designSystem/CheckboxMenu";
 import { SearchField } from "@/client/ui/designSystem/SearchField";
-import { CheckIcon } from "@/client/ui/designSystem/icons";
 import { nameTone, typeLabel, typeTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 
@@ -103,7 +102,7 @@ export function IssueFilterBar({
       </DateRangeFields>
 
       <label
-        className={`btn btn-sm relative gap-2 rounded-full border-base-content/20 font-normal has-focus-visible:outline-2 has-focus-visible:outline-offset-2 ${noEpic ? "bg-base-300" : "bg-base-100"}`}
+        className={`btn btn-sm relative rounded-full border-base-content/20 font-normal has-focus-visible:outline-2 has-focus-visible:outline-offset-2 ${noEpic ? "bg-neutral text-neutral-content" : "bg-transparent text-base-content"}`}
       >
         <input
           type="checkbox"
@@ -111,7 +110,6 @@ export function IssueFilterBar({
           checked={noEpic}
           onChange={(event) => onNoEpicChange(event.target.checked)}
         />
-        <CheckIcon className={`shrink-0 ${noEpic ? "visible" : "invisible"}`} />
         <span>{messages.issues.noEpicOnly}</span>
       </label>
 

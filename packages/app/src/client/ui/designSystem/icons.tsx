@@ -30,14 +30,6 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
-export function CheckIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="m5 12 4 4L19 6" />
-    </Icon>
-  );
-}
-
 export function HelpIcon(props: IconProps) {
   return (
     <Icon {...props}>
