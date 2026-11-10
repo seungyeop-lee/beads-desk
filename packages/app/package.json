@@ -1,6 +1,6 @@
 {
   "name": "@seungyeop-lee/beads-desk",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "Local web UI for the Beads (bd) issue tracker. Review the plans, decisions, Mermaid diagrams, screenshots, and questions your coding agents leave, with due dates, bottlenecks, and dependency graphs in the browser.",
   "keywords": [
     "ai-agents",

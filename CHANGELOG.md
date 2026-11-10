@@ -4,6 +4,21 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-11-10
+
+### Added
+
+- **Issues** now shows epic membership links and offers a **No epic only** filter. See [Epic membership in the issue list](https://github.com/seungyeop-lee/beads-desk/blob/v0.18.0/USAGE.md#epic-membership-in-the-issue-list).
+
+### Changed
+
+- Linked issues are now organized by creation time within each relation in the detail dialog and side panel. See [Linked issues](https://github.com/seungyeop-lee/beads-desk/blob/v0.18.0/USAGE.md#linked-issues).
+
+### Fixed
+
+- Issue titles now have consistent spacing above epic links, blockers, deferrals, and search matches.
+- Read-only Markdown no longer runs editing-state updates when you move the cursor or select text.
+
 ## [0.17.0] - 2026-11-08
 
 ### Added
