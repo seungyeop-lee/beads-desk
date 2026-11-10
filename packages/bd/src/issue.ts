@@ -137,6 +137,8 @@ export type IssueLink = {
   status: string;
   priority: number | null;
   issueType: string;
+  /** 연결된 이슈 자체의 생성 시각(epoch ms)입니다. bd 영시각이나 확인할 수 없는 값은 null입니다. */
+  createdAt: number | null;
   /** blocks, parent-child, related처럼 bd가 기록한 의존 유형입니다. */
   dependencyType: string;
   /** gate가 기다리는 대상입니다. human이면 사람이 gate를 닫아야 풀립니다. gate가 아니면 빈 문자열입니다. */
@@ -370,13 +372,17 @@ function jsonRecord(text: string): Record<string, unknown> | null {
   }
 }
 
-function parseIssueLink(value: Record<string, unknown>): IssueLink {
+const BD_ZERO_TIMESTAMP = Date.parse("0001-01-01T00:00:00Z");
+
+export function parseIssueLink(value: Record<string, unknown>): IssueLink {
+  const createdAt = timestampOr(value.created_at, null);
   return {
     id: stringOr(value.id, ""),
     title: stringOr(value.title, ""),
     status: stringOr(value.status, ""),
     priority: typeof value.priority === "number" ? value.priority : null,
     issueType: stringOr(value.issue_type, ""),
+    createdAt: createdAt === BD_ZERO_TIMESTAMP ? null : createdAt,
     dependencyType: stringOr(value.dependency_type, ""),
     awaitType: stringOr(value.await_type, ""),
   };

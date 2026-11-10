@@ -142,6 +142,7 @@ test("판단 기다림 화면 위에서 막힌 작업의 dialog를 열고 gate�
     status,
     priority: 2,
     issueType: "gate",
+    createdAt: null,
     dependencyType: "blocks",
     awaitType: "human",
   });

@@ -76,6 +76,7 @@ test("하위 이슈만 연결된 에픽 상세는 순서 보기만 보이고 선
           status: "open",
           priority: 2,
           issueType: "task",
+          createdAt: null,
           dependencyType: "parent-child",
           awaitType: "",
         },
@@ -96,6 +97,7 @@ test("막힘 안내, 사람 확인 영역, 연결된 이슈 목록은 선행 이
     status: "open",
     priority: 2,
     issueType: "gate",
+    createdAt: null,
     dependencyType: "blocks",
     awaitType: "human",
   };
@@ -182,6 +184,7 @@ function detail(fields: Pick<IssueDetail, "issueType">): IssueDetail {
         status: "open",
         priority: 2,
         issueType: "task",
+        createdAt: null,
         dependencyType: "blocks",
         awaitType: "",
       },

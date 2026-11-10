@@ -292,12 +292,68 @@ describe("showIssue", () => {
       "show --json --include-comments --include-dependents -- demo-865.1": {
         stdout: await fixture("show.json"),
       },
+      "show --json -- demo-nk4": {
+        stdout: JSON.stringify([{ id: "demo-nk4", created_at: "2026-10-13T13:14:23Z" }]),
+      },
     });
 
     const result = await showIssue(fakeBd.workDir, "demo-865.1");
 
     expect(result.ok && result.value.comments.length).toBe(1);
     expect(result.ok && result.value.dependents.length).toBe(1);
+    expect(result.ok && result.value.dependents[0]?.createdAt).toBe(
+      Date.parse("2026-10-13T13:14:23Z"),
+    );
+  });
+
+  test("생성일이 없는 양방향 링크만 중복 없이 한 번 더 조회하고 관계 정보는 보존한다", async () => {
+    const link = { id: "x-shared", dependency_type: "blocks", created_at: "0001-01-01T00:00:00Z" };
+    await useFakeBd({
+      "show --json --include-comments --include-dependents -- x": {
+        stdout: JSON.stringify([
+          {
+            id: "x",
+            dependencies: [link, { id: "x-known", created_at: "2026-10-01T00:00:00Z" }],
+            dependents: [{ ...link, dependency_type: "related" }, { id: "x-unknown" }],
+          },
+        ]),
+      },
+      "show --json -- x-shared x-unknown": {
+        stdout: JSON.stringify([
+          {
+            id: "x-shared",
+            created_at: "2026-10-15T00:00:00Z",
+            updated_at: "2026-11-10T00:00:00Z",
+          },
+          { id: "x-unknown", created_at: "0001-01-01T00:00:00Z" },
+        ]),
+      },
+    });
+
+    const result = await showIssue(fakeBd.workDir, "x");
+
+    expect(result.ok && result.value.dependencies).toMatchObject([
+      { id: "x-shared", dependencyType: "blocks", createdAt: Date.parse("2026-10-15T00:00:00Z") },
+      { id: "x-known", createdAt: Date.parse("2026-10-01T00:00:00Z") },
+    ]);
+    expect(result.ok && result.value.dependents).toMatchObject([
+      { id: "x-shared", dependencyType: "related", createdAt: Date.parse("2026-10-15T00:00:00Z") },
+      { id: "x-unknown", createdAt: null },
+    ]);
+  });
+
+  test("연결된 이슈 생성일을 보완하는 조회가 실패하면 오류를 돌려준다", async () => {
+    await useFakeBd({
+      "show --json --include-comments --include-dependents -- x": {
+        stdout: JSON.stringify([{ id: "x", dependents: [{ id: "other" }] }]),
+      },
+      "show --json -- other": { stderr: "lookup failed", code: 1 },
+    });
+
+    expect(await showIssue(fakeBd.workDir, "x")).toEqual({
+      ok: false,
+      error: { message: "lookup failed\n", exitCode: 1 },
+    });
   });
 
   test("id가 비어 있으면 bd를 실행하지 않고 오류를 돌려준다", async () => {

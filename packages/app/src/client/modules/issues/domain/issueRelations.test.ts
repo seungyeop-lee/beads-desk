@@ -39,7 +39,7 @@ test("고른 관계를 bd dep add의 방향과 유형으로 바꾼다", () => {
   });
 });
 
-test("연결된 이슈는 상위, 선행, 후속, 하위, 관련, 이 이슈를 발견한 작업, 이 작업 중 발견한 이슈 순이고 같은 관계 안에서는 받은 순서를 지킨다", () => {
+test("기존 관계 순위를 유지하고 생성일을 모르는 같은 관계 안에서는 받은 순서를 지킨다", () => {
   const rows = linkedIssues({
     dependencies: [
       link("related-out", "related"),
@@ -67,6 +67,68 @@ test("연결된 이슈는 상위, 선행, 후속, 하위, 관련, 이 이슈를 
     ["dependencies", "found-from"],
     ["dependents", "found-here"],
   ]);
+});
+
+test("모든 관계에서 양방향 링크를 관계 순위 다음 이슈 생성일 내림차순으로 정렬한다", () => {
+  const types = [
+    "duplicates",
+    "supersedes",
+    "discovered-from",
+    "related",
+    "parent-child",
+    "blocks",
+  ];
+  const links = types.flatMap((type) => [
+    { ...link(`${type}-a-old`, type), createdAt: 100, updatedAt: 900, created_at: 900 },
+    { ...link(`${type}-z-new`, type), createdAt: 300, updatedAt: 100, created_at: 100 },
+    { ...link(`${type}-m-middle`, type), createdAt: 200, updatedAt: 800, created_at: 800 },
+  ]);
+  const detail = { dependencies: links, dependents: [...links] };
+
+  expect(linkedIssues(detail).map(({ side, link }) => `${side}:${link.id}`)).toEqual(
+    [
+      ["dependencies", "supersedes"],
+      ["dependencies", "duplicates"],
+      ["dependencies", "parent-child"],
+      ["dependencies", "blocks"],
+      ["dependents", "blocks"],
+      ["dependents", "parent-child"],
+      ["dependencies", "related"],
+      ["dependents", "related"],
+      ["dependencies", "discovered-from"],
+      ["dependents", "discovered-from"],
+      ["dependents", "supersedes"],
+      ["dependents", "duplicates"],
+    ].flatMap(([side, type]) =>
+      ["z-new", "m-middle", "a-old"].map((suffix) => `${side}:${type}-${suffix}`),
+    ),
+  );
+  expect(detail.dependencies).toEqual(links);
+  expect(detail.dependents).toEqual(links);
+});
+
+test("생성일 동률은 입력 순서를 지키고 알 수 없는 생성일은 같은 관계의 마지막에 입력 순서대로 둔다", () => {
+  const dependencies = [
+    { ...link("unknown-first", "blocks"), createdAt: null },
+    { ...link("z-tied-first", "blocks"), createdAt: 100 },
+    { ...link("a-tied-second", "blocks"), createdAt: 100 },
+    { ...link("old-before-epoch", "blocks"), createdAt: -100 },
+    { ...link("unknown-last", "blocks"), createdAt: null },
+  ];
+
+  for (const side of ["dependencies", "dependents"] as const) {
+    expect(
+      linkedIssues({ dependencies: [], dependents: [], [side]: dependencies }).map(
+        ({ link }) => link.id,
+      ),
+    ).toEqual([
+      "z-tied-first",
+      "a-tied-second",
+      "old-before-epoch",
+      "unknown-first",
+      "unknown-last",
+    ]);
+  }
 });
 
 test("대체하거나 원본인 이슈는 이 이슈가 왜 닫혔는지 알리므로 맨 앞에, 이 이슈를 대체했거나 중복인 이슈는 발견 관계 뒤에 둔다", () => {
@@ -109,6 +171,7 @@ function link(id: string, dependencyType: string, status = "open"): IssueLink {
     status,
     priority: 2,
     issueType: "task",
+    createdAt: null,
     dependencyType,
     awaitType: "",
   };
@@ -136,6 +199,7 @@ test("human gate 패널은 blocks인 열린 human gate 링크만 고르고, 목�
     issueType: "gate",
     dependencyType: "blocks",
     awaitType: "human",
+    createdAt: null,
   });
   const issue = {
     dependencies: [

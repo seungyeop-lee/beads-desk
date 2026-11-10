@@ -362,6 +362,7 @@ function linked(side: "dependencies" | "dependents"): LinkedIssue {
       status: "open",
       priority: 2,
       issueType: "task",
+      createdAt: null,
       dependencyType: "blocks",
       awaitType: "",
     },

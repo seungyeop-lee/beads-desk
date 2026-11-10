@@ -89,6 +89,10 @@ In a git worktree of a repository whose main checkout has `.beads`, the worktree
 - Select **No epic only** to combine this filter with the current view, type, label, date, and search filters. It is stored in the URL as `noEpic=1` only while enabled and is preserved when switching view tabs, reloading, or using browser Back. Opening the same URL in another browser tab preserves it too.
 - Click an issue title to open that issue's existing detail panel, or its epic link to open the epic's detail panel. Opening either keeps the list's scroll position; closing the panel preserves the list filters and position.
 
+## Linked issues
+
+- In the detail dialog and side panel, linked issues keep their relation order and show the newest-created issue first within each relation. Equal creation times keep the received order; issues with unknown creation times come last within their relation.
+
 ## Local file links in issues
 
 Absolute-path file links and images in an issue body open in the app. On Windows, paths with a drive letter, such as `C:\Users\me\report.md` and `C:/Users/me/report.md`, work too.

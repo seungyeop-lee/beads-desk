@@ -178,6 +178,7 @@ function gatedIssue(): IssueDetail {
         status: "open",
         priority: 2,
         issueType: "gate",
+        createdAt: null,
         dependencyType: "blocks",
         awaitType: "human",
       },

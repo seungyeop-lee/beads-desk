@@ -6,6 +6,7 @@ import {
   parseIssueDependencies,
   parseIssueDetail,
   parseIssueEvents,
+  parseIssueLink,
   parseIssues,
   type ExportedIssue,
   type Issue,
@@ -173,7 +174,27 @@ export async function showIssue(cwd: string, issueId: string): Promise<BdOutcome
     return result;
   }
   const detail = parseIssueDetail(showRecordOf(result.value));
-  return detail ? { ok: true, value: detail } : outputError("missingShownIssue");
+  if (!detail) return outputError("missingShownIssue");
+  const links = [...detail.dependencies, ...detail.dependents];
+  const missingIds = [
+    ...new Set(links.filter((link) => link.createdAt === null).map((link) => link.id)),
+  ];
+  if (missingIds.length > 0) {
+    // bd show의 dependents는 이슈 생성일 대신 영시각을 내놓으므로 원래 이슈에서 읽습니다.
+    const linked = await runBdJson(cwd, ["show", "--json", "--", ...missingIds]);
+    if (!linked.ok) return linked;
+    const records = Array.isArray(linked.value) ? linked.value : [linked.value];
+    const createdById = new Map(
+      recordsOf(records).map((record) => {
+        const link = parseIssueLink(record);
+        return [link.id, link.createdAt];
+      }),
+    );
+    for (const link of links) {
+      if (link.createdAt === null) link.createdAt = createdById.get(link.id) ?? null;
+    }
+  }
+  return { ok: true, value: detail };
 }
 
 /**

@@ -109,7 +109,7 @@ const LINKED_ORDER = [
   "dependents:duplicates",
 ];
 
-/** 이 이슈가 의존하는 이슈와 이 이슈에 의존하는 이슈를 한 목록으로 합칩니다. 같은 관계 안에서는 받은 순서를 지키고, 모르는 의존 유형은 맨 뒤에 둡니다. */
+/** 양방향 링크를 관계 순위, 이슈 생성일 내림차순으로 정렬합니다. 생성일을 모르면 같은 관계의 끝에 두고 동률은 받은 순서를 지킵니다. */
 export function linkedIssues(
   issue: Pick<IssueDetail, "dependencies" | "dependents">,
 ): LinkedIssue[] {
@@ -117,7 +117,13 @@ export function linkedIssues(
     ...issue.dependencies.map((link) => ({ side: "dependencies" as const, link })),
     ...issue.dependents.map((link) => ({ side: "dependents" as const, link })),
   ];
-  return rows.sort((a, b) => linkedRank(a) - linkedRank(b));
+  return rows.sort((a, b) => {
+    const rank = linkedRank(a) - linkedRank(b);
+    if (rank !== 0) return rank;
+    if (a.link.createdAt === null) return b.link.createdAt === null ? 0 : 1;
+    if (b.link.createdAt === null) return -1;
+    return b.link.createdAt - a.link.createdAt;
+  });
 }
 
 function linkedRank({ side, link }: LinkedIssue): number {

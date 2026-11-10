@@ -122,6 +122,23 @@ test("순환 의존을 맺으면 bd의 거부 사유를 돌려준다", async () 
   expect(result).toMatchObject({ ok: false, error: { message: expect.stringContaining("cycle") } });
 });
 
+test("양방향 연결의 생성일은 연결 시각이 아니라 원래 이슈의 생성일이다", async () => {
+  const first = value(await createIssue(cwd, { title: "먼저 만든 일반 작업" }));
+  const second = value(await createIssue(cwd, { title: "나중에 만든 일반 작업" }));
+  value(await addDependency(cwd, second, first, "blocks"));
+
+  const firstDetail = value(await showIssue(cwd, first));
+  const secondDetail = value(await showIssue(cwd, second));
+  expect(firstDetail.dependents.find(({ id }) => id === second)?.createdAt).toBe(
+    secondDetail.createdAt,
+  );
+  expect(secondDetail.dependencies.find(({ id }) => id === first)?.createdAt).toBe(
+    firstDetail.createdAt,
+  );
+  expect(firstDetail.createdAt).toBeGreaterThan(0);
+  expect(secondDetail.createdAt).toBeGreaterThan(0);
+});
+
 test("보류하면 bd가 저장한 기한과 사유를 상세에서 읽는다", async () => {
   const tomorrow = value(await createIssue(cwd, { title: "내일까지 미룰 작업" }));
   const dated = value(await createIssue(cwd, { title: "날짜로 미룰 작업" }));

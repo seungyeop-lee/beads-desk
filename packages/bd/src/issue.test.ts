@@ -139,6 +139,7 @@ describe("parseIssueDetail", () => {
         issueType: "task",
         dependencyType: "blocks",
         awaitType: "",
+        createdAt: Date.parse("2026-10-13T13:14:20Z"),
       },
       {
         id: "demo-865",
@@ -148,6 +149,7 @@ describe("parseIssueDetail", () => {
         issueType: "epic",
         dependencyType: "parent-child",
         awaitType: "",
+        createdAt: Date.parse("2026-10-13T13:14:19Z"),
       },
     ]);
     expect(detail?.dependents.map((link) => [link.id, link.dependencyType])).toEqual([
@@ -161,6 +163,20 @@ describe("parseIssueDetail", () => {
         createdAt: Date.parse("2026-10-13T13:14:21Z"),
       },
     ]);
+  });
+
+  test("연결된 이슈 생성일의 bd 영시각·누락·잘못된 값은 알 수 없음으로 읽는다", () => {
+    const dates = ["0001-01-01T00:00:00Z", undefined, "invalid", "1969-12-31T23:59:59Z"];
+    const links = dates.map((created_at, index) => ({
+      id: `x-${index}`,
+      created_at,
+      updated_at: "2026-11-10T00:00:00Z",
+    }));
+    const detail = parseIssueDetail({ id: "x", dependencies: links, dependents: links });
+
+    for (const side of ["dependencies", "dependents"] as const) {
+      expect(detail?.[side].map((link) => link.createdAt)).toEqual([null, null, null, -1000]);
+    }
   });
 
   test("의존 이슈가 gate이면 gate가 기다리는 대상을 담는다", () => {
