@@ -53,6 +53,9 @@ export default defineConfig({
       commands: {
         mouseDown: ({ page }: BrowserCommandContext) => page.mouse.down(),
         mouseUp: ({ page }: BrowserCommandContext) => page.mouse.up(),
+        // vitest.browser.setup.ts가 테스트마다 커서를 화면 밖으로 빼는 명령입니다. 좌표는 test iframe이 아니라 Playwright page 기준이라,
+        // (-1, -1)은 test iframe을 포함한 어떤 요소 위에도 있지 않습니다.
+        movePointerOffPage: ({ page }: BrowserCommandContext) => page.mouse.move(-1, -1),
         // 운영체제의 밝은·어두운 모드를 따르는 테마를 확인하는 테스트가 이 명령으로 운영체제 설정을 바꿉니다. null이면 바꾼 설정을 되돌립니다.
         emulateColorScheme: (
           { page }: BrowserCommandContext,

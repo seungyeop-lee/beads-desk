@@ -73,10 +73,6 @@ test("관계를 고르고 키보드만으로 둘째 후보를 골라 연결하�
   await kind.selectOptions(
     `${messages.relations.kinds.blocks} (${messages.relations.kindHints.blocks})`,
   );
-  // 커서는 앞선 테스트 파일이 마지막으로 옮긴 자리에 남아 있습니다. 후보 목록이 멈춘 커서 아래에 열리면 chromium이
-  // 그 아래 후보에 pointerenter를 다음 frame에 보내고, 이 이벤트가 ArrowDown보다 늦게 오면 선택이 그 후보로 돌아갑니다.
-  // 키보드 선택만 검사하도록, 목록이 열리지 않는 관계 선택 칸 위로 커서를 옮겨 둡니다.
-  await userEvent.hover(kind);
   await search.fill("키보드");
   await expect
     .poll(() => options.elements().map((option) => option.textContent))
