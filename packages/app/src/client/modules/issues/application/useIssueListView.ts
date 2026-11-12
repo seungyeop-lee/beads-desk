@@ -73,7 +73,10 @@ export function useIssueListView(
         : [],
     [issues, types, labels, noEpic, epicAncestors, deferredSearch, textMatches, dates],
   );
-  const groups = useMemo(() => issueListGroups(refined, waiters), [refined, waiters]);
+  const groups = useMemo(
+    () => issueListGroups(refined, waiters, deferredSearch),
+    [refined, waiters, deferredSearch],
+  );
   // 병목 후보와 대기 수는 지금 화면과 같도록 거르기 전의 전체 목록으로 계산하고, 그 뒤에 조건에 맞는 후보만 남깁니다.
   const deadlines = useFocusDeadlines(issues);
   const allBottlenecks = useMemo(

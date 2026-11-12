@@ -170,3 +170,81 @@ test("이슈 목록에서 상위와 작업 상태가 다른 하위 이슈는 자
     ["ready", ["parent"]],
   ]);
 });
+
+// ihr-0iy로 검색한 결과입니다. 상위 epic ihr-rl7은 본문에서만 맞지만 가장 늦게 닫혀 닫힘 묶음의 맨 앞에 옵니다.
+const closedSearchResult = [
+  issue("ihr-rl7", { issueType: "epic", status: "closed", closedAt: 4 }),
+  issue("ihr-0iy", { status: "closed", closedAt: 3, parent: "ihr-rl7" }),
+  issue("ihr-t2dd", { status: "closed", closedAt: 2 }),
+  issue("ihr-34b", { status: "closed", closedAt: 1 }),
+];
+
+test("검색어가 있으면 본문에서만 맞은 상위 epic보다 ID가 맞은 하위 이슈가 묶음 안에서 앞에 온다", () => {
+  const groups = issueListGroups(closedSearchResult, NO_WAITERS, "IHR-0iy ");
+
+  expect(groups.map(({ state, issues }) => [state, issues.map(({ id }) => id)])).toEqual([
+    ["closed", ["ihr-0iy", "ihr-rl7", "ihr-t2dd", "ihr-34b"]],
+  ]);
+});
+
+test("검색어가 있으면 제목이 맞은 이슈가 우선순위와 관계없이 같은 묶음의 본문에서만 맞은 이슈보다 앞에 온다", () => {
+  const groups = issueListGroups(
+    [
+      issue("demo-1", { ready: true, priority: 0 }),
+      issue("demo-2", { ready: true, priority: 3, title: "Login 오류" }),
+      issue("demo-3", { status: "in_progress", priority: 0 }),
+      issue("demo-4", { status: "in_progress", priority: 4, title: "login 화면" }),
+    ],
+    NO_WAITERS,
+    "login",
+  );
+
+  expect(groups.map(({ state, issues }) => [state, issues.map(({ id }) => id)])).toEqual([
+    ["in_progress", ["demo-4", "demo-3"]],
+    ["ready", ["demo-2", "demo-1"]],
+  ]);
+});
+
+test("검색어가 있어도 같은 순위 안에서는 기존 정렬 규칙과 상하위 배치를 따른다", () => {
+  const groups = issueListGroups(
+    [
+      issue("hit-parent", { ready: true, priority: 2 }),
+      issue("hit-other", { ready: true, priority: 1 }),
+      issue("hit-child", { ready: true, priority: 0, parent: "hit-parent" }),
+      issue("body-parent", { ready: true, priority: 3 }),
+      issue("body-other", { ready: true, priority: 2 }),
+      issue("body-child", { ready: true, priority: 0, parent: "body-parent" }),
+    ],
+    NO_WAITERS,
+    "hit",
+  );
+
+  expect(groups.map(({ state, issues }) => [state, issues.map(({ id }) => id)])).toEqual([
+    ["ready", ["hit-other", "hit-parent", "hit-child", "body-other", "body-parent", "body-child"]],
+  ]);
+});
+
+test("검색어가 비어 있으면 묶음 안 순서는 검색어를 넘기지 않았을 때와 같다", () => {
+  const ids = (search?: string) =>
+    issueListGroups(closedSearchResult, NO_WAITERS, search).map(({ issues }) =>
+      issues.map(({ id }) => id),
+    );
+
+  expect(ids("  ")).toEqual([["ihr-rl7", "ihr-0iy", "ihr-t2dd", "ihr-34b"]]);
+  expect(ids("  ")).toEqual(ids());
+});
+
+test("검색어로 순서를 바꿔도 묶음마다 든 이슈와 개수는 그대로다", () => {
+  const issues = [
+    ...closedSearchResult,
+    issue("ihr-ready", { ready: true }),
+    issue("ihr-0iy-follow", { ready: true, parent: "ihr-ready" }),
+  ];
+  const membership = (search?: string) =>
+    issueListGroups(issues, NO_WAITERS, search).map(({ state, issues: grouped }) => [
+      state,
+      grouped.map(({ id }) => id).sort(),
+    ]);
+
+  expect(membership("ihr-0iy")).toEqual(membership());
+});
