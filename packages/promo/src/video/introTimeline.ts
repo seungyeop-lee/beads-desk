@@ -83,7 +83,9 @@ export const TOUR: TourPlan = {
     // 그래프를 닫으면 이슈 상세로 돌아와 그 상세도 닫아야 하므로, 두 번 닫는 동안을 빼고 지금 화면으로 바로 잇습니다.
     { from: { after: "checkout-shown", ms: 150 }, to: { after: "close-graph", ms: -40 } },
     { from: { after: "issue-closed", ms: 100 }, to: { after: "open-decisions", ms: -40 } },
-    { from: { after: "decisions-shown", ms: 200 }, to: { after: "open-replaced", ms: -40 } },
+    // 연결된 이슈 링크는 마우스가 올라가면 툴팁을 띄웁니다. 실제 마우스는 클릭보다 capture.ts의 POINTER_PRESS_MS(350ms)만큼 앞서 링크에 닿으므로,
+    // 툴팁이 뜨기 전, 포인터가 링크 위에 멈춘 모습에서 구간을 끝냅니다.
+    { from: { after: "decisions-shown", ms: 200 }, to: { after: "open-replaced", ms: -480 } },
     { from: { after: "replaced-shown", ms: 100 }, to: { after: "replaced-shown", ms: 2700 } },
   ],
   focus: [

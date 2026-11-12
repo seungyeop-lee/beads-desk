@@ -65,6 +65,14 @@ const NOW: View = {
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   },
 };
+/** 검색어 없이 전체 탭을 연 이슈 목록입니다. 작업 상태 묶음, 유형 태그, 상태·우선순위 칩, epic 소속 표시가 한 화면에 보입니다. */
+const ISSUES: View = {
+  path: "/issues",
+  shows: [
+    "Build the checkout page with card and Apple Pay",
+    "epic · Checkout and billing ready for launch",
+  ],
+};
 const DECISIONS: View = { path: "/decisions", shows: ["Sign in with passwordless magic links"] };
 const HYGIENE: View = {
   path: "/hygiene",
@@ -162,6 +170,7 @@ function issueDetail(page: Page, id: string): Locator {
 
 /** README가 보여 주는 특장점마다 캡처할 화면과 소개 영상의 녹화입니다. 스크린샷을 모두 찍은 뒤, 이 순서대로 녹화합니다. */
 export const CAPTURE_TARGETS: CaptureTarget[] = [
+  { name: "issues", screenshot: ISSUES },
   { name: "now", screenshot: NOW },
   {
     // 응답을 입력한 채로 찍고 보내지 않으므로, 데모 workspace의 이슈는 바뀌지 않습니다.
