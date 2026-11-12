@@ -4,6 +4,17 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-11-12
+
+### Changed
+
+- Searching **Issues** now lists ID and title matches before body or comment matches within each group.
+- Issue pickers for linking, parent, or replacement issues now show the issue whose ID exactly matches the search first.
+
+### Fixed
+
+- Issue picker suggestions now change selection only when the mouse moves, so keyboard selection stays put when the list opens under the cursor.
+
 ## [0.18.1] - 2026-11-10
 
 ### Changed
