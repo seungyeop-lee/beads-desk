@@ -7,7 +7,7 @@ export const PICKER_LIMIT = 8;
 export type PickerOptions = {
   /** true를 돌려준 이슈는 후보에서 뺍니다. */
   exclude?: (issue: Issue) => boolean;
-  /** 후보 순서입니다. 없으면 최근에 고친 순서입니다. */
+  /** 후보 순서입니다. 없으면 최근에 고친 순서입니다. 검색어와 id가 정확히 같은 이슈는 이 순서와 상관없이 맨 앞에 둡니다. */
   rank?: (a: Issue, b: Issue) => number;
 };
 
@@ -18,10 +18,11 @@ export function pickerCandidates(
   { exclude, rank = byRecentlyUpdated }: PickerOptions = {},
 ): Issue[] {
   const search = normalizeQuery(query);
+  const isExactId = (issue: Issue) => search !== "" && issue.id.toLowerCase() === search;
   return issues
     .filter((issue) => !exclude?.(issue))
     .filter((issue) => (search === "" ? issue.status !== "closed" : matchesQuery(issue, search)))
-    .sort(rank)
+    .sort((a, b) => Number(isExactId(b)) - Number(isExactId(a)) || rank(a, b))
     .slice(0, PICKER_LIMIT);
 }
 

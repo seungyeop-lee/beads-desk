@@ -49,3 +49,57 @@ test("epicsFirst는 에픽을 먼저 두고, 그 안에서는 최근에 고친 �
     "task-new",
   ]);
 });
+
+test("검색어와 id가 대소문자 없이 정확히 같은 이슈를 최근에 고친 순서와 상관없이 첫 후보로 둔다", () => {
+  const issues = [
+    issue("demo-kg8", { updatedAt: 1 }),
+    issue("demo-kg8t", { updatedAt: 3 }),
+    issue("other", { title: "demo-kg8 후속", updatedAt: 2 }),
+  ];
+
+  expect(ids(pickerCandidates(issues, " DEMO-KG8 "))).toEqual(["demo-kg8", "demo-kg8t", "other"]);
+});
+
+test("epicsFirst에서도 검색어와 id가 정확히 같은 이슈를 에픽보다 앞에 둔다", () => {
+  const issues = [
+    issue("demo-1", { updatedAt: 1 }),
+    issue("demo-10", { issueType: "epic", updatedAt: 2 }),
+    issue("demo-11", { updatedAt: 3 }),
+  ];
+
+  expect(ids(pickerCandidates(issues, "demo-1", { rank: epicsFirst }))).toEqual([
+    "demo-1",
+    "demo-10",
+    "demo-11",
+  ]);
+});
+
+test("맞는 이슈가 후보 수 제한을 넘어도 검색어와 id가 정확히 같은 이슈는 후보에 넣는다", () => {
+  const prefixed = Array.from({ length: PICKER_LIMIT + 2 }, (_, index) =>
+    issue(`demo-1${index}`, { updatedAt: index + 1 }),
+  );
+  const issues = [issue("demo-1", { updatedAt: 0 }), ...prefixed];
+
+  const candidates = pickerCandidates(issues, "demo-1");
+
+  expect(candidates).toHaveLength(PICKER_LIMIT);
+  expect(ids(candidates)[0]).toBe("demo-1");
+});
+
+test("검색어와 id가 정확히 같은 이슈가 없으면 rank 순서를 그대로 따른다", () => {
+  const issues = [
+    issue("demo-10", { updatedAt: 1 }),
+    issue("demo-11", { updatedAt: 3 }),
+    issue("demo-12", { updatedAt: 2 }),
+  ];
+
+  expect(ids(pickerCandidates(issues, "demo-1"))).toEqual(["demo-11", "demo-12", "demo-10"]);
+});
+
+test("뺄 이슈는 검색어와 id가 정확히 같아도 후보에 넣지 않는다", () => {
+  const issues = [issue("demo-1", { updatedAt: 1 }), issue("demo-10", { updatedAt: 2 })];
+
+  const candidates = pickerCandidates(issues, "demo-1", { exclude: (it) => it.id === "demo-1" });
+
+  expect(ids(candidates)).toEqual(["demo-10"]);
+});
