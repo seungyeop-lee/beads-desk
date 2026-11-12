@@ -111,7 +111,8 @@ export function IssuePicker({ label, placeholder, disabled, onPick, exclude, ran
                 event.preventDefault();
                 void pick(issue);
               }}
-              onPointerEnter={() => setActive(index)}
+              // 목록이 멈춘 커서 아래에 열려도 browser가 pointerenter를 보내므로, 커서가 움직였을 때만 선택을 바꿉니다.
+              onPointerMove={() => setActive(index)}
             >
               <span className={`tone-dot ${typeTone(issue.issueType)}`} />
               <span className="shrink-0 font-mono text-xs text-emphasis-60">{issue.id}</span>
