@@ -4,9 +4,18 @@
 
 에이전트가 [Beads](https://github.com/gastownhall/beads)(`bd`)에 남긴 기록을 검토하는 로컬 웹 UI입니다. 에이전트가 세운 계획, 기록한 결정, 첨부한 그림과 스크린샷, 사람에게 남긴 질문을 브라우저에서 읽을 수 있습니다. 사용자와 에이전트가 터미널에서 `bd`를 쓰는 동안에도, 같은 이슈를 브라우저에서 보고 고칠 수 있습니다.
 
-[![beads-desk demo starting at the top of the Now screen and moving down to its due dates and bottlenecks, then opening an issue due today: its blocks graph, a sequence diagram enlarged from the checkout issue it waits on, a screenshot attached to that issue, and a payment decision with the earlier decision it replaced](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/e4c59e77a8712d7d5d362a8c433cc4a35128426d/docs/beads-desk-intro.gif)](https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4)
+[![beads-desk demo starting at the top of the Now screen and moving down to its due dates and bottlenecks, then opening an issue due today: its blocks graph, a sequence diagram enlarged from the checkout issue it waits on, a screenshot attached to that issue, and a payment decision with the earlier decision it replaced](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/beads-desk-intro.gif)](https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4)
 
 ## 기능
+
+### 작업 상태별로 모든 이슈 보기
+
+- **이슈** 화면은 모든 이슈를 **진행 중**, **바로 작업 가능**, **막힘**, **보류**, **닫힘** 같은 작업 상태로 묶어 보여 줍니다. 탭으로 상태 하나나 **병목** 보기만 골라 볼 수 있습니다.
+- 유형, 라벨, 생성일이나 닫은 날짜, **epic 미소속만**으로 목록을 좁힙니다. 에픽에 속한 이슈에는 그 에픽으로 가는 링크가 붙습니다.
+- 검색은 ID, 제목, 본문, 댓글까지 찾고, 검색어가 본문이나 댓글의 어디에 나오는지 함께 보여 줍니다.
+- 이슈의 상태와 우선순위는 목록에서 바로 바꿉니다.
+
+![Issues screen grouping all issues by work state, with view tabs, filters, type tags, status and priority chips, and the epic each issue belongs to](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/issues.png)
 
 ### 먼저 풀어야 할 일 찾기
 
@@ -15,7 +24,7 @@
 - 전체 목록은 **이슈** 화면의 **병목** 보기에 있습니다.
 - 같은 화면에서 진행 중·바로 작업 가능·막힌 이슈 수, 최근 7일 차트, 에픽 진행률도 볼 수 있습니다.
 
-![Now screen with due dates grouped into overdue, due today, and the next 3 days, bottlenecks sorted by how many issues wait on them, and epic progress bars](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/now.png)
+![Now screen with due dates grouped into overdue, due today, and the next 3 days, bottlenecks sorted by how many issues wait on them, and epic progress bars](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/now.png)
 
 ### 계획을 단계별로 검토하기
 
@@ -23,7 +32,7 @@
 - human gate와 에픽 밖에서 막고 있는 이슈도 같은 그래프에 나옵니다.
 - **선행·후속 그래프**는 어느 이슈에서든 그 이슈 앞뒤의 작업을 이어 보여 줍니다.
 
-![View order for an epic arranging its issues into five stages, with a human gate holding the last stage](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/graph.png)
+![View order for an epic arranging its issues into five stages, with a human gate holding the last stage](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/graph.png)
 
 ### 에이전트가 첨부한 자료 읽기
 
@@ -33,16 +42,16 @@
 - `.diff`와 `.patch` 링크는 바뀐 파일을 트리로 보여 주고 긴 줄을 줄바꿈하는 [diff 화면](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#diff-화면)으로 열립니다.
 - 이 링크들 옆의 chevron 버튼은 [문단 아래에 파일 내용을 펼칩니다](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#이슈-화면에서-파일-내용-펼치기). JSON과 JSONL은 Pretty로 시작하고 강조한 원문으로 전환하거나 다시 돌아올 수 있습니다.
 
-![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/d7146df42d7bd90adfbe0e01a06cd4e1317cfe66/docs/screenshots/attachments.png)
+![Issue detail showing a Mermaid sequence diagram, a screenshot of a checkout page from a local file, and links to a Markdown note and a diff, each with a chevron button, expanded below the paragraph: the note with syntax highlighting and the diff with line numbers and the changed words highlighted](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/attachments.png)
 
-![Diff page for a git format-patch file, with the commit subject and a tree of changed files on the left and the diff on the right, its long lines wrapped and marked](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/1c5ac6ae9782a5fdea14de341b56b1acdfbf70f4/docs/screenshots/diff.png)
+![Diff page for a git format-patch file, with the commit subject and a tree of changed files on the left and the diff on the right, its long lines wrapped and marked](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/diff.png)
 
 ### 결정 기록 남기기
 
 - `decision` 타입 이슈를 따로 모아 유효한 결정과 닫힌 결정으로 나눠 보여 줍니다.
 - 결정마다 그 결정이 대체한 결정과 그 결정을 대체한 결정이 링크로 나옵니다.
 
-![Decisions screen splitting active and closed decisions, with supersedes and superseded-by links](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/decisions.png)
+![Decisions screen splitting active and closed decisions, with supersedes and superseded-by links](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/decisions.png)
 
 ### 에이전트의 질문에 답하기
 
@@ -50,7 +59,7 @@
 - 이 화면에서 바로 응답하거나 응답 없이 닫을 수 있습니다. 확인 요청을 닫으면 그 뒤에 있던 작업이 풀립니다.
 - [브라우저 알림](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#브라우저-알림)을 켜면 다른 창에서 일하는 중에도 새 항목을 알 수 있습니다.
 
-![Needs human screen with a response typed for the selected gate and the task that gate blocks](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/needs-human.png)
+![Needs human screen with a response typed for the selected gate and the task that gate blocks](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/needs-human.png)
 
 ### 자리를 비운 동안 생긴 일 보기
 
@@ -58,20 +67,19 @@
 - 이슈를 고친 기록(설명, 상태, 제목, 라벨 등)과 지운 기록은 `bd config set events-journal true`로 bd의 events journal을 켜면, 켠 뒤에 생긴 변경부터 함께 보입니다.
 - **여기부터 지난번에 본 기록** 구분선이 지난번에 어디까지 봤는지 표시합니다.
 
-![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/activity.png)
+![Activity screen listing issues created, closed, and commented on today, with a Seen on your last visit divider above older records](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/activity.png)
 
 ### 트래커 정리하기
 
 - **정리** 화면은 오래 방치된 이슈, 커밋에 언급됐지만 아직 열린 이슈, `bd`가 권하는 섹션이 빠진 이슈, 중복 후보, 닫을 수 있는 에픽을 찾아 줍니다.
 - 중복 후보는 같은 화면에서 중복으로 닫을 수 있습니다.
 
-![Hygiene screen with stale issues, possible duplicates, missing sections, epics ready to close, and orphaned issues](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/2f2042aeb264d5b5895d3dd01032f0616a465589/docs/screenshots/hygiene.png)
+![Hygiene screen with stale issues, possible duplicates, missing sections, epics ready to close, and orphaned issues](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/hygiene.png)
 
 ### 그 밖의 기능
 
 | 화면 | 보여 주는 것                                            |
 | ---- | ------------------------------------------------------- |
-| 이슈 | 작업 상태별 전체 이슈, 필터, 본문과 댓글까지 찾는 검색  |
 | 에픽 | 열린 에픽과 닫힌 에픽의 진행률, ID나 제목으로 찾는 검색 |
 | 보드 | 끌어 놓아 상태를 바꾸는 카드                            |
 
