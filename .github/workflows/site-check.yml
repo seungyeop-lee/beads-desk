@@ -1,0 +1,38 @@
+name: site-check
+
+on:
+  pull_request:
+    paths:
+      - packages/site/**
+      - docs/screenshots/**
+      - docs/beads-desk-intro.mp4
+      - docs/beads-desk-intro.gif
+      - .github/workflows/site-check.yml
+  push:
+    branches: [main]
+    paths:
+      - packages/site/**
+      - docs/screenshots/**
+      - docs/beads-desk-intro.mp4
+      - docs/beads-desk-intro.gif
+      - .github/workflows/site-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  site-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @beads-desk/site run typecheck
+      - run: pnpm exec oxlint packages/site
+      - run: pnpm exec eslint packages/site
+      - run: pnpm exec oxfmt --check packages/site
+      - run: pnpm exec vitest run packages/site

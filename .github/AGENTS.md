@@ -78,6 +78,14 @@ act로는 배포할 파일을 묶는 단계까지만 확인할 수 있습니다.
 act workflow_dispatch -W .github/workflows/pages.yml -j pages-artifact -P ubuntu-latest=catthehacker/ubuntu:act-latest --artifact-server-path /tmp/act-artifacts --rm
 ```
 
+## site-check.yml
+
+`packages/site/**`, `docs/screenshots/**`, `docs/beads-desk-intro.mp4`, `docs/beads-desk-intro.gif`, 또는 이 workflow가 바뀌면 `packages/site`의 `typecheck`, `lint`, `format:check`, Vitest 테스트(`siteExport.test.ts` 등)를 실행합니다. PR과 `main` push에서 이 경로들만 바뀐 경우에는 `check.yml`이 `paths-ignore`로 건너뛰어지고 이 workflow만 실행됩니다.
+
+```sh
+act pull_request -W .github/workflows/site-check.yml -j site-check -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
+```
+
 ## site-deploy.yml
 
 `main` 브랜치에 push한 커밋에서 `packages/site/**`, `docs/beads-desk-intro.mp4`, `docs/screenshots/**`, 또는 이 workflow가 바뀌면 `packages/site`를 빌드해 Cloudflare Pages(`beads-desk`)로 배포합니다.
