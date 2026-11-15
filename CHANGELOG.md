@@ -4,6 +4,16 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-11-15
+
+### Changed
+
+- Dependency graphs now pan just enough to keep a selected issue in view when the side detail panel covers it.
+
+### Fixed
+
+- Closed issue cards in dependency graphs now use a distinct background color and a struck-through title to stand out from open cards.
+
 ## [0.19.0] - 2026-11-12
 
 ### Changed
