@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "sync-assets": "node scripts/sync-assets.mjs",
+    "generate:og": "node scripts/generate-og-assets.mjs",
     "predev": "pnpm run sync-assets",
     "dev": "next dev",
     "prebuild": "pnpm run sync-assets",

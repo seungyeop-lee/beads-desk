@@ -13,18 +13,21 @@ const LOCALES = [
     htmlPath: "index.html",
     canonicalUrl: `${SITE_URL}/`,
     ogLocale: "en_US",
+    ogImageUrl: `${SITE_URL}/og/en.png`,
   },
   {
     locale: "ko",
     htmlPath: "ko/index.html",
     canonicalUrl: `${SITE_URL}/ko/`,
     ogLocale: "ko_KR",
+    ogImageUrl: `${SITE_URL}/og/ko.png`,
   },
   {
     locale: "ja",
     htmlPath: "ja/index.html",
     canonicalUrl: `${SITE_URL}/ja/`,
     ogLocale: "ja_JP",
+    ogImageUrl: `${SITE_URL}/og/ja.png`,
   },
 ] as const;
 
@@ -55,6 +58,15 @@ function readOutFile(relativePath: string): string {
   return fs.readFileSync(path.join(OUT_DIR, relativePath), "utf8");
 }
 
+function readPngDimensions(relativePath: string): { width: number; height: number } {
+  const buffer = fs.readFileSync(path.join(OUT_DIR, relativePath));
+  expect(buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))).toBe(true);
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
 function extractMetaContent(html: string, attrName: "name" | "property", key: string): string {
   const tags = html.match(/<meta\b[^>]*>/gi) ?? [];
   for (const tag of tags) {
@@ -72,7 +84,7 @@ describe("정적 랜딩 사이트 export 검증", () => {
     execSync("pnpm run build", { cwd: SITE_DIR, stdio: "pipe" });
   }, 60_000);
 
-  test("세 언어 페이지와 SEO 파일 및 미디어 자산을 모두 생성한다", () => {
+  test("세 언어 페이지와 SEO·아이콘·OG 이미지 및 미디어 자산을 모두 생성한다", () => {
     const expectedFiles = [
       "index.html",
       "ko/index.html",
@@ -80,6 +92,11 @@ describe("정적 랜딩 사이트 export 검증", () => {
       "sitemap.xml",
       "robots.txt",
       "icon.svg",
+      "icon.png",
+      "apple-icon.png",
+      "og/en.png",
+      "og/ko.png",
+      "og/ja.png",
       "media/beads-desk-intro.mp4",
       ...SCREENSHOT_FILES.map((file) => `media/screenshots/${file}`),
     ];
@@ -87,13 +104,21 @@ describe("정적 랜딩 사이트 export 검증", () => {
     for (const file of expectedFiles) {
       expect(fs.existsSync(path.join(OUT_DIR, file)), `${file} 생성 여부`).toBe(true);
     }
+
+    for (const { locale } of LOCALES) {
+      expect(readPngDimensions(`og/${locale}.png`)).toEqual({ width: 1200, height: 630 });
+    }
+    expect(readPngDimensions("apple-icon.png")).toEqual({ width: 180, height: 180 });
+    expect(readPngDimensions("icon.png")).toEqual({ width: 96, height: 96 });
   });
 
-  test("언어별 HTML은 고유 title, description, canonical, hreflang, OG, Twitter, JSON-LD를 포함한다", () => {
+  test("언어별 HTML은 고유 title, 공유용 og:title, description, canonical, hreflang, OG 이미지, 아이콘, JSON-LD를 포함한다", () => {
     const titles = new Set<string>();
+    const ogTitles = new Set<string>();
     const descriptions = new Set<string>();
+    const ogImageAlts = new Set<string>();
 
-    for (const { locale, htmlPath, canonicalUrl, ogLocale } of LOCALES) {
+    for (const { locale, htmlPath, canonicalUrl, ogLocale, ogImageUrl } of LOCALES) {
       const html = readOutFile(htmlPath);
 
       const langMatch = html.match(/<html[^>]*\blang="([^"]+)"/i);
@@ -114,20 +139,49 @@ describe("정적 랜딩 사이트 export 검증", () => {
       expect(html).toContain(`<link rel="alternate" hrefLang="ja" href="${SITE_URL}/ja/"`);
       expect(html).toContain(`<link rel="alternate" hrefLang="x-default" href="${SITE_URL}/"`);
 
-      expect(extractMetaContent(html, "property", "og:title")).toBe(title);
+      const ogTitle = extractMetaContent(html, "property", "og:title");
+      expect(ogTitle.length).toBeGreaterThan(10);
+      expect(ogTitle.length).toBeLessThanOrEqual(45);
+      ogTitles.add(ogTitle);
+
       expect(extractMetaContent(html, "property", "og:description")).toBe(description);
       expect(extractMetaContent(html, "property", "og:url")).toBe(canonicalUrl);
       expect(extractMetaContent(html, "property", "og:locale")).toBe(ogLocale);
-      expect(extractMetaContent(html, "property", "og:image")).toBe(
-        `${SITE_URL}/media/screenshots/now.png`,
-      );
+      expect(extractMetaContent(html, "property", "og:image")).toBe(ogImageUrl);
+      expect(extractMetaContent(html, "property", "og:image:type")).toBe("image/png");
+      expect(extractMetaContent(html, "property", "og:image:width")).toBe("1200");
+      expect(extractMetaContent(html, "property", "og:image:height")).toBe("630");
+
+      const ogImageAlt = extractMetaContent(html, "property", "og:image:alt");
+      expect(ogImageAlt.length).toBeGreaterThan(10);
+      ogImageAlts.add(ogImageAlt);
 
       expect(extractMetaContent(html, "name", "twitter:card")).toBe("summary_large_image");
-      expect(extractMetaContent(html, "name", "twitter:title")).toBe(title);
+      expect(extractMetaContent(html, "name", "twitter:title")).toBe(ogTitle);
       expect(extractMetaContent(html, "name", "twitter:description")).toBe(description);
-      expect(extractMetaContent(html, "name", "twitter:image")).toBe(
-        `${SITE_URL}/media/screenshots/now.png`,
-      );
+      expect(extractMetaContent(html, "name", "twitter:image")).toBe(ogImageUrl);
+      expect(extractMetaContent(html, "name", "twitter:image:alt")).toBe(ogImageAlt);
+
+      const linkTags = html.match(/<link\b[^>]*>/gi) ?? [];
+      expect(
+        linkTags.some((tag) => /\brel="icon"/i.test(tag) && /\btype="image\/svg\+xml"/i.test(tag)),
+      ).toBe(true);
+      expect(
+        linkTags.some(
+          (tag) =>
+            /\brel="icon"/i.test(tag) &&
+            /\btype="image\/png"/i.test(tag) &&
+            /\bsizes="96x96"/i.test(tag),
+        ),
+      ).toBe(true);
+      expect(
+        linkTags.some(
+          (tag) =>
+            /\brel="apple-touch-icon"/i.test(tag) &&
+            /\btype="image\/png"/i.test(tag) &&
+            /\bsizes="180x180"/i.test(tag),
+        ),
+      ).toBe(true);
 
       const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/i);
       expect(jsonLdMatch).not.toBeNull();
@@ -136,10 +190,14 @@ describe("정적 랜딩 사이트 export 검증", () => {
       expect(jsonLd.name).toBe("beads-desk");
       expect(jsonLd.url).toBe(canonicalUrl);
       expect(jsonLd.inLanguage).toBe(locale);
+      expect(jsonLd.image).toBe(ogImageUrl);
+      expect(jsonLd.screenshot).toBe(`${SITE_URL}/media/screenshots/now.png`);
     }
 
     expect(titles.size).toBe(3);
+    expect(ogTitles.size).toBe(3);
     expect(descriptions.size).toBe(3);
+    expect(ogImageAlts.size).toBe(3);
   });
 
   test("시맨틱 구조, 핵심 기능 9종, 빠른 시작 명령, 정책 제약을 지킨다", () => {
