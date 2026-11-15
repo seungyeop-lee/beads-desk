@@ -8,8 +8,10 @@ import {
   INITIAL_MAX_ZOOM,
   INITIAL_MIN_ZOOM,
   issueFocus,
+  revealIssueViewport,
   STAGE_LABEL_HEIGHT,
   stageFocus,
+  VIEWPORT_MARGIN,
 } from "./graphViewport";
 
 /** 배치 결과가 nodeOf를 함께 돌려주므로, 직접 만드는 배치에도 같은 맵을 채웁니다. */
@@ -149,4 +151,53 @@ test("전체가 들어가는 그래프는 기준 이슈나 진행 중 단계가 
   expect(
     initialGraphViewport(layout, 900, 600, true, stageFocus(layout, { total: 2, current: 1 })),
   ).toEqual(centered);
+});
+
+test("선택 이슈 노드가 이미 캔버스 안에 온전히 들어가 있으면 viewport를 옮기지 않는다", () => {
+  const viewport = { x: 10, y: 15, zoom: 1 };
+  expect(revealIssueViewport(viewport, layout, "a", 400, 300)).toBe(viewport);
+});
+
+test("선택 이슈 노드가 오른쪽이나 아래로 가려지면 가려진 축만 최소 거리로 옮기고 배율과 안 가려진 축은 유지한다", () => {
+  const tall = withNodeOf({
+    ...layout,
+    nodes: [
+      { issue: issue("a"), x: 0, y: 0, height: 140 },
+      { issue: issue("b"), x: 352, y: 80, height: 100 },
+    ],
+  });
+  const viewport = { x: 20, y: 30, zoom: 0.75 };
+  const shiftedRight = revealIssueViewport(viewport, tall, "b", 380, 400);
+  expect(shiftedRight.zoom).toBe(0.75);
+  expect(shiftedRight.y).toBe(30);
+  expect(shiftedRight.x + (352 + NODE_WIDTH) * 0.75).toBe(380 - VIEWPORT_MARGIN);
+
+  const shiftedBoth = revealIssueViewport(viewport, tall, "b", 380, 150);
+  expect(shiftedBoth.zoom).toBe(0.75);
+  expect(shiftedBoth.x + (352 + NODE_WIDTH) * 0.75).toBe(380 - VIEWPORT_MARGIN);
+  expect(shiftedBoth.y + (80 + 100) * 0.75).toBe(150 - Math.min(VIEWPORT_MARGIN, (150 - 75) / 2));
+});
+
+test("선택 이슈 노드가 왼쪽이나 위로 가려지면 해당 축만 최소 거리로 옮긴다", () => {
+  const viewport = { x: -100, y: -50, zoom: 1 };
+  const shifted = revealIssueViewport(viewport, layout, "a", 500, 400);
+  expect(shifted).toEqual({ x: VIEWPORT_MARGIN, y: VIEWPORT_MARGIN, zoom: 1 });
+});
+
+test("캔버스가 좁아 표준 여백을 다 둘 수 없으면 반대쪽 끝이 잘리지 않는 여백으로 맞춘다", () => {
+  const viewport = { x: 0, y: 50, zoom: 1.25 };
+  // NODE_WIDTH * 1.25 = 350, 캔버스 폭 380이면 양쪽 여유가 15px씩이다.
+  const shifted = revealIssueViewport(viewport, layout, "b", 380, 400);
+  expect(shifted.y).toBe(50);
+  expect(shifted.x + 352 * 1.25).toBe(15);
+  expect(shifted.x + (352 + NODE_WIDTH) * 1.25).toBe(365);
+});
+
+test("노드가 캔버스보다 큰 축은 그 축 중앙에 맞추고, 그래프에 없는 이슈나 빈 캔버스는 그대로 둔다", () => {
+  const viewport = { x: 20, y: 40, zoom: 1.25 };
+  const centeredX = revealIssueViewport(viewport, layout, "a", 320, 400);
+  expect(centeredX.y).toBe(40);
+  expect(centeredX.x + (NODE_WIDTH / 2) * 1.25).toBe(160);
+  expect(revealIssueViewport(viewport, layout, "missing", 320, 400)).toBe(viewport);
+  expect(revealIssueViewport(viewport, layout, "a", 0, 400)).toBe(viewport);
 });

@@ -27,7 +27,12 @@ vi.mock("@/client/ui/issues/IssueDetailRoute", async () => ({
     "/graph",
   ),
   IssueDetailRoute: () =>
-    detailShown ? <section aria-label="상세 자리" className="h-96 w-full shrink-0" /> : null,
+    detailShown ? (
+      <section
+        aria-label="상세 자리"
+        className="h-96 w-full shrink-0 xl:h-auto xl:w-[min(64rem,70%)]"
+      />
+    ) : null,
 }));
 vi.mock("next/navigation", async () =>
   (await import("@/client/ui/address/screenAddressMocks.testkit")).nextNavigationMock({
@@ -1360,6 +1365,164 @@ test("선후 관계 없음 목록과 그래프 노드는 긴 제목을 끝까지
   expectWholeTitle(
     cardOf(canvas, LONG_PLAN_TITLE).getByText(LONG_PLAN_TITLE, { exact: true }).element(),
   );
+});
+
+for (const [scope, scopeId, firstId, obscuredId] of [
+  ["epic", "rev-epic", "rev-1", "rev-4"],
+  ["center", "rev-1", "rev-1", "rev-4"],
+] as const)
+  test(`데스크톱 ${scope} 그래프에서 상세가 열려 선택 이슈가 가려지면 세로 위치와 배율은 유지한 채 가리지 않는 위치까지만 이동한다`, async () => {
+    await page.viewport(1440, 900);
+    const screen = await renderGraph(
+      scope,
+      scopeId,
+      graphData(
+        {
+          "rev-epic": { title: "가시성 에픽", issueType: "epic" },
+          "rev-1": { title: "가시성 첫째", parent: "rev-epic" },
+          "rev-2": { title: "가시성 둘째", parent: "rev-epic" },
+          "rev-3": { title: "가시성 셋째", parent: "rev-epic" },
+          "rev-4": { title: "가시성 넷째", parent: "rev-epic" },
+        },
+        [
+          ["rev-2", "rev-1"],
+          ["rev-3", "rev-2"],
+          ["rev-4", "rev-3"],
+        ],
+      ),
+    );
+    const rerender = () =>
+      screen.rerender(
+        <LocaleProvider locale="ko">
+          <GraphScreen />
+          <TooltipLayer />
+        </LocaleProvider>,
+      );
+    const canvas = screen.getByRole("region", { name: "의존 그래프" });
+    const pane = () => canvas.element().querySelector<HTMLElement>(reactFlowDom.pane)!;
+    const nodeOf = (id: string) =>
+      canvas.element().querySelector<HTMLElement>(reactFlowDom.nodeOf(id))!;
+    const insidePane = (id: string) => {
+      const p = pane().getBoundingClientRect();
+      const b = nodeOf(id).getBoundingClientRect();
+      return b.left >= p.left && b.right <= p.right && b.top >= p.top && b.bottom <= p.bottom;
+    };
+
+    await expect.poll(() => insidePane(obscuredId)).toBe(true);
+
+    detailShown = true;
+    try {
+      // 1. 초기 상태에서도 오른쪽 상세 때문에 가려질 수 있는 마지막 단계 이슈가 캔버스 안에 보인다.
+      address = new URLSearchParams({ [scope]: scopeId, issue: obscuredId });
+      await rerender();
+      await expect.element(screen.getByRole("region", { name: "상세 자리" })).toBeVisible();
+      await expect.poll(() => insidePane(obscuredId)).toBe(true);
+
+      // 2. 이미 상세가 열린 상태에서 가려진 다른 이슈로 바꾸면 그 이슈가 캔버스 안으로 들어온다.
+      address = new URLSearchParams({ [scope]: scopeId, issue: firstId });
+      await rerender();
+      await expect.poll(() => insidePane(firstId)).toBe(true);
+
+      // 상세를 닫아 전체 폭이 돌아온 뒤 수동으로 조금 옮겨 두면, 다시 상세를 열었을 때 세로 위치·배율 유지와 최소 이동을 확인한다.
+      detailShown = false;
+      address = new URLSearchParams({ [scope]: scopeId });
+      await rerender();
+      await expect
+        .element(screen.getByRole("region", { name: "상세 자리" }))
+        .not.toBeInTheDocument();
+      await expect.poll(() => insidePane(obscuredId)).toBe(true);
+
+      // 왼쪽 아래로 살짝 끌어 viewportChosen을 켜면서도 첫째·넷째가 모두 보이는 상태를 만든다.
+      await userEvent.dragAndDrop(canvas, canvas, {
+        sourcePosition: { x: 80, y: 80 },
+        targetPosition: { x: 100, y: 120 },
+      });
+      const zoomBefore = graphZoom(screen);
+      const obscuredTopBefore = nodeOf(obscuredId).getBoundingClientRect().top;
+
+      detailShown = true;
+      address = new URLSearchParams({ [scope]: scopeId, issue: obscuredId });
+      await rerender();
+      await expect.poll(() => insidePane(obscuredId)).toBe(true);
+      expect(graphZoom(screen)).toBe(zoomBefore);
+      expect(nodeOf(obscuredId).getBoundingClientRect().top).toBeCloseTo(obscuredTopBefore, 0);
+
+      // 오른쪽 가림이 해소된 상태에서는 정중앙이 아니라 오른쪽 여백 안쪽에 자리 잡는다.
+      const p = pane().getBoundingClientRect();
+      const b = nodeOf(obscuredId).getBoundingClientRect();
+      expect(b.right).toBeLessThanOrEqual(p.right);
+      expect(b.right).toBeGreaterThan(p.left + p.width / 2);
+    } finally {
+      detailShown = false;
+    }
+  });
+
+test("데스크톱 그래프에서 상세가 열려도 선택 이슈가 이미 보이는 영역 안에 있으면 위치를 옮기지 않는다", async () => {
+  await page.viewport(1440, 900);
+  const screen = await renderGraph(
+    "epic",
+    "keep-epic",
+    graphData(
+      {
+        "keep-epic": { title: "유지 에픽", issueType: "epic" },
+        "keep-1": { title: "유지 첫째", parent: "keep-epic" },
+        "keep-2": { title: "유지 둘째", parent: "keep-epic" },
+        "keep-3": { title: "유지 셋째", parent: "keep-epic" },
+        "keep-4": { title: "유지 넷째", parent: "keep-epic" },
+        "keep-alone": { title: "유지 독립", parent: "keep-epic" },
+      },
+      [
+        ["keep-2", "keep-1"],
+        ["keep-3", "keep-2"],
+        ["keep-4", "keep-3"],
+      ],
+    ),
+  );
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  const pane = () => canvas.element().querySelector<HTMLElement>(reactFlowDom.pane)!;
+  const nodeOf = (id: string) =>
+    canvas.element().querySelector<HTMLElement>(reactFlowDom.nodeOf(id))!;
+  await expect.poll(() => nodeOf("keep-1")).toBeTruthy();
+
+  // 사용자가 세로로만 살짝 끌어 viewportChosen을 켠 뒤에도 첫째 노드는 상세가 열릴 때 남는 왼쪽 폭 안에 온전히 들어간다.
+  await userEvent.dragAndDrop(canvas, canvas, {
+    sourcePosition: { x: 80, y: 80 },
+    targetPosition: { x: 80, y: 120 },
+  });
+  const transformBefore = canvas.element().querySelector<HTMLElement>(reactFlowDom.viewport)!
+    .style.transform;
+  expect(
+    nodeOf("keep-1").getBoundingClientRect().right - pane().getBoundingClientRect().left,
+  ).toBeLessThan(360);
+
+  detailShown = true;
+  try {
+    address = new URLSearchParams({ epic: "keep-epic", issue: "keep-1" });
+    await screen.rerender(
+      <LocaleProvider locale="ko">
+        <GraphScreen />
+        <TooltipLayer />
+      </LocaleProvider>,
+    );
+    await expect.poll(() => pane().getBoundingClientRect().width).toBeLessThan(500);
+    expect(
+      canvas.element().querySelector<HTMLElement>(reactFlowDom.viewport)!.style.transform,
+    ).toBe(transformBefore);
+
+    // 그래프 노드가 아닌 독립 이슈로 바뀌어도 오류 없이 기존 위치를 유지한다.
+    address = new URLSearchParams({ epic: "keep-epic", issue: "keep-alone" });
+    await screen.rerender(
+      <LocaleProvider locale="ko">
+        <GraphScreen />
+        <TooltipLayer />
+      </LocaleProvider>,
+    );
+    expect(
+      canvas.element().querySelector<HTMLElement>(reactFlowDom.viewport)!.style.transform,
+    ).toBe(transformBefore);
+  } finally {
+    detailShown = false;
+  }
 });
 
 function copyButton(scope: Locator, id: string) {

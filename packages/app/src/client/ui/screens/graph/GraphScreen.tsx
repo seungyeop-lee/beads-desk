@@ -53,6 +53,7 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
   const scopeTitle = data?.issues.find((issue) => issue.id === scope.id)?.title || scope.id;
   const title = `${scopeTitle} · ${messages.graph.scopes[scope.kind]}`;
 
+  const selectedIssueId = params.get(ISSUE_PARAM) || undefined;
   const withoutSide = new URLSearchParams(params);
   withoutSide.delete(SIDE_PARAM);
   const closeSidePanel = useCloseIssueSidePanel(params.has(SIDE_PARAM) ? `?${withoutSide}` : null);
@@ -109,6 +110,7 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
                   data={data}
                   epicId={scope.id}
                   issueHref={issueHref}
+                  selectedIssueId={selectedIssueId}
                 />
               ) : (
                 <BlockingChainGraph
@@ -116,6 +118,7 @@ function GraphDialog({ scope }: { scope: GraphScope }) {
                   data={data}
                   scope={scope}
                   issueHref={issueHref}
+                  selectedIssueId={selectedIssueId}
                 />
               ))}
           </div>
@@ -131,10 +134,12 @@ function BlockingChainGraph({
   data,
   scope,
   issueHref,
+  selectedIssueId,
 }: {
   data: GraphData;
   scope: GraphScope;
   issueHref: (issueId: string) => string;
+  selectedIssueId?: string;
 }) {
   const messages = useMessages();
   const graph = useMemo(() => {
@@ -165,6 +170,7 @@ function BlockingChainGraph({
             ready={ready}
             issueHref={issueHref}
             centerId={scope.id}
+            selectedIssueId={selectedIssueId}
           />
         </>
       ) : (

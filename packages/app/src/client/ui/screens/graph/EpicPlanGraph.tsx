@@ -23,10 +23,11 @@ type Props = {
   data: GraphData;
   epicId: string;
   issueHref: (issueId: string) => string;
+  selectedIssueId?: string;
 };
 
 /** 에픽의 후손 이슈를 단계로 나눠 그리고, 진행 요약, 순환 경고, 선후 관계가 없는 이슈를 함께 보입니다. */
-export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
+export function EpicPlanGraph({ data, epicId, issueHref, selectedIssueId }: Props) {
   const messages = useMessages();
   const plan = useMemo(() => epicPlan(data, epicId), [data, epicId]);
   // 대기 수는 다른 화면과 같은 값을 보이도록 에픽 밖 이슈까지 담은 전체 목록으로 셉니다.
@@ -99,6 +100,7 @@ export function EpicPlanGraph({ data, epicId, issueHref }: Props) {
               edgeLooks={edgeLooks}
               issueHref={issueHref}
               plan={graphPlan}
+              selectedIssueId={selectedIssueId}
             />
           ) : (
             <EmptyState

@@ -51,18 +51,59 @@ export function stageFocus(
     : { x: column + NODE_WIDTH / 2, y: -STAGE_LABEL_HEIGHT, anchor: "top" };
 }
 
+export type GraphViewport = { x: number; y: number; zoom: number };
+
 /** focus를 주어진 배율에서 화면에 맞추는 viewport입니다. */
 export function focusViewport(
   { x, y, anchor }: GraphFocus,
   width: number,
   height: number,
   zoom: number,
-) {
+): GraphViewport {
   return {
     x: width / 2 - x * zoom,
     y: (anchor === "center" ? height / 2 : VIEWPORT_MARGIN) - y * zoom,
     zoom,
   };
+}
+
+/**
+ * 선택된 이슈 노드가 현재 캔버스 크기 안에 온전히 들어가면 viewport를 그대로 돌려줍니다.
+ * 경계 밖으로 가려진 축이 있으면 배율과 가려지지 않은 축은 유지한 채 가려진 축만 최소 거리로 이동합니다.
+ */
+export function revealIssueViewport(
+  viewport: GraphViewport,
+  layout: GraphLayout,
+  issueId: string,
+  width: number,
+  height: number,
+): GraphViewport {
+  if (width <= 0 || height <= 0) return viewport;
+  const node = layout.nodeOf.get(issueId);
+  if (!node) return viewport;
+  const x = revealAxis(viewport.x, node.x, NODE_WIDTH, width, viewport.zoom);
+  const y = revealAxis(viewport.y, node.y, node.height, height, viewport.zoom);
+  if (x === viewport.x && y === viewport.y) return viewport;
+  return { x, y, zoom: viewport.zoom };
+}
+
+function revealAxis(
+  offset: number,
+  nodeStart: number,
+  nodeSize: number,
+  viewportSize: number,
+  zoom: number,
+): number {
+  const screenSize = nodeSize * zoom;
+  if (screenSize >= viewportSize) {
+    return viewportSize / 2 - (nodeStart + nodeSize / 2) * zoom;
+  }
+  const start = offset + nodeStart * zoom;
+  const end = start + screenSize;
+  if (start >= 0 && end <= viewportSize) return offset;
+  const pad = Math.min(VIEWPORT_MARGIN, (viewportSize - screenSize) / 2);
+  if (start < 0) return pad - nodeStart * zoom;
+  return viewportSize - pad - (nodeStart + nodeSize) * zoom;
 }
 
 /**

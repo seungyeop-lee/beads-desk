@@ -57,13 +57,23 @@ type Props = {
   plan?: GraphPlan;
   /** 이슈 중심 보기의 기준 이슈입니다. 이 노드만 다른 노드와 구분되게 그립니다. */
   centerId?: string;
+  /** 그래프 안에서 상세를 열어 둔 이슈입니다. */
+  selectedIssueId?: string;
 };
 
 /**
  * 배치 엔진이 정한 노드 좌표와 간선 꺾임점을 React Flow로 그립니다. 경로는 여기서 계산하지 않습니다.
  * 좌표는 직접 정하므로 노드를 끌거나 잇지 못하게 합니다.
  */
-export function IssueGraph({ layout, edgeLooks, issueHref, plan, centerId, ready = true }: Props) {
+export function IssueGraph({
+  layout,
+  edgeLooks,
+  issueHref,
+  plan,
+  centerId,
+  selectedIssueId,
+  ready = true,
+}: Props) {
   const containerRef = useRef<HTMLElement>(null);
   const focus = useMemo(
     () =>
@@ -80,6 +90,7 @@ export function IssueGraph({ layout, edgeLooks, issueHref, plan, centerId, ready
     layout,
     focus,
     planned,
+    selectedIssueId,
   );
   const [initialized, setInitialized] = useState(false);
   if (ready && !initialized) setInitialized(true);
