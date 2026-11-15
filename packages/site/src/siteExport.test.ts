@@ -211,4 +211,21 @@ describe("정적 랜딩 사이트 export 검증", () => {
     expect(readOutFile("ko/index.html")).not.toContain("beads-desk.site-locale");
     expect(readOutFile("ja/index.html")).not.toContain("beads-desk.site-locale");
   });
+
+  test("빌드 CSS에 일본어(lang=ja) 전용 일본어 글꼴 우선 규칙이 포함된다", () => {
+    const chunksDir = path.join(OUT_DIR, "_next/static/chunks");
+    const cssFiles = fs.readdirSync(chunksDir).filter((file) => file.endsWith(".css"));
+    expect(cssFiles.length).toBeGreaterThan(0);
+
+    const css = cssFiles
+      .map((file) => fs.readFileSync(path.join(chunksDir, file), "utf8"))
+      .join("\n");
+    const jaRuleMatch = css.match(/html:lang\(ja\),\[lang=["']?ja["']?\]\{([^}]+)\}/);
+    expect(jaRuleMatch).not.toBeNull();
+    const jaRuleBody = jaRuleMatch![1]!;
+    expect(jaRuleBody).toContain("Hiragino Sans");
+    expect(jaRuleBody).not.toContain("Pretendard");
+    expect(jaRuleBody).not.toContain("Apple SD Gothic Neo");
+    expect(jaRuleBody).not.toContain("Noto Sans KR");
+  });
 });

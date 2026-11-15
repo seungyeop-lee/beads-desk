@@ -48,6 +48,17 @@
       "Apple SD Gothic Neo", "Noto Sans KR", "Hiragino Sans", sans-serif;
   }
 
+  /*
+   * 한국어 글꼴이 가나와 공통 한자를 먼저 그리면 미포함 일본어 한자만 다른 굵기로 fallback되므로 일본어 글꼴을 우선합니다.
+   * `:lang(ja)`는 하위 `code`·`pre`·`kbd`의 고정폭 글꼴까지 덮어쓰므로 `html:lang(ja)`와 명시적 `[lang="ja"]`로만 상속합니다.
+   */
+  html:lang(ja),
+  [lang="ja"] {
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+      "Yu Gothic", Meiryo, "Noto Sans JP", "Noto Sans CJK JP", sans-serif;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
