@@ -16,7 +16,7 @@
 
 아래 작업을 시작하기 전에 해당 문서를 읽습니다.
 
-- README 스크린샷이나 소개 영상을 만들거나 `packages/promo`를 고칠 때: `packages/promo/AGENTS.md`
+- README·소개 사이트의 스크린샷이나 소개 영상을 만들거나 `packages/promo`를 고칠 때: `packages/promo/AGENTS.md`
 - 화면을 직접 조작해 보거나 데이터가 있어야 드러나는 버그를 재현할 때(`pnpm playground`로 테스트 데이터 workspace와 개발 서버를 띄웁니다): `packages/playground/AGENTS.md`
 - `packages/bd`를 고치거나 bd를 업데이트했을 때: `packages/bd/AGENTS.md`
 - launcher(`packages/app/bin`)나 배포 패키지 구성(`files`, 의존성)을 바꿀 때: `packages/app/bin/AGENTS.md`
@@ -93,14 +93,31 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
   - `README.ja.md`와 `USAGE.ja.md`. 각각 `README.md`와 `USAGE.md`의 일본어 미러입니다.
 - 한국어, 영어, 일본어로 함께 씁니다.
   - 웹 UI 문구. Server Action, Route API, `packages/bd`가 화면에 전달하는 오류도 포함합니다. 문구를 넣을 사전은 "소스 구조" 절에 있습니다.
+  - `packages/site` 소개 콘텐츠: `packages/site/src/content/{en,ko,ja}.ts`, `packages/site/src/content/siteMeta.ts`, `packages/site/scripts/generate-og-assets.mjs`의 언어별 문구
 
-영어 README나 USAGE를 고치면 한국어와 일본어 미러를 같은 내용으로 함께 고칩니다. 여섯 문서의 3번째 줄 언어 링크는 영어, 한국어, 일본어 순서로 쓰고, 언어 이름 앞에 국기 이모지(🇺🇸, 🇰🇷, 🇯🇵)를 붙입니다.
+`README.md`, `README.ko.md`, `README.ja.md`, `USAGE.md`, `USAGE.ko.md`, `USAGE.ja.md`의 3번째 줄 언어 링크는 영어, 한국어, 일본어 순서로 쓰고, 언어 이름 앞에 국기 이모지(🇺🇸, 🇰🇷, 🇯🇵)를 붙입니다.
 
 `CHANGELOG.md`는 `versionup` skill로 버전업할 때만 고칩니다. 기능을 추가하거나 버그를 고치는 커밋에서는 CHANGELOG에 항목을 적지 않습니다. 버전업할 때 지난 릴리스 이후의 커밋을 모아 새 version 절에 한 번에 씁니다. CHANGELOG 머리말이 따르는 Keep a Changelog는 `## [Unreleased]` 절에 변경을 쌓아 두라고 권하지만, 이 저장소에서는 그 절을 만들지 않습니다.
 
 커밋 메시지는 Conventional Commits 형식(`type(scope): 제목`)을 따릅니다.
 
 코드 주석에는 bd 이슈 ID를 적지 않고, 지켜야 할 규칙이나 이유를 문장으로 적습니다. `.beads/`는 저장소에 들어가지 않아서, 저장소나 npm 패키지로 코드를 읽는 사람은 그 ID로 내용을 찾을 수 없습니다.
+
+## 문서와 소개 사이트 동기화
+
+`README.md`나 `USAGE.md`를 고치면 해당하는 한국어·일본어 미러(`README.ko.md`·`README.ja.md`, `USAGE.ko.md`·`USAGE.ja.md`)를 같은 내용으로 함께 고칩니다.
+
+사용자에게 보이는 기능(명령, 옵션, 요구 사항, 주요 화면 동작)을 추가하거나 수정할 때는 아래 파일을 같은 내용으로 함께 점검해 고칩니다.
+
+- `README.md`, `README.ko.md`, `README.ja.md` (명령·옵션·세부 사용법이 바뀌면 `USAGE.md`, `USAGE.ko.md`, `USAGE.ja.md` 포함)
+- `packages/site/src/content/{en,ko,ja}.ts` (핵심 요약·SEO 메타가 바뀌면 `packages/site/src/content/siteMeta.ts` 포함)
+
+화면 배치나 UI가 바뀌어 기존 스크린샷·소개 영상이 실제 화면과 달라지거나 소개할 화면이 추가·제외되면 아래 순서로 캡처 자산과 소개 콘텐츠를 함께 갱신합니다.
+
+1. `packages/promo/AGENTS.md` 절차에 따라 `docs/screenshots/*.png`, `docs/beads-desk-intro.gif`, `docs/beads-desk-intro.mp4`를 다시 만들어 commit합니다.
+2. `README.md`, `README.ko.md`, `README.ja.md`의 `raw.githubusercontent.com/<commit SHA>/...` 이미지 주소를 새 이미지 commit의 SHA로 바꿉니다.
+3. `pnpm --filter @beads-desk/site run sync-assets`로 `docs/` 자산을 `packages/site`에 반영하고, 바뀐 화면에 맞춰 `packages/site/src/content/{en,ko,ja}.ts`(스크린샷 `src`, `width`, `height`, `caption`, `alt` 등)와 `packages/site/src/siteExport.test.ts`의 `FEATURE_SECTION_IDS`·`SCREENSHOT_FILES`를 함께 고칩니다.
+4. OG 이미지에 들어가는 문구·화면 요소가 바뀌었으면 `packages/site/scripts/generate-og-assets.mjs`의 언어별 문구·구성을 고친 뒤 `pnpm --filter @beads-desk/site run generate:og`로 OG 이미지를 다시 생성합니다.
 
 ## 프로젝트 skill
 
