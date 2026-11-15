@@ -64,7 +64,7 @@ export function ScreenshotCard({
           type="button"
           onClick={openPreview}
           aria-label={`${enlargeLabel}: ${caption}`}
-          className="absolute inset-be-2.5 inset-ie-2.5 inline-flex min-h-8 items-center gap-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface-card)]/92 px-3 py-1 text-xs font-semibold text-[var(--ink-primary)] shadow-sm backdrop-blur-xs transition-colors hover:bg-[var(--surface-card)]"
+          className="absolute inset-be-2.5 end-2.5 inline-flex min-h-8 items-center gap-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--surface-card)]/92 px-3 py-1 text-xs font-semibold text-[var(--ink-primary)] shadow-sm backdrop-blur-xs transition-colors hover:bg-[var(--surface-card)]"
         >
           <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="size-3.5">
             <path
