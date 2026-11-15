@@ -832,34 +832,85 @@ for (const theme of ["desk", "desk-dark"])
     }
   });
 
-test("닫힌 카드와 에픽 밖 카드는 흐리게 하지 않고, 닫힌 카드는 제목 글자만 흐리게 그린다", async () => {
-  const screen = await renderGraph(
-    "epic",
-    "card-epic",
-    graphData(
-      {
-        "card-epic": { title: "카드 에픽", issueType: "epic" },
-        "card-done": { title: "닫힌 카드", parent: "card-epic", status: "closed" },
-        "card-open": { title: "열린 카드", parent: "card-epic" },
-        "card-outside": { title: "에픽 밖 카드" },
-      },
-      [
-        ["card-open", "card-done"],
-        ["card-open", "card-outside"],
-      ],
-    ),
-  );
-  const canvas = screen.getByRole("region", { name: "의존 그래프" });
-  const card = (title: string) => cardOf(canvas, title);
-  await expect.element(card("에픽 밖 카드")).toBeVisible();
-  expect(
-    ["닫힌 카드", "에픽 밖 카드"].map((title) => getComputedStyle(card(title).element()).opacity),
-  ).toEqual(["1", "1"]);
-  const titleColor = (title: string) =>
-    getComputedStyle(card(title).getByText(title, { exact: true }).element()).color;
-  expect(titleColor("닫힌 카드")).not.toBe(titleColor("열린 카드"));
-  expect(titleColor("에픽 밖 카드")).toBe(titleColor("열린 카드"));
-});
+for (const theme of ["desk", "desk-dark"])
+  test(`${theme} 테마에서 닫힌 카드는 불투명한 배경색과 흐린 제목·취소선으로 열린 카드와 구분되고, 에픽 밖·기준 강조 표시는 유지된다`, async () => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      const epicScreen = await renderGraph(
+        "epic",
+        "card-epic",
+        graphData(
+          {
+            "card-epic": { title: "카드 에픽", issueType: "epic" },
+            "card-done": { title: "닫힌 카드", parent: "card-epic", status: "closed" },
+            "card-open": { title: "열린 카드", parent: "card-epic" },
+            "card-outside": { title: "에픽 밖 카드" },
+          },
+          [
+            ["card-open", "card-done"],
+            ["card-open", "card-outside"],
+          ],
+        ),
+      );
+      const epicCanvas = epicScreen.getByRole("region", { name: "의존 그래프" });
+      const epicCard = (title: string) => cardOf(epicCanvas, title);
+      await expect.element(epicCard("에픽 밖 카드")).toBeVisible();
+      expect(
+        ["닫힌 카드", "열린 카드", "에픽 밖 카드"].map(
+          (title) => getComputedStyle(epicCard(title).element()).opacity,
+        ),
+      ).toEqual(["1", "1", "1"]);
+      const cardBackground = (title: string) => {
+        const background = getComputedStyle(epicCard(title).element()).backgroundColor;
+        srgb(background);
+        return background;
+      };
+      expect(cardBackground("닫힌 카드")).not.toBe(cardBackground("열린 카드"));
+      expect(cardBackground("에픽 밖 카드")).toBe(cardBackground("열린 카드"));
+
+      const titleStyle = (scopeCanvas: Locator, title: string) =>
+        getComputedStyle(cardOf(scopeCanvas, title).getByText(title, { exact: true }).element());
+      expect(titleStyle(epicCanvas, "닫힌 카드").color).not.toBe(
+        titleStyle(epicCanvas, "열린 카드").color,
+      );
+      expect(titleStyle(epicCanvas, "닫힌 카드").textDecorationLine).toBe("line-through");
+      expect(titleStyle(epicCanvas, "열린 카드").textDecorationLine).toBe("none");
+      expect(titleStyle(epicCanvas, "에픽 밖 카드").color).toBe(
+        titleStyle(epicCanvas, "열린 카드").color,
+      );
+      expect(titleStyle(epicCanvas, "에픽 밖 카드").textDecorationLine).toBe("none");
+      expect(
+        getComputedStyle(epicCanvas.getByRole("link", { name: /에픽 밖 카드/ }).element())
+          .borderTopStyle,
+      ).toBe("dashed");
+      await epicScreen.unmount();
+
+      const centerScreen = await renderGraph(
+        "center",
+        "chain-done",
+        graphData(
+          {
+            "chain-done": { title: "닫힌 기준 카드", status: "closed" },
+            "chain-open": { title: "열린 후속 카드" },
+          },
+          [["chain-open", "chain-done"]],
+        ),
+      );
+      const centerCanvas = centerScreen.getByRole("region", { name: "의존 그래프" });
+      const closedCenter = cardOf(centerCanvas, "닫힌 기준 카드");
+      await expect.element(closedCenter).toBeVisible();
+      expect(getComputedStyle(closedCenter.element()).backgroundColor).not.toBe(
+        getComputedStyle(cardOf(centerCanvas, "열린 후속 카드").element()).backgroundColor,
+      );
+      expect(titleStyle(centerCanvas, "닫힌 기준 카드").textDecorationLine).toBe("line-through");
+      expect(
+        getComputedStyle(centerCanvas.getByRole("link", { name: /닫힌 기준 카드/ }).element())
+          .boxShadow,
+      ).not.toBe("none");
+    } finally {
+      delete document.documentElement.dataset.theme;
+    }
+  });
 
 test("캔버스를 끌어 옮기거나 확대하면 미니맵의 보이는 영역 표시도 바뀐다", async () => {
   await page.viewport(1440, 900);
