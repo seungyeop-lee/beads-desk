@@ -32,6 +32,13 @@ const boundaries = {
     regex: "^@/|^@seungyeop-lee/beads-desk(?:/|$)|^(?:\\.\\./)+app(?:/|$)",
     message: "playground package는 app의 코드와 테스트 helper에 의존하지 않습니다.",
   },
+  sitePackage: {
+    // 정적 소개 사이트는 독립 패키지로 유지해 app, bd, promo, playground의 코드나 테스트 helper를 import하지 않습니다.
+    regex:
+      "^@/|^@seungyeop-lee/beads-desk(?:/|$)|^@beads-desk/(?:bd|promo|playground)(?:/|$)|^(?:\\.\\./)+(?:app|bd|promo|playground)(?:/|$)",
+    message:
+      "site package는 app, bd, promo, playground의 코드와 테스트 helper에 의존하지 않습니다.",
+  },
   bdServerPackage: {
     regex: "^@beads-desk/bd(?:$|/(?!(?:issue|types)$))",
     message:
@@ -176,7 +183,13 @@ const restrict = (...patterns) => ({
 export const testCode = ["**/*.test.ts", "**/*.test.tsx", "**/*.testkit.ts", "**/*.testkit.tsx"];
 
 export default defineConfig([
-  globalIgnores(["**/node_modules/**", "**/.next/**", "**/next-env.d.ts", "**/dist/**"]),
+  globalIgnores([
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/next-env.d.ts",
+    "**/dist/**",
+    "**/out/**",
+  ]),
   js.configs.recommended,
   tseslint.configs.recommended,
   reactHooks.configs.flat.recommended,
@@ -214,6 +227,10 @@ export default defineConfig([
   {
     files: ["packages/playground/**/*.ts"],
     rules: restrict(boundaries.playgroundPackage),
+  },
+  {
+    files: ["packages/site/**/*.{ts,tsx}"],
+    rules: restrict(boundaries.sitePackage),
   },
   {
     // 아래 layer 규칙이 `@typescript-eslint/no-restricted-imports`의 패턴을 덮어쓰므로, 모든 layer에 걸리는 이 규칙은 base rule로 따로 둡니다.

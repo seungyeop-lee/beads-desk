@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/app" },
     { "path": "./packages/bd" },
-    { "path": "./packages/promo" }
+    { "path": "./packages/promo" },
+    { "path": "./packages/site" }
   ]
 }

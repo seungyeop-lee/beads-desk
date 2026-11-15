@@ -39,3 +39,6 @@ playwright-report/
 # 소개 영상용 원본 녹화(pnpm --filter promo run capture)와 만든 영상(pnpm --filter promo run video)
 packages/promo/recordings/
 packages/promo/out/
+
+# 소개 사이트 정적 자산 복사본(pnpm --filter @beads-desk/site run sync-assets)
+packages/site/public/media/
