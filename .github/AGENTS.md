@@ -77,3 +77,13 @@ act로는 배포할 파일을 묶는 단계까지만 확인할 수 있습니다.
 ```sh
 act workflow_dispatch -W .github/workflows/pages.yml -j pages-artifact -P ubuntu-latest=catthehacker/ubuntu:act-latest --artifact-server-path /tmp/act-artifacts --rm
 ```
+
+## site-deploy.yml
+
+`main` 브랜치에 push한 커밋에서 `packages/site/**`, `docs/beads-desk-intro.mp4`, `docs/screenshots/**`, 또는 이 workflow가 바뀌면 `packages/site`를 빌드해 Cloudflare Pages(`beads-desk`)로 배포합니다.
+
+저장소의 Settings > Secrets and variables > Actions에 `CLOUDFLARE_API_TOKEN`(Account > Cloudflare Pages > Edit 권한)과 `CLOUDFLARE_ACCOUNT_ID`가 등록되어 있어야 배포가 동작합니다. act 실행에서는 `if: ${{ !env.ACT }}`로 Wrangler 설치와 Cloudflare 배포 단계를 건너뛰고 `packages/site`의 typecheck, 정적 빌드, 산출물(`index.html`, `ko/index.html`, `ja/index.html`, `sitemap.xml`, `robots.txt`) 생성까지만 확인합니다.
+
+```sh
+act workflow_dispatch -W .github/workflows/site-deploy.yml -j site-deploy -P ubuntu-latest=catthehacker/ubuntu:act-latest --rm
+```

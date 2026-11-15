@@ -1,0 +1,56 @@
+name: site-deploy
+
+# packages/site 정적 사이트를 빌드해 Cloudflare Pages(beads-desk.seungyeop-lee.com)로 배포합니다.
+# README 상단 GIF가 참조하는 GitHub Pages(pages.yml)와는 별개로 동작합니다.
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/site/**
+      - docs/beads-desk-intro.mp4
+      - docs/screenshots/**
+      - .github/workflows/site-deploy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+# 배포가 겹치면 먼저 시작한 배포를 끝까지 마치고 다음 배포를 시작합니다.
+concurrency:
+  group: site-deploy
+  cancel-in-progress: false
+
+jobs:
+  site-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build site
+        run: |
+          pnpm --filter @beads-desk/site run typecheck
+          pnpm --filter @beads-desk/site run build
+          test -f packages/site/out/index.html
+          test -f packages/site/out/ko/index.html
+          test -f packages/site/out/ja/index.html
+          test -f packages/site/out/sitemap.xml
+          test -f packages/site/out/robots.txt
+      # 루트 package.json과 pnpm-lock.yaml을 건드리지 않도록 wrangler를 전역 설치한 뒤 실행합니다.
+      # act에는 Cloudflare Secrets가 없으므로 로컬 검증에서는 빌드 단계까지만 실행합니다.
+      - name: Install Wrangler
+        if: ${{ !env.ACT }}
+        run: npm install -g wrangler@4
+      - name: Deploy to Cloudflare Pages
+        if: ${{ !env.ACT }}
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy packages/site/out --project-name=beads-desk
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
