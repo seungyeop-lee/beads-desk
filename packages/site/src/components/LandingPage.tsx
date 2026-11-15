@@ -5,12 +5,12 @@ import {
   LICENSE_URL,
   LOCALE_LABELS,
   LOCALE_PATHS,
-  NPM_URL,
   REPO_URL,
   buildSoftwareApplicationJsonLd,
 } from "../content/siteMeta";
 import type { SiteContent, SiteLocale } from "../content/types";
 import { CopyCommandBlock } from "./CopyCommandBlock";
+import { HeroVideoCard } from "./HeroVideoCard";
 import { ScreenshotCard } from "./ScreenshotCard";
 import { BrandMark, SiteHeader } from "./SiteHeader";
 
@@ -40,52 +40,60 @@ export function LandingPage({ content }: LandingPageProps) {
 
       <main id="main-content" tabIndex={-1}>
         {/* Hero */}
-        <section className="mx-auto max-w-6xl px-4 pt-10 pb-14 sm:px-6 sm:pt-16 sm:pb-20">
-          <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
-            <div className="min-w-0 lg:col-span-6">
-              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-card)] px-3 py-1 text-xs font-semibold text-[var(--ink-secondary)]">
-                <span className="tone-dot tone-mint" aria-hidden="true" />
-                <span>{content.hero.eyebrow}</span>
-              </p>
+        <section className="hero-backdrop">
+          <div className="mx-auto max-w-6xl px-4 pt-10 pb-12 sm:px-6 sm:pt-14 sm:pb-16">
+            <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
+              <div className="min-w-0 lg:col-span-5">
+                <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-card)] px-3 py-1 text-xs font-semibold text-[var(--ink-secondary)]">
+                  <span className="tone-dot tone-mint" aria-hidden="true" />
+                  <span>{content.hero.eyebrow}</span>
+                </p>
 
-              <h1 className="text-3xl font-extrabold tracking-tight text-[var(--ink-primary)] sm:text-5xl sm:leading-[1.12]">
-                {content.hero.headline}
-              </h1>
+                <h1 className="text-3xl font-extrabold tracking-tight text-[var(--ink-primary)] sm:text-5xl sm:leading-[1.12]">
+                  {content.hero.headline}
+                </h1>
 
-              <p className="mt-4 text-base leading-relaxed text-[var(--ink-secondary)] sm:text-lg">
-                {content.hero.subtitle}
-              </p>
+                <p className="mt-4 text-base leading-relaxed text-[var(--ink-secondary)] sm:text-lg">
+                  {content.hero.subtitle}
+                </p>
 
-              <div className="mt-7 flex flex-wrap items-center gap-3">
-                <a
-                  href="#install"
-                  className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--accent-ink)] px-5 text-sm font-semibold text-[var(--accent-ink-contrast)] transition-opacity hover:opacity-90"
-                >
-                  {content.hero.primaryCta}
-                </a>
-                <a
-                  href={REPO_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--border-strong)] bg-[var(--surface-card)] px-5 text-sm font-semibold text-[var(--ink-primary)] transition-colors hover:bg-[var(--surface-subtle)]"
-                >
-                  {content.hero.secondaryCta}
-                </a>
-                <a
-                  href={NPM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--border-subtle)] px-4 text-sm font-medium text-[var(--ink-secondary)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--ink-primary)]"
-                >
-                  {content.nav.npm}
-                </a>
+                <div className="mt-7 flex flex-wrap items-center gap-3">
+                  <a
+                    href="#install"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--accent-ink)] px-5 text-sm font-semibold text-[var(--accent-ink-contrast)] transition-opacity hover:opacity-90"
+                  >
+                    {content.hero.primaryCta}
+                  </a>
+                  <a
+                    href={REPO_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--border-strong)] bg-[var(--surface-card)] px-5 text-sm font-semibold text-[var(--ink-primary)] transition-colors hover:bg-[var(--surface-subtle)]"
+                  >
+                    {content.hero.secondaryCta}
+                  </a>
+                </div>
               </div>
 
-              <div className="mt-8 space-y-2.5">
-                <p className="text-xs font-semibold tracking-wide text-[var(--ink-muted)] uppercase">
-                  {content.hero.quickStartTitle}
-                </p>
+              <div className="min-w-0 lg:col-span-7">
+                <HeroVideoCard
+                  videoLabel={content.hero.videoLabel}
+                  videoCaption={content.hero.videoCaption}
+                  pauseLabel={content.hero.videoPauseLabel}
+                  playLabel={content.hero.videoPlayLabel}
+                  pauseAriaLabel={content.hero.videoPauseAriaLabel}
+                  playAriaLabel={content.hero.videoPlayAriaLabel}
+                />
+              </div>
+            </div>
+
+            <div className="terminal-strip mt-10 p-4 sm:mt-12 sm:p-5">
+              <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--terminal-muted)] uppercase">
+                {content.hero.quickStartTitle}
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
                 <CopyCommandBlock
+                  variant="terminal"
                   label={content.hero.installLabel}
                   code="npm install -g @seungyeop-lee/beads-desk"
                   buttonPrefix={content.copy.buttonPrefix}
@@ -93,6 +101,7 @@ export function LandingPage({ content }: LandingPageProps) {
                   failedLabel={content.copy.failed}
                 />
                 <CopyCommandBlock
+                  variant="terminal"
                   label={content.hero.startLabel}
                   code="bd-desk start --open"
                   buttonPrefix={content.copy.buttonPrefix}
@@ -100,31 +109,6 @@ export function LandingPage({ content }: LandingPageProps) {
                   failedLabel={content.copy.failed}
                 />
               </div>
-            </div>
-
-            <div className="min-w-0 lg:col-span-6">
-              <figure className="site-card overflow-hidden shadow-[var(--shadow-media)]">
-                <video
-                  controls
-                  muted
-                  playsInline
-                  preload="metadata"
-                  width={1440}
-                  height={900}
-                  poster="/media/screenshots/now.png"
-                  aria-label={content.hero.videoLabel}
-                  aria-describedby="hero-video-caption"
-                  className="aspect-[16/10] w-full bg-[var(--surface-subtle)] object-cover"
-                >
-                  <source src="/media/beads-desk-intro.mp4" type="video/mp4" />
-                </video>
-                <figcaption
-                  id="hero-video-caption"
-                  className="border-t border-[var(--border-subtle)] px-4 py-3 text-xs leading-relaxed text-[var(--ink-secondary)]"
-                >
-                  {content.hero.videoCaption}
-                </figcaption>
-              </figure>
             </div>
           </div>
         </section>

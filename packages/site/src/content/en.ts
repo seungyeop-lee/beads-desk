@@ -26,6 +26,10 @@ export const enContent: SiteContent = {
     videoCaption:
       "Walkthrough of the Now screen, due dates, bottlenecks, an issue blocks graph, an enlarged Mermaid sequence diagram, an attached screenshot, and superseded decisions.",
     videoLabel: "beads-desk product walkthrough video (no audio)",
+    videoPauseLabel: "Pause",
+    videoPlayLabel: "Play",
+    videoPauseAriaLabel: "Pause product walkthrough video",
+    videoPlayAriaLabel: "Play product walkthrough video",
   },
   copy: {
     buttonPrefix: "Copy command:",

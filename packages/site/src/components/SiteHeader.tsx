@@ -1,11 +1,10 @@
-import { LOCALE_LABELS, LOCALE_PATHS, NPM_URL, REPO_URL } from "../content/siteMeta";
-import type { SiteContent, SiteLocale } from "../content/types";
+import { LOCALE_PATHS, NPM_URL, REPO_URL } from "../content/siteMeta";
+import type { SiteContent } from "../content/types";
+import { LanguageDropdown } from "./LanguageDropdown";
 
 interface SiteHeaderProps {
   content: SiteContent;
 }
-
-const LOCALES: readonly SiteLocale[] = ["en", "ko", "ja"];
 
 export function BrandMark() {
   return (
@@ -73,23 +72,7 @@ export function SiteHeader({ content }: SiteHeaderProps) {
             </ul>
           </nav>
 
-          <nav aria-label={content.nav.languageLabel}>
-            <ul className="flex flex-wrap items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-subtle)] p-0.5">
-              {LOCALES.map((loc) => (
-                <li key={loc}>
-                  <a
-                    href={LOCALE_PATHS[loc]}
-                    lang={loc}
-                    hrefLang={loc}
-                    aria-current={loc === content.locale ? "page" : undefined}
-                    className="nav-lang-link"
-                  >
-                    {LOCALE_LABELS[loc]}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <LanguageDropdown locale={content.locale} languageLabel={content.nav.languageLabel} />
         </div>
       </div>
     </header>

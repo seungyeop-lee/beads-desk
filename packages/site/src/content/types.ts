@@ -40,6 +40,10 @@ export interface SiteContent {
     startLabel: string;
     videoCaption: string;
     videoLabel: string;
+    videoPauseLabel: string;
+    videoPlayLabel: string;
+    videoPauseAriaLabel: string;
+    videoPlayAriaLabel: string;
   };
   copy: {
     buttonPrefix: string;

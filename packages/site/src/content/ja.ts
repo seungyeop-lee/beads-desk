@@ -26,6 +26,10 @@ export const jaContent: SiteContent = {
     videoCaption:
       "いま画面の締め切り一覧とボトルネックを確認し、今日締め切りのイシューの blocks グラフ、Mermaid シーケンス図の拡大、添付スクリーンショット、置き換えられた決定までたどるデモ動画です。",
     videoLabel: "beads-desk デモ動画（音声なし）",
+    videoPauseLabel: "一時停止",
+    videoPlayLabel: "再生",
+    videoPauseAriaLabel: "一時停止：デモ動画を止める",
+    videoPlayAriaLabel: "再生：デモ動画を再生する",
   },
   copy: {
     buttonPrefix: "コマンドをコピー:",

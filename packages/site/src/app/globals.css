@@ -29,6 +29,13 @@
   --focus-ring: light-dark(#1c1917, #ede9e3);
   --shadow-card: 0 1px 2px light-dark(rgb(28 25 23 / 0.05), rgb(0 0 0 / 0.25));
   --shadow-media: 0 18px 40px -18px light-dark(rgb(28 25 23 / 0.18), rgb(0 0 0 / 0.6));
+
+  --terminal-surface: light-dark(#1c1917, #11100f);
+  --terminal-card: light-dark(#262220, #191716);
+  --terminal-border: light-dark(#3b3532, #2f2b28);
+  --terminal-ink: #f5f2eb;
+  --terminal-muted: #b8b1a7;
+  --terminal-prompt: #a7f3d1;
 }
 
 @layer base {
@@ -166,6 +173,67 @@
   --tone: var(--tone-peach);
 }
 
+.hero-backdrop {
+  background-image:
+    radial-gradient(
+      circle at 78% 22%,
+      light-dark(rgb(190 218 254 / 0.34), rgb(190 218 254 / 0.1)),
+      transparent 52%
+    ),
+    radial-gradient(
+      circle at 18% 68%,
+      light-dark(rgb(167 243 209 / 0.26), rgb(167 243 209 / 0.08)),
+      transparent 46%
+    );
+}
+
+.terminal-strip {
+  border: 1px solid var(--terminal-border);
+  border-radius: 1rem;
+  background-color: var(--terminal-surface);
+  color: var(--terminal-ink);
+  box-shadow: var(--shadow-media);
+}
+
+.terminal-card {
+  border: 1px solid var(--terminal-border);
+  border-radius: 0.75rem;
+  background-color: var(--terminal-card);
+}
+
+.terminal-copy-button {
+  border: 1px solid var(--terminal-border);
+  background-color: var(--terminal-surface);
+  color: var(--terminal-muted);
+}
+
+.terminal-copy-button:hover {
+  border-color: var(--terminal-muted);
+  color: var(--terminal-ink);
+}
+
+.lang-dropdown-summary {
+  list-style: none;
+}
+
+.lang-dropdown-summary::-webkit-details-marker {
+  display: none;
+}
+
+.lang-dropdown-chevron {
+  transition: transform 150ms ease;
+}
+
+.lang-dropdown[open] .lang-dropdown-chevron {
+  transform: rotate(180deg);
+}
+
+.lang-dropdown-item[aria-current="page"] {
+  background-color: var(--surface-subtle);
+  color: var(--ink-primary);
+  font-weight: 700;
+}
+
 .nav-lang-link {
   display: inline-flex;
   align-items: center;
@@ -221,7 +289,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .copy-tip,
-  .nav-lang-link {
+  .nav-lang-link,
+  .lang-dropdown-chevron {
     transition: opacity 120ms linear;
     transform: none;
   }
@@ -245,13 +314,17 @@
 }
 
 @media (forced-colors: active) {
-  .nav-lang-link[aria-current="page"] {
+  .nav-lang-link[aria-current="page"],
+  .lang-dropdown-item[aria-current="page"] {
     border: 2px solid ButtonText;
     forced-color-adjust: none;
   }
 
   .site-card,
-  .tone-pill {
+  .tone-pill,
+  .terminal-strip,
+  .terminal-card,
+  .lang-dropdown-menu {
     border: 1px solid CanvasText;
   }
 }

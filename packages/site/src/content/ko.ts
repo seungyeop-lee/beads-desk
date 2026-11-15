@@ -26,6 +26,10 @@ export const koContent: SiteContent = {
     videoCaption:
       "지금 화면 상단의 마감일 목록과 병목 이슈를 확인하고, 오늘 마감 이슈의 blocks 그래프, Mermaid 시퀀스 다이어그램 확대, 첨부 스크린샷, 대체된 결정 기록까지 살펴보는 데모 영상입니다.",
     videoLabel: "beads-desk 데모 영상 (소리 없음)",
+    videoPauseLabel: "일시정지",
+    videoPlayLabel: "재생",
+    videoPauseAriaLabel: "일시정지: 데모 영상 멈추기",
+    videoPlayAriaLabel: "재생: 데모 영상 다시 재생",
   },
   copy: {
     buttonPrefix: "명령 복사:",

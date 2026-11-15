@@ -165,6 +165,19 @@ describe("정적 랜딩 사이트 export 검증", () => {
       expect(html).toContain("https://www.npmjs.com/package/@seungyeop-lee/beads-desk");
       expect(html).toContain("/media/beads-desk-intro.mp4");
 
+      const videoTag = html.match(/<video\b[^>]*>/i)?.[0] ?? "";
+      expect(videoTag).not.toBe("");
+      expect(videoTag).toMatch(/\bautoplay\b/i);
+      expect(videoTag).toMatch(/\bloop\b/i);
+      expect(videoTag).toMatch(/\bmuted\b/i);
+      expect(videoTag).toMatch(/\bplaysinline\b/i);
+      expect(videoTag).not.toMatch(/\bcontrols\b/i);
+
+      expect(html).toMatch(/<details\b[^>]*class="[^"]*lang-dropdown/i);
+      expect(html).toContain('href="/"');
+      expect(html).toContain('href="/ko/"');
+      expect(html).toContain('href="/ja/"');
+
       expect(html).not.toMatch(/beads-starter|\bbds-/i);
     }
 

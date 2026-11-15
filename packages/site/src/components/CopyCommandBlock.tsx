@@ -8,6 +8,7 @@ interface CopyCommandBlockProps {
   buttonPrefix: string;
   copiedLabel: string;
   failedLabel: string;
+  variant?: "default" | "terminal";
 }
 
 function fallbackCopy(text: string): boolean {
@@ -30,6 +31,7 @@ export function CopyCommandBlock({
   buttonPrefix,
   copiedLabel,
   failedLabel,
+  variant = "default",
 }: CopyCommandBlockProps) {
   const codeId = useId();
   const labelId = useId();
@@ -71,16 +73,39 @@ export function CopyCommandBlock({
     }, 2000);
   }
 
+  const isTerminal = variant === "terminal";
+
   return (
-    <div className="site-card relative flex items-center justify-between gap-3 px-3.5 py-2.5">
+    <div
+      className={
+        isTerminal
+          ? "terminal-card relative flex min-w-0 items-center justify-between gap-3 px-3.5 py-2.5"
+          : "site-card relative flex min-w-0 items-center justify-between gap-3 px-3.5 py-2.5"
+      }
+    >
       <section aria-labelledby={labelId} className="min-w-0 flex-1">
         <div
           id={labelId}
-          className="mb-0.5 text-[0.6875rem] font-semibold tracking-wide text-[var(--ink-muted)] uppercase"
+          className={
+            isTerminal
+              ? "mb-0.5 text-[0.6875rem] font-semibold tracking-wide text-[var(--terminal-muted)] uppercase"
+              : "mb-0.5 text-[0.6875rem] font-semibold tracking-wide text-[var(--ink-muted)] uppercase"
+          }
         >
           {label}
         </div>
-        <pre className="overflow-x-auto text-[0.8125rem] leading-snug text-[var(--ink-primary)] sm:text-sm">
+        <pre
+          className={
+            isTerminal
+              ? "overflow-x-auto text-[0.8125rem] leading-snug text-[var(--terminal-ink)] sm:text-sm"
+              : "overflow-x-auto text-[0.8125rem] leading-snug text-[var(--ink-primary)] sm:text-sm"
+          }
+        >
+          {isTerminal && (
+            <span aria-hidden="true" className="mr-2 select-none text-[var(--terminal-prompt)]">
+              $
+            </span>
+          )}
           <code id={codeId}>{code}</code>
         </pre>
       </section>
@@ -91,7 +116,11 @@ export function CopyCommandBlock({
           aria-label={`${buttonPrefix} ${code}`}
           data-copied={status === "copied" ? "" : undefined}
           data-failed={status === "failed" ? "" : undefined}
-          className="copy-button inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-page)] px-2.5 text-[var(--ink-secondary)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--ink-primary)]"
+          className={
+            isTerminal
+              ? "copy-button terminal-copy-button inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg px-2.5 transition-colors"
+              : "copy-button inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-page)] px-2.5 text-[var(--ink-secondary)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--ink-primary)]"
+          }
         >
           {status === "copied" ? (
             <svg
