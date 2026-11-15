@@ -201,4 +201,14 @@ describe("정적 랜딩 사이트 export 검증", () => {
     expect(robots).toContain("Allow: /");
     expect(robots).toContain(`Sitemap: ${SITE_URL}/sitemap.xml`);
   });
+
+  test("루트(/) HTML에만 초기 언어 리다이렉트 인라인 스크립트가 포함된다", () => {
+    const enHtml = readOutFile("index.html");
+    const enHead = enHtml.slice(0, enHtml.indexOf("</head>"));
+    expect(enHead).toContain("beads-desk.site-locale");
+    expect(enHead).toContain("window.location.replace");
+
+    expect(readOutFile("ko/index.html")).not.toContain("beads-desk.site-locale");
+    expect(readOutFile("ja/index.html")).not.toContain("beads-desk.site-locale");
+  });
 });

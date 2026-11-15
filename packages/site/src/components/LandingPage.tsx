@@ -4,13 +4,13 @@ import {
   ISSUES_URL,
   LICENSE_URL,
   LOCALE_LABELS,
-  LOCALE_PATHS,
   REPO_URL,
   buildSoftwareApplicationJsonLd,
 } from "../content/siteMeta";
 import type { SiteContent, SiteLocale } from "../content/types";
 import { CopyCommandBlock } from "./CopyCommandBlock";
 import { HeroVideoCard } from "./HeroVideoCard";
+import { LocaleLink } from "./LocaleLink";
 import { ScreenshotCard } from "./ScreenshotCard";
 import { BrandMark, SiteHeader } from "./SiteHeader";
 
@@ -410,15 +410,9 @@ export function LandingPage({ content }: LandingPageProps) {
             <ul className="mt-5 flex flex-wrap gap-2">
               {LOCALES.map((loc) => (
                 <li key={loc}>
-                  <a
-                    href={LOCALE_PATHS[loc]}
-                    lang={loc}
-                    hrefLang={loc}
-                    aria-current={loc === content.locale ? "page" : undefined}
-                    className="nav-lang-link"
-                  >
+                  <LocaleLink locale={loc} currentLocale={content.locale} className="nav-lang-link">
                     {LOCALE_LABELS[loc]}
-                  </a>
+                  </LocaleLink>
                 </li>
               ))}
             </ul>

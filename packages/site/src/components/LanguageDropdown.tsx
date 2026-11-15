@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
-import { LOCALE_LABELS, LOCALE_PATHS } from "../content/siteMeta";
+import { LOCALE_LABELS } from "../content/siteMeta";
 import type { SiteLocale } from "../content/types";
+import { LocaleLink } from "./LocaleLink";
 
 interface LanguageDropdownProps {
   locale: SiteLocale;
@@ -79,12 +80,10 @@ export function LanguageDropdown({ locale, languageLabel }: LanguageDropdownProp
             const isCurrent = loc === locale;
             return (
               <li key={loc}>
-                <a
-                  href={LOCALE_PATHS[loc]}
-                  lang={loc}
-                  hrefLang={loc}
-                  aria-current={isCurrent ? "page" : undefined}
-                  onClick={() => {
+                <LocaleLink
+                  locale={loc}
+                  currentLocale={locale}
+                  onSelect={() => {
                     if (detailsRef.current) detailsRef.current.open = false;
                   }}
                   className="lang-dropdown-item flex min-h-9 items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-xs text-[var(--ink-secondary)] transition-colors hover:bg-[var(--surface-subtle)] hover:text-[var(--ink-primary)]"
@@ -106,7 +105,7 @@ export function LanguageDropdown({ locale, languageLabel }: LanguageDropdownProp
                       />
                     </svg>
                   )}
-                </a>
+                </LocaleLink>
               </li>
             );
           })}
