@@ -4,6 +4,16 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-11-18
+
+### Added
+
+- The workspace menu at the top right can now open another workspace in a new tab. See [Adding a workspace](https://github.com/seungyeop-lee/beads-desk/blob/v0.21.0/USAGE.md#adding-a-workspace).
+
+### Fixed
+
+- Japanese screens now prefer a Japanese sans-serif font, so kana and kanji render with consistent weight.
+
 ## [0.20.0] - 2026-11-15
 
 ### Changed
