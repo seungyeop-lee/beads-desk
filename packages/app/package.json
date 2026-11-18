@@ -71,7 +71,7 @@
     "test:e2e:limit": "node e2e/support/checkTestLimit.ts"
   },
   "dependencies": {
-    "next": "^16.4.3",
+    "next": "^16.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
