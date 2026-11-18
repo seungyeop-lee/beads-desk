@@ -50,7 +50,7 @@ In a git worktree of a repository whose main checkout has `.beads`, the worktree
 
 - Run `bd-desk start` in another beads workspace to add it to the running server and print its URL.
 - Each tab shows the workspace in its own URL, so you can keep several workspaces open side by side in separate tabs or windows.
-- The selector at the top right of the screen moves only the current tab to another workspace.
+- Choosing a workspace name in the menu at the top right of the screen moves only the current tab to that workspace. The new-tab button next to another workspace's name opens the same screen of that workspace in a new tab.
 
 ### URLs without a workspace name
 
@@ -85,7 +85,7 @@ In a git worktree of a repository whose main checkout has `.beads`, the worktree
 
 - Hover over help icons, tools, and abbreviated information to read their explanations. Focusable controls also show their explanations when reached with the keyboard. Press Esc, move away, or use the control to dismiss an explanation.
 - Explanations follow the light or dark theme and wrap long text near the target. Chart explanations keep the date and each series value together; hovering does not change the chart's links.
-- Workspace selection keeps the browser's native menu. The closed selector explains the selected workspace path.
+- The workspace selector button explains the path of the workspace shown in the current tab.
 - The rich-text editor uses the upper toolbar for formatting and inserting links; selecting text does not open a floating toolbar. Link address editing, copying, and deletion remain in the link panel.
 
 ## Epic membership in the issue list

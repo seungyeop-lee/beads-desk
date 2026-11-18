@@ -185,7 +185,7 @@
     box-shadow: var(--shadow-ink-hairline);
   }
 
-  /* 화살표를 글자색으로 그리는 select입니다. chip이나 ghost-select와 함께 씁니다. */
+  /* 화살표를 글자색으로 그리는 select입니다. select에는 chip이나 ghost-select를 붙이고, select처럼 보이는 펼침 메뉴의 summary에는 ghost-select를 붙입니다. */
   select.chip,
   .ghost-select {
     appearance: none;

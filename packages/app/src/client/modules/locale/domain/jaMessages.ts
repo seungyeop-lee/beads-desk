@@ -30,6 +30,7 @@ export const jaMessages: Messages = {
     newIssue: "新規イシュー",
     awaitingCount: (count) => `${count}件`,
     workspace: "このタブの workspace",
+    openWorkspaceInNewTab: (workspace) => `${workspace} を新しいタブで開く`,
     viewers: { diff: "diff ビューア", folder: "フォルダビューア", text: "テキストビューア" },
   },
   settings: {

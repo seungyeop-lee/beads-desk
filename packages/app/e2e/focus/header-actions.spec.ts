@@ -1,6 +1,6 @@
 import { expect, SAVE_TIMEOUT, test } from "../support/bdWorkspace";
 
-test("좁은 창의 헤더에서 화면 탭으로 이동하고, workspace를 바꿨다 되돌리고, 새 이슈를 만든다", async ({
+test("좁은 창의 헤더에서 화면 탭으로 이동하고, workspace를 새 탭으로 열고 바꿨다 되돌리고, 새 이슈를 만든다", async ({
   page,
   workspace,
 }) => {
@@ -15,7 +15,7 @@ test("좁은 창의 헤더에서 화면 탭으로 이동하고, workspace를 바
   );
   const next = page.getByRole("region", { name: "바로 작업 가능", exact: true });
   const screens = page.getByRole("navigation", { name: "화면" });
-  const picker = page.getByRole("combobox", { name: "이 탭의 workspace", exact: true });
+  const picker = page.getByRole("button", { name: "이 탭의 workspace", exact: true });
   await page.setViewportSize({ width: 480, height: 1000 });
   await page.goto(".");
   await expect(page).toHaveURL(/\/focus$/);
@@ -34,15 +34,25 @@ test("좁은 창의 헤더에서 화면 탭으로 이동하고, workspace를 바
     await expect(page).toHaveURL(new RegExp(`${href}$`));
   }
 
-  // workspace를 고르면 이 탭만 그 workspace의 같은 화면으로 옮겨 갑니다.
-  const slugs = await picker
-    .locator("option")
-    .evaluateAll((options) => options.map((option) => option.getAttribute("value")!));
-  const other = slugs.find((slug) => slug !== workspace.slug)!;
-  await picker.selectOption(other);
+  // 다른 workspace의 새 탭 단추는 같은 화면을 새 탭에서 열고, 이 탭은 보던 workspace에 그대로 둡니다.
+  await picker.click();
+  const newTab = page.getByRole("link", { name: /^새 탭에서 .+ 열기$/ }).first();
+  const other = (await newTab.getAttribute("href"))!.split("/")[2]!;
+  const opened = page.context().waitForEvent("page");
+  await newTab.click();
+  const otherTab = await opened;
+  await expect(otherTab).toHaveURL(new RegExp(`/w/${other}/focus$`));
+  await otherTab.close();
+  await expect(page).toHaveURL(new RegExp(`/w/${workspace.slug}/focus$`));
+
+  // workspace 이름을 고르면 이 탭만 그 workspace의 같은 화면으로 옮겨 갑니다.
+  const header = page.getByRole("banner");
+  await picker.click();
+  await header.getByRole("link", { name: other, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/w/${other}/focus$`));
-  await expect(picker).toHaveValue(other);
-  await picker.selectOption(workspace.slug);
+  await expect(picker).toHaveText(other);
+  await picker.click();
+  await header.getByRole("link", { name: workspace.slug, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/w/${workspace.slug}/focus$`));
   await expect(next.getByRole("listitem")).toHaveCount(1);
 

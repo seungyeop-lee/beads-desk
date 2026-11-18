@@ -27,6 +27,7 @@ export const enMessages: Messages = {
     newIssue: "New issue",
     awaitingCount: (count) => `${count} waiting`,
     workspace: "Workspace in this tab",
+    openWorkspaceInNewTab: (workspace) => `Open ${workspace} in a new tab`,
     viewers: { diff: "Diff viewer", folder: "Folder viewer", text: "Text viewer" },
   },
   settings: {

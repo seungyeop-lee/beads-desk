@@ -97,6 +97,15 @@ export function FolderIcon(props: IconProps) {
   );
 }
 
+export function NewTabIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M14 4h6v6M20 4l-9 9" />
+      <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+    </Icon>
+  );
+}
+
 export function FileIcon(props: IconProps) {
   return (
     <Icon {...props}>
