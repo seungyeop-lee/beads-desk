@@ -3,7 +3,7 @@ import { workState } from "@/client/modules/issues/domain/workState";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { CoveredIssueIdButton } from "./CoveredIssueRow";
 import { IssueTypeTag } from "./IssueTypeTag";
-import { workStateTone } from "./issueLabels";
+import { statusLabel, workStateTone } from "./issueLabels";
 
 export function GraphIssueHeading({
   issue,
@@ -19,7 +19,11 @@ export function GraphIssueHeading({
       <IssueTypeTag issueType={issue.issueType} />
       <span aria-hidden>·</span>
       <span className={`tone-dot ${workStateTone(state)}`} />
-      <span className="min-w-0 truncate">{messages.workStates.labels[state]}</span>
+      <span className="min-w-0 truncate">
+        {state === "other"
+          ? statusLabel(messages, issue.status)
+          : messages.workStates.labels[state]}
+      </span>
       <CoveredIssueIdButton
         issueId={issue.id}
         short

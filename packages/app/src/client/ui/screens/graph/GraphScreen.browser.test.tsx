@@ -328,6 +328,33 @@ function pathPoints(path: SVGPathElement) {
 const inside = ({ x, y }: { x: number; y: number }, box: DOMRect) =>
   x > box.left && x < box.right && y > box.top && y < box.bottom;
 
+test("그래프 카드와 에픽 계획 목록은 작업 상태가 other일 때만 저장 상태를 보인다", async () => {
+  await page.viewport(1920, 1080);
+  const parent = "status-epic";
+  const screen = await renderGraph(
+    "epic",
+    parent,
+    graphData(
+      {
+        [parent]: { title: "상태 확인", issueType: "epic" },
+        decision: { title: "검토할 결정", issueType: "decision", status: "in_progress", parent },
+        first: { title: "첫 작업", ready: true, parent },
+        pending: { title: "미착수 작업", parent },
+        independent: { title: "독립 작업", ready: true, parent },
+      },
+      [["decision", "first"]],
+    ),
+  );
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  const panel = screen.getByRole("region", { name: "선후 관계 없음" });
+  await expect.poll(() => cardText(canvas, "검토할 결정")).toContain("진행 중");
+  await expect.poll(() => cardText(canvas, "첫 작업")).toContain(messages.workStates.labels.ready);
+  await expect.element(panel.getByText("열림", { exact: true })).toBeVisible();
+  await expect
+    .element(panel.getByText(messages.workStates.labels.ready, { exact: true }))
+    .toBeVisible();
+});
+
 test("4단계 에픽은 선후 관계 없음 목록을 접고 읽을 수 있는 크기의 노드를 중앙에 보이며, 펼친 목록은 320px 폭으로 보인다", async () => {
   await page.viewport(1440, 900);
   const screen = await renderGraph(
@@ -1619,6 +1646,7 @@ type IssueSeed = {
   issueType?: string;
   parent?: string;
   status?: string;
+  ready?: boolean;
   awaitType?: string;
   /** 대기 수를 세는 값입니다. bd blocked처럼 닫히지 않은 선행 이슈만 적습니다. */
   blockedBy?: string[];

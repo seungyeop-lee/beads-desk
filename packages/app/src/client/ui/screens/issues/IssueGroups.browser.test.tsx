@@ -11,6 +11,7 @@ import { IssueGroups } from "./IssueGroups";
 const GROUPS: WorkStateGroup[] = [
   { state: "in_progress", issues: [issue("desk-doing", { title: "진행하는 작업" })] },
   { state: "ready", issues: [issue("desk-ready", { title: "시작할 작업" })] },
+  { state: "other", issues: [issue("desk-decision", { issueType: "decision" })] },
   { state: "closed", issues: [issue("desk-done", { title: "끝난 작업", status: "closed" })] },
 ];
 
@@ -44,6 +45,7 @@ test("작업 상태 묶음은 처음에 닫힘만 접혀 있고, 누르거나 En
   const done = screen.getByRole("link", { name: "끝난 작업" });
 
   await expect.element(doing).toBeVisible();
+  await expect.element(toggle("그 밖의 이슈", true)).toBeVisible();
   await expect.element(toggle("닫힘", false)).toHaveAttribute("aria-expanded", "false");
   await expect.element(done).not.toBeInTheDocument();
 
