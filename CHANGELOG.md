@@ -4,6 +4,17 @@ All notable changes to beads-desk are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-11-21
+
+### Added
+
+- Dependency graphs now show gates with no prerequisites inside the only task they block and related non-work issues inside the center card.
+
+### Fixed
+
+- Graph cards and epic plan lists now show the issue's stored `bd` status instead of **Other**.
+- The **No epic only** filter stays readable as you toggle it. See [Epic membership in the issue list](https://github.com/seungyeop-lee/beads-desk/blob/v0.22.0/USAGE.md#epic-membership-in-the-issue-list).
+
 ## [0.21.0] - 2026-11-18
 
 ### Added
