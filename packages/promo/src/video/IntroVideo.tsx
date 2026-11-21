@@ -1,11 +1,14 @@
+import { useGsapTimeline } from "@remotion/gsap";
 import type { ReactNode } from "react";
 import { AbsoluteFill, Freeze, interpolate, Sequence, useCurrentFrame } from "remotion";
 import { BrowserWindow } from "./BrowserWindow.tsx";
 import {
+  CAPTION_ENTER_MS,
   GIF_FRAME_STEP,
   introSchedule,
   OUTRO_FADE_FRAMES,
   recordingMsAt,
+  videoMsAt,
   type CaptionCue,
   type Tour,
 } from "./introTimeline.ts";
@@ -16,8 +19,6 @@ const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, s
 const CAPTION_HEIGHT = 120;
 
 export type IntroProps = {
-  /** README GIF처럼 줄여 보이는 영상에서, 장면마다 보여 줄 영역을 확대합니다. */
-  zoom: boolean;
   /** 녹화의 동작 기록으로 시각을 푼 본편입니다. 렌더링 명령이 넘깁니다. */
   tour: Tour;
 };
@@ -26,12 +27,12 @@ export type IntroProps = {
  * 녹화 하나를 이어 붙인 본편 뒤에 설치 안내를 겹쳐 보이는 소개 영상입니다.
  * 본편은 배경색으로 흐려지지 않고 시작하며, 끝에서는 본편의 첫 frame으로 바뀌어 GIF가 이음매 없이 반복됩니다.
  */
-export function IntroVideo({ zoom, tour }: IntroProps) {
+export function IntroVideo({ tour }: IntroProps) {
   const schedule = introSchedule(tour);
   return (
     <AbsoluteFill style={{ background: BACKGROUND, fontFamily: FONT }}>
       <Sequence durationInFrames={schedule.tour.frames}>
-        <TourScene tour={tour} zoom={zoom} />
+        <TourScene tour={tour} />
       </Sequence>
       <Sequence from={schedule.outro.from} durationInFrames={schedule.outro.frames}>
         <FadeIn>
@@ -45,7 +46,7 @@ export function IntroVideo({ zoom, tour }: IntroProps) {
       >
         <FadeIn>
           <Freeze frame={0}>
-            <TourScene tour={tour} zoom={zoom} />
+            <TourScene tour={tour} />
           </Freeze>
         </FadeIn>
       </Sequence>
@@ -53,14 +54,23 @@ export function IntroVideo({ zoom, tour }: IntroProps) {
   );
 }
 
-function TourScene({ tour, zoom }: { tour: Tour; zoom: boolean }) {
+function TourScene({ tour }: IntroProps) {
   const ms = recordingMsAt(tour.clips, useCurrentFrame());
   const index = tour.captions.findLastIndex((caption) => caption.atMs <= ms);
   const caption = tour.captions[index];
   return (
     <AbsoluteFill style={{ background: BACKGROUND }}>
       <div style={{ height: CAPTION_HEIGHT }}>
-        {caption && <CaptionBand caption={caption} step={index + 1} />}
+        {caption && (
+          <CaptionBand
+            key={caption.atMs}
+            caption={caption}
+            step={index + 1}
+            enterMs={
+              caption.enterAtMs === undefined ? undefined : videoMsAt(tour.clips, caption.enterAtMs)
+            }
+          />
+        )}
       </div>
       <div
         style={{
@@ -70,16 +80,38 @@ function TourScene({ tour, zoom }: { tour: Tour; zoom: boolean }) {
           justifyContent: "center",
         }}
       >
-        <BrowserWindow tour={tour} zoom={zoom} />
+        <BrowserWindow tour={tour} />
       </div>
     </AbsoluteFill>
   );
 }
 
 /** 장면 순서 번호와 이름을 담은 chip 옆에 자막을 한 줄로 보입니다. */
-function CaptionBand({ caption, step }: { caption: CaptionCue; step: number }) {
+function CaptionBand({
+  caption,
+  step,
+  enterMs,
+}: {
+  caption: CaptionCue;
+  step: number;
+  enterMs: number | undefined;
+}) {
+  const scope = useGsapTimeline<HTMLDivElement>(
+    ({ timeline, selector }) => {
+      if (enterMs !== undefined) {
+        timeline.fromTo(
+          selector("[data-sentence]"),
+          { opacity: 0, y: 8 },
+          { opacity: 1, y: 0, duration: CAPTION_ENTER_MS / 1000, ease: "power2.out" },
+          enterMs / 1000,
+        );
+      }
+    },
+    { dependencies: [enterMs] },
+  );
   return (
     <div
+      ref={scope}
       style={{
         height: "100%",
         display: "flex",
@@ -102,7 +134,7 @@ function CaptionBand({ caption, step }: { caption: CaptionCue; step: number }) {
       >
         {step} {caption.title}
       </span>
-      <span>{caption.text}</span>
+      <span data-sentence>{caption.text}</span>
     </div>
   );
 }

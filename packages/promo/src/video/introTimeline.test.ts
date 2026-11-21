@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
   FOCUS_MOVE_MS,
-  focusAt,
   FPS,
   findTourProblems,
   introSchedule,
@@ -24,6 +23,7 @@ const tour = (overrides: Partial<Tour>): Tour => ({
   recording: "tour",
   clips: [{ fromMs: 0, toMs: 28_000 }],
   focus: [{ atMs: 0, ...FULL }],
+  spotlights: [],
   captions: [],
   ...overrides,
 });
@@ -115,6 +115,40 @@ test("상단 구도는 긴 패널의 너비로 확대하고 화면 경계 안에
 });
 
 describe("본편 규칙", () => {
+  test("spotlight의 등장과 퇴장까지 클릭 뒤 0.5초와 겹치지 않는다", () => {
+    const spotlightAt = (atMs: number) =>
+      findTourProblems(
+        tour({
+          spotlights: [{ atMs, durationMs: 1600, box: { x: 10, y: 20, width: 80, height: 25 } }],
+        }),
+        [click("open-decision", 5000)],
+      );
+    expect(spotlightAt(5300)).toEqual([expect.stringMatching(/spotlight.*open-decision/)]);
+    expect(spotlightAt(3500)).toEqual([expect.stringMatching(/spotlight.*open-decision/)]);
+    expect(spotlightAt(5500)).toEqual([]);
+  });
+
+  test("자막 등장 도중 녹화 구간이 끊어지면 거부한다", () => {
+    const problems = findTourProblems(
+      tour({
+        clips: [
+          { fromMs: 0, toMs: 2000 },
+          { fromMs: 3000, toMs: 29000 },
+        ],
+        captions: [{ atMs: 0, title: "Now", text: "Now", enterAtMs: 1900 }],
+      }),
+      [],
+    );
+    expect(problems).toEqual([expect.stringContaining("구간 경계")]);
+  });
+
+  test("자막이 다 나타난 뒤 문장을 읽을 시간을 둔다", () => {
+    const caption = { atMs: 0, enterAtMs: 120, title: "Now", text: "Short" };
+    expect(findTourProblems(tour({ captions: [caption] }), [click("open", 1400)])).toEqual([
+      expect.stringContaining('"Now" 자막'),
+    ]);
+  });
+
   test("확대 영역은 클릭 뒤 화면이 바뀌는 0.5초 안에 움직이지 않는다", () => {
     const moveAt = (atMs: number) =>
       findTourProblems(
@@ -187,25 +221,26 @@ describe("본편 규칙", () => {
   });
 });
 
-describe("확대 영역", () => {
-  const focus = [
-    { atMs: 1000, x: 0, y: 0, width: 1280 },
-    { atMs: 3000, x: 400, y: 100, width: 640 },
-  ];
-
-  test("첫 영역의 시각 전에는 첫 영역을, 옮겨 간 뒤에는 다음 영역을 보인다", () => {
-    expect(focusAt(focus, 0)).toEqual({ x: 0, y: 0, width: 1280 });
-    expect(focusAt(focus, 3000 + FOCUS_MOVE_MS)).toEqual({ x: 400, y: 100, width: 640 });
-  });
-
-  test("옮겨 가는 동안에는 두 영역 사이를 지난다", () => {
-    const { x, width } = focusAt(focus, 3000 + FOCUS_MOVE_MS / 2);
-    expect(x).toBeCloseTo(200);
-    expect(width).toBeCloseTo(960);
-  });
-
-  test("녹화 밖으로 나가는 영역은 녹화 안으로 자른다", () => {
-    const area = focusAt([{ atMs: 0, x: 1000, y: 600, width: 640 }], 0);
-    expect(area).toEqual({ x: 1280 - 640, y: 720 - 360, width: 640 });
-  });
+test("spotlight는 viewport 전체가 아니라 기록한 링크의 네 변과 여백을 따른다", () => {
+  const plan: TourPlan = {
+    recording: "tour",
+    clips: [],
+    focus: [],
+    captions: [],
+    spotlights: [
+      { at: { after: "list", ms: 80 }, target: "successor", padding: 12, durationMs: 1600 },
+    ],
+  };
+  const event: RecordingEvent = {
+    name: "list",
+    kind: "mark",
+    atMs: 2000,
+    boxes: {
+      successor: { x: 400, y: 500, width: 70, height: 20 },
+    },
+  };
+  expect(resolveTour(plan, [event]).spotlights).toEqual([
+    { atMs: 2080, durationMs: 1600, box: { x: 388, y: 488, width: 94, height: 44 } },
+  ]);
+  expect(() => resolveTour(plan, [{ ...event, boxes: {} }])).toThrow(/list.*successor/);
 });

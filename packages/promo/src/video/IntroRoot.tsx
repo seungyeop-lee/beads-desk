@@ -4,8 +4,7 @@ import { IntroVideo, type IntroProps } from "./IntroVideo.tsx";
 
 /** 렌더링 명령은 녹화의 동작 기록으로 푼 본편을 넘깁니다. 이 값은 composition 정의에만 쓰는 빈 본편입니다. */
 const DEFAULT_PROPS: IntroProps = {
-  zoom: false,
-  tour: { recording: TOUR.recording, clips: [], focus: [], captions: [] },
+  tour: { recording: TOUR.recording, clips: [], focus: [], spotlights: [], captions: [] },
 };
 
 export function IntroRoot() {

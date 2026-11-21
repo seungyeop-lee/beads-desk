@@ -1,23 +1,48 @@
-import { OffthreadVideo, Sequence, staticFile, useCurrentFrame } from "remotion";
+import { useGsapTimeline } from "@remotion/gsap";
+import { OffthreadVideo, Sequence, staticFile } from "remotion";
 import {
   clipFrames,
-  focusAt,
-  FPS,
+  FOCUS_MOVE_MS,
   msToFrames,
   placeInOrder,
   RECORDING_SIZE,
-  type Clip,
-  type Focus,
+  SPOTLIGHT_FADE_MS,
+  videoMsAt,
   type Tour,
 } from "./introTimeline.ts";
 
 const TITLE_BAR_HEIGHT = 30;
 
-/**
- * 본편의 녹화 구간을 차례로 브라우저 창 모양 안에 녹화 크기 그대로 보입니다.
- * `zoom`이면 본편의 `focus` 영역을 창 크기로 확대합니다.
- */
-export function BrowserWindow({ tour, zoom }: { tour: Tour; zoom: boolean }) {
+export function BrowserWindow({ tour }: { tour: Tour }) {
+  const scope = useGsapTimeline<HTMLDivElement>(
+    ({ timeline, selector }) => {
+      const camera = selector("[data-camera]");
+      for (const [index, { atMs, x, y, width }] of tour.focus.entries()) {
+        const scale = RECORDING_SIZE.width / width;
+        const pose = { scale, x: -x * scale, y: -y * scale };
+        if (index === 0) timeline.set(camera, pose, 0);
+        else
+          timeline.to(
+            camera,
+            { ...pose, duration: FOCUS_MOVE_MS / 1000, ease: "sine.inOut" },
+            videoMsAt(tour.clips, atMs) / 1000,
+          );
+      }
+      for (const [index, { atMs, durationMs }] of tour.spotlights.entries()) {
+        const mask = selector(`[data-spotlight="${index}"]`);
+        const start = videoMsAt(tour.clips, atMs) / 1000;
+        const fade = SPOTLIGHT_FADE_MS / 1000;
+        timeline
+          .to(mask, { opacity: 1, duration: fade, ease: "sine.inOut" }, start)
+          .to(
+            mask,
+            { opacity: 0, duration: fade, ease: "sine.inOut" },
+            start + durationMs / 1000 - fade,
+          );
+      }
+    },
+    { dependencies: [tour] },
+  );
   const clips = placeInOrder(tour.clips, clipFrames);
   return (
     <div
@@ -30,35 +55,45 @@ export function BrowserWindow({ tour, zoom }: { tour: Tour; zoom: boolean }) {
       }}
     >
       <TitleBar />
-      <div style={{ ...RECORDING_SIZE, position: "relative", overflow: "hidden" }}>
-        {clips.map((clip) => (
-          <Sequence key={clip.fromMs} from={clip.from} durationInFrames={clip.frames} layout="none">
-            <ClipVideo recording={tour.recording} clip={clip} focus={zoom ? tour.focus : []} />
-          </Sequence>
-        ))}
+      <div ref={scope} style={{ ...RECORDING_SIZE, position: "relative", overflow: "hidden" }}>
+        <div data-camera style={{ ...RECORDING_SIZE, transformOrigin: "0 0" }}>
+          {clips.map((clip) => (
+            <Sequence
+              key={clip.fromMs}
+              from={clip.from}
+              durationInFrames={clip.frames}
+              layout="none"
+            >
+              <OffthreadVideo
+                src={staticFile(`${tour.recording}.webm`)}
+                trimBefore={msToFrames(clip.fromMs)}
+                muted
+                style={{ display: "block", ...RECORDING_SIZE }}
+              />
+            </Sequence>
+          ))}
+          {tour.spotlights.map(({ atMs, box }, index) => (
+            <div
+              key={atMs}
+              data-spotlight={index}
+              style={{
+                position: "absolute",
+                left: box.x,
+                top: box.y,
+                width: box.width,
+                height: box.height,
+                borderRadius: 8,
+                opacity: 0,
+                boxShadow: `0 0 0 ${RECORDING_SIZE.width}px rgba(28, 25, 23, 0.22)`,
+              }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-function ClipVideo({ recording, clip, focus }: { recording: string; clip: Clip; focus: Focus[] }) {
-  const ms = clip.fromMs + (useCurrentFrame() * 1000) / FPS;
-  const { x, y, width } = focusAt(focus, ms);
-  const scale = RECORDING_SIZE.width / width;
-  return (
-    <OffthreadVideo
-      src={staticFile(`${recording}.webm`)}
-      trimBefore={msToFrames(clip.fromMs)}
-      muted
-      style={{
-        display: "block",
-        ...RECORDING_SIZE,
-        transformOrigin: "0 0",
-        transform: `scale(${scale}) translate(${-x}px, ${-y}px)`,
-      }}
-    />
-  );
-}
 function TitleBar() {
   return (
     <div

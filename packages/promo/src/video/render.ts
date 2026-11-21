@@ -46,9 +46,9 @@ const tourProblems = findTourProblems(tour, events);
 if (tourProblems.length > 0) {
   throw new Error(
     [
-      "본편이 확대 영역, 자막, 길이 규칙을 어깁니다.",
+      "본편이 강조 효과, 자막, 길이 규칙을 어깁니다.",
       ...tourProblems.map((problem) => `- ${problem}`),
-      "introTimeline.ts의 TOUR에서 확대 영역의 시각을 옮기거나, captureTargets.ts의 tour 녹화에서 pause 길이를 고칩니다.",
+      "introTimeline.ts의 TOUR에서 효과 시각을 옮기거나, captureTargets.ts의 tour 녹화에서 pause 길이를 고칩니다.",
     ].join("\n"),
   );
 }
@@ -61,9 +61,9 @@ const loadingBoundaries = await findLoadingBoundaries(tour, recordingFrames.read
 if (loadingBoundaries.length > 0) {
   throw new Error(
     [
-      "녹화 구간의 경계가 화면을 불러오는 동안이나 장면의 동작 바로 앞뒤에 걸렸습니다.",
+      "녹화 구간의 경계나 강조 효과가 화면이 바뀌는 동안에 걸렸습니다.",
       ...loadingBoundaries.map((problem) => `- ${problem}`),
-      "녹화의 frame을 보고, introTimeline.ts의 TOUR에서 구간의 from은 화면을 다 그린 뒤로, to는 화면이 바뀌기 전으로 옮깁니다.",
+      "녹화의 frame을 보고 introTimeline.ts의 TOUR에서 해당 경계나 효과를 안정적인 화면으로 옮깁니다.",
     ].join("\n"),
   );
 }
@@ -74,10 +74,28 @@ const serveUrl = await bundle({
   rootDir: PACKAGE_DIR,
   publicDir: RECORDING_DIR,
 });
-for (const format of ["mp4", "gif"] as const) {
+await renderIntro("mp4", tour);
+let gifTour = tour;
+let gifBytes = await renderIntro("gif", gifTour);
+for (const effect of ["spotlight", "자막 등장", "카메라 확대"] as const) {
+  if (gifBytes <= GIF_MAX_BYTES) break;
+  console.log(`GIF ${gifBytes}B > ${GIF_MAX_BYTES}B: ${effect} 효과를 빼고 다시 만듭니다.`);
+  if (effect === "spotlight") gifTour = { ...gifTour, spotlights: [] };
+  else if (effect === "자막 등장") {
+    gifTour = {
+      ...gifTour,
+      captions: gifTour.captions.map(({ atMs, title, text }) => ({ atMs, title, text })),
+    };
+  } else gifTour = { ...gifTour, focus: [] };
+  gifBytes = await renderIntro("gif", gifTour);
+}
+if (gifBytes > GIF_MAX_BYTES)
+  throw new Error(`효과를 모두 뺀 GIF도 ${gifBytes}B로 ${GIF_MAX_BYTES}B를 넘습니다.`);
+
+async function renderIntro(format: "mp4" | "gif", tour: IntroProps["tour"]): Promise<number> {
   const gif = format === "gif";
   const outputLocation = join(OUTPUT_DIR, `beads-desk-intro.${format}`);
-  const inputProps: IntroProps = { zoom: gif, tour };
+  const inputProps: IntroProps = { tour };
   const composition = await selectComposition({ serveUrl, id: INTRO_ID, inputProps });
   const scale = gif ? GIF_SCALE : 1;
   const fps = composition.fps / (gif ? GIF_FRAME_STEP : 1);
@@ -136,11 +154,7 @@ for (const format of ["mp4", "gif"] as const) {
   console.log(
     `${outputLocation}: ${(composition.durationInFrames / composition.fps).toFixed(1)}초, ` +
       `${Math.round(composition.width * scale)}×${Math.round(composition.height * scale)}, ` +
-      `${fps.toFixed(1)}fps, ${(bytes / 1024 / 1024).toFixed(1)}MB`,
+      `${fps.toFixed(1)}fps, ${bytes}B (${(bytes / 1024 / 1024).toFixed(1)}MiB)`,
   );
-  if (gif && bytes > GIF_MAX_BYTES) {
-    throw new Error(
-      `GIF가 ${GIF_MAX_BYTES / 1024 / 1024}MB를 넘습니다. 크기나 frame rate를 줄입니다.`,
-    );
-  }
+  return bytes;
 }

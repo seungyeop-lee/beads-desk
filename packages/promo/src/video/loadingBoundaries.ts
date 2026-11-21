@@ -1,4 +1,11 @@
-import { clipFrames, FPS, msToFrames, type Clip, type Tour } from "./introTimeline.ts";
+import {
+  clipFrames,
+  effectWindows,
+  FPS,
+  msToFrames,
+  type Clip,
+  type Tour,
+} from "./introTimeline.ts";
 import type { Frame } from "./recordingFrames.ts";
 
 /**
@@ -28,28 +35,32 @@ const EDGES: Edge[] = ["fromMs", "toMs"];
  * 크게 다른 frame이 있으면 구간과 경계를 적은 문장을 돌려줍니다. 경계가 화면을 불러오는 동안에 걸렸거나,
  * 경계에서 1초 안에 장면의 동작이 화면을 바꾼 경우입니다.
  */
-export async function findLoadingBoundaries(
-  { recording, clips }: Pick<Tour, "recording" | "clips">,
-  read: ReadFrames,
-): Promise<string[]> {
+export async function findLoadingBoundaries(tour: Tour, read: ReadFrames): Promise<string[]> {
+  const { recording, clips } = tour;
   const boundaries = clips.flatMap((clip, index) =>
-    EDGES.map((edge) => ({ clip, index, edge, frames: boundaryFrames(clip, edge) })),
+    EDGES.map((edge) => ({
+      label: `${index + 1}번째 구간 ${edge} ${clip[edge]}`,
+      frames: boundaryFrames(clip, edge),
+    })),
   );
-  const frames = await read(recording, [...new Set(boundaries.flatMap((b) => b.frames))]);
+  const effects = effectWindows(tour).map(({ kind, atMs, durationMs }) => {
+    const start = msToFrames(atMs);
+    const length = msToFrames(atMs + durationMs) - start + 1;
+    return { label: `${kind} ${atMs}ms`, frames: Array.from({ length }, (_, i) => start + i) };
+  });
+  const windows = [...boundaries, ...effects];
+  const frames = await read(recording, [...new Set(windows.flatMap((b) => b.frames))]);
   const problems: string[] = [];
   for (const {
-    clip,
-    index,
-    edge,
+    label,
     frames: [boundary, ...inward],
-  } of boundaries) {
+  } of windows) {
     const changedAt = inward.find(
       (frame) => changedShare(frames.get(boundary!)!, frames.get(frame)!) > LOADING_CHANGE,
     );
     if (changedAt === undefined) continue;
     problems.push(
-      `${recording}.webm의 ${index + 1}번째 구간 ${edge} ${clip[edge]}: ` +
-        `경계 frame이 구간 안쪽 ${frameMs(changedAt)}ms의 화면과 다릅니다.`,
+      `${recording}.webm의 ${label}: ${frameMs(boundary!)}ms와 ${frameMs(changedAt)}ms의 화면이 다릅니다.`,
     );
   }
   return problems;

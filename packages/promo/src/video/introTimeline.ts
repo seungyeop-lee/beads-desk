@@ -1,9 +1,6 @@
 /** Playwright 녹화가 25fps라서, 영상도 25fps로 만들어 녹화의 frame을 하나씩 그대로 씁니다. */
 export const FPS = 25;
-/**
- * 녹화의 viewport(CSS 픽셀)입니다. 녹화 frame은 CSS 픽셀 크기로 저장되므로, MP4는 녹화를 줄이거나 키우지 않고 그대로 놓아 글자가 흐려지지 않게 합니다.
- * README 폭에 맞춰 줄이는 GIF에서는 이 크기의 UI 글자를 읽을 수 없어서, 장면마다 보여 줄 영역(`focus`)을 확대합니다.
- */
+/** 녹화와 강조 대상 위치가 함께 쓰는 viewport 크기(CSS 픽셀)입니다. */
 export const RECORDING_SIZE = { width: 1280, height: 720 };
 export const VIDEO_SIZE = { width: 1440, height: 900 };
 /** 렌더링 명령이 고르는 composition입니다. MP4와 README GIF가 함께 씁니다. */
@@ -17,7 +14,9 @@ export const GIF_FRAME_STEP = 3;
 export const OUTRO_FADE_FRAMES = msToFrames(300);
 export const OUTRO_FRAMES = msToFrames(2000);
 /** 앞 focus에서 다음 focus로 옮겨 가는 시간입니다. */
-export const FOCUS_MOVE_MS = 600;
+export const FOCUS_MOVE_MS = 400;
+export const CAPTION_ENTER_MS = 320;
+export const SPOTLIGHT_FADE_MS = 280;
 /** 클릭한 뒤 dialog, 패널, 화면이 바뀌는 시간입니다. 이 동안 확대 영역이 움직이면 화면 전환과 카메라 이동이 겹쳐 무엇이 열렸는지 알아보기 어렵습니다. */
 export const SCREEN_CHANGE_MS = 500;
 /** 자막이 나타난 뒤 다음 클릭까지 비워 두는 최소 시간과, 자막을 읽는 속도(초당 글자 수)입니다. */
@@ -45,14 +44,16 @@ export type Caption = { title: string; text: string };
 export type Clip = { fromMs: number; toMs: number };
 
 /**
- * GIF에서 창 크기로 확대할 녹화의 영역입니다. 좌표와 너비는 녹화의 CSS 픽셀이고, 높이는 녹화의 비율을 따릅니다.
+ * 창 크기로 확대할 녹화의 영역입니다. 좌표와 너비는 녹화의 CSS 픽셀이고, 높이는 녹화의 비율을 따릅니다.
  * 녹화 시각 `atMs`부터 FOCUS_MOVE_MS 동안 앞 영역에서 이 영역으로 옮겨 갑니다.
  */
 export type Focus = { atMs: number; x: number; y: number; width: number };
 type FocusArea = Omit<Focus, "atMs">;
 
 /** 녹화 시각 `atMs`부터 다음 자막이 나올 때까지 보이는 자막입니다. 화면에 놓는 위치는 영상 구성이 정합니다. */
-export type CaptionCue = Caption & { atMs: number };
+export type CaptionCue = Caption & { atMs: number; enterAtMs?: number };
+
+type Spotlight = { atMs: number; durationMs: number; box: TargetBox };
 
 /** 녹화 하나를 잘라 이어 붙인 소개 영상의 본편입니다. 시각은 모두 녹화 시각입니다. */
 export type Tour = {
@@ -62,6 +63,7 @@ export type Tour = {
   clips: Clip[];
   /** 녹화 시각 순서로 둡니다. 첫 영역은 그 시각 전에도 쓰고, 비워 두면 녹화 전체를 보입니다. */
   focus: Focus[];
+  spotlights: Spotlight[];
   /** 녹화 시각 순서로 둡니다. 장면마다 하나씩, 그 장면을 여는 동작의 시각에 바뀝니다. */
   captions: CaptionCue[];
 };
@@ -80,7 +82,13 @@ export type TourPlan = {
   recording: string;
   clips: { from: Moment; to: Moment }[];
   focus: ({ at: Moment; frame: "full" } | SubjectFocus)[];
-  captions: (Caption & { at: Moment })[];
+  spotlights?: {
+    at: Moment & { after: string };
+    target: string;
+    padding: number;
+    durationMs: number;
+  }[];
+  captions: (Caption & { at: Moment; enterAt?: Moment })[];
 };
 
 const FULL: FocusArea = { x: 0, y: 0, width: RECORDING_SIZE.width };
@@ -117,28 +125,35 @@ export const TOUR: TourPlan = {
     { at: { after: "checkout-shown", ms: 2100 }, frame: "full" },
     // 스크롤한 상세에서 Staging check 제목부터 결제 화면 스크린샷 아래의 녹화 링크까지 함께 들어오는 너비입니다.
     {
-      at: { after: "close-diagram", ms: 550 },
-      measuredAt: "screenshot-framed",
+      at: { after: "screenshot-framed", ms: 160 },
       targets: ["staging-heading", "checkout-screenshot", "recording-link"],
       frame: "contain",
       padding: 8,
     },
-    { at: { after: "scroll-to-screenshot", ms: 1100 }, frame: "full" },
-    // 결정 목록은 Supersession 열까지 들어오는 너비로 봅니다. 상세가 열리면 Supersedes 링크를 누르기 전에 전체 화면으로 돌아가,
-    // 이전 결정이 상세 옆 패널에 열리는 모습을 끝까지 전체 화면으로 보입니다.
-    // 상세의 오른쪽 열만 확대하면 옆 패널이 상세 옆에 열린다는 관계가 드러나지 않고, 옆 패널이 열린 뒤에는 상세가 좁아지며
-    // Linked issues가 화면 아래로 내려가므로 상세와 옆 패널을 함께 담으면서 확대할 영역이 없습니다.
+    { at: { after: "screenshot-framed", ms: 2100 }, frame: "full" },
+  ],
+  spotlights: [
+    // 결정 상세와 이전 결정 패널의 관계를 보존하도록 목록의 대체 관계만 비추고 클릭 전에 거둡니다.
     {
-      at: { after: "decisions-focus", ms: 0 },
-      targets: ["decisions-heading", "decision-id-column", "superseding-decision"],
-      frame: "top",
-      padding: 8,
+      at: { after: "decisions-focus", ms: 80 },
+      target: "superseding-decision",
+      padding: 12,
+      durationMs: 1760,
     },
-    { at: { after: "decision-shown", ms: 200 }, frame: "full" },
   ],
   captions: [
-    { at: { ms: 0 }, title: "Now", text: "See what's due and what's blocking" },
-    { at: { after: "open-graph", ms: 0 }, title: "Graph", text: "Follow what blocks each issue" },
+    {
+      at: { ms: 0 },
+      enterAt: { ms: 80 },
+      title: "Now",
+      text: "See what's due and what's blocking",
+    },
+    {
+      at: { after: "open-graph", ms: 0 },
+      enterAt: { after: "graph-shown", ms: 330 },
+      title: "Graph",
+      text: "Follow what blocks each issue",
+    },
     {
       at: { after: "open-checkout", ms: 0 },
       title: "Diagrams",
@@ -176,18 +191,31 @@ export function resolveTour(plan: TourPlan, events: RecordingEvent[]): Tour {
       atMs: msOf(cue.at),
       ...(cue.frame === "full" ? FULL : subjectArea(cue, events)),
     })),
-    captions: plan.captions.map(({ at, ...caption }) => ({ atMs: msOf(at), ...caption })),
+    spotlights: (plan.spotlights ?? []).map(({ at, target, padding, durationMs }) => ({
+      atMs: msOf(at),
+      durationMs,
+      box: measuredBox(events, at.after, [target], padding),
+    })),
+    captions: plan.captions.map(({ at, enterAt, ...caption }) => ({
+      atMs: msOf(at),
+      ...(enterAt && { enterAtMs: msOf(enterAt) }),
+      ...caption,
+    })),
   };
 }
 
-function subjectArea(cue: SubjectFocus, events: RecordingEvent[]): FocusArea {
-  const scene = cue.measuredAt ?? cue.at.after;
+function measuredBox(
+  events: RecordingEvent[],
+  scene: string,
+  targets: readonly string[],
+  padding: number,
+): TargetBox {
   const boxes = events.find(({ name }) => name === scene)?.boxes;
   let left = Infinity;
   let right = -Infinity;
   let top = Infinity;
   let bottom = -Infinity;
-  for (const target of cue.targets) {
+  for (const target of targets) {
     const box = boxes?.[target];
     if (!box) throw new Error(`${scene} 장면에 ${target} 위치가 없습니다. 다시 capture합니다.`);
     left = Math.min(left, box.x);
@@ -195,15 +223,25 @@ function subjectArea(cue: SubjectFocus, events: RecordingEvent[]): FocusArea {
     top = Math.min(top, box.y);
     bottom = Math.max(bottom, box.y + box.height);
   }
+  return {
+    x: left - padding,
+    y: top - padding,
+    width: right - left + 2 * padding,
+    height: bottom - top + 2 * padding,
+  };
+}
+
+function subjectArea(cue: SubjectFocus, events: RecordingEvent[]): FocusArea {
+  const box = measuredBox(events, cue.measuredAt ?? cue.at.after, cue.targets, cue.padding);
   const aspect = RECORDING_SIZE.width / RECORDING_SIZE.height;
-  const paddedWidth = right - left + 2 * cue.padding;
+  const paddedWidth = box.width;
   if (cue.frame === "top") {
-    return clampFocus({ x: left - cue.padding, y: top - cue.padding, width: paddedWidth });
+    return clampFocus(box);
   }
-  const width = Math.max(paddedWidth, (bottom - top + 2 * cue.padding) * aspect);
+  const width = Math.max(paddedWidth, box.height * aspect);
   return clampFocus({
-    x: (left + right - width) / 2,
-    y: (top + bottom - width / aspect) / 2,
+    x: box.x + (box.width - width) / 2,
+    y: box.y + (box.height - width / aspect) / 2,
     width,
   });
 }
@@ -250,7 +288,7 @@ export function videoMsAt(clips: Clip[], ms: number): number {
   for (const clip of clips) {
     if (ms < clip.fromMs) return elapsed;
     if (ms <= clip.toMs) return elapsed + ms - clip.fromMs;
-    elapsed += clip.toMs - clip.fromMs;
+    elapsed += (clipFrames(clip) * 1000) / FPS;
   }
   return elapsed;
 }
@@ -258,6 +296,20 @@ export function videoMsAt(clips: Clip[], ms: number): number {
 /** 자막이 나타난 뒤 다음 클릭까지 비워 둘 시간입니다. 짧은 자막도 CAPTION_MIN_MS는 둡니다. */
 export function captionReadMs(caption: Caption): number {
   return Math.max(CAPTION_MIN_MS, (caption.text.length / CAPTION_CHARS_PER_SECOND) * 1000);
+}
+
+export function effectWindows(tour: Pick<Tour, "focus" | "spotlights" | "captions">) {
+  return [
+    ...tour.focus
+      .slice(1)
+      .map(({ atMs }) => ({ kind: "확대 영역 이동", atMs, durationMs: FOCUS_MOVE_MS })),
+    ...tour.spotlights.map(({ atMs, durationMs }) => ({ kind: "spotlight", atMs, durationMs })),
+    ...tour.captions.flatMap(({ enterAtMs }) =>
+      enterAtMs === undefined
+        ? []
+        : [{ kind: "자막 등장", atMs: enterAtMs, durationMs: CAPTION_ENTER_MS }],
+    ),
+  ];
 }
 
 /**
@@ -273,20 +325,30 @@ export function findTourProblems(tour: Tour, events: RecordingEvent[]): string[]
   const moves = tour.focus.slice(1).map(({ atMs }) => atMs);
   const problems: string[] = [];
 
-  for (const click of actions.filter(({ kind }) => kind === "click")) {
-    for (const move of moves) {
-      const overlaps =
-        at(move) < at(click.atMs) + SCREEN_CHANGE_MS && at(move) + FOCUS_MOVE_MS > at(click.atMs);
-      if (overlaps) {
+  for (const { kind, atMs, durationMs } of effectWindows(tour)) {
+    if (
+      !tour.clips.some(
+        (clip) =>
+          msToFrames(atMs) > msToFrames(clip.fromMs) &&
+          msToFrames(atMs + durationMs) < msToFrames(clip.fromMs) + clipFrames(clip) - 1,
+      )
+    ) {
+      problems.push(`${seconds(atMs)}의 ${kind} 효과가 구간 경계에 걸립니다.`);
+    }
+    if (kind === "자막 등장") continue;
+    for (const click of actions.filter(({ kind }) => kind === "click")) {
+      if (at(atMs) < at(click.atMs) + SCREEN_CHANGE_MS && at(atMs) + durationMs > at(click.atMs)) {
         problems.push(
-          `${seconds(move)}에 시작하는 확대 영역 이동이 ${click.name} 클릭(${seconds(click.atMs)}) 뒤 ${SCREEN_CHANGE_MS}ms 안에 걸립니다.`,
+          `${seconds(atMs)}에 시작하는 ${kind} 효과가 ${click.name} 클릭(${seconds(click.atMs)}) 뒤 ${SCREEN_CHANGE_MS}ms 안에 걸립니다.`,
         );
       }
     }
   }
 
   for (const caption of tour.captions) {
-    const quietUntil = at(caption.atMs) + captionReadMs(caption);
+    const readableAt =
+      caption.enterAtMs === undefined ? caption.atMs : caption.enterAtMs + CAPTION_ENTER_MS;
+    const quietUntil = at(readableAt) + captionReadMs(caption);
     const next = actions.find(({ atMs }) => atMs > caption.atMs);
     if (next !== undefined && at(next.atMs) < quietUntil) {
       problems.push(
@@ -310,20 +372,6 @@ export function findTourProblems(tour: Tour, events: RecordingEvent[]): string[]
     );
   }
   return problems;
-}
-
-/** 녹화 시각 ms에 보일 영역입니다. 옮겨 가는 동안에는 천천히 출발해 천천히 멈추고, 녹화 밖으로 나가지 않게 자릅니다. */
-export function focusAt(focus: Focus[], ms: number): FocusArea {
-  const index = focus.findLastIndex((area) => area.atMs <= ms);
-  const target = focus[Math.max(index, 0)];
-  if (target === undefined) return FULL;
-  const previous = focus[index - 1];
-  const progress = (ms - target.atMs) / FOCUS_MOVE_MS;
-  if (previous === undefined || progress >= 1) return clampFocus(target);
-  const eased = (1 - Math.cos(Math.PI * progress)) / 2;
-  const between = (key: "x" | "y" | "width") =>
-    previous[key] + (target[key] - previous[key]) * eased;
-  return clampFocus({ x: between("x"), y: between("y"), width: between("width") });
 }
 
 function clampFocus({ x, y, width }: FocusArea): FocusArea {

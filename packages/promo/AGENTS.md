@@ -25,19 +25,21 @@ README의 Hygiene 스크린샷은 다섯 카드가 한 화면에 들어와야 �
 
 `pnpm --filter promo run video`는 capture가 남긴 녹화로 Remotion을 실행해 소개 영상을 만듭니다. 먼저 capture를 실행하고, GIF 인코딩에 쓸 `ffmpeg`를 설치해 PATH에 둡니다(`ffmpeg -filters`에서 `palettegen`, `paletteuse`를 확인합니다). 처음 실행할 때 Remotion이 렌더링용 Chrome Headless Shell(약 170MB)을 `packages/promo/node_modules/.remotion`에 내려받습니다. 명령이 끝나면 파일마다 길이, 해상도, frame rate, 용량을 출력합니다.
 
-- `packages/promo/out/beads-desk-intro.mp4`는 지금 화면을 맨 위에서 마감 목록과 병목 후보까지 보인 뒤, 오늘 마감인 이슈 하나의 선행·후속 그래프, 그 그래프에서 연 결제 화면 이슈의 Mermaid 그림과 스크린샷, 결정과 그 결정이 대체한 이전 결정을 차례로 보이고 설치 안내로 끝나는 영상입니다(H.264, 1440×900, 25fps). 녹화 하나(`tour`)를 잘라 이어 붙이고, 녹화를 줄이거나 키우지 않고 그대로 놓습니다.
-- `packages/promo/out/beads-desk-intro.gif`는 README 맨 위에 두는, 같은 영상을 줄인 GIF입니다(880×550, 약 8.3fps, 무한 반복). Remotion은 줄인 크기에서도 글자를 읽을 수 있도록 장면마다 `focus` 영역을 확대한 PNG frame을 만듭니다. ffmpeg는 frame 사이에서 달라진 부분으로 팔레트를 만든 뒤(`palettegen`), 그 팔레트를 디더링 없이 적용합니다(`paletteuse`). GitHub 이미지 첨부 한도인 10MB를 넘으면 명령이 실패합니다.
+- `packages/promo/out/beads-desk-intro.mp4`는 지금 화면에서 마감 목록과 병목 후보를 보여 준 뒤, 오늘 마감인 이슈의 선행·후속 그래프, 결제 화면 이슈의 Mermaid 그림과 스크린샷, 결정과 그 결정이 대체한 이전 결정을 차례로 보여 줍니다. 마지막은 설치 안내입니다(H.264, 1440×900, 25fps).
+- `packages/promo/out/beads-desk-intro.gif`는 같은 구간과 효과를 쓰는 README용 GIF입니다(880×550, 약 8.3fps, 무한 반복). ffmpeg는 PNG frame 사이에서 달라진 부분으로 팔레트를 만들고(`palettegen`) 디더링 없이 적용합니다(`paletteuse`). 10MiB를 넘으면 명령이 바이트 수를 출력하고 GIF에서만 **spotlight → 자막 등장 → 카메라 확대** 순으로 하나씩 빼고 다시 만듭니다. 한도 안에 들면 멈추고, 효과를 모두 빼도 넘으면 실패합니다.
 - `packages/promo/out/`은 저장소에 넣지 않습니다. README에 쓰려면 두 파일을 `docs/beads-desk-intro.gif`와 `docs/beads-desk-intro.mp4`로 복사해 commit합니다.
   - README는 GIF와 스크린샷을 commit SHA로 고정한 `raw.githubusercontent.com` 주소로 넣습니다. 그래야 npmjs.com에서도 이미지가 보입니다. 이미지를 commit한 뒤 README.md, README.ko.md, README.ja.md의 주소를 그 commit의 SHA로 바꿉니다.
   - MP4는 main에 push하면 `.github/workflows/pages.yml`이 GitHub Pages에 배포합니다. 주소가 바뀌지 않으므로 README의 MP4 링크는 고치지 않습니다.
 
-자막, 녹화에서 잘라 쓰는 구간, GIF에서 확대할 대상은 `packages/promo/src/video/introTimeline.ts`의 `TOUR`에 있습니다. 시각은 `captureTargets.ts`의 `tour` 녹화가 남기는 동작 이름(`open-checkout` 등)과 그 동작에서 지난 밀리초로 적고, video 명령이 `tour.events.json`으로 녹화 시각을 풉니다. 동작 이름을 바꾸면 `TOUR`도 함께 바꿉니다.
+자막과 녹화 구간, 장면별 강조 효과는 `packages/promo/src/video/introTimeline.ts`의 `TOUR`에서 정합니다. 시각은 `captureTargets.ts`의 `tour` 녹화가 남기는 동작 이름(`open-checkout` 등)과 그 동작에서 지난 밀리초로 적고, video 명령이 `tour.events.json`으로 녹화 시각을 풉니다. 동작 이름을 바꾸면 `TOUR`도 함께 바꿉니다.
+
+장면마다 한 종류만 사용합니다. Now와 Graph는 `captions[].enterAt`에 자막 문장을 띄우고, Diagrams와 Screenshots는 `focus`의 영역으로 카메라를 옮깁니다. Decisions는 `spotlights`의 `target`과 `padding` 안쪽을 그대로 두고 주변만 어둡게 했다가 `durationMs` 안에 거둡니다. 상세와 옆 패널이 열릴 때는 전체 화면입니다. `IntroVideo.tsx`와 `BrowserWindow.tsx`는 이 시각에 맞춰 `useGsapTimeline`이 소유한 timeline을 그립니다.
 
 확대 대상을 바꾸려면 `captureTargets.ts`의 `mark`에 대상 이름과 role·이름 기반 locator를 주고 `TOUR.focus`의 `targets`에서 그 이름을 씁니다. capture는 그 시점의 요소 위치를 `tour.events.json`의 `boxes`에 녹화 viewport 기준 CSS 픽셀로 남깁니다. video는 `contain`이면 대상 전체와 `padding`이 들어오게 확대하고, `top`이면 대상의 위쪽과 너비에 맞춥니다. `full`은 측정 없이 전체 화면을 보입니다. 이동을 먼저 시작해 스크롤 뒤의 대상을 보여 줄 때는 `at`에 이동 시각을, `measuredAt`에 스크롤이 끝난 뒤 위치를 잰 동작 이름을 적습니다. 화면 배치가 바뀌면 capture부터 다시 실행합니다.
 
 video 명령은 렌더링하기 전에 아래를 검사하고, 어기면 그 시각을 알리며 실패합니다. 시각은 구간 사이를 빼고 이어 붙인 영상 시각으로 셉니다.
 
-- 확대 영역이 클릭 뒤 0.5초 안에 움직이는지 봅니다. 화면이 바뀌는 모습과 카메라 이동이 겹치면 무엇이 열렸는지 알아보기 어렵습니다.
-- 자막이 나타난 뒤 `max(1.2초, 글자 수 ÷ 15)초` 안에 다음 클릭이나 스크롤이 있는지, 확대 영역이 두 번 넘게 움직이는지 봅니다.
+- 카메라 이동이나 spotlight가 클릭 뒤 0.5초와 겹치면 실패합니다. 자막 문장이 다 나타난 뒤 `max(1.2초, 글자 수 ÷ 15)초` 안에 다음 클릭이나 스크롤이 있거나 자막을 읽는 동안 카메라가 두 번 이상 움직여도 실패합니다.
+- 효과가 구간의 첫 frame이나 마지막 frame에 걸치거나, 효과가 진행되는 동안 녹화 화면이 로딩이나 스크롤로 크게 바뀌면 실패합니다. 효과 없이 멈춰 있는 화면이 맞는지는 녹화 frame으로 확인합니다.
 - 영상 길이가 25–38초인지 봅니다.
 - 구간마다 첫 frame과 마지막 frame을 구간 안쪽 1초 동안의 frame과 비교하고, 화면이 크게 다르면 구간과 경계를 알립니다. 경계가 화면을 불러오는 동안에 걸렸거나 경계에서 1초 안에 장면의 동작이 있는 경우이므로, 녹화의 frame을 보고 그 경계를 옮깁니다. 목록이 빈 채로 1초 넘게 머물면, 빈 목록이 나타나고 얼마 지나지 않은 경계는 이 검사를 통과합니다.

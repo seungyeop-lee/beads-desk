@@ -10,8 +10,11 @@ function recording(screenAt: (frame: number) => number): ReadFrames {
     new Map(frames.map((frame) => [frame, new Uint8Array(PIXELS).fill(screenAt(frame))]));
 }
 
-const tour = (fromMs: number, toMs: number): Pick<Tour, "recording" | "clips"> => ({
+const tour = (fromMs: number, toMs: number): Tour => ({
   recording: "tour",
+  focus: [],
+  spotlights: [],
+  captions: [],
   clips: [
     { fromMs: 0, toMs: 2000 },
     { fromMs, toMs },
@@ -19,6 +22,18 @@ const tour = (fromMs: number, toMs: number): Pick<Tour, "recording" | "clips"> =
 });
 
 describe("녹화 구간 경계 검사", () => {
+  test("구간 경계가 안정적이어도 자막 등장 중 한 frame이 바뀌면 거부한다", async () => {
+    const scene = {
+      ...tour(4000, 8000),
+      captions: [{ atMs: 4000, title: "Graph", text: "Graph", enterAtMs: 6000 }],
+    };
+    const problems = await findLoadingBoundaries(
+      scene,
+      recording((frame) => (frame === 154 ? 90 : 200)),
+    );
+    expect(problems).toEqual([expect.stringContaining("자막 등장")]);
+  });
+
   test("경계 근처에서 화면이 바뀌지 않으면 문제가 없다", async () => {
     expect(
       await findLoadingBoundaries(
