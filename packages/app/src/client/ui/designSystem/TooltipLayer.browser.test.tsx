@@ -184,30 +184,26 @@ test("도움말 크기와 시작·끝 정렬을 유지하며 같은 안내 영�
 test("스크롤바 공간을 뺀 좁은 창에서도 긴 도움말이 양쪽 여백 안에 들어간다", async () => {
   await page.viewport(400, 800);
   const root = document.documentElement;
-  const originalGutter = root.style.scrollbarGutter;
-  const originalOverflow = root.style.overflowY;
-  root.style.scrollbarGutter = "stable";
-  root.style.overflowY = "scroll";
-  try {
-    const screen = await render(
-      <>
-        <button style={{ position: "fixed", right: 8, top: 8 }} data-tooltip={LONG_DESCRIPTION}>
-          스크롤바 옆 안내
-        </button>
-        <TooltipLayer />
-      </>,
-    );
-    expect(root.clientWidth).toBeLessThan(window.innerWidth);
-    await userEvent.hover(screen.getByRole("button", { name: "스크롤바 옆 안내" }));
-    const tooltip = page.getByRole("tooltip");
-    await expect.element(tooltip).toBeVisible();
-    const box = tooltip.element().getBoundingClientRect();
-    expect(box.left).toBeGreaterThanOrEqual(8);
-    expect(box.right).toBeLessThanOrEqual(root.clientWidth - 8);
-    expect(root.scrollWidth).toBe(root.clientWidth);
-    expect(tooltip.element().scrollHeight).toBeLessThanOrEqual(tooltip.element().clientHeight);
-  } finally {
-    root.style.scrollbarGutter = originalGutter;
-    root.style.overflowY = originalOverflow;
-  }
+  const screen = await render(
+    <>
+      {/* Chromium이 OS 설정과 무관하게 스크롤바 폭을 확보하려면 daisyUI의 scrollbar-color도 auto로 바꿔야 한다. */}
+      <style>{`
+        :root { overflow-y: scroll; scrollbar-gutter: stable; scrollbar-color: auto; }
+        :root::-webkit-scrollbar { width: 16px; }
+      `}</style>
+      <button style={{ position: "fixed", right: 8, top: 8 }} data-tooltip={LONG_DESCRIPTION}>
+        스크롤바 옆 안내
+      </button>
+      <TooltipLayer />
+    </>,
+  );
+  expect(root.clientWidth).toBeLessThan(window.innerWidth);
+  await userEvent.hover(screen.getByRole("button", { name: "스크롤바 옆 안내" }));
+  const tooltip = page.getByRole("tooltip");
+  await expect.element(tooltip).toBeVisible();
+  const box = tooltip.element().getBoundingClientRect();
+  expect(box.left).toBeGreaterThanOrEqual(8);
+  expect(box.right).toBeLessThanOrEqual(root.clientWidth - 8);
+  expect(root.scrollWidth).toBe(root.clientWidth);
+  expect(tooltip.element().scrollHeight).toBeLessThanOrEqual(tooltip.element().clientHeight);
 });
