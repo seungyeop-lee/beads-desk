@@ -163,7 +163,7 @@ function BlockingChainGraph({
       {measurement}
       {layout.nodes.length > 0 ? (
         <>
-          <EdgeLegend edgeLooks={edgeLooks} auxiliary={graph.auxiliary.edges} />
+          <EdgeLegend edgeLooks={edgeLooks} auxiliary={layout.auxiliary} />
           <IssueGraph
             layout={layout}
             edgeLooks={edgeLooks}

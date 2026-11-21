@@ -32,7 +32,7 @@ function blockingEdges(byId: Map<string, Issue>, dependencies: IssueDependency[]
 
 /**
  * 묶음의 열에서 gate를 뺀 작업 열입니다. gate만 남는 열은 지우고, 묶음에 작업이 없으면 빈 배열입니다.
- * gate는 작업 단계가 아니라 대기 조건이므로, 그래프는 gate를 막는 작업 아래에 두고 이 열 번호를 단계 번호로 씁니다.
+ * gate는 작업 단계로 세지 않으므로, 남은 작업 열의 번호가 단계 번호입니다.
  */
 export function workLayers({ layers }: OrderComponent): Issue[][] {
   return layers

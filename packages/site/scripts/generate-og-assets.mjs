@@ -23,9 +23,14 @@ const LOCALE_SPECS = [
     stageLabels: [
       { stage: "Stage 1", state: "Done", title: "API & Schema", tone: "mint" },
       { stage: "Stage 2", state: "Active", title: "Checkout", tone: "sand" },
-      { stage: "Stage 3", state: "Blocked", title: "Go-live", tone: "coral" },
+      {
+        stage: "Stage 3",
+        state: "Blocked",
+        title: "Go-live",
+        tone: "coral",
+        gate: "Go/no-go gate",
+      },
     ],
-    gateNodeTitle: "Go/no-go gate",
     epicLabel: "Epic progress",
     epics: [
       { title: "Launch infrastructure", ratio: "5/7", done: 52, active: 26 },
@@ -50,9 +55,8 @@ const LOCALE_SPECS = [
     stageLabels: [
       { stage: "1단계", state: "완료", title: "API · 스키마", tone: "mint" },
       { stage: "2단계", state: "진행 중", title: "결제 흐름", tone: "sand" },
-      { stage: "3단계", state: "막힘", title: "배포 전환", tone: "coral" },
+      { stage: "3단계", state: "막힘", title: "배포 전환", tone: "coral", gate: "최종 승인 gate" },
     ],
-    gateNodeTitle: "최종 승인 gate",
     epicLabel: "에픽 진행률",
     epics: [
       { title: "프로덕션 인프라 구축", ratio: "5/7", done: 52, active: 26 },
@@ -77,9 +81,8 @@ const LOCALE_SPECS = [
     stageLabels: [
       { stage: "段階 1", state: "完了", title: "API 設計", tone: "mint" },
       { stage: "段階 2", state: "進行中", title: "決済フロー", tone: "sand" },
-      { stage: "段階 3", state: "停止", title: "本番切替", tone: "coral" },
+      { stage: "段階 3", state: "停止", title: "本番切替", tone: "coral", gate: "最終承認 gate" },
     ],
-    gateNodeTitle: "最終承認 gate",
     epicLabel: "エピック進捗",
     epics: [
       { title: "本番インフラ構築", ratio: "5/7", done: 52, active: 26 },
@@ -123,6 +126,7 @@ function buildOgHtml(spec) {
           <span class="stage-state">${escapeHtml(node.state)}</span>
         </div>
         <div class="stage-title">${escapeHtml(node.title)}</div>
+        ${node.gate ? `<div class="gate-chip">● ${escapeHtml(node.gate)}</div>` : ""}
       </div>
       ${
         idx < spec.stageLabels.length - 1
@@ -414,9 +418,8 @@ function buildOgHtml(spec) {
       border-radius: 11px;
       padding: 10px 10px;
     }
-    .stage-node.tone-coral {
-      border-color: #e99a9d;
-      background: #fff9f9;
+    .stage-node:has(.gate-chip) {
+      border-color: #a39ad8;
     }
     .stage-meta {
       display: flex;
@@ -464,24 +467,11 @@ function buildOgHtml(spec) {
       display: flex;
       align-items: center;
     }
-    .gate-link-row {
-      margin-top: 10px;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #6d28d9;
-    }
     .gate-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 9px;
-      background: #f5effb;
-      border: 1px dashed #b794f4;
+      margin-top: 6px;
+      padding: 3px 5px;
+      border-radius: 4px;
+      background: #e6e4ff;
       color: #4c1d95;
       font-size: 12px;
       font-weight: 800;
@@ -628,10 +618,6 @@ function buildOgHtml(spec) {
               <span class="panel-badge">Mermaid &amp; Blocks</span>
             </div>
             <div class="stage-row">${stageNodes}</div>
-            <div class="gate-link-row">
-              <span>↑</span>
-              <span class="gate-chip">● ${escapeHtml(spec.gateNodeTitle)}</span>
-            </div>
           </div>
 
           <div class="panel">

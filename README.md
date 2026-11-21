@@ -28,11 +28,11 @@ A local web UI for [Beads](https://github.com/gastownhall/beads) (`bd`) for revi
 
 ### Review the plan stage by stage
 
-- **View order** on an epic splits its issues into stages by their `blocks` dependencies and marks the stage in progress.
-- Human gates and blockers outside the epic appear in the same graph.
-- **Blocks graph** shows the chain of work before and after any issue.
+- **View order** on an epic splits its issues into stages by their `blocks` dependencies, marks the stage in progress, and shows blockers outside the epic.
+- A gate with no prerequisites that blocks just one task appears inside that task's card. Select its row to open the gate.
+- **Blocks graph** shows the chain of work before and after an issue, with related decisions inside the center card.
 
-![View order for an epic arranging its issues into five stages, with a human gate holding the last stage](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/graph.png)
+![Five-stage epic graph with an open human gate inside the purple-bordered final task card](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/graph.png)
 
 ### Read what agents attach
 

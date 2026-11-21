@@ -33,7 +33,7 @@ export type GraphFocus = { x: number; y: number; anchor: "center" | "top" };
 
 /** 이슈 중심 보기는 기준 이슈 노드의 중심을 맞춰, 선행 이슈는 왼쪽에, 후속 이슈는 오른쪽에 함께 보이게 합니다. */
 export function issueFocus(layout: GraphLayout, issueId: string): GraphFocus | undefined {
-  const node = layout.nodes.find(({ issue }) => issue.id === issueId);
+  const node = layout.nodeOf.get(issueId);
   return node && { x: node.x + NODE_WIDTH / 2, y: node.y + node.height / 2, anchor: "center" };
 }
 

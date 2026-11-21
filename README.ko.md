@@ -28,11 +28,11 @@
 
 ### 계획을 단계별로 검토하기
 
-- 에픽의 **순서 보기**는 에픽의 이슈를 `blocks` 관계에 따라 단계로 나누고, 진행 중인 단계를 표시합니다.
-- human gate와 에픽 밖에서 막고 있는 이슈도 같은 그래프에 나옵니다.
-- **선행·후속 그래프**는 어느 이슈에서든 그 이슈 앞뒤의 작업을 이어 보여 줍니다.
+- 에픽의 **순서 보기**는 이슈를 `blocks` 관계에 따라 단계로 나누고, 진행 중인 단계와 에픽 밖에서 막고 있는 이슈를 표시합니다.
+- 선행 조건 없이 작업 하나만 막는 gate는 그 작업 카드 안에 표시됩니다. 줄을 누르면 gate 상세가 열립니다.
+- **선행·후속 그래프**는 이슈 앞뒤의 작업을 이어 보여 줍니다. 관련 결정은 기준 카드 안에서 확인합니다.
 
-![View order for an epic arranging its issues into five stages, with a human gate holding the last stage](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/graph.png)
+![다섯 단계 에픽 그래프에서 마지막 작업이 보라색 테두리로 강조되고 카드 안에 열린 human gate가 표시된 모습](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/graph.png)
 
 ### 에이전트가 첨부한 자료 읽기
 

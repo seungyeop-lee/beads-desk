@@ -5,7 +5,9 @@ import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { centerGraph } from "./centerGraph";
 import { ARROW_LENGTH, auxiliaryEdgeLook, hasArrow } from "./edgeKind";
 import { epicPlan } from "./epicPlan";
+import { overlappingPair, routeProblem } from "./graphGeometry.testkit";
 import { type GraphLayout, NODE_HEIGHT, NODE_WIDTH, type Point } from "./graphLayout";
+import { issueFocus, revealIssueViewport } from "./graphViewport";
 import { type GraphLayoutInput, layoutGraph } from "./layoutGraph";
 
 /** [기다리는 이슈, 먼저 끝나야 하는 이슈, 관계]입니다. 관계를 적지 않으면 blocks입니다. */
@@ -164,21 +166,7 @@ const node = (layout: GraphLayout, id: string) =>
 
 for (const [name, input] of Object.entries(FIXTURES)) {
   test(`${name}: 모든 간선은 가로·세로 선분으로만 꺾이고 어떤 노드 안으로도 지나가지 않는다`, () => {
-    const layout = layoutGraph(input);
-    for (const edge of drawnEdges(layout)) {
-      expect(edge.points.length, `${edge.id}`).toBeGreaterThanOrEqual(2);
-      for (const [start, end] of segments(edge.points)) {
-        expect(start.x === end.x || start.y === end.y, `${edge.id} 선분`).toBe(true);
-        for (const { issue, x, y, height } of layout.nodes) {
-          const crosses =
-            Math.max(start.x, end.x) > x &&
-            Math.min(start.x, end.x) < x + NODE_WIDTH &&
-            Math.max(start.y, end.y) > y &&
-            Math.min(start.y, end.y) < y + height;
-          expect(crosses, `${edge.id}가 ${issue.id}를 지남`).toBe(false);
-        }
-      }
-    }
+    expect(routeProblem(layoutGraph(input))).toBeUndefined();
   });
 
   test(`${name}: 서로 다른 간선은 같은 선 위의 구간과 노드 변 위의 점을 함께 쓰지 않는다`, () => {
@@ -215,16 +203,7 @@ for (const [name, input] of Object.entries(FIXTURES)) {
   });
 
   test(`${name}: 노드끼리 겹치지 않는다`, () => {
-    const { nodes } = layoutGraph(input);
-    for (const [at, a] of nodes.entries())
-      for (const b of nodes.slice(at + 1)) {
-        const apart =
-          a.x + NODE_WIDTH <= b.x ||
-          b.x + NODE_WIDTH <= a.x ||
-          a.y + a.height <= b.y ||
-          b.y + b.height <= a.y;
-        expect(apart, `${a.issue.id}와 ${b.issue.id}`).toBe(true);
-      }
+    expect(overlappingPair(layoutGraph(input))).toBeUndefined();
   });
 
   test(`${name}: 같은 입력을 두 번 넣으면 같은 결과가 나온다`, () => {
@@ -249,11 +228,21 @@ function expectBelow(layout: GraphLayout, gate: string, anchor: string) {
   expect(between.map(({ issue }) => issue.issueType)).toEqual(between.map(() => "gate"));
 }
 
-test("gate는 막는 작업 가운데 가장 왼쪽 작업과 같은 열 바로 아래에 두고, 다른 blocks 간선은 왼쪽 열에서 오른쪽 열로 간다", () => {
+test("선행 이슈 없이 한 작업만 막는 gate는 카드 안에 두고, 여러 작업을 막거나 사슬에 속한 gate는 간선과 함께 남긴다", () => {
   const layout = layoutGraph(GATES);
-  for (const gate of ["shared", "second", "third", "gate-before"])
-    expectBelow(layout, gate, "center");
-  const gates = new Set(["shared", "second", "third", "gate-before"]);
+  expect(node(layout, "center").sections?.gates.map(({ id }) => id)).toEqual(["third"]);
+  expect(node(layout, "third")).toBeUndefined();
+  expect(layout.edges.map(({ from, to }) => `${from}->${to}`).toSorted()).toEqual([
+    "before->center",
+    "before->shared",
+    "center->after",
+    "gate-before->second",
+    "second->center",
+    "shared->after",
+    "shared->center",
+  ]);
+  const gates = new Set(["shared", "second", "gate-before"]);
+  for (const gate of gates) expectBelow(layout, gate, "center");
   for (const { from, to } of layout.edges.filter(
     ({ from, to }) => !gates.has(from) && !gates.has(to),
   ))
@@ -261,6 +250,146 @@ test("gate는 막는 작업 가운데 가장 왼쪽 작업과 같은 열 바로 
 
   const epic = layoutGraph(EPIC_INPUT);
   expectBelow(epic, "gx", "p");
+});
+
+test("에픽 계획에서는 그리는 blocks 간선만 세고, 작업을 둘 막는 gate는 독립 노드로 남긴다", () => {
+  const data = graphData(
+    [
+      issue("epic", { issueType: "epic" }),
+      issue("a"),
+      issue("b"),
+      issue("outside"),
+      issue("single", { issueType: "gate" }),
+      issue("multi", { issueType: "gate" }),
+    ],
+    [
+      ["a", "single"],
+      ["outside", "single"],
+      ["a", "multi"],
+      ["b", "multi"],
+    ],
+  );
+  data.ancestorEpics = { a: ["epic"], b: ["epic"] };
+  const plan = epicPlan(data, "epic");
+  const layout = layoutGraph({ ...EPIC_INPUT, order: plan.order });
+  expect(layout.nodes.map(({ issue }) => issue.id).toSorted()).toEqual(["a", "b", "multi"]);
+  expect(node(layout, "a").sections?.gates.map(({ id }) => id)).toEqual(["single"]);
+  expect(layout.edges.map(({ from, to }) => [from, to])).toEqual([
+    ["multi", "a"],
+    ["multi", "b"],
+  ]);
+  expect(layout.columns).toHaveLength(plan.stages.total);
+});
+
+test("두 섹션은 닫히지 않은 이슈를 앞에 두고 각 그룹에서 최근 생성순으로 정렬한다", () => {
+  const related = [
+    issue("epic", { issueType: "epic", createdAt: 10 }),
+    issue("decision", { issueType: "decision", createdAt: 20 }),
+    issue("milestone", { issueType: "milestone", createdAt: 40, status: "closed" }),
+    issue("molecule", { issueType: "molecule", createdAt: 30, status: "closed" }),
+  ];
+  const gates = related.map(({ id, status, createdAt }) =>
+    issue(`g-${id}`, { issueType: "gate", status, createdAt }),
+  );
+  const data = graphData(
+    [issue("task"), ...related, ...gates],
+    [
+      ...related.map(({ id }): Link => [id, "task", "discovered-from"]),
+      ["task", "decision", "related"],
+      ...gates.map(({ id }): Link => ["task", id]),
+    ],
+  );
+  const layout = layoutGraph(centerInput(data, "task", {}));
+  expect(layout.nodes.map(({ issue }) => issue.id)).toEqual(["task"]);
+  expect(layout.edges).toEqual([]);
+  expect(layout.auxiliary).toEqual([]);
+  const sections = node(layout, "task").sections!;
+  const order = ["decision", "epic", "milestone", "molecule"];
+  expect(sections.gates.map(({ id }) => id)).toEqual(order.map((id) => `g-${id}`));
+  expect(sections.related.map(({ id }) => id)).toEqual(order);
+});
+
+test("blocks 사슬에도 있는 decision은 관련 섹션에 넣지 않고 두 관계를 모두 그린다", () => {
+  const data = graphData(
+    [issue("task"), issue("decision", { issueType: "decision" })],
+    [
+      ["task", "decision"],
+      ["decision", "task", "related"],
+    ],
+  );
+  const layout = layoutGraph(centerInput(data, "task", {}));
+  expect(layout.nodes.map(({ issue }) => issue.id).toSorted()).toEqual(["decision", "task"]);
+  expect(node(layout, "task").sections).toBeUndefined();
+  expect(layout.edges).toMatchObject([{ from: "decision", to: "task" }]);
+  expect(layout.auxiliary).toMatchObject([{ type: "related" }]);
+});
+
+test("blocks 없이 decision과 작업이 관련되면 기준이 작업일 때만 decision을 카드 안에 둔다", () => {
+  const decision = issue("decision", { issueType: "decision" });
+  const data = graphData([decision, issue("work")], [["work", "decision", "related"]]);
+  const work = layoutGraph(centerInput(data, "work", {}));
+  expect(work.nodes.map(({ issue }) => issue.id)).toEqual(["work"]);
+  expect(node(work, "work").sections).toEqual({ gates: [], related: [decision] });
+  expect(work.auxiliary).toEqual([]);
+
+  const centered = layoutGraph(centerInput(data, "decision", {}));
+  expect(centered.nodes.map(({ issue }) => issue.id).toSorted()).toEqual(["decision", "work"]);
+  expect(centered.auxiliary).toMatchObject([{ from: "decision", to: "work", type: "related" }]);
+});
+
+test("카드에 들어간 gate가 기준이면 그 카드에 관련 이슈와 발견 간선을 연결하고 시점도 맞춘다", () => {
+  const gate = issue("gate", { issueType: "gate" });
+  const decision = issue("decision", { issueType: "decision" });
+  const data = graphData(
+    [gate, decision, issue("task"), issue("found")],
+    [
+      ["task", "gate"],
+      ["task", "gate", "related"],
+      ["decision", "gate", "related"],
+      ["found", "gate", "discovered-from"],
+    ],
+  );
+  const layout = layoutGraph(centerInput(data, "gate", { task: 160 }));
+  const task = node(layout, "task");
+  expect(layout.nodes.map(({ issue }) => issue.id).toSorted()).toEqual(["found", "task"]);
+  expect(task.sections).toEqual({ gates: [gate], related: [decision] });
+  expect(layout.auxiliary).toMatchObject([{ from: "gate", to: "found", type: "discovered-from" }]);
+  expect(routeProblem(layout)).toBeUndefined();
+  expect(node(layout, "found").x).toBeGreaterThan(task.x);
+  expect(issueFocus(layout, "gate")).toEqual({
+    x: task.x + NODE_WIDTH / 2,
+    y: task.y + task.height / 2,
+    anchor: "center",
+  });
+  const viewport = { x: -3000, y: -3000, zoom: 1 };
+  expect(revealIssueViewport(viewport, layout, "gate", 900, 600)).toEqual(
+    revealIssueViewport(viewport, layout, "task", 900, 600),
+  );
+});
+
+test("같은 카드 안의 두 gate와 관련되어 있으면 각 선은 원래 gate를 가리킨다", () => {
+  const data = graphData(
+    [
+      issue("center"),
+      issue("task"),
+      issue("g1", { issueType: "gate" }),
+      issue("g2", { issueType: "gate" }),
+    ],
+    [
+      ["center", "task"],
+      ["task", "g1"],
+      ["task", "g2"],
+      ["center", "g1", "related"],
+      ["center", "g2", "related"],
+    ],
+  );
+  const layout = layoutGraph(centerInput(data, "center", {}));
+  expect(layout.nodes.map(({ issue }) => issue.id).toSorted()).toEqual(["center", "task"]);
+  expect(layout.auxiliary).toMatchObject([
+    { from: "center", to: "g1", type: "related" },
+    { from: "center", to: "g2", type: "related" },
+  ]);
+  expect(routeProblem(layout)).toBeUndefined();
 });
 
 test("순환에 속한 이슈는 한 열에 두고, 순환이 아닌 blocks 간선은 왼쪽 열에서 오른쪽 열로 간다", () => {

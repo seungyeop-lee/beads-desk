@@ -182,27 +182,103 @@ const GATE_EPIC = graphData(
 test("에픽 계획 그래프의 gate 간선도 양 끝이 아닌 노드 밑을 지나지 않는다", async () => {
   await page.viewport(1440, 900);
   const screen = await renderGraph("epic", "gate-epic", GATE_EPIC);
-  expect(await coveredEdges(screen, 5)).toEqual([]);
+  expect(await coveredEdges(screen, 4)).toEqual([]);
 });
 
-test("에픽 계획 그래프는 에픽 밖 gate 카드에 에픽 밖 표시를 붙이고, gate 간선을 실행 순서로 읽으며, 범례에 사람 판단 gate 설명을 보인다", async () => {
+test("에픽 계획에서 공유 gate만 별도 카드와 간선으로 보이고, 단일 human gate는 기다리는 카드 안에 보인다", async () => {
   const screen = await renderGraph("epic", "gate-epic", GATE_EPIC);
   const canvas = screen.getByRole("region", { name: "의존 그래프" });
   for (const [from, to] of [
-    ["gate-human", "gate-work"],
     ["gate-pr", "gate-work"],
     ["gate-pr", "gate-next"],
   ])
     await expect
       .element(canvas.getByRole("img", { name: `${from} 다음에 ${to}`, exact: true }))
       .toBeInTheDocument();
-  for (const title of ["사람 판단", "PR 대기"])
-    await expect.poll(() => cardText(canvas, title)).toContain("에픽 밖");
+  await expect.poll(() => cardText(canvas, "PR 대기")).toContain("에픽 밖");
+  const host = cardOf(canvas, "gate를 기다리는 작업");
+  const human = host.getByRole("link", { name: /사람 판단/ });
+  await expect.element(human).toHaveAttribute("href", "/graph?issue=gate-human");
+  expect(canvas.element().querySelector(reactFlowDom.nodeOf("gate-human"))).toBeNull();
+  expect(saturation(getComputedStyle(human.element()).backgroundColor)).toBeGreaterThan(0.3);
+  const cover = host.getByRole("link", { name: /gate를 기다리는 작업/ });
+  expect(saturation(getComputedStyle(cover.element()).borderColor)).toBeGreaterThan(0.3);
   expect(cardText(canvas, "gate를 기다리는 작업")).not.toContain("에픽 밖");
   await expect
     .element(
       screen.getByLabelText("관계 범례").getByRole("button", { name: /^사람이 판단해 응답해야/ }),
     )
+    .not.toBeInTheDocument();
+});
+
+test("이슈 중심 카드 안에 단일 gate와 관련 결정 링크를 두고, 관련 작업은 노드와 간선을 유지한다", async () => {
+  const decisionTitle = "결제 정책: ".repeat(20).trim();
+  const screen = await renderGraph(
+    "center",
+    "row-center",
+    graphData(
+      {
+        "row-center": { title: "작업 카드" },
+        "row-gate": { title: "응답을 기다리는 gate", issueType: "gate", awaitType: "human" },
+        "row-decision": { title: decisionTitle, issueType: "decision", status: "closed" },
+        "row-task": { title: "관련 개발 작업" },
+      },
+      [["row-center", "row-gate"]],
+      [
+        ["row-center", "row-decision", "discovered-from"],
+        ["row-center", "row-task", "related"],
+      ],
+    ),
+  );
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  const host = cardOf(canvas, "작업 카드");
+  for (const [title, id] of [
+    ["작업 카드", "row-center"],
+    ["응답을 기다리는 gate", "row-gate"],
+    [decisionTitle, "row-decision"],
+  ] as const)
+    await expect
+      .element(host.getByRole("link", { name: new RegExp(title) }))
+      .toHaveAttribute("href", `/graph?issue=${id}`);
+  const decision = host.getByRole("link", { name: /결제 정책/ });
+  await expect.element(decision.getByText("결정", { exact: true })).toBeVisible();
+  const title = decision.getByText(decisionTitle, { exact: true }).element();
+  expect(getComputedStyle(title).textDecorationLine).toBe("line-through");
+  expect(getComputedStyle(title).textOverflow).toBe("ellipsis");
+  expect(title.scrollWidth).toBeGreaterThan(title.clientWidth);
+  expect(
+    [...canvas.element().querySelectorAll(reactFlowDom.node)]
+      .map((node) => node.getAttribute("data-id"))
+      .sort(),
+  ).toEqual(["row-center", "row-task"]);
+  expect((await renderedEdges(screen, 1))[0]!.dataset.edge).toBe("related");
+  expect(
+    [...screen.getByLabelText("관계 범례").element().querySelectorAll("svg[data-edge]")].map(
+      (sample) => sample.getAttribute("data-edge"),
+    ),
+  ).toEqual(["related"]);
+});
+
+test("카드 안 gate가 기준이면 그 줄을 강조하고 관련 작업 간선은 원래 gate와 작업 이름으로 읽는다", async () => {
+  const screen = await renderGraph(
+    "center",
+    "ctx-gate",
+    graphData(
+      {
+        "ctx-gate": { title: "기준 gate", issueType: "gate", awaitType: "human" },
+        "ctx-host": { title: "판단이 필요한 작업" },
+        "ctx-note": { title: "참고할 작업" },
+      },
+      [["ctx-host", "ctx-gate"]],
+      [["ctx-gate", "ctx-note", "related"]],
+    ),
+  );
+  const canvas = screen.getByRole("region", { name: "의존 그래프" });
+  await expect
+    .element(canvas.getByRole("link", { name: /기준 gate/ }))
+    .toHaveAttribute("aria-current", "true");
+  await expect
+    .element(canvas.getByRole("img", { name: "ctx-gate와 ctx-note: 관련" }))
     .toBeInTheDocument();
 });
 
@@ -639,8 +715,8 @@ const ALL_EDGES = graphData(
   [
     ["look-center", "look-before"],
     ["look-center", "look-done"],
-    ["look-center", "look-human"],
-    ["look-center", "look-human-done"],
+    ["look-pr", "look-human"],
+    ["look-timer", "look-human-done"],
     ["look-center", "look-pr"],
     ["look-center", "look-timer"],
   ],
@@ -741,7 +817,7 @@ test("범례는 그래프에 그린 간선 종류만 그 순서대로 보이고,
 const LEGEND_HELP = [
   /^앞 이슈가 끝나야 뒤 이슈를 시작할 수 있습니다/,
   /^작업이 timer, GitHub 실행·PR, 다른 이슈 같은 조건을 기다립니다/,
-  /^사람이 판단해 응답해야 열리는 gate입니다/,
+  /^사람이 판단해 응답해야 하는 gate입니다/,
   /^함께 보면 좋은 이슈입니다\..*기준 이슈에 직접 연결된 관계만 표시합니다/,
   /^작업하다가 발견한 이슈를 향합니다\..*기준 이슈에 직접 연결된 관계만 표시합니다/,
 ];

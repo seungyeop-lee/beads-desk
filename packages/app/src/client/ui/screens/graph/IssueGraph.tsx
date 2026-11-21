@@ -1,4 +1,3 @@
-import type { Issue } from "@beads-desk/bd/issue";
 import {
   BaseEdge,
   ControlButton,
@@ -16,7 +15,7 @@ import {
   useStore,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { type ComponentProps, type ReactNode, useId, useMemo, useRef, useState } from "react";
 import { type EdgeLook, auxiliaryEdgeLook } from "@/client/modules/graph/domain/edgeKind";
 import type { StageProgress } from "@/client/modules/graph/domain/epicPlan";
 import {
@@ -33,10 +32,10 @@ import { workState } from "@/client/modules/issues/domain/workState";
 import { workStateTone } from "@/client/ui/issues/issueLabels";
 import { useMessages } from "@/client/ui/locale/LocaleProvider";
 import { EdgeMarkers, edgeMarkerId, edgeStyle } from "./edgeLook";
-import { IssueCard, type PlanMarks } from "./IssueCard";
+import { IssueCard } from "./IssueCard";
 import { useGraphViewport } from "./useGraphViewport";
 
-type IssueNodeData = { issue: Issue; href: string; plan?: PlanMarks; center: boolean };
+type IssueNodeData = ComponentProps<typeof IssueCard>;
 type IssueNode = Node<IssueNodeData, "issue">;
 /** 배치 엔진이 정한 꺾임점을 그대로 잇는 간선입니다. */
 type GraphEdge = Edge<{ points: Point[]; look: EdgeLook }, "route">;
@@ -55,7 +54,7 @@ type Props = {
   ready?: boolean;
   issueHref: (issueId: string) => string;
   plan?: GraphPlan;
-  /** 이슈 중심 보기의 기준 이슈입니다. 이 노드만 다른 노드와 구분되게 그립니다. */
+  /** 이슈 중심 보기에서 강조할 카드 또는 카드 안의 이슈입니다. */
   centerId?: string;
   /** 그래프 안에서 상세를 열어 둔 이슈입니다. */
   selectedIssueId?: string;
@@ -105,8 +104,9 @@ export function IssueGraph({
     const gates = new Set(
       layout.nodes.filter(({ issue }) => issue.issueType === "gate").map(({ issue }) => issue.id),
     );
+    const centerNode = centerId === undefined ? undefined : layout.nodeOf.get(centerId);
     return {
-      nodes: layout.nodes.map(({ issue, x, y, height }): IssueNode => ({
+      nodes: layout.nodes.map(({ issue, sections, x, y, height }): IssueNode => ({
         id: issue.id,
         type: "issue",
         position: { x, y },
@@ -114,8 +114,9 @@ export function IssueGraph({
         height,
         data: {
           issue,
-          href: issueHref(issue.id),
-          center: issue.id === centerId,
+          issueHref,
+          sections,
+          centerId: issue.id === centerNode?.issue.id ? centerId : undefined,
           ...(plan && {
             plan: { outside: plan.outside.has(issue.id), waiters: plan.waiters.get(issue.id) ?? 0 },
           }),
@@ -143,8 +144,8 @@ export function IssueGraph({
           return {
             id: `${type}:${from}->${to}`,
             type: "route",
-            source: from,
-            target: to,
+            source: layout.nodeOf.get(from)!.issue.id,
+            target: layout.nodeOf.get(to)!.issue.id,
             data: { points, look },
             markerEnd: edgeMarkerId(markerPrefix, look),
             ariaLabel:
@@ -314,11 +315,11 @@ function FocusIcon() {
 }
 
 /** 간선은 꺾임점으로 직접 그리므로, handle은 React Flow가 간선을 노드에 연결하는 데만 씁니다. */
-function IssueNodeView({ data: { issue, href, plan, center } }: NodeProps<IssueNode>) {
+function IssueNodeView({ data }: NodeProps<IssueNode>) {
   return (
     <>
       <Handle type="target" position={Position.Left} isConnectable={false} className="opacity-0" />
-      <IssueCard issue={issue} href={href} plan={plan} center={center} />
+      <IssueCard {...data} />
       <Handle type="source" position={Position.Right} isConnectable={false} className="opacity-0" />
     </>
   );
@@ -344,5 +345,5 @@ const EDGE_TYPES = { route: RouteEdgeView };
 /** 미니맵 노드도 그래프 노드의 상태 점과 같은 tone class로 칠해, 상태별 이슈가 어디에 몰려 있는지 보이게 합니다. */
 function miniMapNodeClassName(node: IssueNode): string {
   const tone = workStateTone(workState(node.data.issue));
-  return node.data.center ? `${tone} minimap-center` : tone;
+  return node.data.centerId === undefined ? tone : `${tone} minimap-center`;
 }

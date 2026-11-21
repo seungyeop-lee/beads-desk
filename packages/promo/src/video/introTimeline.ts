@@ -78,7 +78,7 @@ export const TOUR: TourPlan = {
   // 클릭하면 바로 다음 frame부터 화면이 바뀌므로, 구간은 클릭 한 frame 전에 끝내고 다음 화면을 다 그린 뒤에서 잇습니다.
   clips: [
     { from: { ms: 0 }, to: { after: "open-issue", ms: -40 } },
-    { from: { after: "issue-shown", ms: 250 }, to: { after: "open-graph", ms: -40 } },
+    { from: { after: "issue-shown", ms: SCREEN_CHANGE_MS }, to: { after: "open-graph", ms: -40 } },
     { from: { after: "graph-shown", ms: 250 }, to: { after: "open-checkout", ms: -40 } },
     // 그래프를 닫으면 이슈 상세로 돌아와 그 상세도 닫아야 하므로, 두 번 닫는 동안을 빼고 지금 화면으로 바로 잇습니다.
     { from: { after: "checkout-shown", ms: 150 }, to: { after: "close-graph", ms: -40 } },

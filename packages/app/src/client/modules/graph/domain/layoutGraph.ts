@@ -1,12 +1,12 @@
 import type { Issue } from "@beads-desk/bd/issue";
-import type { AuxiliaryEdge } from "./centerGraph";
 import {
   type ExecutionOrder,
   type OrderComponent,
   type OrderEdge,
   workLayers,
 } from "./executionOrder";
-import type { GraphLayout } from "./graphLayout";
+import { type CenterRelations, graphCards } from "./graphCards";
+import type { GraphLayout, PlacedIssue } from "./graphLayout";
 import { routeGrid } from "./gridRoutes";
 
 export type GraphLayoutInput = {
@@ -18,7 +18,7 @@ export type GraphLayoutInput = {
    * 이슈 중심 보기에서 함께 그리는 관련·발견 관계입니다. center는 기준 이슈이고, issues는 blocks 사슬 밖에서 관계로만 이어진 이슈,
    * edges는 기준 이슈에 직접 연결된 관련·발견 간선입니다.
    */
-  auxiliary?: { center: Issue | undefined; issues: Issue[]; edges: AuxiliaryEdge[] };
+  auxiliary?: CenterRelations;
 };
 
 type Cell = { issue: Issue; column: number; row: number };
@@ -31,19 +31,20 @@ const COLUMN_DISTANCE = 3;
 
 /**
  * 그래프 모달과 에픽 계획 화면이 함께 쓰는 배치 진입점입니다. 이슈를 격자에 놓은 뒤, 모든 간선을 같은 라우터로 이어 좌표를 정합니다.
- * 열은 blocks 기준 가장 긴 경로이고(순환은 한 열), gate는 막는 작업 바로 아래 같은 열에 둡니다. 묶음은 위에서 아래로 쌓습니다.
+ * 열은 blocks 기준 가장 긴 경로이고(순환은 한 열), 카드에 포함되지 않은 gate는 연결된 작업과 같은 열에 둡니다.
  * 같은 입력이면 같은 결과를 돌려줍니다.
  */
 export function layoutGraph({
   order,
   heights,
   nodeHeight,
-  auxiliary,
+  auxiliary: relations,
 }: GraphLayoutInput): GraphLayout {
+  const { components, sections, ownerOf, auxiliary } = graphCards(order.components, relations);
   const cells: Cell[] = [];
   const componentStarts = new Set<number>();
   let top = 0;
-  for (const component of order.components) {
+  for (const component of components) {
     if (top > 0) componentStarts.add(top);
     const columns = componentColumns(component);
     columns.forEach((column, at) =>
@@ -51,8 +52,8 @@ export function layoutGraph({
     );
     top += Math.max(...columns.map((column) => column.length));
   }
-  const blocks = order.components.flatMap(({ edges }) => edges);
-  const auxiliaryEdges = auxiliary ? placeAuxiliary(cells, auxiliary, blocks) : [];
+  const blocks = components.flatMap(({ edges }) => edges);
+  const auxiliaryEdges = auxiliary ? placeAuxiliary(cells, auxiliary, blocks, ownerOf) : [];
 
   const left = Math.min(0, ...cells.map(({ column }) => column));
   const up = Math.min(0, ...cells.map(({ row }) => row));
@@ -68,25 +69,28 @@ export function layoutGraph({
     // 관련 관계는 방향이 없으므로 왼쪽 이슈에서 출발하게 해, 왼쪽으로 돌아가는 경로를 만들지 않습니다.
     edges: [
       ...blocks,
-      ...auxiliaryEdges.map(({ from, to, type }) =>
-        type === "related" && cellOf.get(to)!.column < cellOf.get(from)!.column
+      ...auxiliaryEdges.map(({ from, to, relation }) =>
+        relation.type === "related" && cellOf.get(to)!.column < cellOf.get(from)!.column
           ? { from: to, to: from }
           : { from, to },
       ),
     ],
   });
-  const nodes = cells.map(({ issue, column, row }) => ({
+  const nodes: PlacedIssue[] = cells.map(({ issue, column, row }) => ({
     issue,
     x: routes.columns[column - left]!,
     y: routes.rows[row - up]!,
     height: heights.get(issue.id) ?? nodeHeight,
+    sections: sections.get(issue.id),
   }));
+  const nodeOf = new Map(nodes.map((node) => [node.issue.id, node]));
+  for (const [id, owner] of ownerOf) nodeOf.set(id, nodeOf.get(owner.id)!);
   return {
     nodes,
-    nodeOf: new Map(nodes.map((node) => [node.issue.id, node])),
+    nodeOf,
     edges: blocks.map((edge, index) => ({ ...edge, points: routes.points[index]! })),
-    auxiliary: auxiliaryEdges.map((edge, index) => ({
-      ...edge,
+    auxiliary: auxiliaryEdges.map(({ relation }, index) => ({
+      ...relation,
       points: routes.points[blocks.length + index]!,
     })),
     columns: routes.columns,
@@ -295,10 +299,15 @@ function orderColumns(
  */
 function placeAuxiliary(
   cells: Cell[],
-  { center, issues, edges }: NonNullable<GraphLayoutInput["auxiliary"]>,
+  { center, issues, edges: relations }: CenterRelations,
   blocks: OrderEdge[],
-): AuxiliaryEdge[] {
-  if (edges.length === 0) return [];
+  ownerOf: ReadonlyMap<string, Issue>,
+) {
+  const edges = relations.flatMap((relation) => {
+    const from = ownerOf.get(relation.from)?.id ?? relation.from;
+    const to = ownerOf.get(relation.to)?.id ?? relation.to;
+    return from === to ? [] : [{ from, to, relation }];
+  });
   if (cells.length === 0 && center) cells.push({ issue: center, column: 0, row: 0 });
   const cellOf = new Map(cells.map((cell) => [cell.issue.id, cell]));
   const taken = new Set(cells.map(({ column, row }) => `${column}:${row}`));
@@ -314,7 +323,7 @@ function placeAuxiliary(
       : center && cellOf.get(center.id);
     if (!anchor) continue;
     const free = (
-      edge?.type === "discovered-from"
+      edge?.relation.type === "discovered-from"
         ? columnCandidates(anchor, edge.to === issue.id ? 1 : -1, cells.length)
         : nearbyCandidates(anchor, cells.length)
     ).filter((candidate) => !taken.has(`${candidate.column}:${candidate.row}`));

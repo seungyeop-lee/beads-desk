@@ -5,37 +5,66 @@ import type { GraphData } from "@/shared/contract/graph";
 import { issue } from "@/shared/domain/issues/issueFixture.testkit";
 import { centerGraph } from "./centerGraph";
 import { epicPlan } from "./epicPlan";
+import { overlappingPair, routeProblem } from "./graphGeometry.testkit";
 import { NODE_HEIGHT, PLAN_NODE_HEIGHT } from "./graphLayout";
 import { type GraphLayoutInput, layoutGraph } from "./layoutGraph";
 
-// 계산 속도만 바꾸는 엔진 수정이 큰 그래프의 배치를 바꾸지 않았는지 확인합니다.
-// 기대값은 같은 입력으로 계산한 노드 좌표와 꺾임점 전체의 SHA-256 앞 16자리입니다.
-// 배치 규칙을 일부러 바꿨다면 바뀐 배치를 화면이나 layoutGraph.test.ts로 확인한 뒤, 실패 메시지에 나온 값으로 기대값을 바꿉니다.
-const CASES: [name: string, input: () => GraphLayoutInput, fingerprint: string][] = [
-  ["에픽 이슈 약 200개, seed 1", () => epicInput(largeGraphData(1, 1)), "e7742d0e9980e276"],
-  ["에픽 이슈 약 200개, seed 2", () => epicInput(largeGraphData(2, 1)), "6182d793371442d5"],
-  ["에픽 이슈 약 200개, seed 3", () => epicInput(largeGraphData(3, 1)), "0a57ff7bd13031b8"],
-  ["에픽 이슈 약 400개", () => epicInput(largeGraphData(1, 2)), "cda6d6268f18382d"],
-  ["에픽 이슈 약 800개", () => epicInput(largeGraphData(1, 4)), "5c1277a8e29bdbbc"],
-  ["사슬 가운데 기준 이슈", () => centerInput(largeGraphData(1, 1), "t6-0"), "31aeb1c1f4739952"],
-  [
-    "사슬 처음 기준 이슈",
-    () => centerInput(largeGraphData(1, 1, "t0-0"), "t0-0"),
-    "8af0e425ef4bbeb8",
-  ],
-  [
-    "사슬 끝 기준 이슈",
-    () => centerInput(largeGraphData(1, 1, "t11-0"), "t11-0"),
-    "903df0b4743bce5b",
-  ],
+// 에픽 밖의 out0는 선행 조건 없이 작업 하나만 막으므로, 이제는 그 작업의 카드 안에 들어갑니다.
+const WITH_GATE: [string, () => GraphLayoutInput][] = [
+  ["에픽 이슈 약 200개, seed 1", () => epicInput(largeGraphData(1, 1))],
+  ["에픽 이슈 약 200개, seed 2", () => epicInput(largeGraphData(2, 1))],
+  ["에픽 이슈 약 200개, seed 3", () => epicInput(largeGraphData(3, 1))],
+  ["에픽 이슈 약 400개", () => epicInput(largeGraphData(1, 2))],
+  ["에픽 이슈 약 800개", () => epicInput(largeGraphData(1, 4))],
+  ["사슬 끝 기준 이슈", () => centerInput(largeGraphData(1, 1, "t11-0"), "t11-0")],
 ];
 
-test.each(CASES)("큰 그래프의 배치가 그대로다: %s", (_, input, fingerprint) => {
-  const layout = layoutGraph(input());
-  // nodeOf는 이미 담은 노드의 색인이므로 해시에서 제외하고, 노드 좌표와 꺾임점만 남깁니다.
-  const json = JSON.stringify(layout, (key, value: unknown) =>
-    key === "nodeOf" ? undefined : key === "issue" ? (value as { id: string }).id : value,
+test.each(WITH_GATE)(
+  "큰 그래프에서도 gate 편입 뒤 나머지 노드와 간선을 보존한다: %s",
+  (_, makeInput) => {
+    const input = makeInput();
+    const layout = layoutGraph(input);
+    const { nodes, edges, auxiliary } = layout;
+    const blocks = input.order.components.flatMap((component) => component.edges);
+    const gateEdge = blocks.find(({ from }) => from === "out0")!;
+    const issues = [
+      ...input.order.components.flatMap(({ layers }) => layers.flat()),
+      ...(input.auxiliary?.issues ?? []),
+    ];
+    expect(nodes.map(({ issue }) => issue.id).toSorted()).toEqual(
+      issues
+        .map(({ id }) => id)
+        .filter((id) => id !== "out0")
+        .toSorted(),
+    );
+    const owner = layout.nodeOf.get(gateEdge.to)!;
+    expect(owner.sections?.gates.map(({ id }) => id)).toEqual(["out0"]);
+    expect(layout.nodeOf.get("out0")).toBe(owner);
+    expect(edges.map(({ from, to }) => ({ from, to }))).toEqual(
+      blocks.filter(({ from }) => from !== "out0"),
+    );
+    expect(auxiliary.map(({ from, to, type }) => ({ from, to, type }))).toEqual(
+      input.auxiliary?.edges ?? [],
+    );
+    expect(overlappingPair(layout)).toBeUndefined();
+    expect(routeProblem(layout)).toBeUndefined();
+  },
+);
+
+// out0가 보이지 않는 기준 이슈에서는 기존 좌표와 꺾임점의 SHA-256 앞 16자리까지 보존합니다.
+test.each([
+  ["t6-0", "31aeb1c1f4739952"],
+  ["t0-0", "8af0e425ef4bbeb8"],
+] as const)("큰 그래프에서 편입할 gate가 없으면 기존 배치를 유지한다: %s", (id, fingerprint) => {
+  const { nodes, edges, auxiliary, columns } = layoutGraph(
+    centerInput(largeGraphData(1, 1, id), id),
   );
+  const json = JSON.stringify({
+    nodes: nodes.map(({ issue, x, y, height }) => ({ issue: issue.id, x, y, height })),
+    edges,
+    auxiliary,
+    columns,
+  });
   expect(createHash("sha256").update(json).digest("hex").slice(0, 16)).toBe(fingerprint);
 });
 

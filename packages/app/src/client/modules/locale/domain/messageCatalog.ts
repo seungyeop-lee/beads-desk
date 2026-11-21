@@ -417,6 +417,8 @@ export type Messages = {
     help: Record<GraphScopeKind, string>;
     loadFailed: (error: string) => string;
     canvas: string;
+    gateSection: (count: number) => string;
+    relatedSection: (count: number) => string;
     edgeLabel: (from: string, to: string) => string;
     legend: string;
     edgeLegend: Record<EdgeKind, string>;

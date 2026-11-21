@@ -48,7 +48,7 @@ export function useGraphLayout(
     const observer = new ResizeObserver(measure);
     for (const element of root.children) observer.observe(element);
     return () => observer.disconnect();
-  }, [order, minimum]);
+  }, [order, minimum, auxiliary]);
   const measurement = (
     <div
       ref={measurementRef}
@@ -57,11 +57,12 @@ export function useGraphLayout(
       className="pointer-events-none invisible fixed -left-[10000px] top-0"
       style={{ width: NODE_WIDTH }}
     >
-      {layout.nodes.map(({ issue }) => (
+      {layout.nodes.map(({ issue, sections }) => (
         <div key={issue.id} data-issue={issue.id}>
           <IssueCard
             issue={issue}
-            href="#"
+            issueHref={() => "#"}
+            sections={sections}
             plan={planned ? { outside: true, waiters: 1 } : undefined}
           />
         </div>

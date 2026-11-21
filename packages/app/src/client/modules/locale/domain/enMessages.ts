@@ -474,12 +474,14 @@ export const enMessages: Messages = {
   graph: {
     scopes: { epic: "Order", center: "Blocks chain" },
     help: {
-      epic: "Issues in the epic that must finish first are in the stages on the left, following blocks dependencies. Issues in the same stage can proceed in parallel, and closed issues have dimmed titles. Issues outside the epic that block its issues are drawn with a dashed border, and issues with no blocks dependency are listed under No blocks dependency.",
+      epic: "Earlier stages appear on the left. Work in the same stage can proceed in parallel. A gate with no prerequisites that blocks just one task appears inside that task's card. Dashed cards are blockers outside the epic. Issues without blocks dependencies appear under No blocks dependency.",
       center:
-        "Follows the blocks chain with prerequisite work on the left and dependent work on the right. Gates stay out of the work order and appear below the work waiting for them, joined by thick solid arrows in the stored blocks direction. Direct related and discovered-from links are also shown without affecting execution order. Discovery arrows point from the originating work to the discovered issue. Closed issues have dimmed titles.",
+        "Prerequisites appear on the left of the blocks chain. A gate with no prerequisites that blocks just one task appears inside that task's card. Epics, decisions, milestones, and molecules connected only by related or discovered-from appear in the center card's Related section. Select a row to open its issue. These links do not set execution order.",
     },
     loadFailed: (error) => `Could not load the graph: ${error}`,
     canvas: "Dependency graph",
+    gateSection: (count) => `Gates (${count})`,
+    relatedSection: (count) => `Related (${count})`,
     edgeLabel: (from, to) => `${to} after ${from}`,
     legend: "Relationship legend",
     edgeLegend: {
@@ -492,8 +494,9 @@ export const enMessages: Messages = {
     edgeLegendHelp: {
       blocks:
         "The earlier issue must close before the later one can start. Drawn darker while the earlier issue is open and lighter once it is closed.",
-      gate: "Work waits on a condition such as a timer, a GitHub run or PR, or another issue.",
-      humanGate: "A gate that opens only when a person responds with a decision.",
+      gate: "Work waits on a condition such as a timer, a GitHub run or PR, or another issue. A gate with no prerequisites that blocks just one task appears inside its card instead of on an edge.",
+      humanGate:
+        "A gate that needs a person's decision. An open human gate inside a card highlights both its row and the card border in purple.",
       related:
         "Issues worth reading together. Does not set execution order or block work. Only the center issue's direct links are shown.",
       discovered:

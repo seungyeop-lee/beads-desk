@@ -28,11 +28,11 @@
 
 ### 計画を段階ごとにレビューする
 
-- エピックの **順序を表示** は、エピックのイシューを `blocks` 関係に沿って段階に分け、進行中の段階を示します。
-- human gate と、エピックの外からブロックしているイシューも同じグラフに表示されます。
-- **先行・後続グラフ** は、どのイシューからでも、そのイシューの前後の作業をつなげて表示します。
+- エピックの **順序を表示** は、イシューを `blocks` 関係に沿って段階に分け、進行中の段階とエピック外のブロッカーを示します。
+- 先行条件がなく作業を1件だけブロックする gate は、そのカード内に表示されます。行を選ぶと gate の詳細が開きます。
+- **先行・後続グラフ** は、イシューの前後の作業をつなげて表示します。関連する決定は基準カード内で確認できます。
 
-![View order for an epic arranging its issues into five stages, with a human gate holding the last stage](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/graph.png)
+![5段階のエピックグラフで最後の作業が紫色の枠で強調され、そのカード内に未解決の human gate が表示された画面](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/125ca21d10f6d17abb8afe539c3f528f94c3f937/docs/screenshots/graph.png)
 
 ### エージェントが添付した資料を読む
 

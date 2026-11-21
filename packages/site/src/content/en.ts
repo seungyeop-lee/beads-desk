@@ -97,17 +97,17 @@ export const enContent: SiteContent = {
         summary:
           "Inspect how blocks dependencies divide an epic into stages and where human gates hold the chain.",
         bullets: [
-          "View order splits an epic's issues into stages based on blocks dependencies and highlights the active stage.",
-          "Human gates and external blockers outside the epic appear in the same graph.",
-          "Open a Blocks graph from any issue to trace upstream and downstream work.",
+          "View order shows the active stage of an epic and the issues blocking it, including blockers outside the epic.",
+          "A gate with no prerequisites that blocks just one task appears inside its card. Open the gate by selecting its row.",
+          "Open a Blocks graph from any issue to trace upstream and downstream work. Related decisions appear inside the center card.",
         ],
         screenshots: [
           {
             src: "/media/screenshots/graph.png",
-            alt: "View order graph for an epic arranging its issues into five stages, with a human gate holding the last stage",
+            alt: "Five-stage epic graph with a purple border around the final task and its open human gate listed inside",
             width: 2880,
             height: 1440,
-            caption: "Stage-by-stage View order graph with cross-epic blockers and human gates",
+            caption: "The final task is waiting for the go/no-go decision shown inside its card.",
           },
         ],
       },
