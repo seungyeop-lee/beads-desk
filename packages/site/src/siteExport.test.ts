@@ -98,6 +98,7 @@ describe("정적 랜딩 사이트 export 검증", () => {
       "og/ko.png",
       "og/ja.png",
       "media/beads-desk-intro.mp4",
+      "media/screenshots/beads-desk-intro.png",
       ...SCREENSHOT_FILES.map((file) => `media/screenshots/${file}`),
     ];
 
@@ -225,6 +226,7 @@ describe("정적 랜딩 사이트 export 검증", () => {
 
       const videoTag = html.match(/<video\b[^>]*>/i)?.[0] ?? "";
       expect(videoTag).not.toBe("");
+      expect(videoTag).toContain('poster="/media/screenshots/beads-desk-intro.png"');
       expect(videoTag).toMatch(/\bautoplay\b/i);
       expect(videoTag).toMatch(/\bloop\b/i);
       expect(videoTag).toMatch(/\bmuted\b/i);

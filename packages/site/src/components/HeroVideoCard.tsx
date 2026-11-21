@@ -75,22 +75,6 @@ export function HeroVideoCard({
 
   return (
     <figure className="site-card overflow-hidden border-[var(--border-strong)] shadow-[var(--shadow-media)]">
-      {/* 제품 UI 데모와 페이지 본문을 구분하기 위한 장식용 창 상단 바입니다. */}
-      <div
-        aria-hidden="true"
-        className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-[var(--border-subtle)] bg-[var(--surface-subtle)] px-3.5 py-2"
-      >
-        <div className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full border border-[#1c1917]/20 bg-[var(--tone-coral)]" />
-          <span className="size-2.5 rounded-full border border-[#1c1917]/20 bg-[var(--tone-sand)]" />
-          <span className="size-2.5 rounded-full border border-[#1c1917]/20 bg-[var(--tone-mint)]" />
-        </div>
-        <span className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-card)] px-2.5 py-0.5 font-mono text-[0.6875rem] text-[var(--ink-muted)]">
-          localhost:3000/w/beads-desk
-        </span>
-        <span />
-      </div>
-
       <div className="relative bg-[var(--surface-subtle)]">
         <video
           ref={videoRef}
@@ -101,7 +85,7 @@ export function HeroVideoCard({
           preload="metadata"
           width={1440}
           height={900}
-          poster="/media/screenshots/now.png"
+          poster="/media/screenshots/beads-desk-intro.png"
           aria-label={videoLabel}
           aria-describedby="hero-video-caption"
           onPlay={() => setManualPlayback("playing")}

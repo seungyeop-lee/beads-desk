@@ -4,7 +4,7 @@
 
 エージェントが [Beads](https://github.com/gastownhall/beads)(`bd`)に残した記録をレビューするためのローカル Web UI です。エージェントが立てた計画、記録した決定、添付した図やスクリーンショット、人に残した質問をブラウザで読めます。ユーザーとエージェントがターミナルで `bd` を使っている間も、同じイシューをブラウザで確認・編集できます。
 
-[![beads-desk demo starting at the top of the Now screen and moving down to its due dates and bottlenecks, then opening an issue due today: its blocks graph, a sequence diagram enlarged from the checkout issue it waits on, a screenshot attached to that issue, and a payment decision with the earlier decision it replaced](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/e70d8d5552d7d3a832e5b3156abec8000bf673fb/docs/beads-desk-intro.gif)](https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4)
+[![beads-desk demo starting at the top of the Now screen and moving down to its due dates and bottlenecks, then opening an issue due today: its blocks graph, a sequence diagram enlarged from the checkout issue it waits on, a screenshot attached to that issue, and a payment decision with the earlier decision it replaced](https://raw.githubusercontent.com/seungyeop-lee/beads-desk/db366d7f3cacc63bdead2775b5aa5b8d7b96ea46/docs/beads-desk-intro.gif)](https://seungyeop-lee.github.io/beads-desk/beads-desk-intro.mp4)
 
 ## 機能
 

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bundle } from "@remotion/bundler";
-import { renderFrames, renderMedia, selectComposition } from "@remotion/renderer";
+import { renderFrames, renderMedia, renderStill, selectComposition } from "@remotion/renderer";
 import {
   findTourProblems,
   GIF_FRAME_STEP,
@@ -148,6 +148,13 @@ async function renderIntro(format: "mp4" | "gif", tour: IntroProps["tour"]): Pro
     }
   } else {
     await renderMedia({ serveUrl, composition, inputProps, outputLocation, codec: "h264" });
+    await renderStill({
+      serveUrl,
+      composition,
+      inputProps,
+      frame: 0,
+      output: join(OUTPUT_DIR, "beads-desk-intro.png"),
+    });
   }
 
   const bytes = statSync(outputLocation).size;

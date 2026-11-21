@@ -114,7 +114,7 @@ import 제한은 `eslint.config.js`가, layer 방향과 디렉터리 구조는 `
 
 화면 배치나 UI가 바뀌어 기존 스크린샷·소개 영상이 실제 화면과 달라지거나 소개할 화면이 추가·제외되면 아래 순서로 캡처 자산과 소개 콘텐츠를 함께 갱신합니다.
 
-1. `packages/promo/AGENTS.md` 절차에 따라 `docs/screenshots/*.png`, `docs/beads-desk-intro.gif`, `docs/beads-desk-intro.mp4`를 다시 만들어 commit합니다.
+1. `packages/promo/AGENTS.md` 절차에 따라 화면 스크린샷을 갱신합니다. 소개 영상을 갱신할 때는 `docs/beads-desk-intro.gif`, `docs/beads-desk-intro.mp4`와 첫 frame을 담은 사이트 poster(`docs/screenshots/beads-desk-intro.png`)를 함께 만들어 commit합니다.
 2. `README.md`, `README.ko.md`, `README.ja.md`의 `raw.githubusercontent.com/<commit SHA>/...` 이미지 주소를 새 이미지 commit의 SHA로 바꿉니다.
 3. `pnpm --filter @beads-desk/site run sync-assets`로 `docs/` 자산을 `packages/site`에 반영하고, 바뀐 화면에 맞춰 `packages/site/src/content/{en,ko,ja}.ts`(스크린샷 `src`, `width`, `height`, `caption`, `alt` 등)와 `packages/site/src/siteExport.test.ts`의 `FEATURE_SECTION_IDS`·`SCREENSHOT_FILES`를 함께 고칩니다.
 4. OG 이미지에 들어가는 문구·화면 요소가 바뀌었으면 `packages/site/scripts/generate-og-assets.mjs`의 언어별 문구·구성을 고친 뒤 `pnpm --filter @beads-desk/site run generate:og`로 OG 이미지를 다시 생성합니다.
