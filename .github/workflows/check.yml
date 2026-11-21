@@ -125,10 +125,23 @@ jobs:
       # 서버가 bd.cmd shim에서 bd.exe를 찾아 실행하는지 확인하려면 PATH에 다른 bd.exe가 없어야 합니다.
       - name: Install bd with npm
         if: matrix.bd-install == 'npm'
+        # @beads/bd 1.3.4까지의 postinstall은 release 주소의 redirect를 따라갈 때 내려받는 zip을 지울 수 있어서(https://github.com/gastownhall/beads/issues/7780)
+        # Windows runner에서 설치가 계속 실패합니다. postinstall을 건너뛰고, postinstall이 하는 일(bd.exe를 패키지의 bin에 두기)을 이 단계에서 대신합니다.
+        # 이 수정이 들어간 @beads/bd가 나오면 --ignore-scripts 설치와 아래 내려받기를 지우고 npm install만 남깁니다.
         run: |
-          # @beads/bd의 postinstall은 CI 환경 변수가 있으면 bd.exe를 내려받지 않으므로, 사용자 환경처럼 CI를 지우고 설치합니다.
-          Remove-Item Env:CI
-          npm install -g @beads/bd@1.3.4
+          $version = '1.3.4'
+          npm install -g "@beads/bd@$version" --ignore-scripts
+          $release = "https://github.com/gastownhall/beads/releases/download/v$version"
+          $zipName = "beads_${version}_windows_amd64.zip"
+          $zip = Join-Path $env:RUNNER_TEMP $zipName
+          Invoke-WebRequest "$release/$zipName" -OutFile $zip
+          $checksums = Join-Path $env:RUNNER_TEMP checksums.txt
+          Invoke-WebRequest "$release/checksums.txt" -OutFile $checksums
+          $expected = (Get-Content $checksums | Where-Object { $_ -match "\s$([regex]::Escape($zipName))$" }) -split '\s+' | Select-Object -First 1
+          if (-not $expected -or (Get-FileHash $zip -Algorithm SHA256).Hash -ne $expected) { throw "The checksum of $zipName does not match checksums.txt." }
+          $extracted = Join-Path $env:RUNNER_TEMP bd-release
+          Expand-Archive $zip -DestinationPath $extracted -Force
+          Move-Item (Join-Path $extracted bd.exe) (Join-Path (npm root -g) '@beads\bd\bin\bd.exe')
           if (Get-Command bd.exe -ErrorAction SilentlyContinue) { throw "bd.exe is on PATH, so the bd.cmd shim is not exercised." }
       # 설치 스크립트는 version을 고를 수 없어 최신 release를 설치하고, 설치 디렉터리를 PATH에 넣지 않습니다.
       - name: Install bd with the install script
