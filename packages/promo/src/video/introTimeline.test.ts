@@ -13,6 +13,7 @@ import {
   videoMsAt,
   type RecordingEvent,
   type Tour,
+  type TourPlan,
 } from "./introTimeline.ts";
 
 const FULL = { x: 0, y: 0, width: 1280 };
@@ -58,7 +59,7 @@ test("동작 이름으로 적은 시각을 녹화의 동작 시각에서 센 시
     {
       recording: "tour",
       clips: [{ from: { ms: 0 }, to: { after: "open", ms: 100 } }],
-      focus: [{ at: { after: "shown", ms: 500 }, ...FULL }],
+      focus: [{ at: { after: "shown", ms: 500 }, frame: "full" }],
       captions: [{ at: { after: "open", ms: 0 }, title: "Plan", text: "" }],
     },
     [click("open", 3000), { name: "shown", kind: "mark", atMs: 3800 }],
@@ -67,6 +68,50 @@ test("동작 이름으로 적은 시각을 녹화의 동작 시각에서 센 시
   expect(resolved.focus[0]!.atMs).toBe(4300);
   expect(resolved.captions[0]!.atMs).toBe(3000);
   expect(() => resolveTour(TOUR, [])).toThrow("open-issue");
+});
+
+test("스크롤 뒤 기록한 요소들을 여백과 함께 담되 이동은 지정한 클릭 시각을 따른다", () => {
+  const plan: TourPlan = {
+    recording: "tour",
+    clips: [],
+    captions: [],
+    focus: [
+      {
+        at: { after: "open", ms: 550 },
+        measuredAt: "scrolled",
+        targets: ["image", "link"],
+        frame: "contain",
+        padding: 9,
+      },
+    ],
+  };
+  const events: RecordingEvent[] = [
+    click("open", 1000),
+    {
+      name: "scrolled",
+      kind: "mark",
+      atMs: 2000,
+      boxes: {
+        image: { x: 450, y: 210, width: 180, height: 108 },
+        link: { x: 450, y: 340, width: 70, height: 32 },
+      },
+    },
+  ];
+  expect(resolveTour(plan, events).focus).toEqual([{ atMs: 1550, x: 380, y: 201, width: 320 }]);
+  expect(() => resolveTour(plan, [events[0]!])).toThrow(/scrolled.*image/);
+});
+
+test("상단 구도는 긴 패널의 너비로 확대하고 화면 경계 안에 둔다", () => {
+  const plan: TourPlan = {
+    recording: "tour",
+    clips: [],
+    captions: [],
+    focus: [{ at: { after: "panel", ms: 0 }, targets: ["detail"], frame: "top", padding: 10 }],
+  };
+  const boxes = { detail: { x: 1000, y: 60, width: 280, height: 640 } };
+  expect(resolveTour(plan, [{ name: "panel", kind: "mark", atMs: 300, boxes }]).focus).toEqual([
+    { atMs: 300, x: 980, y: 50, width: 300 },
+  ]);
 });
 
 describe("본편 규칙", () => {

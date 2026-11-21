@@ -5,6 +5,7 @@ import {
   DECLINE_MESSAGES_PATCH,
   DECLINE_MESSAGES_SUBJECT,
 } from "../seed/checkoutAttachments.ts";
+import { measureTargets } from "./measureTargets.ts";
 
 /**
  * 녹화하는 동안 장면이 쓰는 동작입니다. `pause`와 `mark` 말고는 모두 포인터가 대상으로 옮겨 가는 모습을 녹화에 남깁니다.
@@ -21,8 +22,8 @@ export type Scene = {
    * 한 번에 옮기면 녹화에서 화면이 순간 이동한 것처럼 보입니다.
    */
   scroll(deltaY: number, over: Locator, name: string): Promise<void>;
-  /** 동작 없이 지금 시각을 남깁니다. 클릭한 뒤 화면을 다 그린 순간처럼, 영상이 기준으로 삼을 시각에 씁니다. */
-  mark(name: string): void;
+  /** 동작 없이 지금 시각을 남깁니다. targets를 주면 그 순간의 viewport에서 각 요소의 위치도 남깁니다. */
+  mark(name: string, targets?: Record<string, Locator>): Promise<void>;
 };
 
 /** 열 주소와, 그 주소의 데모 데이터를 다 불러왔다고 판단할 때 화면에 보여야 하는 문구입니다. */
@@ -252,21 +253,23 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
         );
         const issue = issueDetail(page, RECEIPT_ISSUE);
         await issue.getByRole("link", { name: "Blocks graph" }).waitFor();
-        mark("issue-shown");
+        await mark("issue-shown");
         await pause(600);
         await click(issue.getByRole("link", { name: "Blocks graph" }), "open-graph");
         const chain = page.getByRole("dialog", { name: `${RECEIPT_TITLE} · Blocks chain` });
         const graph = chain.getByRole("region", { name: "Dependency graph" });
         await graph.getByRole("link", { name: new RegExp(CHECKOUT_TITLE) }).waitFor();
-        mark("graph-shown");
+        await mark("graph-shown");
         await pause(2200);
 
         await click(graph.getByRole("link", { name: new RegExp(CHECKOUT_TITLE) }), "open-checkout");
         const detail = issueDetail(page, CHECKOUT_ISSUE);
         const diagram = detail.getByRole("button", { name: "Enlarge diagram", exact: true });
         await diagram.waitFor();
-        mark("checkout-shown");
-        await pause(2700);
+        await mark("checkout-shown");
+        await pause(700);
+        await mark("checkout-focus", { "checkout-detail": detail });
+        await pause(2000);
         await click(diagram, "enlarge-diagram");
         const enlarged = page.getByRole("dialog", { name: "Enlarged diagram", exact: true });
         await enlarged.waitFor();
@@ -279,10 +282,16 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
         await enlarged.waitFor({ state: "hidden" });
         await pause(600);
         // 녹화 링크의 아래 끝이 상세 아래쪽(y 676)에 오도록 스크롤해, 그 위의 Staging check 제목과 결제 화면 스크린샷이 함께 보이게 합니다.
-        const link = (await detail
-          .getByRole("link", { name: "Recording of the test payment" })
-          .boundingBox())!;
+        const recordingLink = detail.getByRole("link", { name: "Recording of the test payment" });
+        const { "recording-link": link } = await measureTargets("scroll-to-screenshot", {
+          "recording-link": recordingLink,
+        });
         await scroll(link.y + link.height - 676, diagram, "scroll-to-screenshot");
+        await mark("screenshot-framed", {
+          "staging-heading": detail.getByRole("heading", { name: "Staging check" }),
+          "checkout-screenshot": detail.getByRole("img", { name: "Checkout page on staging" }),
+          "recording-link": recordingLink,
+        });
         await pause(1700);
 
         // 그래프 dialog의 머리글 닫기 버튼입니다. 상세의 닫기 버튼보다 앞에 있습니다.
@@ -296,17 +305,28 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
           "close-issue",
         );
         await issue.waitFor({ state: "hidden" });
-        mark("issue-closed");
+        await mark("issue-closed");
         await pause(300);
         await click(navLink(page, "Decisions"), "open-decisions");
         const stripe = page.getByRole("link", { name: STRIPE_DECISION });
         await stripe.waitFor();
-        mark("decisions-shown");
-        await pause(2400);
+        await mark("decisions-shown");
+        await pause(750);
+        await mark("decisions-focus", {
+          "decisions-heading": page.getByRole("heading", { name: /^Decisions\b/ }),
+          "decision-id-column": page
+            .getByRole("table")
+            .filter({ has: stripe })
+            .getByRole("columnheader", { name: "ID", exact: true }),
+          "superseding-decision": page
+            .getByRole("row", { name: new RegExp(PAYPAL_DECISION) })
+            .getByRole("link", { name: "acme-n5e", exact: true }),
+        });
+        await pause(1650);
         await click(stripe, "open-decision");
         const decision = issueDetail(page, "acme-n5e");
         await decision.getByText("Stripe covers cards").waitFor();
-        mark("decision-shown");
+        await mark("decision-shown");
         await pause(1500);
         await click(
           decision.getByRole("link", { name: new RegExp(PAYPAL_DECISION) }),
@@ -316,7 +336,7 @@ export const CAPTURE_TARGETS: CaptureTarget[] = [
           .getByRole("region", { name: "Side panel for issue acme-d2p" })
           .getByText("Offer PayPal next to card payments", { exact: false })
           .waitFor();
-        mark("replaced-shown");
+        await mark("replaced-shown");
         await pause(2800);
       },
     },

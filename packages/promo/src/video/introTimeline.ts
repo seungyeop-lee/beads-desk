@@ -26,8 +26,15 @@ export const CAPTION_CHARS_PER_SECOND = 15;
 /** 소개 영상 길이의 범위(초)입니다. GIF 용량은 길이에 비례해 늘어나므로, README GIF가 10MB 한도에 닿지 않게 38초를 넘지 않게 합니다. */
 export const INTRO_SECONDS = { min: 25, max: 38 };
 
+type TargetBox = { x: number; y: number; width: number; height: number };
+
 /** capture가 녹화하는 동안 남긴 동작과 그 녹화 시각입니다. `<녹화 이름>.events.json`에 녹화 순서로 저장합니다. */
-export type RecordingEvent = { name: string; kind: "click" | "scroll" | "mark"; atMs: number };
+export type RecordingEvent = {
+  name: string;
+  kind: "click" | "scroll" | "mark";
+  atMs: number;
+  boxes?: Record<string, TargetBox>;
+};
 
 /** 녹화 시각입니다. `after`가 있으면 그 이름의 동작에서 `ms`만큼 지난 시각이고, 없으면 녹화 시작에서 지난 시각입니다. */
 export type Moment = { after?: string; ms: number };
@@ -59,11 +66,20 @@ export type Tour = {
   captions: CaptionCue[];
 };
 
+type SubjectFocus = {
+  at: Moment & { after: string };
+  /** 이동을 먼저 시작하고 스크롤이 끝난 화면에 도착할 때만 별도의 측정 시점을 지정합니다. */
+  measuredAt?: string;
+  targets: readonly [string, ...string[]];
+  frame: "contain" | "top";
+  padding: number;
+};
+
 /** 녹화 시각을 동작 이름으로 적은 Tour입니다. 동작 시각은 녹화할 때마다 달라지므로, 영상을 만들 때 녹화의 동작 기록으로 풉니다. */
 export type TourPlan = {
   recording: string;
   clips: { from: Moment; to: Moment }[];
-  focus: (FocusArea & { at: Moment })[];
+  focus: ({ at: Moment; frame: "full" } | SubjectFocus)[];
   captions: (Caption & { at: Moment })[];
 };
 
@@ -90,19 +106,35 @@ export const TOUR: TourPlan = {
   ],
   focus: [
     // 지금 화면은 요약 칩부터 마감 목록과 병목 후보까지 한 화면의 배치를 보이도록 전체 화면으로 둡니다.
-    { at: { ms: 0 }, ...FULL },
+    { at: { ms: 0 }, frame: "full" },
     // 결제 화면 이슈의 상세를 읽은 뒤, 그림을 확대하는 dialog는 앱이 크게 보여 주므로 전체 화면으로 물러나 둡니다.
-    { at: { after: "checkout-shown", ms: 700 }, x: 396, y: 80, width: 860 },
-    { at: { after: "checkout-shown", ms: 2100 }, ...FULL },
+    {
+      at: { after: "checkout-focus", ms: 0 },
+      targets: ["checkout-detail"],
+      frame: "top",
+      padding: 0,
+    },
+    { at: { after: "checkout-shown", ms: 2100 }, frame: "full" },
     // 스크롤한 상세에서 Staging check 제목부터 결제 화면 스크린샷 아래의 녹화 링크까지 함께 들어오는 너비입니다.
-    { at: { after: "close-diagram", ms: 550 }, x: 330, y: 146, width: 950 },
-    { at: { after: "scroll-to-screenshot", ms: 1100 }, ...FULL },
+    {
+      at: { after: "close-diagram", ms: 550 },
+      measuredAt: "screenshot-framed",
+      targets: ["staging-heading", "checkout-screenshot", "recording-link"],
+      frame: "contain",
+      padding: 8,
+    },
+    { at: { after: "scroll-to-screenshot", ms: 1100 }, frame: "full" },
     // 결정 목록은 Supersession 열까지 들어오는 너비로 봅니다. 상세가 열리면 Supersedes 링크를 누르기 전에 전체 화면으로 돌아가,
     // 이전 결정이 상세 옆 패널에 열리는 모습을 끝까지 전체 화면으로 보입니다.
     // 상세의 오른쪽 열만 확대하면 옆 패널이 상세 옆에 열린다는 관계가 드러나지 않고, 옆 패널이 열린 뒤에는 상세가 좁아지며
     // Linked issues가 화면 아래로 내려가므로 상세와 옆 패널을 함께 담으면서 확대할 영역이 없습니다.
-    { at: { after: "decisions-shown", ms: 750 }, x: 28, y: 64, width: 972 },
-    { at: { after: "decision-shown", ms: 200 }, ...FULL },
+    {
+      at: { after: "decisions-focus", ms: 0 },
+      targets: ["decisions-heading", "decision-id-column", "superseding-decision"],
+      frame: "top",
+      padding: 8,
+    },
+    { at: { after: "decision-shown", ms: 200 }, frame: "full" },
   ],
   captions: [
     { at: { ms: 0 }, title: "Now", text: "See what's due and what's blocking" },
@@ -140,9 +172,40 @@ export function resolveTour(plan: TourPlan, events: RecordingEvent[]): Tour {
   return {
     recording: plan.recording,
     clips: plan.clips.map(({ from, to }) => ({ fromMs: msOf(from), toMs: msOf(to) })),
-    focus: plan.focus.map(({ at, ...area }) => ({ atMs: msOf(at), ...area })),
+    focus: plan.focus.map((cue) => ({
+      atMs: msOf(cue.at),
+      ...(cue.frame === "full" ? FULL : subjectArea(cue, events)),
+    })),
     captions: plan.captions.map(({ at, ...caption }) => ({ atMs: msOf(at), ...caption })),
   };
+}
+
+function subjectArea(cue: SubjectFocus, events: RecordingEvent[]): FocusArea {
+  const scene = cue.measuredAt ?? cue.at.after;
+  const boxes = events.find(({ name }) => name === scene)?.boxes;
+  let left = Infinity;
+  let right = -Infinity;
+  let top = Infinity;
+  let bottom = -Infinity;
+  for (const target of cue.targets) {
+    const box = boxes?.[target];
+    if (!box) throw new Error(`${scene} 장면에 ${target} 위치가 없습니다. 다시 capture합니다.`);
+    left = Math.min(left, box.x);
+    right = Math.max(right, box.x + box.width);
+    top = Math.min(top, box.y);
+    bottom = Math.max(bottom, box.y + box.height);
+  }
+  const aspect = RECORDING_SIZE.width / RECORDING_SIZE.height;
+  const paddedWidth = right - left + 2 * cue.padding;
+  if (cue.frame === "top") {
+    return clampFocus({ x: left - cue.padding, y: top - cue.padding, width: paddedWidth });
+  }
+  const width = Math.max(paddedWidth, (bottom - top + 2 * cue.padding) * aspect);
+  return clampFocus({
+    x: (left + right - width) / 2,
+    y: (top + bottom - width / aspect) / 2,
+    width,
+  });
 }
 
 export function msToFrames(ms: number): number {

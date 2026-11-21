@@ -9,6 +9,7 @@ import { isolatedBdEnv } from "../seed/isolatedBdEnv.ts";
 import { startAppServer } from "./appServer.ts";
 import { RECORDING_SIZE, type RecordingEvent } from "../video/introTimeline.ts";
 import { CAPTURE_TARGETS, type CaptureTarget, type View } from "./captureTargets.ts";
+import { measureTargets } from "./measureTargets.ts";
 
 /** README가 참조하는 스크린샷입니다. 저장소에 commit합니다. */
 const SCREENSHOT_DIR = fileURLToPath(new URL("../../../../docs/screenshots/", import.meta.url));
@@ -203,7 +204,11 @@ async function record(
       await page.mouse.move(x, y + 1);
       note(event, "scroll");
     },
-    mark: (event) => note(event, "mark"),
+    async mark(event, targets) {
+      const atMs = Math.round(performance.now() - startedAt);
+      const boxes = targets && (await measureTargets(event, targets));
+      events.push({ name: event, kind: "mark", atMs, boxes });
+    },
   });
 
   await page.screencast.stop();

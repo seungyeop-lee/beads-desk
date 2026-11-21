@@ -31,7 +31,9 @@ README의 Hygiene 스크린샷은 다섯 카드가 한 화면에 들어와야 �
   - README는 GIF와 스크린샷을 commit SHA로 고정한 `raw.githubusercontent.com` 주소로 넣습니다. 그래야 npmjs.com에서도 이미지가 보입니다. 이미지를 commit한 뒤 README.md, README.ko.md, README.ja.md의 주소를 그 commit의 SHA로 바꿉니다.
   - MP4는 main에 push하면 `.github/workflows/pages.yml`이 GitHub Pages에 배포합니다. 주소가 바뀌지 않으므로 README의 MP4 링크는 고치지 않습니다.
 
-자막, 녹화에서 잘라 쓰는 구간, GIF에서 확대할 영역은 `packages/promo/src/video/introTimeline.ts`의 `TOUR`에 있습니다. 시각은 `captureTargets.ts`의 `tour` 녹화가 남기는 동작 이름(`open-plan` 등)과 그 동작에서 지난 밀리초로 적고, video 명령이 `tour.events.json`으로 녹화 시각을 풉니다. 그래서 pause 길이나 화면을 불러오는 시간이 바뀌어도 시각을 다시 적지 않아도 됩니다. 동작 이름을 바꾸면 `TOUR`도 함께 바꿉니다. 영역의 좌표는 녹화의 CSS 픽셀이라, 화면 배치가 바뀌면 녹화 frame을 보고 고칩니다.
+자막, 녹화에서 잘라 쓰는 구간, GIF에서 확대할 대상은 `packages/promo/src/video/introTimeline.ts`의 `TOUR`에 있습니다. 시각은 `captureTargets.ts`의 `tour` 녹화가 남기는 동작 이름(`open-checkout` 등)과 그 동작에서 지난 밀리초로 적고, video 명령이 `tour.events.json`으로 녹화 시각을 풉니다. 동작 이름을 바꾸면 `TOUR`도 함께 바꿉니다.
+
+확대 대상을 바꾸려면 `captureTargets.ts`의 `mark`에 대상 이름과 role·이름 기반 locator를 주고 `TOUR.focus`의 `targets`에서 그 이름을 씁니다. capture는 그 시점의 요소 위치를 `tour.events.json`의 `boxes`에 녹화 viewport 기준 CSS 픽셀로 남깁니다. video는 `contain`이면 대상 전체와 `padding`이 들어오게 확대하고, `top`이면 대상의 위쪽과 너비에 맞춥니다. `full`은 측정 없이 전체 화면을 보입니다. 이동을 먼저 시작해 스크롤 뒤의 대상을 보여 줄 때는 `at`에 이동 시각을, `measuredAt`에 스크롤이 끝난 뒤 위치를 잰 동작 이름을 적습니다. 화면 배치가 바뀌면 capture부터 다시 실행합니다.
 
 video 명령은 렌더링하기 전에 아래를 검사하고, 어기면 그 시각을 알리며 실패합니다. 시각은 구간 사이를 빼고 이어 붙인 영상 시각으로 셉니다.
 
