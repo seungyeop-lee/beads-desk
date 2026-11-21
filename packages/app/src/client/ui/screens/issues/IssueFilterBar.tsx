@@ -102,7 +102,7 @@ export function IssueFilterBar({
       </DateRangeFields>
 
       <label
-        className={`btn btn-sm relative rounded-full border-base-content/20 font-normal has-focus-visible:outline-2 has-focus-visible:outline-offset-2 ${noEpic ? "bg-neutral text-neutral-content" : "bg-transparent text-base-content"}`}
+        className={`btn btn-sm relative rounded-full border-base-content/20 font-normal transition-none has-focus-visible:outline-2 has-focus-visible:outline-offset-2 ${noEpic ? "bg-neutral text-neutral-content" : "bg-transparent text-base-content"}`}
       >
         <input
           type="checkbox"
