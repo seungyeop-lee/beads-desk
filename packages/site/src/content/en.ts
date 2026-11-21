@@ -260,7 +260,7 @@ export const enContent: SiteContent = {
       {
         label: "Operating system",
         detail:
-          "macOS, Linux, or Windows. Tested with bd 1.3.1 on macOS and GitHub Actions windows-latest.",
+          "macOS, Linux, or Windows. Tested with bd 1.3.4 on macOS and GitHub Actions windows-latest.",
       },
       {
         label: "Node.js",

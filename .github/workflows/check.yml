@@ -128,7 +128,7 @@ jobs:
         run: |
           # @beads/bd의 postinstall은 CI 환경 변수가 있으면 bd.exe를 내려받지 않으므로, 사용자 환경처럼 CI를 지우고 설치합니다.
           Remove-Item Env:CI
-          npm install -g @beads/bd@1.3.1
+          npm install -g @beads/bd@1.3.4
           if (Get-Command bd.exe -ErrorAction SilentlyContinue) { throw "bd.exe is on PATH, so the bd.cmd shim is not exercised." }
       # 설치 스크립트는 version을 고를 수 없어 최신 release를 설치하고, 설치 디렉터리를 PATH에 넣지 않습니다.
       - name: Install bd with the install script

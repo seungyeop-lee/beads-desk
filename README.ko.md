@@ -90,7 +90,7 @@
 
 ## 요구 사항
 
-- macOS, Linux 또는 Windows. `bd` 1.3.1로 macOS와 GitHub Actions의 `windows-latest` runner에서 테스트했습니다. Windows 테스트는 beads-desk를 npm으로 설치하고 embedded mode workspace를 씁니다.
+- macOS, Linux 또는 Windows. `bd` 1.3.4로 macOS와 GitHub Actions의 `windows-latest` runner에서 테스트했습니다. Windows 테스트는 beads-desk를 npm으로 설치하고 embedded mode workspace를 씁니다.
 - Node.js 22 이상
 - `bd` CLI. `bd`가 `PATH`에 없으면 서버를 시작할 때 `BD_BIN` 환경 변수에 실행 파일 경로를 넣습니다.
   - Windows에서는 npm으로 설치한 `bd`(`npm install -g @beads/bd`)를 서버가 자동으로 찾고, 다른 방법으로 설치한 `bd`를 찾지 못하면 [문제 해결](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ko.md#문제-해결)에 나온 대로 `BD_BIN`을 지정합니다.

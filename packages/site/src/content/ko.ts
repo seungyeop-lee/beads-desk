@@ -256,7 +256,7 @@ export const koContent: SiteContent = {
       {
         label: "운영체제",
         detail:
-          "macOS, Linux, Windows를 지원합니다. bd 1.3.1 기준으로 macOS와 GitHub Actions windows-latest에서 테스트했습니다.",
+          "macOS, Linux, Windows를 지원합니다. bd 1.3.4 기준으로 macOS와 GitHub Actions windows-latest에서 테스트했습니다.",
       },
       {
         label: "Node.js",

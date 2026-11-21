@@ -90,7 +90,7 @@
 
 ## 動作環境
 
-- macOS、Linux、または Windows。`bd` 1.3.1 で、macOS と GitHub Actions の `windows-latest` runner でテストしています。Windows のテストでは beads-desk を npm でインストールし、embedded mode の workspace を使います。
+- macOS、Linux、または Windows。`bd` 1.3.4 で、macOS と GitHub Actions の `windows-latest` runner でテストしています。Windows のテストでは beads-desk を npm でインストールし、embedded mode の workspace を使います。
 - Node.js 22 以降
 - `bd` CLI。`bd` が `PATH` にない場合は、サーバーを起動するときに `BD_BIN` 環境変数に実行ファイルのパスを設定します。
   - Windows では npm でインストールした `bd`(`npm install -g @beads/bd`)をサーバーが自動で見つけ、ほかの方法でインストールした `bd` が見つからない場合は[トラブルシューティング](https://github.com/seungyeop-lee/beads-desk/blob/main/USAGE.ja.md#トラブルシューティング)のとおり `BD_BIN` を設定します。

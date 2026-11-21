@@ -259,7 +259,7 @@ export const jaContent: SiteContent = {
       {
         label: "対応 OS",
         detail:
-          "macOS、Linux、Windows に対応しています。bd 1.3.1 を用いて macOS と GitHub Actions の windows-latest でテスト済みです。",
+          "macOS、Linux、Windows に対応しています。bd 1.3.4 を用いて macOS と GitHub Actions の windows-latest でテスト済みです。",
       },
       {
         label: "Node.js",
