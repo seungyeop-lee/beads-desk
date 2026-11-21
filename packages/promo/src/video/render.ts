@@ -1,8 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bundle } from "@remotion/bundler";
-import { renderMedia, selectComposition, type RenderMediaOptions } from "@remotion/renderer";
+import { renderFrames, renderMedia, selectComposition } from "@remotion/renderer";
 import {
   findTourProblems,
   GIF_FRAME_STEP,
@@ -23,27 +25,7 @@ const OUTPUT_DIR = join(PACKAGE_DIR, "out");
 /** GitHub에 이미지로 첨부할 수 있는 최대 크기입니다. README 맨 위의 GIF가 이 크기를 넘으면 안 됩니다. */
 const GIF_MAX_BYTES = 10 * 1024 * 1024;
 
-type Output = {
-  file: string;
-  zoom: IntroProps["zoom"];
-  options: Pick<RenderMediaOptions, "codec" | "scale" | "everyNthFrame" | "numberOfGifLoops">;
-};
-
-const OUTPUTS: Output[] = [
-  { file: "beads-desk-intro.mp4", zoom: false, options: { codec: "h264" } },
-  {
-    file: "beads-desk-intro.gif",
-    // 10MB 안에 들도록 GIF_FRAME_STEP frame마다 하나를 쓰고, 크기는 README 본문 폭에 맞춰 880×550으로 줄입니다.
-    // 줄인 크기에서도 UI 글자를 읽을 수 있도록, 장면마다 보여 줄 영역을 확대합니다.
-    zoom: true,
-    options: {
-      codec: "gif",
-      scale: 11 / 18,
-      everyNthFrame: GIF_FRAME_STEP,
-      numberOfGifLoops: null,
-    },
-  },
-];
+const GIF_SCALE = 11 / 18;
 
 const eventsFile = `${TOUR.recording}.events.json`;
 const missing = [`${TOUR.recording}.webm`, eventsFile].filter(
@@ -92,21 +74,71 @@ const serveUrl = await bundle({
   rootDir: PACKAGE_DIR,
   publicDir: RECORDING_DIR,
 });
-for (const output of OUTPUTS) {
-  const outputLocation = join(OUTPUT_DIR, output.file);
-  const inputProps: IntroProps = { zoom: output.zoom, tour };
+for (const format of ["mp4", "gif"] as const) {
+  const gif = format === "gif";
+  const outputLocation = join(OUTPUT_DIR, `beads-desk-intro.${format}`);
+  const inputProps: IntroProps = { zoom: gif, tour };
   const composition = await selectComposition({ serveUrl, id: INTRO_ID, inputProps });
-  await renderMedia({ serveUrl, composition, inputProps, outputLocation, ...output.options });
+  const scale = gif ? GIF_SCALE : 1;
+  const fps = composition.fps / (gif ? GIF_FRAME_STEP : 1);
+  if (gif) {
+    const dir = mkdtempSync(join(tmpdir(), "beads-intro-gif-"));
+    try {
+      const { assetsInfo } = await renderFrames({
+        serveUrl,
+        composition,
+        inputProps,
+        scale,
+        everyNthFrame: GIF_FRAME_STEP,
+        imageFormat: "png",
+        outputDir: dir,
+        onStart: ({ frameCount }) => console.log(`GIF에 쓸 ${frameCount}개 frame을 렌더링합니다.`),
+        onFrameUpdate: (count) => {
+          if (count % 100 === 0) console.log(`GIF frame ${count}개를 렌더링했습니다.`);
+        },
+      });
+      const input = [
+        "-v",
+        "error",
+        "-y",
+        "-framerate",
+        `${composition.fps}/${GIF_FRAME_STEP}`,
+        "-i",
+        assetsInfo.imageSequenceName,
+      ];
+      const palette = join(dir, "palette.png");
+      execFileSync("ffmpeg", [
+        ...input,
+        "-vf",
+        "palettegen=stats_mode=diff",
+        "-frames:v",
+        "1",
+        palette,
+      ]);
+      execFileSync("ffmpeg", [
+        ...input,
+        "-i",
+        palette,
+        "-lavfi",
+        "paletteuse=dither=none:diff_mode=rectangle",
+        "-loop",
+        "0",
+        outputLocation,
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  } else {
+    await renderMedia({ serveUrl, composition, inputProps, outputLocation, codec: "h264" });
+  }
 
   const bytes = statSync(outputLocation).size;
-  const scale = output.options.scale ?? 1;
-  const fps = composition.fps / (output.options.everyNthFrame ?? 1);
   console.log(
     `${outputLocation}: ${(composition.durationInFrames / composition.fps).toFixed(1)}초, ` +
       `${Math.round(composition.width * scale)}×${Math.round(composition.height * scale)}, ` +
       `${fps.toFixed(1)}fps, ${(bytes / 1024 / 1024).toFixed(1)}MB`,
   );
-  if (output.options.codec === "gif" && bytes > GIF_MAX_BYTES) {
+  if (gif && bytes > GIF_MAX_BYTES) {
     throw new Error(
       `GIF가 ${GIF_MAX_BYTES / 1024 / 1024}MB를 넘습니다. 크기나 frame rate를 줄입니다.`,
     );
